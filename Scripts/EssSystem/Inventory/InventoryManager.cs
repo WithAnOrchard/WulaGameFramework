@@ -13,7 +13,7 @@ namespace EssSystem.Inventory
     public class InventoryManager : SingletonMono<InventoryManager>
     {
         //所有容器的数据
-        public List<Inventory> Inventorys = new List<Inventory>();
+        public List<Dao.Inventory> Inventorys = new List<Dao.Inventory>();
 
         [SerializeField]
         public List<InventoryGameObject> InventoryGameObjects = new List<InventoryGameObject>();
@@ -27,7 +27,7 @@ namespace EssSystem.Inventory
 
 
         //显示容器UI
-        public void CreateInventoryUI(Inventory inventory, InventoryUIConfig inventoryUIConfig)
+        public void CreateInventoryUI(Dao.Inventory inventory, InventoryUIConfig inventoryUIConfig)
         {
             UnityEngine.GameObject gameObject= new UnityEngine.GameObject(inventory.InventoryName);
             gameObject.transform.SetParent(transform);
@@ -52,7 +52,7 @@ namespace EssSystem.Inventory
 
         }
 
-        public void CreateSwitchButton(Inventory inventory, InventoryGameObject inventoryGameObject,InventoryUIConfig inventoryUIConfig)
+        public void CreateSwitchButton(Dao.Inventory inventory, InventoryGameObject inventoryGameObject,InventoryUIConfig inventoryUIConfig)
         {
             UnityEngine.GameObject leftButtonGameobject = new UnityEngine.GameObject("leftButton");
             UnityEngine.GameObject rightButtonGameobject = new UnityEngine.GameObject("rightButton");
@@ -84,9 +84,9 @@ namespace EssSystem.Inventory
         
 
         //创建容器
-        public Inventory CreateInventory(string inventoryName, int maxStack,int x,int y)
+        public Dao.Inventory CreateInventory(string inventoryName, int maxStack,int x,int y)
         {
-            Inventory inventory = new Inventory(inventoryName, maxStack,x,y);
+            Dao.Inventory inventory = new Dao.Inventory(inventoryName, maxStack,x,y);
             Inventorys.Add(inventory);
             return inventory;
         }
@@ -113,7 +113,7 @@ namespace EssSystem.Inventory
             }
         }
 
-        public Inventory GetInventory(string inventoryName)
+        public Dao.Inventory GetInventory(string inventoryName)
         {
             foreach (var inventory in Inventorys)
             {

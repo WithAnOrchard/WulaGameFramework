@@ -20,7 +20,7 @@ namespace EssSystem.Inventory.InventoryUI
         
         public DescriptionUIGameObject DescriptionUIGameObject;
         
-        public void LoadInventoryUI(Inventory inventory,int page)
+        public void LoadInventoryUI(Dao.Inventory inventory,int page)
         {
             if(page<0||page>=inventory.MaxStack/(inventory.x*inventory.y)){return;}
             foreach (var itemObject in ItemObjects.ToList())

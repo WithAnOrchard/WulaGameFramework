@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using EssSystem.Core.Dao;
-using UnityEngine;
 
-namespace EssSystem.Inventory
+namespace EssSystem.Inventory.Dao
 {
     [System.Serializable]
     public class Inventory

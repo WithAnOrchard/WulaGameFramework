@@ -16,7 +16,7 @@ namespace EssSystem.Inventory.Events
             
             int count= int.Parse((o[2] as string)!);
             
-            Inventory inventory= InventoryManager.Instance.GetInventory(inventoryName);
+            Dao.Inventory inventory= InventoryManager.Instance.GetInventory(inventoryName);
            
             Item item =  JsonUtility.FromJson<Item>(JsonUtility.ToJson(InventoryManager.Instance.GetItem(itemName))); 
             item.Number = count;
