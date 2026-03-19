@@ -5,7 +5,7 @@ using UnityEngine;
 namespace EssSystem.Core.AbstractClass
 {
     //管理器的基类 此类所有的内容必须是使用事件来进行
-    public abstract class ManagerBase :MonoBehaviour
+    public class ManagerBase :MonoBehaviour
     {
         // 简单封装
         protected static T Instance <T>() where T : Component, new()

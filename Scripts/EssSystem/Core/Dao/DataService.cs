@@ -13,8 +13,7 @@ namespace EssSystem.Core.Dao
         //对应的是存储空间 所有的dao层数据存储应在这里存取 并且由此层定时存档？是否需要存档呢。
         
         
-        //目标 根据命名空间自动存取数据 
-        public Dictionary<string,Dictionary<string,object>> DataSpaces=new();
+       
         
         public void SaveJson<T>(T data, string filepath)
         {
