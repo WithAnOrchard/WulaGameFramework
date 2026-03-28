@@ -1,10 +1,4 @@
-﻿using BiliBiliDanmu;
-using EssSystem;
-using EssSystem.Core;
-using EssSystem.Core.AbstractClass;
-using EssSystem.UIManager;
-
-namespace Farm
+﻿namespace Farm
 {
     // public class FarmAbstractGameController: AbstractGameManager
     // {

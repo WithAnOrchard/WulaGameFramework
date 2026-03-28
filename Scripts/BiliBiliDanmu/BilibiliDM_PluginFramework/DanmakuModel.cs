@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using BilibiliDM_PluginFramework;
 using Newtonsoft.Json.Linq;
-using UnityEngine;
 
 namespace BiliBiliDanmu.BilibiliDM_PluginFramework
 {
@@ -79,7 +78,7 @@ namespace BiliBiliDanmu.BilibiliDM_PluginFramework
         WatchedChange,
 
         /// <summary>
-        /// 开放平台关闭通知 
+        ///     开放平台关闭通知
         /// </summary>
         OPConnectionEnd
     }
@@ -115,14 +114,14 @@ namespace BiliBiliDanmu.BilibiliDM_PluginFramework
         MutualFollow = 5,
 
         /// <summary>
-        /// 點讚
+        ///     點讚
         /// </summary>
         Like = 6
     }
 
     public class DanmakuModel
     {
-        public static Regex EntryEffRegex = new Regex(@"\<%(.+?)%\>");
+        public static Regex EntryEffRegex = new(@"\<%(.+?)%\>");
 
         public DanmakuModel()
         {
@@ -516,7 +515,7 @@ namespace BiliBiliDanmu.BilibiliDM_PluginFramework
                             break;
 
                         case "LIVE_OPEN_PLATFORM_INTERACTION_END":
-                            this.MsgType = MsgTypeEnum.OPConnectionEnd;
+                            MsgType = MsgTypeEnum.OPConnectionEnd;
                             break;
                         case "LIVE_OPEN_PLATFORM_LIVE_ROOM_ENTER":
                             MsgType = MsgTypeEnum.Interact;

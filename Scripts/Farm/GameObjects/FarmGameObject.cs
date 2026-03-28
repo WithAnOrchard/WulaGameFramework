@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Farm.Data;
 using UnityEngine;
 
 namespace Farm.GameObjects

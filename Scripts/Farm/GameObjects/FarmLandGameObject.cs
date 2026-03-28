@@ -1,5 +1,4 @@
-﻿using Farm.Data;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Farm.GameObjects
 {

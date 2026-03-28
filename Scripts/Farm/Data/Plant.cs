@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Numerics;
 
 namespace Farm.Data
 {
@@ -40,20 +39,20 @@ namespace Farm.Data
 
         public Plant()
         {
-            this.maxAge = 0;
-            this.currentAge = 0;
-            this.currentSprite = "currentSprite";
-            this.growTime = 0;
-            this.spawnTime = 0;
-            this.growSpan = 0;
-            this.name = "name";
-            this.sprites = new string[5];
-            this.scale = 1;
-            this.offSetX = 0;
-            this.offSetY = 0;
-            this.offSetZ = 0;
-            this.layer = "layer";
-            this.orderInLayer = 0;
+            maxAge = 0;
+            currentAge = 0;
+            currentSprite = "currentSprite";
+            growTime = 0;
+            spawnTime = 0;
+            growSpan = 0;
+            name = "name";
+            sprites = new string[5];
+            scale = 1;
+            offSetX = 0;
+            offSetY = 0;
+            offSetZ = 0;
+            layer = "layer";
+            orderInLayer = 0;
         }
 
 

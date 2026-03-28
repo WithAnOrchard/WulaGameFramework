@@ -6,7 +6,7 @@ namespace EssSystem.Core.Singleton
     //单例模式
     public abstract class Singleton<T> where T : class, new()
     {
-        private static readonly Lazy<T> _instance = new Lazy<T>(() =>
+        private static readonly Lazy<T> _instance = new(() =>
         {
             var instance = new T();
             (instance as Singleton<T>)?.Init(true); // 可选：如果需要初始化
@@ -17,8 +17,6 @@ namespace EssSystem.Core.Singleton
 
         public static T Instance => _instance.Value;
 
-        protected Singleton() { }
-
         protected virtual void Init(bool logMessage)
         {
             LogMessage = logMessage;
@@ -26,10 +24,7 @@ namespace EssSystem.Core.Singleton
 
         public void Log(string message)
         {
-            if (LogMessage)
-            {
-                Debug.Log(message);
-            }
+            if (LogMessage) Debug.Log(message);
         }
     }
 }

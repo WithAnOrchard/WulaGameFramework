@@ -10,35 +10,30 @@ namespace EssSystem.Core.EventManager
     //事件机制，所有的controller都需要使用EventManager来实现目的,而实际功能逻辑需要写在manager
     public class EventManager : Singleton<EventManager>
     {
+        // 事件字典：使用委托存储监听方法
+        private readonly Dictionary<string, Action<List<object>>> _eventDictionary = new();
 
         public void InitEvents()
         {
-            var subClasses =  Assembly.GetExecutingAssembly().GetTypes();
+            var subClasses = Assembly.GetExecutingAssembly().GetTypes();
             foreach (var subClass in subClasses)
-            {
                 if (subClass.BaseType.Name.Equals("TriggerEvent"))
                 {
                     Debug.Log(subClass.Name);
-                   object instance=Activator.CreateInstance(subClass);
-                   MethodInfo method = instance.GetType().GetMethod("Init");
-                   method.Invoke(instance, null);
+                    var instance = Activator.CreateInstance(subClass);
+                    var method = instance.GetType().GetMethod("Init");
+                    method.Invoke(instance, null);
                 }
-            }
-
         }
-        
+
         protected override void Init(bool logMessage = true)
         {
             Debug.Log("正在加载事件");
-            this.LogMessage = logMessage;
+            LogMessage = logMessage;
             InitEvents();
-
         }
 
-        // 事件字典：使用委托存储监听方法
-        private Dictionary<string, Action<List<object>>> _eventDictionary = new Dictionary<string, Action<List<object>>>();
 
-        
         public void Subscribe(string eventName, Action<List<object>> listener)
         {
             if (string.IsNullOrEmpty(eventName))
@@ -47,7 +42,7 @@ namespace EssSystem.Core.EventManager
                 return;
             }
 
-            if (_eventDictionary.TryGetValue(eventName, out Action<List<object>> thisEvent))
+            if (_eventDictionary.TryGetValue(eventName, out var thisEvent))
             {
                 thisEvent += listener;
                 _eventDictionary[eventName] = thisEvent;
@@ -63,32 +58,28 @@ namespace EssSystem.Core.EventManager
         // 取消订阅
         public void Unsubscribe(string eventName, Action<object> listener)
         {
-            if (_eventDictionary.TryGetValue(eventName, out Action<List<object>> thisEvent))
+            if (_eventDictionary.TryGetValue(eventName, out var thisEvent))
             {
                 thisEvent -= listener;
                 if (thisEvent == null)
-                {
                     _eventDictionary.Remove(eventName);
-                }
                 else
-                {
                     _eventDictionary[eventName] = thisEvent;
-                }
             }
         }
 
         public void TriggerString(string eventData)
         {
-            List<String> param = eventData.Split(".").ToList();
-            string eventName = param[0];
+            var param = eventData.Split(".").ToList();
+            var eventName = param[0];
             param.RemoveAt(0);
-            EventManager.Instance.TriggerEvent(eventName,param.Cast<object>().ToList());
+            Instance.TriggerEvent(eventName, param.Cast<object>().ToList());
         }
-        
+
         // 触发事件
         public void TriggerEvent(string eventName, List<object> eventData = null)
         {
-            if (_eventDictionary.TryGetValue(eventName, out Action<List<object>> thisEvent))
+            if (_eventDictionary.TryGetValue(eventName, out var thisEvent))
             {
                 Log("触发事件" + eventName + "数据为" + eventData);
                 thisEvent?.Invoke(eventData);
@@ -120,10 +111,7 @@ namespace EssSystem.Core.EventManager
         private void OnDestroy()
         {
             // 对象销毁时自动清理相关事件
-            if (this == Instance)
-            {
-                ClearAllEvents();
-            }
+            if (this == Instance) ClearAllEvents();
         }
     }
 }

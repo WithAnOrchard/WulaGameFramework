@@ -1,17 +1,15 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace EssSystem.Core.Singleton
 {
     //Unity中的可部署实体的单例模式
     public abstract class SingletonMono<T> : MonoBehaviour where T : Component
     {
-        
         private static T instance;
 
-        public Boolean logMessage = false;
-        
-        public Boolean hasInit=false;
+        public bool logMessage;
+
+        public bool hasInit;
 
         public static T Instance
         {
@@ -19,17 +17,14 @@ namespace EssSystem.Core.Singleton
             {
                 if (instance == null)
                 {
-                    GameObject singletonObject = new GameObject(typeof(T).Name + "_Singleton");
+                    var singletonObject = new GameObject(typeof(T).Name + "_Singleton");
 
                     instance = singletonObject.AddComponent<T>();
                 }
 
                 return instance;
             }
-            set
-            {
-                instance = value;
-            }
+            set => instance = value;
         }
 
 
@@ -41,12 +36,9 @@ namespace EssSystem.Core.Singleton
 
         public void LogMessage(string message)
         {
-            if (logMessage)
-            {
-                Debug.Log(message);
-            }
+            if (logMessage) Debug.Log(message);
         }
 
-        public abstract void Init(Boolean logMessage = true);
+        public abstract void Init(bool logMessage = true);
     }
 }

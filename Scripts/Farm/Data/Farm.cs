@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Farm.Data
 {
-    [System.Serializable]
+    [Serializable]
     public class Farm
     {
         public List<FarmLand> FarmLands;
@@ -29,7 +29,7 @@ namespace Farm.Data
         }
     }
 
-    [System.Serializable]
+    [Serializable]
     public class FarmLandConfig
     {
         public string farmLandSprite;

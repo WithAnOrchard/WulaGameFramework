@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -12,6 +9,8 @@ using System.Threading.Tasks;
 using BiliBiliDanmu.BilibiliDM_PluginFramework;
 using BilibiliDM_PluginFramework;
 using BitConverter;
+using UnityEngine;
+using Random = System.Random;
 
 namespace BiliDMLib
 {
@@ -19,19 +18,35 @@ namespace BiliDMLib
     {
         private readonly string _auth;
         private readonly string[] _server;
-        private TcpClient _client;
-        private Stream NetStream;
+        private readonly bool debuglog = true;
         private readonly int defaultport = 2243;
+        private TcpClient _client;
+
+        private CancellationTokenSource cancellationTokenSource;
+        private Stream NetStream;
+        private Timer PlatformHeartBeatTimer;
+
+        public OpenDanmakuLoader(string auth, string[] server, string gameId)
+        {
+            _auth = auth;
+            _server = server;
+            GameId = gameId;
+        }
+
+        public bool Connected { get; private set; }
+        public string GameId { get; set; }
+
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            _client?.Dispose();
+            NetStream?.Dispose();
+        }
 
         public event ReceivedDanmakuEvt ReceivedDanmaku;
         public event DisconnectEvt Disconnected;
         public event ReceivedRoomCountEvt ReceivedRoomCount;
-        private readonly bool debuglog = true;
-        public bool Connected { get; private set; }
-        public string GameId { get; set; }
-
-        private CancellationTokenSource cancellationTokenSource;
-        private Timer PlatformHeartBeatTimer;
 
         public void PlatformHeartBeatOk()
         {
@@ -62,12 +77,8 @@ namespace BiliDMLib
 
                 var server = new List<Uri>();
                 foreach (var s in _server)
-                {
                     if (Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out var uri))
-                    {
                         server.Add(uri);
-                    }
-                }
 
 
                 _client = new TcpClient();
@@ -83,7 +94,7 @@ namespace BiliDMLib
                     Connected = true;
                     _ = ReceiveMessageLoop(cancellationTokenSource.Token);
                     PlatformHeartBeatTimer = new Timer(state => cancellationTokenSource.Cancel(), null,
-                        TimeSpan.FromMinutes(1), System.Threading.Timeout.InfiniteTimeSpan);
+                        TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan);
 
                     return true;
                 }
@@ -92,7 +103,7 @@ namespace BiliDMLib
             }
             catch (Exception ex)
             {
-                UnityEngine.Debug.LogWarning(ex);
+                Debug.LogWarning(ex);
                 throw;
             }
         }
@@ -101,7 +112,7 @@ namespace BiliDMLib
         {
             if (Connected)
             {
-                Debug.WriteLine("Disconnected");
+                System.Diagnostics.Debug.WriteLine("Disconnected");
                 cancellationTokenSource.Cancel();
 
                 Connected = false;
@@ -153,7 +164,7 @@ namespace BiliDMLib
                             }
                             catch (Exception e)
                             {
-                                UnityEngine.Debug.LogWarning(e);
+                                Debug.LogWarning(e);
                             }
                         }
                     else if (protocol.Version == 3 && protocol.Action == 5) // brotli?
@@ -176,7 +187,7 @@ namespace BiliDMLib
                             }
                             catch (Exception e)
                             {
-                                UnityEngine.Debug.LogWarning(e);
+                                Debug.LogWarning(e);
                             }
                         }
                     else
@@ -216,7 +227,7 @@ namespace BiliDMLib
                     }
                     catch (NotSupportedException e)
                     {
-                        UnityEngine.Debug.LogWarning(e);
+                        Debug.LogWarning(e);
                     }
                     catch (Exception)
                     {
@@ -252,7 +263,7 @@ namespace BiliDMLib
         private async Task SendHeartbeatAsync(CancellationToken ct)
         {
             await SendSocketDataAsync(2, _auth, ct);
-            Debug.WriteLine("Message Sent: Heartbeat");
+            System.Diagnostics.Debug.WriteLine("Message Sent: Heartbeat");
         }
 
         private Task SendSocketDataAsync(int action, string body, CancellationToken ct)
@@ -290,24 +301,9 @@ namespace BiliDMLib
             return true;
         }
 
-        public OpenDanmakuLoader(string auth, string[] server, string gameId)
-        {
-            _auth = auth;
-            _server = server;
-            GameId = gameId;
-        }
-
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            _client?.Dispose();
-            NetStream?.Dispose();
-        }
-
         public void ForceDisconnect()
         {
-            this.cancellationTokenSource.Cancel();
+            cancellationTokenSource.Cancel();
         }
     }
 }

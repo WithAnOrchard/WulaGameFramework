@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
@@ -14,6 +13,8 @@ using BilibiliDM_PluginFramework;
 using BitConverter;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEngine;
+using Random = System.Random;
 
 namespace BiliDMLib
 {
@@ -23,14 +24,9 @@ namespace BiliDMLib
         private static string token = "";
         private static string buvid3 = "";
         private static string lastserver;
-        private static readonly HttpClient httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        private static List<Tuple<string, int>> ChatHostList = new List<Tuple<string, int>>();
-        private CancellationTokenSource cancellationTokenSource;
-        private string ChatHost = "broadcastlv.chat.bilibili.com";
-        private int ChatPort = 2243; // TCPЭ��Ĭ�϶˿������޸ĵ� 2243
+        private static readonly HttpClient httpClient = new() { Timeout = TimeSpan.FromSeconds(5) };
+        private static List<Tuple<string, int>> ChatHostList = new();
         private readonly string CIDInfoUrl = "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id=";
-        private TcpClient Client;
-        private bool Connected;
         private readonly bool debuglog = true;
 
         private readonly string[] defaulthosts =
@@ -40,9 +36,14 @@ namespace BiliDMLib
         };
 
         private readonly int defaultport = 2243;
+        private readonly short protocolversion = 1;
+        private CancellationTokenSource cancellationTokenSource;
+        private string ChatHost = "broadcastlv.chat.bilibili.com";
+        private int ChatPort = 2243; // TCPЭ��Ĭ�϶˿������޸ĵ� 2243
+        private TcpClient Client;
+        private bool Connected;
         public Exception Error;
         private Stream NetStream;
-        private readonly short protocolversion = 1;
 
 
         public event ReceivedDanmakuEvt ReceivedDanmaku;
@@ -61,7 +62,7 @@ namespace BiliDMLib
                     {
                         var req = await httpClient.GetStringAsync(CIDInfoUrl + channelId);
                         var roomobj = JObject.Parse(req);
-                        UnityEngine.Debug.Log(roomobj);
+                        Debug.Log(roomobj);
 
                         var freq = await httpClient.GetStringAsync("https://api.bilibili.com/x/frontend/finger/spi");
                         var fobj = JObject.Parse(freq);
@@ -87,22 +88,18 @@ namespace BiliDMLib
                         ChatPort = defaultport;
                         var errorResponse = ex.Response as HttpWebResponse;
                         if (errorResponse.StatusCode == HttpStatusCode.NotFound)
-                        {
                             // ֱ���䲻���ڣ�HTTP 404��
-                            UnityEngine.Debug.Log(errorResponse);
-                        }
+                            Debug.Log(errorResponse);
                         else
-                        {
                             // Bվ��������Ӧ����
-                            UnityEngine.Debug.Log(errorResponse);
-                        }
+                            Debug.Log(errorResponse);
                     }
                     catch (Exception e)
                     {
                         // ��������XML�������󣿣�
                         ChatHost = defaulthosts[new Random().Next(defaulthosts.Length)];
                         ChatPort = defaultport;
-                        UnityEngine.Debug.LogWarning(e);
+                        Debug.LogWarning(e);
                     }
                 }
                 else
@@ -181,7 +178,7 @@ namespace BiliDMLib
                             }
                             catch (Exception e)
                             {
-                                UnityEngine.Debug.LogWarning(e);
+                                Debug.LogWarning(e);
                             }
                         }
                     else if (protocol.Version == 3 && protocol.Action == 5) // brotli?
@@ -204,7 +201,7 @@ namespace BiliDMLib
                             }
                             catch (Exception e)
                             {
-                                UnityEngine.Debug.LogWarning(e);
+                                Debug.LogWarning(e);
                             }
                         }
                     else
@@ -293,7 +290,7 @@ namespace BiliDMLib
         {
             if (Connected)
             {
-                Debug.WriteLine("Disconnected");
+                System.Diagnostics.Debug.WriteLine("Disconnected");
                 cancellationTokenSource.Cancel();
 
                 Connected = false;
@@ -308,7 +305,7 @@ namespace BiliDMLib
         private async Task SendHeartbeatAsync(CancellationToken ct)
         {
             await SendSocketDataAsync(2, "[object Object]", ct);
-            Debug.WriteLine("Message Sent: Heartbeat");
+            System.Diagnostics.Debug.WriteLine("Message Sent: Heartbeat");
         }
 
         private Task SendSocketDataAsync(int action, string body, CancellationToken ct)
@@ -344,7 +341,7 @@ namespace BiliDMLib
         {
             var packetModel = new
             {
-                roomid = channelId, uid = 0, protover = 3, buvid = buvid, key = token, platform = "danmuji", type = 2
+                roomid = channelId, uid = 0, protover = 3, buvid, key = token, platform = "danmuji", type = 2
             };
 
 

@@ -1,6 +1,8 @@
-﻿namespace Farm.Data
+﻿using System;
+
+namespace Farm.Data
 {
-    [System.Serializable]
+    [Serializable]
     public class FarmLand
     {
         public int index;

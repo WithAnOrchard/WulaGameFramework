@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using EssSystem;
 using EssSystem.Core;
 using EssSystem.Core.Dao;
 using EssSystem.Core.EventManager;
@@ -20,44 +19,39 @@ namespace Farm
         [SerializeField] public List<Plant> plants;
 
         public FarmGameObject farmGameObject;
-        
-        
-        
-        
+
 
         public FarmGameObject GenerateFarm()
         {
             LogMessage("初始化农场");
-            FarmGameObject farmobject = GenerateFarmGameObject();
+            var farmobject = GenerateFarmGameObject();
             farmGameObject = farmobject;
 
             foreach (var land in farm.FarmLands)
             {
                 //创建FarmLand实体并添加到FarmLandGameobject便于管理
-                FarmLandGameObject farmland = CreateFarmLand();
+                var farmland = CreateFarmLand();
                 //将其绑定到farm
                 farmobject.FarmLandGameObjects.Add(farmland);
 
                 //创建FarmLand上的植物实体 并将其添加到FarmLand
-                PlantGameObject plant = GeneratePlantGameObject(land.plant, farmland);
+                var plant = GeneratePlantGameObject(land.plant, farmland);
             }
 
-            int index = 0;
+            var index = 0;
             foreach (var farmlandbject in farmobject.FarmLandGameObjects)
-            {
                 farmlandbject.transform.Translate(farm.screenWidth / farm.maxFarmLands * index, 0, 0);
-            }
 
             return farmobject;
         }
 
         public FarmGameObject GenerateFarmGameObject()
         {
-            GameObject o = new GameObject();
+            var o = new GameObject();
             o.name = "Farm";
             o.transform.SetParent(transform);
             o.transform.Translate(new Vector3(farm.FarmLandConfig.offSetX, farm.FarmLandConfig.offSetY));
-            FarmGameObject farmobject = o.AddComponent<FarmGameObject>();
+            var farmobject = o.AddComponent<FarmGameObject>();
             farmobject.FarmLandGameObjects = new List<FarmLandGameObject>();
             farmobject.AddComponent<SpriteRenderer>();
             return farmobject;
@@ -65,10 +59,10 @@ namespace Farm
 
         public FarmLandGameObject CreateFarmLand()
         {
-            GameObject farmLand = new GameObject();
+            var farmLand = new GameObject();
             farmLand.name = "FarmLand";
 
-            FarmLandGameObject farmLandGameObject = farmLand.AddComponent<FarmLandGameObject>();
+            var farmLandGameObject = farmLand.AddComponent<FarmLandGameObject>();
             farmLandGameObject.spriteRenderer = farmLandGameObject.AddComponent<SpriteRenderer>();
             //载入farmland配置
             farmLandGameObject.spriteRenderer.sprite =
@@ -85,13 +79,13 @@ namespace Farm
 
         public PlantGameObject GeneratePlantGameObject(Plant plantData, FarmLandGameObject farmLand)
         {
-            GameObject plant = new GameObject();
+            var plant = new GameObject();
             plant.name = plantData.name;
             plant.transform.SetParent(farmLand.transform, false);
             plant.transform.localPosition = new Vector3(plantData.offSetX, plantData.offSetY);
             plant.transform.localScale = new Vector3(plantData.scale, plantData.scale);
 
-            PlantGameObject plantGameObject = plant.AddComponent<PlantGameObject>();
+            var plantGameObject = plant.AddComponent<PlantGameObject>();
             plantGameObject.spriteRenderer = plantGameObject.AddComponent<SpriteRenderer>();
 
             farmLand.plantGameObject = plantGameObject;
@@ -137,7 +131,7 @@ namespace Farm
             if (farm.FarmLands.Count < farm.maxFarmLands)
             {
                 LogMessage("新增花盆成功");
-                FarmLandGameObject farmland = CreateFarmLand();
+                var farmland = CreateFarmLand();
                 farmGameObject.FarmLandGameObjects.Add(farmland);
                 //生成物品并且克隆生成新数据
                 farmland.transform.Translate(farm.screenWidth / farm.maxFarmLands * farm.FarmLands.Count, 0, 0);
@@ -148,33 +142,27 @@ namespace Farm
             LogMessage("新增花盆失败");
         }
 
-        public Boolean PlantNewPlant(string plantName)
+        public bool PlantNewPlant(string plantName)
         {
             foreach (var plant in plants)
-            {
                 if (plant.name == plantName)
-                {
                     foreach (var farmLand in farm.FarmLands)
-                    {
                         //如果有空的花盆则种植下去
                         if (farmLand.plant == null || farmLand.plant.name == "name")
                         {
                             LogMessage("新增植物" + plantName + "成功");
-                            FarmLandGameObject farmLandGameObject = farmGameObject.FarmLandGameObjects[farmLand.index];
-                            PlantGameObject plantGameObject = GeneratePlantGameObject(plant, farmLandGameObject);
+                            var farmLandGameObject = farmGameObject.FarmLandGameObjects[farmLand.index];
+                            var plantGameObject = GeneratePlantGameObject(plant, farmLandGameObject);
                             farmLand.plant = DataService.Instance.DeepClone(plant);
                             farmLand.plant.spawnTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeMilliseconds();
                             return true;
                         }
-                    }
-                }
-            }
 
             LogMessage("新增植物" + plantName + "失败");
             return false;
         }
 
-        public Boolean HarvestPlant(int index)
+        public bool HarvestPlant(int index)
         {
             if (index >= farm.FarmLands.Count)
             {
@@ -187,26 +175,24 @@ namespace Farm
                 LogMessage("收获花盆植物为空");
                 return false;
             }
-            else
-            {
-                if (farm.FarmLands[index].plant.currentAge != farm.FarmLands[index].plant.maxAge)
-                {
-                    LogMessage("植物未成熟");
-                    return false;
-                }
 
-                DestroyImmediate(farmGameObject.FarmLandGameObjects[index].plantGameObject.gameObject);
-                Debug.Log("收获" + farm.FarmLands[index].plant.name + "成功");
-                farm.FarmLands[index].plant = null;
-                return true;
+            if (farm.FarmLands[index].plant.currentAge != farm.FarmLands[index].plant.maxAge)
+            {
+                LogMessage("植物未成熟");
+                return false;
             }
+
+            DestroyImmediate(farmGameObject.FarmLandGameObjects[index].plantGameObject.gameObject);
+            Debug.Log("收获" + farm.FarmLands[index].plant.name + "成功");
+            farm.FarmLands[index].plant = null;
+            return true;
         }
 
         public void RegisterFarmEvents()
         {
             EventManager.Instance.Subscribe("新增花盆", AddNewCrate);
 
-            EventManager.Instance.Subscribe<String>("新增植物", plantName => { PlantNewPlant(plantName); });
+            EventManager.Instance.Subscribe<string>("新增植物", plantName => { PlantNewPlant(plantName); });
             EventManager.Instance.Subscribe<int>("收获植物", index => { HarvestPlant(index); });
             //更新植物事件
             EventManager.Instance.Subscribe<int>("农场更新数据", UpdateFarm);
@@ -215,28 +201,24 @@ namespace Farm
 
         public void UpdateFarm(int time)
         {
-            int index = 0;
+            var index = 0;
             foreach (var farmLand in farm.FarmLands)
             {
                 //降低水分植
                 if (farmLand.currentWet - time >= 0)
-                {
                     farmLand.currentWet -= time;
-                }
                 else
-                {
                     farmLand.currentWet = 0;
-                }
 
                 if (farmLand.plant.name != "name")
                 {
-                    Plant p = farmLand.plant;
+                    var p = farmLand.plant;
                     //对植物进行生长
                     p.growTime += time * p.growSpeed;
 
                     if (p.growTime >= p.growSpan)
                     {
-                        long cureentAge = p.growTime / p.growSpan;
+                        var cureentAge = p.growTime / p.growSpan;
                         if (cureentAge <= p.maxAge)
                         {
                             p.currentAge = cureentAge;
@@ -254,7 +236,7 @@ namespace Farm
         }
 
 
-        public override void Init(Boolean logMessage = false)
+        public override void Init(bool logMessage = false)
         {
             this.logMessage = logMessage;
             LoadFarmSprites();

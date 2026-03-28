@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -11,16 +10,14 @@ namespace EssSystem.Core.Dao
     public class DataService : Singleton<DataService>
     {
         //对应的是存储空间 所有的dao层数据存储应在这里存取 并且由此层定时存档？是否需要存档呢。
-        
-        
-       
-        
+
+
         public void SaveJson<T>(T data, string filepath)
         {
             Log("保存数据" + filepath);
             if (!File.Exists(filepath))
             {
-                FileInfo file = new FileInfo(filepath);
+                var file = new FileInfo(filepath);
 
                 if (!file.Directory.Exists)
                 {
@@ -31,54 +28,45 @@ namespace EssSystem.Core.Dao
                 File.Create(filepath).Close();
             }
 
-            string json = JsonUtility.ToJson(data, true);
-            using (StreamWriter sw = new StreamWriter(filepath))
+            var json = JsonUtility.ToJson(data, true);
+            using (var sw = new StreamWriter(filepath))
             {
                 sw.WriteLine(json);
                 sw.Close();
                 sw.Dispose();
             }
         }
-        
+
         public List<T> LoadAllJson<T>(string folderPath, List<T> inputList) where T : new()
         {
             Log("读取外部文件夹内所有文件" + folderPath);
             CreateDataFolder(folderPath);
 
-            if (inputList == null)
-            {
-                inputList = new List<T>();
-            }
+            if (inputList == null) inputList = new List<T>();
 
-            DirectoryInfo directoryInfo = new DirectoryInfo(folderPath);
+            var directoryInfo = new DirectoryInfo(folderPath);
             foreach (var directoryInner in directoryInfo.GetDirectories())
-            {
-                inputList.AddRange(LoadAllJson<T>(directoryInner.FullName, inputList));
-            }
+                inputList.AddRange(LoadAllJson(directoryInner.FullName, inputList));
 
             foreach (var file in directoryInfo.GetFiles())
-            {
                 if (file.Name.EndsWith(".json"))
-                {
                     inputList.Add(LoadJson<T>(file.FullName));
-                }
-            }
 
             return inputList;
         }
 
         public T LoadJson<T>(string filepath) where T : new()
         {
-            string json = "";
+            var json = "";
 
             if (!File.Exists(filepath))
             {
                 Log("数据文件缺失，创建新的文件");
-                T target = new T();
+                var target = new T();
                 SaveJson(target, filepath);
             }
 
-            using (StreamReader sr = new StreamReader(filepath))
+            using (var sr = new StreamReader(filepath))
             {
                 json = sr.ReadToEnd();
                 sr.Close();
@@ -86,13 +74,13 @@ namespace EssSystem.Core.Dao
 
             return JsonUtility.FromJson<T>(json);
         }
-        
+
         public void CreateDataFolder(string folderName)
         {
             if (!Directory.Exists(folderName))
                 Directory.CreateDirectory(folderName);
         }
-        
+
         public T DeepClone<T>(T obj)
         {
             using (var ms = new MemoryStream())
@@ -104,9 +92,9 @@ namespace EssSystem.Core.Dao
             }
         }
 
-        protected override void Init(Boolean logMessages = true)
+        protected override void Init(bool logMessages = true)
         {
-            this.LogMessage = logMessages;
+            LogMessage = logMessages;
         }
     }
 }

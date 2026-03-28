@@ -5,18 +5,16 @@ using System.Threading.Tasks;
 using BiliBiliDanmu.BilibiliDM_PluginFramework;
 using BilibiliDM_PluginFramework;
 using BiliDMLib;
-using EssSystem;
 using EssSystem.Core.Singleton;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace BiliBiliDanmu
 {
     public sealed class DanMuConnector : DMPlugin
     {
-        private static HttpClient httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(5) };
+        private static readonly HttpClient httpClient = new() { Timeout = TimeSpan.FromSeconds(5) };
 
         public OpenDanmakuLoader b;
 
@@ -48,7 +46,7 @@ namespace BiliBiliDanmu
 
         public void B_ReceivedDanmaku(object sender, ReceivedDanmakuArgs e)
         {
-            Debug.Log(e.Danmaku.UserName+"说:"+e.Danmaku.CommentText);
+            Debug.Log(e.Danmaku.UserName + "说:" + e.Danmaku.CommentText);
         }
 
         public override void Stop()
@@ -61,17 +59,13 @@ namespace BiliBiliDanmu
             try
             {
                 if (string.IsNullOrEmpty(code))
-                {
                     throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_未輸入身份碼");
-                }
 
-                var param = JsonConvert.SerializeObject(new { code = code, app_id = 1651388990835 }, Formatting.None);
+                var param = JsonConvert.SerializeObject(new { code, app_id = 1651388990835 }, Formatting.None);
                 var req = await httpClient.PostAsync("https://bopen.ceve-market.org/sign",
                     new StringContent(param, Encoding.UTF8, "application/json"));
                 if (!req.IsSuccessStatusCode)
-                {
                     throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_簽名伺服器離線");
-                }
 
                 var sign = JObject.Parse(await req.Content.ReadAsStringAsync());
 
@@ -79,18 +73,13 @@ namespace BiliBiliDanmu
                 req2.Content = new StringContent(param, Encoding.UTF8, "application/json");
                 req2.Content.Headers.Remove("Content-Type"); // "{application/json; charset=utf-8}"
                 req2.Content.Headers.Add("Content-Type", "application/json");
-                foreach (var kv in sign)
-                {
-                    req2.Headers.Add(kv.Key, kv.Value + "");
-                }
+                foreach (var kv in sign) req2.Headers.Add(kv.Key, kv.Value + "");
 
                 req2.Headers.Add("Accept", "application/json");
 
                 var resp = await httpClient.SendAsync(req2);
                 if (!resp.IsSuccessStatusCode)
-                {
                     throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_B站直播中心離線");
-                }
 
                 var jo = JsonConvert.DeserializeObject<BOpenRoomInfo>(await resp.Content.ReadAsStringAsync());
 
@@ -98,22 +87,18 @@ namespace BiliBiliDanmu
                 {
                     var roomid = jo.data?.anchor_info?.room_id;
                     if (roomid > 0 && !string.IsNullOrEmpty(jo?.data?.websocket_info?.auth_body))
-                    {
-                        return new RoomInfoData()
+                        return new RoomInfoData
                         {
                             auth = jo?.data.websocket_info.auth_body,
                             server = jo.data.websocket_info.wss_link,
                             roomid = roomid.Value,
                             game_id = jo.data.game_info.game_id
                         };
-                    }
 
                     throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_B站直播中心返回了無效的房間號");
                 }
-                else
-                {
-                    throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_B站直播中心返回錯誤" + ":" + jo.message);
-                }
+
+                throw new NotSupportedException("Resources.BOpen_GetRoomIdByCode_B站直播中心返回錯誤" + ":" + jo.message);
             }
             catch (NotSupportedException)
             {
@@ -181,7 +166,7 @@ namespace BiliBiliDanmu
 
         protected override void Init(bool logMessage)
         {
-            DanMuConnector conn = new DanMuConnector();
+            var conn = new DanMuConnector();
             Connector = conn;
         }
     }

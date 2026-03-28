@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using EssSystem.Core.Dao;
@@ -10,25 +9,24 @@ namespace EssSystem.Core
 {
     public class ResourceLoaderManager : SingletonMono<ResourceLoaderManager>
     {
+        [SerializeField] public List<Sprite> SpriteList = new();
+
         public Dictionary<string, AudioClip> AudioClips = new();
+        private Font defaultFont;
+        public Dictionary<string, Font> fonts = new();
         public Dictionary<string, GameObject> Prefabs = new();
         public Dictionary<string, Sprite> Sprites = new();
-        public  Dictionary<string, Font> fonts = new();
-        private Font defaultFont;
-        
-        [SerializeField]
-        public List<Sprite> SpriteList = new();
 
 
         private void Awake()
         {
-            defaultFont =Resources.GetBuiltinResource<Font>($"LegacyRuntime.ttf");
+            defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         }
 
         public static byte[] GetImageByte(string imagePath)
         {
-            FileStream files = new FileStream(imagePath, FileMode.Open);
-            byte[] imgByte = new byte[files.Length];
+            var files = new FileStream(imagePath, FileMode.Open);
+            var imgByte = new byte[files.Length];
             files.Read(imgByte, 0, imgByte.Length);
             files.Close();
             return imgByte;
@@ -36,7 +34,7 @@ namespace EssSystem.Core
 
         private Sprite TextureToSprite(Texture2D tex)
         {
-            Sprite sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            var sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
             return sprite;
         }
 
@@ -44,33 +42,23 @@ namespace EssSystem.Core
         {
             return AudioClips.GetValueOrDefault(audioName);
         }
-        
+
         public Font GetFont(string fontName)
         {
-            if (fonts.GetValueOrDefault(fontName) == null)
-            {
-
-                return defaultFont;
-            }
-            return  fonts.GetValueOrDefault(fontName) ;
+            if (fonts.GetValueOrDefault(fontName) == null) return defaultFont;
+            return fonts.GetValueOrDefault(fontName);
         }
 
         public void LoadFonts()
         {
             var font = Resources.LoadAll<Font>("Fonts");
-            foreach (var f in font)
-            {
-                fonts.TryAdd(f.name,f);
-            }
+            foreach (var f in font) fonts.TryAdd(f.name, f);
         }
-        
+
         public void LoadPrefabs()
         {
             var gameObjects = Resources.LoadAll<GameObject>("Prefabs");
-            foreach (var gameObject in gameObjects)
-            {
-                Prefabs.TryAdd(gameObject.name, gameObject);
-            }
+            foreach (var gameObject in gameObjects) Prefabs.TryAdd(gameObject.name, gameObject);
         }
 
         public void LoadSprites()
@@ -99,23 +87,19 @@ namespace EssSystem.Core
             LogMessage("读取外部素材" + externalSpritesPath);
             if (Directory.Exists(externalSpritesPath))
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(externalSpritesPath);
+                var directoryInfo = new DirectoryInfo(externalSpritesPath);
                 foreach (var directoryInner in directoryInfo.GetDirectories())
-                {
                     LoadExternalSprites(directoryInner.FullName);
-                }
 
                 foreach (var file in directoryInfo.GetFiles())
-                {
                     if (file.Name.EndsWith(".png"))
                     {
-                        Texture2D tx = new Texture2D(16, 16);
+                        var tx = new Texture2D(16, 16);
                         tx.LoadImage(GetImageByte(file.FullName));
-                        Sprites.TryAdd(file.Name.Replace(".png",""), TextureToSprite(tx));
-                        LogMessage("读取素材"+file.Name);
+                        Sprites.TryAdd(file.Name.Replace(".png", ""), TextureToSprite(tx));
+                        LogMessage("读取素材" + file.Name);
                         SpriteList.Add(TextureToSprite(tx));
                     }
-                }
 
                 return;
             }
@@ -135,7 +119,7 @@ namespace EssSystem.Core
         }
 
 
-        public override void Init(Boolean logMessage = false)
+        public override void Init(bool logMessage = false)
         {
             if (!hasInit)
             {
@@ -147,7 +131,6 @@ namespace EssSystem.Core
                 LoadFonts();
                 hasInit = true;
             }
-          
         }
     }
 }
