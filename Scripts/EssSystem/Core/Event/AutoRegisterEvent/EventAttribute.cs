@@ -1,9 +1,9 @@
 using System;
 
-namespace EssSystem.Core.Event
+namespace EssSystem.Core.Event.AutoRegisterEvent
 {
     /// <summary>
-    /// Event标注属性，用于将方法自动注册为Event
+    /// Event特性 - 用于将方法自动注册为事件
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class EventAttribute : Attribute
@@ -34,7 +34,7 @@ namespace EssSystem.Core.Event
     }
 
     /// <summary>
-    /// Event监听器标注属性，用于将方法自动注册为Event监听器
+    /// Event监听器特性 - 用于将方法自动注册为事件监听器
     /// </summary>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class EventListenerAttribute : Attribute

@@ -71,9 +71,10 @@ public class SingletonNormal<T> where T : class, new()
     /// 日志输出方法
     /// </summary>
     /// <param name="message">日志消息</param>
-    public static void Log(string message)
+    protected virtual void Log(string message, Color color = default)
     {
-        Debug.Log($"[{typeof(T).Name}] {message}");
+        if (color == default) color = Color.white;
+        Debug.Log($"<color=#{ColorUtility.ToHtmlStringRGBA(color)}>[{typeof(T).Name}] {message}</color>");
     }
 
     /// <summary>

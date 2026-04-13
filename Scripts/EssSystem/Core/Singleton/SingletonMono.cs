@@ -75,6 +75,12 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
         }
     }
 
+
+    protected virtual void Initialize()
+    {
+    }
+
+
     /// <summary>
     /// Called when the application is quitting
      ///  

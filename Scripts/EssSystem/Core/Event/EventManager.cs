@@ -1,17 +1,31 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 
 namespace EssSystem.Core.Event
 {
+    /// <summary>
+    /// 事件委托 - 事件监听器的委托类型
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="data">事件数据</param>
+    /// <returns>事件结果</returns>
     public delegate List<object> EventDelegate(string eventName, List<object> data);
 
+    /// <summary>
+    /// 事件管理器 - Unity MonoBehaviour单例
+    /// </summary>
     public class EventManager : SingletonMono<EventManager>
     {
+        /// <summary>
+        /// 事件监听器字典，键为事件名称
+        /// </summary>
         private Dictionary<string, List<EventDelegate>> _eventListeners;
 
+        /// <summary>
+        /// 初始化事件管理器
+        /// </summary>
         protected override void Initialize()
         {
             base.Initialize();
@@ -20,6 +34,11 @@ namespace EssSystem.Core.Event
             Log("事件管理器初始化完成！", Color.green);
         }
 
+        /// <summary>
+        /// 添加事件监听器
+        /// </summary>
+        /// <param name="eventName">事件名称</param>
+        /// <param name="listener">监听器方法</param>
         public void AddListener(string eventName, EventDelegate listener)
         {
             if (!_eventListeners.ContainsKey(eventName))
@@ -31,6 +50,11 @@ namespace EssSystem.Core.Event
             Log($"为事件 {eventName} 添加了监听器", Color.blue);
         }
 
+        /// <summary>
+        /// 移除事件监听器
+        /// </summary>
+        /// <param name="eventName">事件名称</param>
+        /// <param name="listener">监听器方法</param>
         public void RemoveListener(string eventName, EventDelegate listener)
         {
             if (_eventListeners.ContainsKey(eventName))
@@ -40,6 +64,12 @@ namespace EssSystem.Core.Event
             }
         }
 
+        /// <summary>
+        /// 触发事件
+        /// </summary>
+        /// <param name="eventName">事件名称</param>
+        /// <param name="data">事件数据</param>
+        /// <returns>事件结果</returns>
         public List<object> TriggerEvent(string eventName, List<object> data = null)
         {
             if (string.IsNullOrEmpty(eventName))

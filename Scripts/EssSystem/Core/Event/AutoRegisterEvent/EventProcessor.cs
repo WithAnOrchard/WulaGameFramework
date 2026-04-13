@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
+using EssSystem.Core.Manager;
 
-namespace EssSystem.Core.Event
+namespace EssSystem.Core.Event.AutoRegisterEvent
 {
     /// <summary>
     /// Event处理器，负责扫描和处理Event标注

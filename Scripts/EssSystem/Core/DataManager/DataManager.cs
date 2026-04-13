@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using EssSystem.Core.Event;
+using EssSystem.Core.Event.AutoRegisterEvent;
 
 namespace EssSystem.Core.Manager
 {
@@ -288,6 +289,74 @@ namespace EssSystem.Core.Manager
             {
                 LogError($"保存Service分类失败: {ex.Message}");
                 return new List<object> { "  save failed", ex.Message };
+            }
+        }
+
+        [Event("GetServiceDataById")]
+        public List<object> GetServiceDataById(List<object> data)
+        {
+            try
+            {
+                if (data.Count < 3)
+                {
+                    LogWarning("获取Service数据需要Service名称、分类名称和数据ID");
+                    return new List<object> { "参数无效" };
+                }
+
+                string serviceName = data[0] as string;
+                string categoryName = data[1] as string;
+                string dataId = data[2] as string;
+
+                if (string.IsNullOrEmpty(serviceName) || string.IsNullOrEmpty(categoryName) || string.IsNullOrEmpty(dataId))
+                {
+                    LogWarning("Service数据参数格式无效");
+                    return new List<object> { "格式无效" };
+                }
+
+                // 查找目标Service
+                var targetService = _serviceInstances.FirstOrDefault(s => s.GetType().Name == serviceName);
+                if (targetService == null)
+                {
+                    LogWarning($"未找到Service '{serviceName}'");
+                    return new List<object> { "未找到Service" };
+                }
+
+                // 获取Service数据存储
+                FieldInfo dataStorageField = targetService.GetType().GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (dataStorageField != null)
+                {
+                    var dataStorage = dataStorageField.GetValue(targetService) as Dictionary<string, Dictionary<string, object>>;
+                    if (dataStorage != null && dataStorage.ContainsKey(categoryName))
+                    {
+                        var category = dataStorage[categoryName];
+                        if (category.ContainsKey(dataId))
+                        {
+                            var result = category[dataId];
+                            Log($"成功获取Service '{serviceName}' 分类 '{categoryName}' 数据 '{dataId}'");
+                            return new List<object> { "成功", result };
+                        }
+                        else
+                        {
+                            LogWarning($"分类 '{categoryName}' 中未找到数据 '{dataId}'");
+                            return new List<object> { "数据不存在" };
+                        }
+                    }
+                    else
+                    {
+                        LogWarning($"Service '{serviceName}' 中未找到分类 '{categoryName}'");
+                        return new List<object> { "分类不存在" };
+                    }
+                }
+                else
+                {
+                    LogWarning($"无法访问Service '{serviceName}' 的数据存储");
+                    return new List<object> { "访问失败" };
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"获取Service数据失败: {ex.Message}");
+                return new List<object> { "获取失败", ex.Message };
             }
         }
 

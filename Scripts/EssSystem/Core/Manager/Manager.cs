@@ -11,9 +11,10 @@ namespace EssSystem.Core.Manager
         /// <summary>
         /// Manager初始化方法，在Awake后调用
         /// </summary>
-        protected virtual void Initialize()
+        protected override void Initialize()
         {
             // 子类可重写此方法进行初始化操作
+            base.Initialize();
         }
 
         /// <summary>
