@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEngine;
 using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
+using EssSystem.Core.Util;
 
 namespace EssSystem.Core.Manager
 {
@@ -405,9 +406,7 @@ namespace EssSystem.Core.Manager
             }
         }
 
-        // ⚠️ 已知 bug（见 issue）：UnityEngine.JsonUtility 不支持 Dictionary<string, object>
-        //     与 List<object>，会静默返回空 JSON，读取返回 null。整个持久化链路目前无法工作。
-        //     下一轮会替换为 Newtonsoft.Json 或 MiniJson 实现。
+        // 使用 MiniJson 序列化 Dictionary<string, object> + List<object>（JsonUtility 不支持）
         private string ConvertToHighlyReadableFormat(List<object> data)
         {
             var formattedData = new Dictionary<string, object>
@@ -420,28 +419,21 @@ namespace EssSystem.Core.Manager
                 },
                 ["data"] = data
             };
-
-            // JsonUtility 对 Dictionary<string, object> 会返回 "{}"，序列化基本无效
-            string json = JsonUtility.ToJson(formattedData, true);
-            if (string.IsNullOrWhiteSpace(json) || json.Trim() == "{}")
-            {
-                LogError("JsonUtility 无法序列化 Dictionary<string, object>，存档为空 — 需替换 JSON 实现（见 TODO）");
-            }
-            return json;
+            return MiniJson.Serialize(formattedData, pretty: true);
         }
 
         private List<object> ConvertFromHighlyReadableFormat(string jsonData)
         {
             try
             {
-                // 同上：JsonUtility.FromJson<Dictionary<...>> 会返回 null
-                var formattedData = JsonUtility.FromJson<Dictionary<string, object>>(jsonData);
-                if (formattedData == null)
+                var parsed = MiniJson.Deserialize(jsonData) as Dictionary<string, object>;
+                if (parsed == null)
                 {
-                    LogWarning("JsonUtility 返回 null — 存档反序列化失败（需替换 JSON 实现）");
+                    LogWarning("存档反序列化返回 null — 可能是文件损坏");
                     return new List<object>();
                 }
-                return formattedData.ContainsKey("data") ? formattedData["data"] as List<object> : new List<object>();
+                return parsed.TryGetValue("data", out var d) ? d as List<object> ?? new List<object>()
+                                                             : new List<object>();
             }
             catch (Exception ex)
             {
