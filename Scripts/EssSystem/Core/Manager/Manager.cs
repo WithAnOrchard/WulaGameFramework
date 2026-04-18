@@ -1,7 +1,20 @@
+using System;
 using UnityEngine;
 
 namespace EssSystem.Core.Manager
 {
+    /// <summary>
+    /// Manager 优先级特性 — 等效于 Unity 的 <see cref="DefaultExecutionOrder"/>。
+    /// <para>
+    /// 数值越小越先 Awake/Start。推荐 EventManager 用 -10，DataManager 用 -5，业务 Manager &gt;= 0。
+    /// </para>
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
+    public sealed class ManagerAttribute : DefaultExecutionOrder
+    {
+        public ManagerAttribute(int priority = 0) : base(priority) { }
+    }
+
     /// <summary>
     /// Manager抽象类，继承自SingletonMono，用于Unity GameObject管理器
     /// </summary>

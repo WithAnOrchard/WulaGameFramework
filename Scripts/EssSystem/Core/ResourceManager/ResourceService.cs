@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Manager;
+using EssSystem.Core.Util;
 
 namespace EssSystem.Core.ResourceManager
 {
@@ -207,7 +208,7 @@ namespace EssSystem.Core.ResourceManager
             {
                 byte[] bytes = System.IO.File.ReadAllBytes(filePath);
                 
-                UnityEngine.MainThreadDispatcher.Enqueue(() =>
+                MainThreadDispatcher.Enqueue(() =>
                 {
                     Texture2D texture = new Texture2D(2, 2);
                     if (texture.LoadImage(bytes))

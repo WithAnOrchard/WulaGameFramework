@@ -1,541 +1,125 @@
-using System;
 using System.Collections.Generic;
-using EssSystem.Core.Event;
-using EssSystem.Core.Event.AutoRegisterEvent;
+using UnityEngine;
 using EssSystem.Core.Manager;
 using EssSystem.EssManager.InventoryManager.Dao;
-using EssSystem.EssManager.InventoryManager.Entity;
-using UnityEngine;
+
+namespace EssSystem.EssManager.InventoryManager
 {
     /// <summary>
-    /// InventoryManager - Unity MonoBehaviour singleton for inventory management
-    /// InventoryManager - InventoryManager - Unity MonoBehaviour 
+    /// 背包门面 — 挂到场景里的单例 MonoBehaviour
+    /// <para>
+    /// 只负责：生命周期、确保玩家背包存在、注册默认模板、暴露对玩家背包的便利 API。<br/>
+    /// 绝大多数业务逻辑放在 <see cref="InventoryService"/> 里，本类仅转发或包薄。
+    /// </para>
     /// </summary>
-    [Manager(5)] // Set priority to 5 (after EventManager and DataManager)
+    [Manager(5)]
     public class InventoryManager : Manager<InventoryManager>
     {
-        private InventoryService _inventoryService;
+        #region Inspector
 
-        [SerializeField] private bool _enableLogging = true;
-        [SerializeField] private bool _autoSaveInventory = true;
-        [SerializeField] private float _autoSaveInterval = 60f;
+        [Header("Player Inventory")]
+        [SerializeField] private string _playerInventoryId = "Player";
+        [SerializeField] private string _playerInventoryName = "玩家背包";
+        [SerializeField] private int _playerMaxSlots = 30;
+        [SerializeField] private float _playerMaxWeight = 150f;
 
-        #region Properties
-
-        /// <summary>
-        /// Inventory service instance
-        /// </summary>
-        public InventoryService InventoryService => _inventoryService;
-
-        /// <summary>
-        /// Whether logging is enabled
-        /// </summary>
-        public bool EnableLogging => _enableLogging;
+        [Header("Default Templates (auto-registered)")]
+        [Tooltip("是否启动时注册几个调试用默认模板（Potion/Sword）")]
+        [SerializeField] private bool _registerDebugTemplates = true;
 
         #endregion
 
-        #region Manager Lifecycle
+        /// <summary>玩家主背包 ID（Inspector 可改）</summary>
+        public string PlayerInventoryId => _playerInventoryId;
+
+        /// <summary>底层 Service（同等于 InventoryService.Instance，但 Inspector 里可见）</summary>
+        public InventoryService Service { get; private set; }
+
+        // ─────────────────────────────────────────────────────────────
+        #region Lifecycle
 
         protected override void Initialize()
         {
             base.Initialize();
-            
-            _inventoryService = InventoryService.Instance;
-            
-            RegisterEventHandlers();
-            
-            if (_autoSaveInventory)
-            {
-                StartAutoSave();
-            }
-            
-            Log("InventoryManager initialized");
+            Service = InventoryService.Instance;
+
+            Service.CreateInventory(_playerInventoryId, _playerInventoryName, _playerMaxSlots, _playerMaxWeight);
+
+            if (_registerDebugTemplates) RegisterDebugTemplates();
+
+            Log("InventoryManager 初始化完成", Color.green);
         }
 
-        protected override void Start()
+        private void RegisterDebugTemplates()
         {
-            base.Start();
-            
-            // Load saved inventory data
-            LoadInventoryData();
-            
-            Log("InventoryManager started");
-        }
+            Service.RegisterTemplate(new InventoryItem("potion_heal")
+                .WithName("治疗药水").WithDescription("恢复 50 HP")
+                .WithType(InventoryItemType.Consumable)
+                .WithWeight(0.5f).WithValue(25).WithMaxStack(99));
 
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            
-            // Save inventory data before destroy
-            if (_autoSaveInventory)
-            {
-                SaveInventoryData();
-            }
-            
-            Log("InventoryManager destroyed");
+            Service.RegisterTemplate(new InventoryItem("sword_iron")
+                .WithName("铁剑").WithDescription("一把朴素的铁剑")
+                .WithType(InventoryItemType.Weapon)
+                .WithWeight(3f).WithValue(100));
         }
 
         #endregion
 
-        #region Inventory Operations
+        // ─────────────────────────────────────────────────────────────
+        #region Player Inventory Shortcuts
 
-        /// <summary>
-        /// Get player inventory
-        /// </summary>
-        /// <returns>Player inventory data</returns>
-        public InventoryService.InventoryData GetPlayerInventory()
+        /// <summary>玩家主背包</summary>
+        public Inventory PlayerInventory => Service.GetInventory(_playerInventoryId);
+
+        /// <summary>给玩家发放 count 个模板物品</summary>
+        public InventoryResult GivePlayer(string templateId, int count = 1)
         {
-            return _inventoryService.GetInventory(InventoryService.PLAYER_INVENTORY_ID);
+            var item = Service.InstantiateTemplate(templateId, count);
+            if (item == null) return InventoryResult.Fail($"未知模板 {templateId}");
+            return Service.AddItem(_playerInventoryId, item, count);
         }
 
-        /// <summary>
-        /// Add item to player inventory
-        /// </summary>
-        /// <param name="item">Item to add</param>
-        /// <param name="amount">Amount to add</param>
-        /// <returns>Add result</returns>
-        public InventoryService.InventoryAddResult AddItemToPlayer(InventoryItem item, int amount = 1)
-        {
-            var result = _inventoryService.AddItem(InventoryService.PLAYER_INVENTORY_ID, item, amount);
-            
-            if (result.success)
-            {
-                Log($"Added {result.addedAmount}x {item.Name} to player inventory");
-                
-                if (_autoSaveInventory)
-                {
-                    SaveInventoryData();
-                }
-            }
-            else
-            {
-                LogError($"Failed to add item to player inventory: {result.reason}");
-            }
-            
-            return result;
-        }
+        /// <summary>从玩家背包拿走 count 个 itemId</summary>
+        public InventoryResult TakeFromPlayer(string itemId, int count = 1) =>
+            Service.RemoveItem(_playerInventoryId, itemId, count);
 
-        /// <summary>
-        /// Remove item from player inventory
-        /// </summary>
-        /// <param name="itemId">Item ID to remove</param>
-        /// <param name="amount">Amount to remove</param>
-        /// <returns>Remove result</returns>
-        public InventoryService.InventoryRemoveResult RemoveItemFromPlayer(string itemId, int amount = 1)
-        {
-            var result = _inventoryService.RemoveItem(InventoryService.PLAYER_INVENTORY_ID, itemId, amount);
-            
-            if (result.success)
-            {
-                Log($"Removed {result.removedAmount}x item {itemId} from player inventory");
-                
-                if (_autoSaveInventory)
-                {
-                    SaveInventoryData();
-                }
-            }
-            else
-            {
-                LogError($"Failed to remove item from player inventory: {result.reason}");
-            }
-            
-            return result;
-        }
-
-        /// <summary>
-        /// Move item in player inventory
-        /// </summary>
-        /// <param name="fromSlot">Source slot</param>
-        /// <param name="toSlot">Target slot</param>
-        /// <param name="amount">Amount to move</param>
-        /// <returns>Move result</returns>
-        public InventoryService.InventoryMoveResult MoveItemInPlayer(int fromSlot, int toSlot, int amount = -1)
-        {
-            var result = _inventoryService.MoveItem(InventoryService.PLAYER_INVENTORY_ID, fromSlot, toSlot, amount);
-            
-            if (result.success)
-            {
-                Log($"Moved item from slot {fromSlot} to slot {toSlot}");
-                
-                if (_autoSaveInventory)
-                {
-                    SaveInventoryData();
-                }
-            }
-            else
-            {
-                LogError($"Failed to move item: {result.reason}");
-            }
-            
-            return result;
-        }
-
-        /// <summary>
-        /// Create new inventory
-        /// </summary>
-        /// <param name="name">Inventory name</param>
-        /// <param name="maxSlots">Maximum slots</param>
-        /// <param name="maxWeight">Maximum weight</param>
-        /// <returns>Inventory ID</returns>
-        public string CreateInventory(string name, int maxSlots = 20, float maxWeight = 100f)
-        {
-            var inventoryId = _inventoryService.CreateInventory(name, maxSlots, maxWeight);
-            Log($"Created inventory '{name}' with ID: {inventoryId}");
-            return inventoryId;
-        }
-
-        /// <summary>
-        /// Get inventory by ID
-        /// </summary>
-        /// <param name="inventoryId">Inventory ID</param>
-        /// <returns>Inventory data</returns>
-        public InventoryService.InventoryData GetInventory(string inventoryId)
-        {
-            return _inventoryService.GetInventory(inventoryId);
-        }
+        /// <summary>玩家背包里有多少个 itemId</summary>
+        public int PlayerHas(string itemId) =>
+            PlayerInventory?.CountOf(itemId) ?? 0;
 
         #endregion
 
-        #region Item Template Operations
+        // ─────────────────────────────────────────────────────────────
+        #region Debug Menu (ContextMenu)
 
-        /// <summary>
-        /// Register item template
-        /// </summary>
-        /// <param name="template">Item template</param>
-        public void RegisterItemTemplate(InventoryItem template)
+        [ContextMenu("Debug/Add Test Items")]
+        private void DebugAddTestItems()
         {
-            _inventoryService.RegisterItemTemplate(template);
+            var p = GivePlayer("potion_heal", 10);
+            var s = GivePlayer("sword_iron", 1);
+            Log($"发放完成 — 药水: {p}, 剑: {s}", Color.yellow);
         }
 
-        /// <summary>
-        /// Get item template
-        /// </summary>
-        /// <param name="templateId">Template ID</param>
-        /// <returns>Item template</returns>
-        public InventoryItem GetItemTemplate(string templateId)
+        [ContextMenu("Debug/Show Player Inventory")]
+        private void DebugShowPlayer()
         {
-            return _inventoryService.GetItemTemplate(templateId);
+            var inv = PlayerInventory;
+            if (inv == null) { LogWarning("玩家背包不存在"); return; }
+
+            Log($"=== {inv.Name} ===", Color.yellow);
+            Log($"槽位 {inv.UsedSlots}/{inv.MaxSlots}  权重 {inv.CurrentWeight:F1}/{inv.MaxWeight:F1}");
+            foreach (var slot in inv.GetOccupiedSlots())
+                Log($"  [#{slot.Index}] {slot.Item}");
         }
 
-        /// <summary>
-        /// Create item from template
-        /// </summary>
-        /// <param name="templateId">Template ID</param>
-        /// <param name="amount">Amount</param>
-        /// <returns>Created item</returns>
-        public InventoryItem CreateItemFromTemplate(string templateId, int amount = 1)
+        [ContextMenu("Debug/Clear Player Inventory")]
+        private void DebugClearPlayer()
         {
-            return _inventoryService.CreateItemFromTemplate(templateId, amount);
-        }
-
-        /// <summary>
-        /// Add item from template to player inventory
-        /// </summary>
-        /// <param name="templateId">Template ID</param>
-        /// <param name="amount">Amount</param>
-        /// <returns>Add result</returns>
-        public InventoryService.InventoryAddResult AddItemFromTemplateToPlayer(string templateId, int amount = 1)
-        {
-            var item = CreateItemFromTemplate(templateId, amount);
-            if (item == null)
-            {
-                return new InventoryService.InventoryAddResult 
-                { 
-                    success = false, 
-                    reason = "Failed to create item from template" 
-                };
-            }
-            
-            return AddItemToPlayer(item, amount);
-        }
-
-        #endregion
-
-        #region Data Persistence
-
-        /// <summary>
-        /// Save inventory data using event system
-        /// </summary>
-        public void SaveInventoryData()
-        {
-            try
-            {
-                var eventManager = EventManager.Instance;
-                var result = eventManager.TriggerEvent("SaveInventoryData", new List<object>());
-                
-                if (result != null && result.Count > 0 && result[0].ToString() == "Success")
-                {
-                    Log("Inventory data saved successfully via event system");
-                }
-                else
-                {
-                    LogError("Failed to save inventory data");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error saving inventory data: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Load inventory data using event system
-        /// </summary>
-        public void LoadInventoryData()
-        {
-            try
-            {
-                var eventManager = EventManager.Instance;
-                var result = eventManager.TriggerEvent("LoadInventoryData", new List<object>());
-                
-                if (result != null && result.Count > 0 && result[0].ToString() == "Success")
-                {
-                    Log("Inventory data loaded successfully via event system");
-                }
-                else if (result != null && result.Count > 0 && result[0].ToString() == "Warning")
-                {
-                    Log("No saved inventory data found, using default inventory");
-                }
-                else
-                {
-                    LogError("Failed to load inventory data");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error loading inventory data: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Start auto save coroutine
-        /// </summary>
-        private void StartAutoSave()
-        {
-            if (_autoSaveInterval > 0)
-            {
-                InvokeRepeating(nameof(AutoSave), _autoSaveInterval, _autoSaveInterval);
-            }
-        }
-
-        /// <summary>
-        /// Auto save method
-        /// </summary>
-        private void AutoSave()
-        {
-            if (_autoSaveInventory)
-            {
-                SaveInventoryData();
-            }
-        }
-
-        #endregion
-
-        #region Event Handlers
-
-        /// <summary>
-        /// Handle inventory item added event
-        /// </summary>
-        [Event("InventoryItemAdded")]
-        public List<object> OnInventoryItemAdded(List<object> data)
-        {
-            try
-            {
-                if (data.Count >= 4)
-                {
-                    string inventoryId = data[0].ToString();
-                    string itemId = data[1].ToString();
-                    int amount = Convert.ToInt32(data[2]);
-                    
-                    Log($"InventoryManager received item added event: {amount}x {itemId} to {inventoryId}");
-                    
-                    // Update UI entities if they exist
-                    UpdateInventoryUI(inventoryId);
-                    
-                    return new List<object> { "Success", "InventoryManager processed event" };
-                }
-                return new List<object> { "Error", "Invalid data format" };
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error handling inventory item added event: {ex.Message}");
-                return new List<object> { "Error", ex.Message };
-            }
-        }
-
-        /// <summary>
-        /// Handle inventory item removed event
-        /// </summary>
-        [Event("InventoryItemRemoved")]
-        public List<object> OnInventoryItemRemoved(List<object> data)
-        {
-            try
-            {
-                if (data.Count >= 4)
-                {
-                    string inventoryId = data[0].ToString();
-                    string itemId = data[1].ToString();
-                    int amount = Convert.ToInt32(data[2]);
-                    
-                    Log($"InventoryManager received item removed event: {amount}x {itemId} from {inventoryId}");
-                    
-                    // Update UI entities if they exist
-                    UpdateInventoryUI(inventoryId);
-                    
-                    return new List<object> { "Success", "InventoryManager processed event" };
-                }
-                return new List<object> { "Error", "Invalid data format" };
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error handling inventory item removed event: {ex.Message}");
-                return new List<object> { "Error", ex.Message };
-            }
-        }
-
-        /// <summary>
-        /// Handle inventory item moved event
-        /// </summary>
-        [Event("InventoryItemMoved")]
-        public List<object> OnInventoryItemMoved(List<object> data)
-        {
-            try
-            {
-                if (data.Count >= 5)
-                {
-                    string inventoryId = data[0].ToString();
-                    int fromSlot = Convert.ToInt32(data[1]);
-                    int toSlot = Convert.ToInt32(data[2]);
-                    int amount = Convert.ToInt32(data[3]);
-                    
-                    Log($"InventoryManager received item moved event: {amount}x from slot {fromSlot} to {toSlot} in {inventoryId}");
-                    
-                    // Update UI entities if they exist
-                    UpdateInventoryUI(inventoryId);
-                    
-                    return new List<object> { "Success", "InventoryManager processed event" };
-                }
-                return new List<object> { "Error", "Invalid data format" };
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error handling inventory item moved event: {ex.Message}");
-                return new List<object> { "Error", ex.Message };
-            }
-        }
-
-        /// <summary>
-        /// Update inventory UI entities
-        /// </summary>
-        /// <param name="inventoryId">Inventory ID</param>
-        private void UpdateInventoryUI(string inventoryId)
-        {
-            try
-            {
-                // Get inventory entities from UIService
-                var uiService = EssSystem.EssManager.UIManager.UIService.Instance;
-                if (uiService != null)
-                {
-                    // This would be implemented based on UI integration requirements
-                    Log("Inventory UI update triggered");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError($"Error updating inventory UI: {ex.Message}");
-            }
-        }
-
-        #endregion
-
-        #region Debug and Testing
-
-        /// <summary>
-        /// Add test items to player inventory
-        /// </summary>
-        [ContextMenu("Add Test Items")]
-        public void AddTestItems()
-        {
-            // Add health potions
-            var healthPotionResult = AddItemFromTemplateToPlayer("health_potion", 10);
-            
-            // Add iron sword
-            var swordResult = AddItemFromTemplateToPlayer("iron_sword", 1);
-            
-            Log($"Added test items - Health Potions: {healthPotionResult.addedAmount}, Sword: {swordResult.addedAmount}");
-        }
-
-        /// <summary>
-        /// Clear player inventory
-        /// </summary>
-        [ContextMenu(" Clear Player Inventory")]
-        public void ClearPlayerInventory()
-        {
-            var inventory = GetPlayerInventory();
-            if (inventory != null)
-            {
-                foreach (var slot in inventory.slots)
-                {
-                    if (!slot.isEmpty)
-                    {
-                        RemoveItemFromPlayer(slot.item.Id, slot.item.CurrentStack);
-                    }
-                }
-                Log("Player inventory cleared");
-            }
-        }
-
-        /// <summary>
-        /// Show inventory info
-        /// </summary>
-        [ContextMenu("Show Inventory Info")]
-        public void ShowInventoryInfo()
-        {
-            var inventory = GetPlayerInventory();
-            if (inventory != null)
-            {
-                Log($"=== Player Inventory Info ===");
-                Log($"Name: {inventory.name}");
-                Log($"Slots: {inventory.slots.Count(s => !s.isEmpty)}/{inventory.maxSlots}");
-                Log($"Weight: {inventory.currentWeight:F1}/{inventory.maxWeight:F1}");
-                Log($"Last Modified: {inventory.lastModified}");
-                
-                int itemCount = 0;
-                foreach (var slot in inventory.slots.Where(s => !s.isEmpty))
-                {
-                    Log($"  Slot {inventory.slots.IndexOf(slot)}: {slot.item.Name} x{slot.item.CurrentStack}");
-                    itemCount++;
-                }
-                
-                Log($"Total Items: {itemCount}");
-            }
-            else
-            {
-                LogError("Player inventory not found");
-            }
-        }
-
-        #endregion
-
-        #region Utility Methods
-
-        /// <summary>
-        /// Log message if logging is enabled
-        /// </summary>
-        private void Log(string message)
-        {
-            if (_enableLogging)
-            {
-                Debug.Log($"[InventoryManager] {message}");
-            }
-        }
-
-        /// <summary>
-        /// Log error message
-        /// </summary>
-        private void LogError(string message)
-        {
-            Debug.LogError($"[InventoryManager] {message}");
+            var inv = PlayerInventory;
+            if (inv == null) return;
+            foreach (var slot in inv.Slots) slot.Clear();
+            inv.Touch();
+            Log("玩家背包已清空", Color.yellow);
         }
 
         #endregion

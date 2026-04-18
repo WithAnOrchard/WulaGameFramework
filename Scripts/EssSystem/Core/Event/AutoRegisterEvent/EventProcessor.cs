@@ -168,8 +168,13 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
                 LogWarning($"未找到 {type.Name} 的MonoBehaviour实例，请确保场景中存在该组件");
                 return null;
             }
-            
-            // 如果是普通类，创建实例
+
+            // 如果继承自 SingletonNormal<T>（包括所有 Service<T>），走 .Instance 拿单例
+            // 否则 Activator 会创建一个游离实例，和 Singleton 的实例分裂，导致事件处理器绑定到错误实例
+            var singletonInstance = TryGetSingletonInstance(type);
+            if (singletonInstance != null) return singletonInstance;
+
+            // 其他普通类才 new 一个
             try
             {
                 return Activator.CreateInstance(type);
@@ -179,6 +184,26 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
                 LogError($"创建 {type.Name} 实例失败: {ex.Message}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// 如果 <paramref name="type"/> 继承自 SingletonNormal&lt;T&gt;，返回其 .Instance 单例；否则返回 null
+        /// </summary>
+        private static object TryGetSingletonInstance(Type type)
+        {
+            Type walker = type.BaseType;
+            while (walker != null)
+            {
+                if (walker.IsGenericType &&
+                    walker.GetGenericTypeDefinition() == typeof(SingletonNormal<>))
+                {
+                    PropertyInfo prop = walker.GetProperty("Instance",
+                        BindingFlags.Public | BindingFlags.Static);
+                    return prop?.GetValue(null);
+                }
+                walker = walker.BaseType;
+            }
+            return null;
         }
 
         /// <summary>
