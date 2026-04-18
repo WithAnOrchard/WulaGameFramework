@@ -303,6 +303,29 @@ EventManager.Instance.AddListener(InventoryService.EVT_CHANGED, (name, args) => 
 
 ---
 
+## 🧪 独立编译检查（无需完整 Unity 项目）
+
+仓库自带 `tools/compile_check.ps1`，直接用 Tuanjie/Unity 自带的 Roslyn 命令行跑语法+符号校验，**不需要打开 Unity 编辑器**，几秒出结果。
+
+```powershell
+# 默认路径 D:\Unity-Editor\2022.3.61t8\Editor\Data
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\compile_check.ps1
+
+# 或者自己指定
+powershell -NoProfile -ExecutionPolicy Bypass `
+    -File tools\compile_check.ps1 `
+    -UnityDataDir 'C:\Program Files\Unity\Hub\Editor\2022.3.61f1\Editor\Data'
+```
+
+**检查范围**：`Core/` 全部 + `EssManager/InventoryManager/` 全部（共 **18 个 .cs**）。
+**不检查**：`EssManager/UIManager/`（依赖 UGUI 源码 package，只能上 Unity 跑）。
+
+输出 `.build/WulaGameFramework.dll`（已在 `.gitignore` 里），`.build/compile.log` 保留编译器完整日志。
+
+本次重构 + bug 修复后跑这个脚本应显示 `[OK] Compile succeeded!`。
+
+---
+
 ## 🎯 设计亮点总结
 
 1. **反射自动发现 Service** —— 新增一个 `Service<T>` 子类，无需改任何配置就能自动加入存档体系
