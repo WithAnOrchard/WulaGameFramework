@@ -275,29 +275,47 @@ EventManager.Instance.AddListener(InventoryService.EVT_CHANGED, (name, args) => 
 
 仓库仍在早期阶段，原始分支里有一些 **不完整的点**；本地已做了最小修复，未修的请注意：
 
-### ✅ 已在本仓库本地修复（未提交到 upstream）
+### ✅ 已修复（随本轮 PR 系列）
 
-**编译错误修复**：
+**编译错误 / 关键 bug**：
 
-- `ResourceService.cs` 调用了 Unity 不存在的 `UnityEngine.MainThreadDispatcher.Enqueue` — 已新增 `Core/Util/MainThreadDispatcher.cs`（基于 `ConcurrentQueue` + 自动懒加载 `MonoBehaviour` 泵）并修正引用
-
-**Inventory 模块重写**（原版 AI 生成代码风格与框架严重脱节，全量重做对齐 `UIManager`）：
-
+- `ResourceService.cs` 调用了不存在的 `UnityEngine.MainThreadDispatcher.Enqueue` — 新增 `Core/Util/MainThreadDispatcher.cs`（`ConcurrentQueue` + 懒加载 `MonoBehaviour` 泵）
+- **`DataManager` 持久化层失效**（[#2](../../issues/2)）— `JsonUtility` 不支持 `Dictionary<string, object>` / `List<object>`，存档始终为 `{}`。新增 `Core/Util/MiniJson.cs`（~300 行，无外部依赖）并切换 `ConvertTo/FromHighlyReadableFormat`。**round-trip 有单独的回归测试** `tools/test_minijson.ps1`，已验证 PASS
+- `EventProcessor.ScanEventMethods` 对 `Service<T>` 子类误用 `Activator.CreateInstance` 创建游离实例，与 Singleton 实例分裂 — 新增 `TryGetSingletonInstance` 走 `.Instance`
 - `InventoryManager.cs` / `InventoryService.cs` 原缺失 `namespace` 声明 — 已补齐
-- `Dao/Inventory.cs` / `Dao/Item.cs` 原为空文件 — 已实现 `Inventory` / `InventorySlot` / `InventoryItem` / `InventoryItemType`，链式构造 API
-- `Entity/InventoryEntity` / `InventoryItemEntity` 原为无扩展名空文件 — 已新建 `.cs` 版本，参照 `UIEntity` 模式实现 Register/Sync
-- `InventoryService` 重构为：`_dataStorage` 只存持久化数据，运行时 Entity 注册表走内存字典
-- 统一 `InventoryResult` readonly struct 替代原来的 `InventoryAddResult` / `RemoveResult` / `MoveResult` 三套 class
-- `[Event]` 事件处理器集中在 `InventoryService`，不再 `InventoryManager` 也注册一份（旧版两处重复）
-- `InventoryManager` 瘦身为薄门面（~130 行），去除重复包装的 API，只保留玩家背包便利方法与 `ContextMenu` 调试菜单
+- `Dao/Inventory.cs` / `Dao/Item.cs` 原为空文件 / `Entity/*` 原为无扩展名空文件 — 已完整实现
 
-### 🚧 尚未处理（原作者设计缺失）
+**Inventory 模块重写**（对齐 `UIManager` 架构）：
+
+- `Dao` / `Entity` / `Service` / `Manager` 四层分离，纯数据 DAO + 链式 API
+- 统一 `InventoryResult` readonly struct 替代原先 Add/Remove/Move 三套 class
+- `[Event]` 处理器集中在 `InventoryService`，去除 `InventoryManager` 重复注册
+- `InventoryManager` 瘦身为薄门面（130 行）+ `ContextMenu` 调试菜单
+- 运行时 Entity 注册表走内存字典，不污染 `_dataStorage`
+
+**Core 层质量提升**：
+
+- `FindObjectOfType` → `FindFirstObjectByType`（Unity 2022+ 推荐 API）全量替换
+- `EventProcessor` / `DataManager` 扫描加 `IsSystemAssembly` 过滤（`System.*` / `UnityEngine*` / `Mono.*` / `nunit.*` 等），启动更快日志更净
+- `DataManager.DiscoverAllServices` 显式排除 `DataService` 自身（防递归处理自己的 `_dataStorage`）+ `ReflectionTypeLoadException` 容错
+- `SingletonMono` 新增 `OnDestroy` 清理 `_instance`（修复场景切换 stale ref）
+- `Manager.OnDestroy` 改为 `override` 对齐基类
+- `ResourceService.LoadAndPreloadResources` 3 次重复循环合并为泛型 `PreloadCategory<T>`
+- 新增 `ManagerAttribute : DefaultExecutionOrder` — README 里提过但原版没实现
+
+**工具链**：
+
+- `tools/compile_check.ps1` — Roslyn 独立编译校验，**不需要打开 Unity**
+- `tools/test_minijson.ps1` — 自动 round-trip 回归测试（通过 dotnet 跑真实 exe）
+- 全局 skill `unity-compile`（`~/.codeium/windsurf/skills/unity-compile/`）— 跨项目通用编译检查工具
+
+### 🚧 尚未处理
 
 - `Scripts/EssSystem/EssManager/CharacterManager/` 仅保留了 `.meta`，没有源码
-- Manager 的 README 提到了 `ManagerRegistry`，但当前代码中没有实现（只保留了 `Manager<T>` 本身；当前靠场景挂载+优先级控制初始化顺序）
+- Manager 的 README 提到了 `ManagerRegistry`，但当前代码中没有实现
 - 没有 `.asmdef`、单元测试或示例资源，`SampleScene.unity` 是默认空场景
 - 原作者的命名空间划分略混乱（UI 相关 Dao 在 `EssSystem.UIManager.Dao`，而 Entity 在 `EssSystem.EssManager.UIManager.Entity`；`UIEntityFactory` 又在 `EssSystem.UIManager.Entity`）— 功能正确但不一致
-- **已知框架 bug（与本次重写无关）**：`EventProcessor.ScanEventMethods` 用 `Activator.CreateInstance` 直接 `new` Service 类型，而不是通过 `.Instance` 取单例。这会导致每个 Service 有 2 个实例（事件绑定到 Activator 实例，业务调用走 Singleton 实例），数据互相隔离。Inventory 的事件驱动场景会踩到这坑，业务方式调用不受影响。修 1 行即可（在 EventProcessor 里对 `Service<>` 走 `.Instance`），留给原作者或下一轮 PR。
+- UIEntity.cs 直接 `using TMPro;` 强依赖，缺少条件编译保护
 
 > **结论**：框架的 **设计思想很完整**（事件/数据/UI/背包的闭环），经本次修补后应能在 Unity 2021.3+ 工程中直接编译通过。适合作为学习框架骨架、或者作为起点自行裁剪二次开发。
 
