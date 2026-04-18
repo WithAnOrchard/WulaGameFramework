@@ -245,7 +245,7 @@ namespace EssSystem.Core.Manager
             {
                 LogError($"保存数据失败: {ex.Message}");
                 RestoreFromBackup();
-                return new List<object> { "  save failed", ex.Message };
+                return new List<object> { "保存失败", ex.Message };
             }
         }
 
@@ -311,7 +311,7 @@ namespace EssSystem.Core.Manager
             catch (Exception ex)
             {
                 LogError($"保存Service分类失败: {ex.Message}");
-                return new List<object> { "  save failed", ex.Message };
+                return new List<object> { "保存失败", ex.Message };
             }
         }
 
@@ -405,6 +405,9 @@ namespace EssSystem.Core.Manager
             }
         }
 
+        // ⚠️ 已知 bug（见 issue）：UnityEngine.JsonUtility 不支持 Dictionary<string, object>
+        //     与 List<object>，会静默返回空 JSON，读取返回 null。整个持久化链路目前无法工作。
+        //     下一轮会替换为 Newtonsoft.Json 或 MiniJson 实现。
         private string ConvertToHighlyReadableFormat(List<object> data)
         {
             var formattedData = new Dictionary<string, object>
@@ -418,14 +421,26 @@ namespace EssSystem.Core.Manager
                 ["data"] = data
             };
 
-            return JsonUtility.ToJson(formattedData, true);
+            // JsonUtility 对 Dictionary<string, object> 会返回 "{}"，序列化基本无效
+            string json = JsonUtility.ToJson(formattedData, true);
+            if (string.IsNullOrWhiteSpace(json) || json.Trim() == "{}")
+            {
+                LogError("JsonUtility 无法序列化 Dictionary<string, object>，存档为空 — 需替换 JSON 实现（见 TODO）");
+            }
+            return json;
         }
 
         private List<object> ConvertFromHighlyReadableFormat(string jsonData)
         {
             try
             {
+                // 同上：JsonUtility.FromJson<Dictionary<...>> 会返回 null
                 var formattedData = JsonUtility.FromJson<Dictionary<string, object>>(jsonData);
+                if (formattedData == null)
+                {
+                    LogWarning("JsonUtility 返回 null — 存档反序列化失败（需替换 JSON 实现）");
+                    return new List<object>();
+                }
                 return formattedData.ContainsKey("data") ? formattedData["data"] as List<object> : new List<object>();
             }
             catch (Exception ex)
