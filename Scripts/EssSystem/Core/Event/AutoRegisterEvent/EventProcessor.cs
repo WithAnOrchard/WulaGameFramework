@@ -55,14 +55,14 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
         }
 
         /// <summary>
-        /// 扫描所有Event标注
+        /// 扫描所有Event标注 — 仅扫描用户代码相关的程序集，跳过系统/引擎程序集以加速启动
         /// </summary>
         private void ScanEventAttributes()
         {
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            
-            foreach (Assembly assembly in assemblies)
+            int skipped = 0;
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
+                if (IsSystemAssembly(assembly)) { skipped++; continue; }
                 try
                 {
                     ScanAssembly(assembly);
@@ -75,8 +75,27 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
 
             // 注册所有监听器到EventManager
             RegisterListenersToEventManager();
-            
-            Log($"扫描完成，发现 {_eventMethods.Count} 个Event方法和 {_listenerMethods.Values.Sum(listeners => listeners.Count)} 个监听器", Color.cyan);
+
+            Log($"扫描完成，跳过系统程序集 {skipped} 个，发现 {_eventMethods.Count} 个Event方法和 {_listenerMethods.Values.Sum(listeners => listeners.Count)} 个监听器", Color.cyan);
+        }
+
+        /// <summary>
+        /// 判断是否为系统/引擎程序集（不包含用户代码）
+        /// </summary>
+        private static bool IsSystemAssembly(Assembly asm)
+        {
+            string name = asm.GetName().Name;
+            if (string.IsNullOrEmpty(name)) return true;
+            return name.StartsWith("System.", StringComparison.Ordinal)
+                || name.StartsWith("Microsoft.", StringComparison.Ordinal)
+                || name.StartsWith("Unity.", StringComparison.Ordinal)
+                || name.StartsWith("UnityEngine", StringComparison.Ordinal)
+                || name.StartsWith("UnityEditor", StringComparison.Ordinal)
+                || name.StartsWith("Mono.", StringComparison.Ordinal)
+                || name.StartsWith("nunit.", StringComparison.Ordinal)
+                || name == "mscorlib"
+                || name == "netstandard"
+                || name == "System";
         }
 
         /// <summary>
@@ -159,12 +178,12 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
         /// </summary>
         private object GetOrCreateInstance(Type type)
         {
-            // 如果是MonoBehaviour，尝试从场景中获取
+            // 如果是MonoBehaviour，尝试从场景中获取（Unity 2022+ 推荐 API）
             if (typeof(MonoBehaviour).IsAssignableFrom(type))
             {
-                MonoBehaviour instance = FindObjectOfType(type) as MonoBehaviour;
+                MonoBehaviour instance = FindFirstObjectByType(type, FindObjectsInactive.Include) as MonoBehaviour;
                 if (instance != null) return instance;
-                
+
                 LogWarning($"未找到 {type.Name} 的MonoBehaviour实例，请确保场景中存在该组件");
                 return null;
             }

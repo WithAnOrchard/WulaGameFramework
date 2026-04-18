@@ -72,11 +72,12 @@ namespace EssSystem.Core.Manager
         }
 
         /// <summary>
-        /// Unity OnDestroy方法
+        /// Unity OnDestroy方法 — 基类负责清理静态单例引用，子类可重写追加业务清理
         /// </summary>
-        protected virtual void OnDestroy()
+        protected override void OnDestroy()
         {
-            // 子类可重写此方法进行清理操作
+            // 子类可重写此方法进行清理操作，但需要记得调用 base.OnDestroy()
+            base.OnDestroy();
         }
 
         /// <summary>

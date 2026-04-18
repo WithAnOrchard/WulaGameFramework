@@ -42,45 +42,68 @@ namespace EssSystem.Core.Manager
         {
             try
             {
-                Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-                
-                foreach (Assembly assembly in assemblies)
+                int skippedAssemblies = 0;
+                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    Type[] types = assembly.GetTypes();
-                    
+                    if (IsSystemAssembly(assembly)) { skippedAssemblies++; continue; }
+
+                    Type[] types;
+                    try { types = assembly.GetTypes(); }
+                    catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray(); }
+
                     foreach (Type type in types)
                     {
-                        if (type.IsClass && !type.IsAbstract)
+                        if (type == null || !type.IsClass || type.IsAbstract) continue;
+                        // 跳过 DataService 自身，否则会把自己也注册进去并递归处理自己的 _dataStorage
+                        if (type == typeof(DataService)) continue;
+
+                        Type baseType = type.BaseType;
+                        while (baseType != null && baseType.IsGenericType)
                         {
-                            Type baseType = type.BaseType;
-                            while (baseType != null && baseType.IsGenericType)
+                            if (baseType.GetGenericTypeDefinition() == typeof(Service<>))
                             {
-                                if (baseType.GetGenericTypeDefinition() == typeof(Service<>))
+                                MethodInfo getInstanceMethod = baseType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetGetMethod();
+                                if (getInstanceMethod != null)
                                 {
-                                    MethodInfo getInstanceMethod = baseType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetGetMethod();
-                                    if (getInstanceMethod != null)
+                                    object instance = getInstanceMethod.Invoke(null, null);
+                                    if (instance != null && !_serviceInstances.Contains(instance))
                                     {
-                                        object instance = getInstanceMethod.Invoke(null, null);
-                                        if (instance != null && !_serviceInstances.Contains(instance))
-                                        {
-                                            _serviceInstances.Add(instance);
-                                            Log($"发现Service: {type.Name}", Color.cyan);
-                                        }
+                                        _serviceInstances.Add(instance);
+                                        Log($"发现Service: {type.Name}", Color.cyan);
                                     }
-                                    break;
                                 }
-                                baseType = baseType.BaseType;
+                                break;
                             }
+                            baseType = baseType.BaseType;
                         }
                     }
                 }
-                
-                Log($"发现了{_serviceInstances.Count}个Service实例", Color.green);
+
+                Log($"发现了{_serviceInstances.Count}个Service实例（跳过系统程序集 {skippedAssemblies} 个）", Color.green);
             }
             catch (Exception ex)
             {
                 LogError($"发现Service失败: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 判断是否为系统/引擎程序集（不包含用户代码） — 与 EventProcessor 保持一致
+        /// </summary>
+        private static bool IsSystemAssembly(Assembly asm)
+        {
+            string name = asm.GetName().Name;
+            if (string.IsNullOrEmpty(name)) return true;
+            return name.StartsWith("System.", StringComparison.Ordinal)
+                || name.StartsWith("Microsoft.", StringComparison.Ordinal)
+                || name.StartsWith("Unity.", StringComparison.Ordinal)
+                || name.StartsWith("UnityEngine", StringComparison.Ordinal)
+                || name.StartsWith("UnityEditor", StringComparison.Ordinal)
+                || name.StartsWith("Mono.", StringComparison.Ordinal)
+                || name.StartsWith("nunit.", StringComparison.Ordinal)
+                || name == "mscorlib"
+                || name == "netstandard"
+                || name == "System";
         }
         
         private void LoadAllServiceData()

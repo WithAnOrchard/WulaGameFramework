@@ -58,80 +58,33 @@ namespace EssSystem.Core.ResourceManager
         /// </summary>
         private void LoadAndPreloadResources()
         {
-            // 预加载Prefab
-            var prefabKeys = GetKeys("Prefab");
-            foreach (var key in prefabKeys)
-            {
-                var config = GetData<ResourceConfigItem>("Prefab", key);
-                if (config != null)
-                {
-                    LoadPrefabAsync(config.path, (prefab) => {
-                        if (prefab != null)
-                        {
-                            Debug.Log($"预加载Prefab: {config.path}");
-                        }
-                    });
-                }
-            }
+            PreloadCategory<GameObject>("Prefab");
+            PreloadCategory<AudioClip>("AudioClip");
+            PreloadCategory<Texture2D>("Texture");
 
-            // 预加载Sprite
-            var spriteKeys = GetKeys("Sprite");
-            foreach (var key in spriteKeys)
+            // Sprite 特殊：外部文件走 LoadExternalImageAsync
+            foreach (var key in GetKeys("Sprite"))
             {
                 var config = GetData<ResourceConfigItem>("Sprite", key);
-                if (config != null)
-                {
-                    if (config.isExternal)
-                    {
-                        LoadExternalImageAsync(config.path, (sprite) => {
-                            if (sprite != null)
-                            {
-                                Debug.Log($"预加载外部Sprite: {config.path}");
-                            }
-                        });
-                    }
-                    else
-                    {
-                        LoadAsync<Sprite>(config.path, (sprite) => {
-                            if (sprite != null)
-                            {
-                                Debug.Log($"预加载Sprite: {config.path}");
-                            }
-                        });
-                    }
-                }
-            }
+                if (config == null) continue;
 
-            // 预加载AudioClip
-            var audioKeys = GetKeys("AudioClip");
-            foreach (var key in audioKeys)
-            {
-                var config = GetData<ResourceConfigItem>("AudioClip", key);
-                if (config != null)
-                {
-                    LoadAudioClipAsync(config.path, (audio) => {
-                        if (audio != null)
-                        {
-                            Debug.Log($"预加载AudioClip: {config.path}");
-                        }
-                    });
-                }
+                if (config.isExternal)
+                    LoadExternalImageAsync(config.path, s => { if (s != null) Debug.Log($"预加载外部Sprite: {config.path}"); });
+                else
+                    LoadAsync<Sprite>(config.path, s => { if (s != null) Debug.Log($"预加载Sprite: {config.path}"); });
             }
+        }
 
-            // 预加载Texture
-            var textureKeys = GetKeys("Texture");
-            foreach (var key in textureKeys)
+        /// <summary>
+        /// 通用预加载 helper — 按类别 key 异步加载 Unity 资源
+        /// </summary>
+        private void PreloadCategory<T>(string category) where T : UnityEngine.Object
+        {
+            foreach (var key in GetKeys(category))
             {
-                var config = GetData<ResourceConfigItem>("Texture", key);
-                if (config != null)
-                {
-                    LoadAsync<Texture2D>(config.path, (texture) => {
-                        if (texture != null)
-                        {
-                            Debug.Log($"预加载Texture: {config.path}");
-                        }
-                    });
-                }
+                var config = GetData<ResourceConfigItem>(category, key);
+                if (config == null) continue;
+                LoadAsync<T>(config.path, asset => { if (asset != null) Debug.Log($"预加载{category}: {config.path}"); });
             }
         }
 

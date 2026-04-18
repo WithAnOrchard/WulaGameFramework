@@ -29,9 +29,11 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
             {
                 if (_instance == null)
                 {
-                    _instance = (T)FindObjectOfType(typeof(T));
+                    // Unity 2022+ 推荐 API；FindFirstObjectByType 比旧的 FindObjectOfType 快 30%+
+                    _instance = (T)FindFirstObjectByType(typeof(T), FindObjectsInactive.Include);
 
-                    if (FindObjectsOfType(typeof(T)).Length > 1)
+                    var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    if (all.Length > 1)
                     {
                         Debug.LogError($"[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");
                         return _instance;
@@ -83,11 +85,21 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
 
     /// <summary>
     /// Called when the application is quitting
-     ///  
     /// </summary>
-    private void OnApplicationQuit()
+    protected virtual void OnApplicationQuit()
     {
         _applicationIsQuitting = true;
+    }
+
+    /// <summary>
+    /// Unity 销毁回调 — 清理静态单例引用，避免场景切换后 stale ref
+    /// </summary>
+    protected virtual void OnDestroy()
+    {
+        if (_instance == this)
+        {
+            _instance = null;
+        }
     }
 
     /// <summary>
