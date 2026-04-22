@@ -1,35 +1,33 @@
-using System;
-
 namespace EssSystem.UIManager.Dao
 {
     /// <summary>
-    /// UI组件类型枚举
+    ///     UI组件类型枚举
     /// </summary>
     public enum UIType
     {
         /// <summary>
-        /// 按钮
+        ///     按钮
         /// </summary>
         Button,
-        
+
         /// <summary>
-        /// 面板
+        ///     面板
         /// </summary>
         Panel,
-        
+
         /// <summary>
-        /// 文本
+        ///     文本
         /// </summary>
         Text
     }
 
     /// <summary>
-    /// UI组件类型扩展方法
+    ///     UI组件类型扩展方法
     /// </summary>
     public static class UITypeExtensions
     {
         /// <summary>
-        /// 获取UI类型的显示名称
+        ///     获取UI类型的显示名称
         /// </summary>
         /// <param name="uiType">UI类型</param>
         /// <returns>显示名称</returns>
@@ -45,7 +43,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 检查是否为容器类型
+        ///     检查是否为容器类型
         /// </summary>
         /// <param name="uiType">UI类型</param>
         /// <returns>是否为容器类型</returns>
@@ -55,7 +53,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 检查是否为交互类型
+        ///     检查是否为交互类型
         /// </summary>
         /// <param name="uiType">UI类型</param>
         /// <returns>是否为交互类型</returns>

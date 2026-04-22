@@ -1,25 +1,27 @@
+using EssSystem.EssManager.UIManager.Dao.CommonComponents;
 using EssSystem.EssManager.UIManager.Entity;
-using UnityEngine;
 using EssSystem.UIManager.Dao;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace EssSystem.UIManager.Entity
 {
     /// <summary>
-    /// UI Entity 
+    ///     UI Entity
     /// </summary>
     public static class UIEntityFactory
     {
         /// <summary>
-        ///  UI Entity
+        ///     UI Entity
         /// </summary>
         public static UIEntity CreateEntity(UIComponent dao, Transform parent = null)
         {
             if (dao == null) return null;
 
-            GameObject gameObject = new GameObject(dao.Name ?? dao.Id);
+            var gameObject = new GameObject(dao.Name ?? dao.Id);
             gameObject.transform.SetParent(parent);
 
-            RectTransform rectTransform = gameObject.AddComponent<RectTransform>();
+            var rectTransform = gameObject.AddComponent<RectTransform>();
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.zero;
             rectTransform.pivot = new Vector2(0.5f, 0.5f);
@@ -29,7 +31,7 @@ namespace EssSystem.UIManager.Entity
             // Add appropriate Unity UI components based on Dao type
             AddUnityUIComponents(gameObject, dao);
 
-            UIEntity entity = dao.Type switch
+            var entity = dao.Type switch
             {
                 UIType.Button => gameObject.AddComponent<UIButtonEntity>(),
                 UIType.Panel => gameObject.AddComponent<UIPanelEntity>(),
@@ -46,37 +48,37 @@ namespace EssSystem.UIManager.Entity
             switch (dao.Type)
             {
                 case UIType.Button:
-                    var image = gameObject.AddComponent<UnityEngine.UI.Image>();
-                    image.color = UnityEngine.Color.white;
-                    var button = gameObject.AddComponent<UnityEngine.UI.Button>();
+                    var image = gameObject.AddComponent<Image>();
+                    image.color = Color.white;
+                    var button = gameObject.AddComponent<Button>();
                     button.targetGraphic = image;
-                    
+
                     var textObject = new GameObject("Text");
                     textObject.transform.SetParent(gameObject.transform);
                     var textRect = textObject.AddComponent<RectTransform>();
                     textRect.anchorMin = textRect.anchorMax = Vector2.zero;
                     textRect.offsetMin = textRect.offsetMax = Vector2.zero;
                     textRect.pivot = new Vector2(0.5f, 0.5f);
-                    
-                    var text = textObject.AddComponent<UnityEngine.UI.Text>();
+
+                    var text = textObject.AddComponent<Text>();
                     text.text = dao is UIButtonComponent buttonDao ? buttonDao.Text : "Button";
                     text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
                     text.fontSize = 14;
-                    text.color = UnityEngine.Color.black;
+                    text.color = Color.black;
                     text.alignment = TextAnchor.MiddleCenter;
                     break;
-                    
+
                 case UIType.Panel:
-                    var panelImage = gameObject.AddComponent<UnityEngine.UI.Image>();
-                    panelImage.color = dao is UIPanelComponent panelDao ? panelDao.BackgroundColor : UnityEngine.Color.clear;
+                    var panelImage = gameObject.AddComponent<Image>();
+                    panelImage.color = dao is UIPanelComponent panelDao ? panelDao.BackgroundColor : Color.clear;
                     break;
-                    
+
                 case UIType.Text:
-                    var textComponent = gameObject.AddComponent<UnityEngine.UI.Text>();
+                    var textComponent = gameObject.AddComponent<Text>();
                     textComponent.text = dao is UITextComponent textDao ? textDao.Text : "Text";
                     textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
                     textComponent.fontSize = 14;
-                    textComponent.color = UnityEngine.Color.black;
+                    textComponent.color = Color.black;
                     textComponent.alignment = TextAnchor.MiddleCenter;
                     break;
             }
@@ -87,7 +89,7 @@ namespace EssSystem.UIManager.Entity
         }
 
         /// <summary>
-        ///  GameObject
+        ///     GameObject
         /// </summary>
         public static GameObject CreateGameObject(UIComponent dao, Transform parent = null)
         {
@@ -96,7 +98,6 @@ namespace EssSystem.UIManager.Entity
         }
 
         /// <summary>
-        /// 
         /// </summary>
         public static UIEntity CreateHierarchy(UIComponent rootDao, Transform parent = null)
         {
@@ -114,10 +115,7 @@ namespace EssSystem.UIManager.Entity
             foreach (var childDao in parentDao.GetChildren())
             {
                 var childEntity = CreateEntity(childDao, parentEntity.transform);
-                if (childEntity != null)
-                {
-                    CreateChildrenRecursive(childDao, childEntity);
-                }
+                if (childEntity != null) CreateChildrenRecursive(childDao, childEntity);
             }
         }
     }

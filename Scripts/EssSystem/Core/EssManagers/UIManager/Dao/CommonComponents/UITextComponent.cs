@@ -1,18 +1,48 @@
+using System;
+using EssSystem.UIManager.Dao;
 using UnityEngine;
 
-namespace EssSystem.UIManager.Dao
+namespace EssSystem.EssManager.UIManager.Dao.CommonComponents
 {
     /// <summary>
-    /// UI文本组件
+    ///     UI文本组件
     /// </summary>
     public class UITextComponent : UIComponent
     {
         /// <summary>
-        /// 文本内容
+        ///     文本对齐方式
+        /// </summary>
+        private TextAnchor _alignment = TextAnchor.UpperLeft;
+
+        /// <summary>
+        ///     文本颜色
+        /// </summary>
+        private Color _color = Color.black;
+
+        /// <summary>
+        ///     字体大小
+        /// </summary>
+        private int _fontSize = 14;
+
+        /// <summary>
+        ///     文本内容
         /// </summary>
         private string _text = string.Empty;
-        public string Text 
-        { 
+
+        /// <summary>
+        ///     构造函数
+        /// </summary>
+        /// <param name="id">组件ID</param>
+        /// <param name="name">组件名称</param>
+        /// <param name="text">文本内容</param>
+        public UITextComponent(string id, string name = null, string text = "")
+            : base(id, UIType.Text, name)
+        {
+            Text = text;
+        }
+
+        public string Text
+        {
             get => _text;
             set
             {
@@ -24,12 +54,8 @@ namespace EssSystem.UIManager.Dao
             }
         }
 
-        /// <summary>
-        /// 字体大小
-        /// </summary>
-        private int _fontSize = 14;
-        public int FontSize 
-        { 
+        public int FontSize
+        {
             get => _fontSize;
             set
             {
@@ -41,12 +67,8 @@ namespace EssSystem.UIManager.Dao
             }
         }
 
-        /// <summary>
-        /// 文本颜色
-        /// </summary>
-        private Color _color = Color.black;
-        public Color Color 
-        { 
+        public Color Color
+        {
             get => _color;
             set
             {
@@ -58,12 +80,8 @@ namespace EssSystem.UIManager.Dao
             }
         }
 
-        /// <summary>
-        /// 文本对齐方式
-        /// </summary>
-        private TextAnchor _alignment = TextAnchor.UpperLeft;
-        public TextAnchor Alignment 
-        { 
+        public TextAnchor Alignment
+        {
             get => _alignment;
             set
             {
@@ -76,19 +94,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 构造函数
-        /// </summary>
-        /// <param name="id">组件ID</param>
-        /// <param name="name">组件名称</param>
-        /// <param name="text">文本内容</param>
-        public UITextComponent(string id, string name = null, string text = "") 
-            : base(id, UIType.Text, name)
-        {
-            Text = text;
-        }
-
-        /// <summary>
-        /// 设置文本
+        ///     设置文本
         /// </summary>
         /// <param name="text">文本内容</param>
         /// <returns>当前组件，支持链式调用</returns>
@@ -99,7 +105,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 设置字体大小
+        ///     设置字体大小
         /// </summary>
         /// <param name="fontSize">字体大小</param>
         /// <returns>当前组件，支持链式调用</returns>
@@ -110,7 +116,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 设置文本颜色
+        ///     设置文本颜色
         /// </summary>
         /// <param name="color">颜色</param>
         /// <returns>当前组件，支持链式调用</returns>
@@ -121,7 +127,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// 设置对齐方式
+        ///     设置对齐方式
         /// </summary>
         /// <param name="alignment">对齐方式</param>
         /// <returns>当前组件，支持链式调用</returns>
@@ -131,41 +137,63 @@ namespace EssSystem.UIManager.Dao
             return this;
         }
 
+        /// <summary>
+        ///     字符串表示
+        /// </summary>
+        /// <returns>字符串</returns>
+        public override string ToString()
+        {
+            return $"UITextComponent[Id={Id}, Text={Text.Substring(0, Math.Min(20, Text.Length))}...]";
+        }
+
         #region Property Change Notifications
 
         protected virtual void OnTextChanged(string newText)
         {
             NotifyEntityPropertyChanged("Text", newText);
         }
+
         protected virtual void OnFontSizeChanged(int newFontSize)
         {
             NotifyEntityPropertyChanged("FontSize", newFontSize);
         }
+
         protected virtual void OnColorChanged(Color newColor)
         {
             NotifyEntityPropertyChanged("Color", newColor);
         }
+
         protected virtual void OnAlignmentChanged(TextAnchor newAlignment)
         {
             NotifyEntityPropertyChanged("Alignment", newAlignment);
         }
 
         // Simplified chain methods for better usability
-        public new UITextComponent SetPosition(float x, float y) => SetPosition<UITextComponent>(x, y);
-        public new UITextComponent SetSize(float width, float height) => SetSize<UITextComponent>(width, height);
-        public new UITextComponent SetScale(float scaleX, float scaleY) => SetScale<UITextComponent>(scaleX, scaleY);
-        public new UITextComponent SetVisible(bool visible) => SetVisible<UITextComponent>(visible);
-        public new UITextComponent SetInteractable(bool interactable) => SetInteractable<UITextComponent>(interactable);
+        public new UITextComponent SetPosition(float x, float y)
+        {
+            return SetPosition<UITextComponent>(x, y);
+        }
+
+        public new UITextComponent SetSize(float width, float height)
+        {
+            return SetSize<UITextComponent>(width, height);
+        }
+
+        public new UITextComponent SetScale(float scaleX, float scaleY)
+        {
+            return SetScale<UITextComponent>(scaleX, scaleY);
+        }
+
+        public new UITextComponent SetVisible(bool visible)
+        {
+            return SetVisible<UITextComponent>(visible);
+        }
+
+        public new UITextComponent SetInteractable(bool interactable)
+        {
+            return SetInteractable<UITextComponent>(interactable);
+        }
 
         #endregion
-
-        /// <summary>
-        /// 字符串表示
-        /// </summary>
-        /// <returns>字符串</returns>
-        public override string ToString()
-        {
-            return $"UITextComponent[Id={Id}, Text={Text.Substring(0, System.Math.Min(20, Text.Length))}...]";
-        }
     }
 }

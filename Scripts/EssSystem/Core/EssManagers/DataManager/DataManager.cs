@@ -3,78 +3,117 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using UnityEngine;
-using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
+using EssSystem.Core.Manager;
 using EssSystem.Core.Util;
+using UnityEngine;
 
-namespace EssSystem.Core.Manager
+namespace EssSystem.Core.DataManager
 {
     public class DataService : Service<DataService>
     {
-        private string _dataPath;
-        private const string DATA_FILE_NAME = "game_data.json";
-        private const string BACKUP_FILE_NAME = "game_data_backup.json";
-        
+        private const string DATA_FOLDER = "ServiceData";
+        private const string BACKUP_FOLDER = "ServiceDataBackup";
+        private string _dataFolder;
+        private string _backupFolder;
+
         /// <summary>
-        /// 所有Service实例
+        ///     所有Service实例
         /// </summary>
         private List<object> _serviceInstances;
 
         protected override void Initialize()
         {
             base.Initialize();
-            _dataPath = Path.Combine(Application.persistentDataPath, DATA_FILE_NAME);
+            _dataFolder = Path.Combine(Application.persistentDataPath, DATA_FOLDER);
+            _backupFolder = Path.Combine(Application.persistentDataPath, BACKUP_FOLDER);
+
+            // 确保文件夹存在
+            if (!Directory.Exists(_dataFolder))
+                Directory.CreateDirectory(_dataFolder);
+
+            if (!Directory.Exists(_backupFolder))
+                Directory.CreateDirectory(_backupFolder);
+
             _serviceInstances = new List<object>();
-            
+
             DiscoverAllServices();
             LoadAllServiceData();
-            
+
             Log("数据服务初始化完成！", Color.green);
             Application.quitting += OnApplicationQuit;
         }
-        
+
         private void OnApplicationQuit()
         {
             SaveAllServiceData();
         }
-        
+
+        /// <summary>
+        /// 获取 Service 的数据文件路径
+        /// </summary>
+        private string GetServiceFilePath(string serviceName)
+        {
+            return Path.Combine(_dataFolder, $"{serviceName}.json");
+        }
+
+        /// <summary>
+        /// 获取 Service 的备份文件路径
+        /// </summary>
+        private string GetServiceBackupPath(string serviceName)
+        {
+            return Path.Combine(_backupFolder, $"{serviceName}.json");
+        }
+
         private void DiscoverAllServices()
         {
             try
             {
-                int skippedAssemblies = 0;
-                foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+                var skippedAssemblies = 0;
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    if (IsSystemAssembly(assembly)) { skippedAssemblies++; continue; }
+                    if (IsSystemAssembly(assembly))
+                    {
+                        skippedAssemblies++;
+                        continue;
+                    }
 
                     Type[] types;
-                    try { types = assembly.GetTypes(); }
-                    catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray(); }
+                    try
+                    {
+                        types = assembly.GetTypes();
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        types = ex.Types.Where(t => t != null).ToArray();
+                    }
 
-                    foreach (Type type in types)
+                    foreach (var type in types)
                     {
                         if (type == null || !type.IsClass || type.IsAbstract) continue;
                         // 跳过 DataService 自身，否则会把自己也注册进去并递归处理自己的 _dataStorage
                         if (type == typeof(DataService)) continue;
 
-                        Type baseType = type.BaseType;
+                        var baseType = type.BaseType;
                         while (baseType != null && baseType.IsGenericType)
                         {
                             if (baseType.GetGenericTypeDefinition() == typeof(Service<>))
                             {
-                                MethodInfo getInstanceMethod = baseType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetGetMethod();
+                                var getInstanceMethod = baseType
+                                    .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetGetMethod();
                                 if (getInstanceMethod != null)
                                 {
-                                    object instance = getInstanceMethod.Invoke(null, null);
+                                    var instance = getInstanceMethod.Invoke(null, null);
                                     if (instance != null && !_serviceInstances.Contains(instance))
                                     {
                                         _serviceInstances.Add(instance);
                                         Log($"发现Service: {type.Name}", Color.cyan);
                                     }
                                 }
+
                                 break;
                             }
+
                             baseType = baseType.BaseType;
                         }
                     }
@@ -89,73 +128,68 @@ namespace EssSystem.Core.Manager
         }
 
         /// <summary>
-        /// 判断是否为系统/引擎程序集（不包含用户代码） — 与 EventProcessor 保持一致
+        ///     判断是否为系统/引擎程序集（不包含用户代码） — 与 EventProcessor 保持一致
         /// </summary>
         private static bool IsSystemAssembly(Assembly asm)
         {
-            string name = asm.GetName().Name;
+            var name = asm.GetName().Name;
             if (string.IsNullOrEmpty(name)) return true;
             return name.StartsWith("System.", StringComparison.Ordinal)
-                || name.StartsWith("Microsoft.", StringComparison.Ordinal)
-                || name.StartsWith("Unity.", StringComparison.Ordinal)
-                || name.StartsWith("UnityEngine", StringComparison.Ordinal)
-                || name.StartsWith("UnityEditor", StringComparison.Ordinal)
-                || name.StartsWith("Mono.", StringComparison.Ordinal)
-                || name.StartsWith("nunit.", StringComparison.Ordinal)
-                || name == "mscorlib"
-                || name == "netstandard"
-                || name == "System";
+                   || name.StartsWith("Microsoft.", StringComparison.Ordinal)
+                   || name.StartsWith("Unity.", StringComparison.Ordinal)
+                   || name.StartsWith("UnityEngine", StringComparison.Ordinal)
+                   || name.StartsWith("UnityEditor", StringComparison.Ordinal)
+                   || name.StartsWith("Mono.", StringComparison.Ordinal)
+                   || name.StartsWith("nunit.", StringComparison.Ordinal)
+                   || name == "mscorlib"
+                   || name == "netstandard"
+                   || name == "System";
         }
-        
+
         private void LoadAllServiceData()
         {
             try
             {
-                if (!File.Exists(_dataPath))
+                if (!Directory.Exists(_dataFolder))
                 {
-                    Log("未找到数据文件，重新开始", Color.blue);
+                    Log("未找到数据文件夹，重新开始", Color.blue);
                     return;
                 }
-                
-                string jsonData = File.ReadAllText(_dataPath);
-                var allData = ConvertFromHighlyReadableFormat(jsonData);
-                
+
                 foreach (var serviceInstance in _serviceInstances)
-                {
                     try
                     {
-                        Type serviceType = serviceInstance.GetType();
-                        string serviceName = serviceType.Name;
-                        
-                        FieldInfo dataStorageField = serviceType.GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
+                        var serviceType = serviceInstance.GetType();
+                        var serviceName = serviceType.Name;
+                        var serviceFilePath = GetServiceFilePath(serviceName);
+
+                        if (!File.Exists(serviceFilePath))
+                        {
+                            Log($"Service {serviceName} 数据文件不存在，跳过", Color.yellow);
+                            continue;
+                        }
+
+                        var jsonData = File.ReadAllText(serviceFilePath);
+                        var serviceData = ConvertFromHighlyReadableFormat(jsonData);
+
+                        var dataStorageField = serviceType.GetField("_dataStorage",
+                            BindingFlags.NonPublic | BindingFlags.Instance);
                         if (dataStorageField != null)
                         {
-                            var dataStorage = dataStorageField.GetValue(serviceInstance) as Dictionary<string, Dictionary<string, object>>;
-                            if (dataStorage != null)
+                            var dataStorage =
+                                dataStorageField.GetValue(serviceInstance) as
+                                    Dictionary<string, Dictionary<string, object>>;
+                            if (dataStorage != null && serviceData.Count > 0)
                             {
-                                var serviceData = allData.FirstOrDefault(item => 
-                                {
-                                    if (item is Dictionary<string, object> dict && dict.ContainsKey("service_name"))
-                                    {
-                                        return dict["service_name"].ToString() == serviceName;
-                                    }
-                                    return false;
-                                });
-                                
-                                if (serviceData is Dictionary<string, object> serviceDict && serviceDict.ContainsKey("categories"))
+                                var serviceDict = serviceData[0] as Dictionary<string, object>;
+                                if (serviceDict != null && serviceDict.ContainsKey("categories"))
                                 {
                                     var categories = serviceDict["categories"] as Dictionary<string, object>;
                                     if (categories != null)
-                                    {
                                         foreach (var kvp in categories)
-                                        {
                                             if (kvp.Value is Dictionary<string, object> categoryData)
-                                            {
                                                 dataStorage[kvp.Key] = categoryData;
-                                            }
-                                        }
-                                    }
-                                    
+
                                     Log($"已为Service加载数据: {serviceName}", Color.green);
                                 }
                             }
@@ -165,31 +199,32 @@ namespace EssSystem.Core.Manager
                     {
                         LogWarning($"为Service加载数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
                     }
-                }
             }
             catch (Exception ex)
             {
                 LogError($"加载所有Service数据失败: {ex.Message}");
             }
         }
-        
+
         private void SaveAllServiceData()
         {
             try
             {
-                var allServiceData = new List<object>();
-                
+                var savedCount = 0;
+
                 foreach (var serviceInstance in _serviceInstances)
-                {
                     try
                     {
-                        Type serviceType = serviceInstance.GetType();
-                        string serviceName = serviceType.Name;
-                        
-                        FieldInfo dataStorageField = serviceType.GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
+                        var serviceType = serviceInstance.GetType();
+                        var serviceName = serviceType.Name;
+
+                        var dataStorageField = serviceType.GetField("_dataStorage",
+                            BindingFlags.NonPublic | BindingFlags.Instance);
                         if (dataStorageField != null)
                         {
-                            var dataStorage = dataStorageField.GetValue(serviceInstance) as Dictionary<string, Dictionary<string, object>>;
+                            var dataStorage =
+                                dataStorageField.GetValue(serviceInstance) as
+                                    Dictionary<string, Dictionary<string, object>>;
                             if (dataStorage != null && dataStorage.Count > 0)
                             {
                                 var serviceData = new Dictionary<string, object>
@@ -197,22 +232,22 @@ namespace EssSystem.Core.Manager
                                     ["service_name"] = serviceName,
                                     ["categories"] = dataStorage
                                 };
-                                
-                                allServiceData.Add(serviceData);
-                                Log($"已为Service准备数据: {serviceName} ({dataStorage.Count}个分类)", Color.blue);
+
+                                var serviceFilePath = GetServiceFilePath(serviceName);
+                                SaveServiceDataToFile(serviceFilePath, new List<object> { serviceData });
+                                savedCount++;
+                                Log($"已保存Service数据: {serviceName} ({dataStorage.Count}个分类)", Color.blue);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        LogWarning($"为Service准备数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
+                        LogWarning($"保存Service数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
                     }
-                }
-                
-                if (allServiceData.Count > 0)
+
+                if (savedCount > 0)
                 {
-                    SaveDataToLocal(allServiceData);
-                    Log($"已为{allServiceData.Count}个Service保存数据", Color.green);
+                    Log($"已为{savedCount}个Service保存数据", Color.green);
                 }
                 else
                 {
@@ -225,28 +260,17 @@ namespace EssSystem.Core.Manager
             }
         }
 
-        [Event("SaveData")]
-        public List<object> SaveDataToLocal(List<object> data)
+        private void SaveServiceDataToFile(string filePath, List<object> data)
         {
             try
             {
-                if (!IsDataSerializable(data))
-                {
-                    LogWarning("数据包含不可序列化对象，保存可能会失败");
-                }
-
-                CreateBackup();
-                string jsonData = ConvertToHighlyReadableFormat(data);
-                File.WriteAllText(_dataPath, jsonData);
-
-                Log($"数据已保存到: {_dataPath}", Color.green);
-                return new List<object> { "数据保存成功", _dataPath };
+                var jsonData = ConvertToHighlyReadableFormat(data);
+                File.WriteAllText(filePath, jsonData);
+                Log($"数据已保存到: {filePath}", Color.green);
             }
             catch (Exception ex)
             {
                 LogError($"保存数据失败: {ex.Message}");
-                RestoreFromBackup();
-                return new List<object> { "保存失败", ex.Message };
             }
         }
 
@@ -261,8 +285,8 @@ namespace EssSystem.Core.Manager
                     return new List<object> { "参数无效" };
                 }
 
-                string serviceName = data[0] as string;
-                string categoryName = data[1] as string;
+                var serviceName = data[0] as string;
+                var categoryName = data[1] as string;
                 var categoryData = data[2] as Dictionary<string, object>;
 
                 if (string.IsNullOrEmpty(serviceName) || string.IsNullOrEmpty(categoryName) || categoryData == null)
@@ -271,10 +295,7 @@ namespace EssSystem.Core.Manager
                     return new List<object> { "格式无效" };
                 }
 
-                if (!IsDataSerializable(categoryData))
-                {
-                    LogWarning($"分类 '{categoryName}' 包含不可序列化对象");
-                }
+                if (!IsDataSerializable(categoryData)) LogWarning($"分类 '{categoryName}' 包含不可序列化对象");
 
                 // 查找目标Service
                 var targetService = _serviceInstances.FirstOrDefault(s => s.GetType().Name == serviceName);
@@ -285,25 +306,29 @@ namespace EssSystem.Core.Manager
                 }
 
                 // 获取Service数据存储
-                FieldInfo dataStorageField = targetService.GetType().GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
+                var dataStorageField = targetService.GetType()
+                    .GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (dataStorageField != null)
                 {
-                    var dataStorage = dataStorageField.GetValue(targetService) as Dictionary<string, Dictionary<string, object>>;
+                    var dataStorage =
+                        dataStorageField.GetValue(targetService) as Dictionary<string, Dictionary<string, object>>;
                     if (dataStorage != null)
                     {
                         if (!dataStorage.ContainsKey(categoryName))
-                        {
                             dataStorage[categoryName] = new Dictionary<string, object>();
-                        }
 
-                        SetData(categoryName, "last_modified", DateTime.Now);
-                        foreach (var kvp in categoryData)
+                        foreach (var kvp in categoryData) dataStorage[categoryName][kvp.Key] = kvp.Value;
+
+                        // 保存当前 Service 数据到单独文件
+                        var serviceData = new Dictionary<string, object>
                         {
-                            dataStorage[categoryName][kvp.Key] = kvp.Value;
-                        }
-
-                        // 保存所有数据
-                        return SaveDataToLocal(new List<object> { serviceName, categoryName });
+                            ["service_name"] = serviceName,
+                            ["categories"] = dataStorage
+                        };
+                        var serviceFilePath = GetServiceFilePath(serviceName);
+                        CreateServiceBackup(serviceName);
+                        SaveServiceDataToFile(serviceFilePath, new List<object> { serviceData });
+                        return new List<object> { "成功", serviceFilePath };
                     }
                 }
 
@@ -327,11 +352,12 @@ namespace EssSystem.Core.Manager
                     return new List<object> { "参数无效" };
                 }
 
-                string serviceName = data[0] as string;
-                string categoryName = data[1] as string;
-                string dataId = data[2] as string;
+                var serviceName = data[0] as string;
+                var categoryName = data[1] as string;
+                var dataId = data[2] as string;
 
-                if (string.IsNullOrEmpty(serviceName) || string.IsNullOrEmpty(categoryName) || string.IsNullOrEmpty(dataId))
+                if (string.IsNullOrEmpty(serviceName) || string.IsNullOrEmpty(categoryName) ||
+                    string.IsNullOrEmpty(dataId))
                 {
                     LogWarning("Service数据参数格式无效");
                     return new List<object> { "格式无效" };
@@ -346,10 +372,12 @@ namespace EssSystem.Core.Manager
                 }
 
                 // 获取Service数据存储
-                FieldInfo dataStorageField = targetService.GetType().GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
+                var dataStorageField = targetService.GetType()
+                    .GetField("_dataStorage", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (dataStorageField != null)
                 {
-                    var dataStorage = dataStorageField.GetValue(targetService) as Dictionary<string, Dictionary<string, object>>;
+                    var dataStorage =
+                        dataStorageField.GetValue(targetService) as Dictionary<string, Dictionary<string, object>>;
                     if (dataStorage != null && dataStorage.ContainsKey(categoryName))
                     {
                         var category = dataStorage[categoryName];
@@ -359,23 +387,17 @@ namespace EssSystem.Core.Manager
                             Log($"成功获取Service '{serviceName}' 分类 '{categoryName}' 数据 '{dataId}'");
                             return new List<object> { "成功", result };
                         }
-                        else
-                        {
-                            LogWarning($"分类 '{categoryName}' 中未找到数据 '{dataId}'");
-                            return new List<object> { "数据不存在" };
-                        }
+
+                        LogWarning($"分类 '{categoryName}' 中未找到数据 '{dataId}'");
+                        return new List<object> { "数据不存在" };
                     }
-                    else
-                    {
-                        LogWarning($"Service '{serviceName}' 中未找到分类 '{categoryName}'");
-                        return new List<object> { "分类不存在" };
-                    }
+
+                    LogWarning($"Service '{serviceName}' 中未找到分类 '{categoryName}'");
+                    return new List<object> { "分类不存在" };
                 }
-                else
-                {
-                    LogWarning($"无法访问Service '{serviceName}' 的数据存储");
-                    return new List<object> { "访问失败" };
-                }
+
+                LogWarning($"无法访问Service '{serviceName}' 的数据存储");
+                return new List<object> { "访问失败" };
             }
             catch (Exception ex)
             {
@@ -389,15 +411,13 @@ namespace EssSystem.Core.Manager
             try
             {
                 if (data == null) return true;
-                
+
                 //  check for [Serializable] attribute
-                bool hasSerializableAttribute = data.GetType().IsDefined(typeof(SerializableAttribute), false);
-                
-                if (!hasSerializableAttribute && !data.GetType().IsPrimitive && !(data is string) && !(data is DateTime))
-                {
-                    LogWarning($"'{data.GetType().Name}' 缺乏 [Serializable] 属性");
-                }
-        
+                var hasSerializableAttribute = data.GetType().IsDefined(typeof(SerializableAttribute), false);
+
+                if (!hasSerializableAttribute && !data.GetType().IsPrimitive && !(data is string) &&
+                    !(data is DateTime)) LogWarning($"'{data.GetType().Name}' 缺乏 [Serializable] 属性");
+
                 return hasSerializableAttribute || data.GetType().IsPrimitive || data is string || data is DateTime;
             }
             catch
@@ -432,8 +452,10 @@ namespace EssSystem.Core.Manager
                     LogWarning("存档反序列化返回 null — 可能是文件损坏");
                     return new List<object>();
                 }
-                return parsed.TryGetValue("data", out var d) ? d as List<object> ?? new List<object>()
-                                                             : new List<object>();
+
+                return parsed.TryGetValue("data", out var d)
+                    ? d as List<object> ?? new List<object>()
+                    : new List<object>();
             }
             catch (Exception ex)
             {
@@ -442,42 +464,60 @@ namespace EssSystem.Core.Manager
             }
         }
 
-        private void CreateBackup()
+        private void CreateServiceBackup(string serviceName)
         {
             try
             {
-                if (File.Exists(_dataPath))
+                var serviceFilePath = GetServiceFilePath(serviceName);
+                var backupPath = GetServiceBackupPath(serviceName);
+
+                if (File.Exists(serviceFilePath))
                 {
-                    string backupPath = Path.Combine(Application.persistentDataPath, BACKUP_FILE_NAME);
-                    File.Copy(_dataPath, backupPath, true);
-                    Log("数据备份已创建", Color.yellow);
+                    File.Copy(serviceFilePath, backupPath, true);
+                    Log($"Service {serviceName} 备份已创建", Color.yellow);
                 }
             }
             catch (Exception ex)
             {
-                LogWarning($"创建备份失败: {ex.Message}");
+                LogWarning($"创建Service备份失败: {ex.Message}");
             }
         }
 
-        private void RestoreFromBackup()
+        private void RestoreServiceFromBackup(string serviceName)
         {
             try
             {
-                string backupPath = Path.Combine(Application.persistentDataPath, BACKUP_FILE_NAME);
-                
+                var serviceFilePath = GetServiceFilePath(serviceName);
+                var backupPath = GetServiceBackupPath(serviceName);
+
                 if (File.Exists(backupPath))
                 {
-                    File.Copy(backupPath, _dataPath, true);
-                    Log("数据已从备份恢复", Color.yellow);
+                    File.Copy(backupPath, serviceFilePath, true);
+                    Log($"Service {serviceName} 数据已从备份恢复", Color.yellow);
                 }
                 else
                 {
-                    LogWarning("未找到备份文件");
+                    LogWarning($"未找到Service {serviceName} 备份文件");
                 }
             }
             catch (Exception ex)
             {
-                LogError($"从备份恢复失败: {ex.Message}");
+                LogError($"从Service备份恢复失败: {ex.Message}");
+            }
+        }
+
+        [Event("SaveData")]
+        public List<object> SaveDataToLocal(List<object> data)
+        {
+            try
+            {
+                LogWarning("SaveData 事件已废弃，请使用 SaveServiceCategory 保存单个 Service 数据");
+                return new List<object> { "方法已废弃" };
+            }
+            catch (Exception ex)
+            {
+                LogError($"保存数据失败: {ex.Message}");
+                return new List<object> { "保存失败", ex.Message };
             }
         }
     }

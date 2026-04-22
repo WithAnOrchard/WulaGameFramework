@@ -1,13 +1,31 @@
 using UnityEngine;
 
-namespace EssSystem.UIManager.Dao
+namespace EssSystem.EssManager.UIManager.Dao
 {
     /// <summary>
-    /// UI adjustable base class - provides position, size, and scale properties
-    /// UI adjustable base class -  position, size, scale 
+    ///     UI adjustable base class - provides position, size, and scale properties
+    ///     UI adjustable base class -  position, size, scale
     /// </summary>
     public abstract class Adjustable
     {
+        #region Utility Methods
+
+        /// <summary>
+        ///     Apply properties to RectTransform
+        ///     RectTransform
+        /// </summary>
+        /// <param name="rectTransform">Target RectTransform</param>
+        public virtual void ApplyToRectTransform(RectTransform rectTransform)
+        {
+            if (rectTransform == null) return;
+
+            rectTransform.anchoredPosition = Position;
+            rectTransform.sizeDelta = Size;
+            rectTransform.localScale = new Vector3(Scale.x, Scale.y, 1f);
+        }
+
+        #endregion
+
         #region Properties
 
         private Vector2 _position;
@@ -15,7 +33,7 @@ namespace EssSystem.UIManager.Dao
         private Vector2 _scale = Vector2.one;
 
         /// <summary>
-        /// Position 
+        ///     Position
         /// </summary>
         public Vector2 Position
         {
@@ -31,7 +49,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// Size 
+        ///     Size
         /// </summary>
         public Vector2 Size
         {
@@ -47,7 +65,7 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// Scale 
+        ///     Scale
         /// </summary>
         public Vector2 Scale
         {
@@ -67,8 +85,8 @@ namespace EssSystem.UIManager.Dao
         #region Virtual Methods
 
         /// <summary>
-        /// Called when position changes
-        ///  position 
+        ///     Called when position changes
+        ///     position
         /// </summary>
         /// <param name="newPosition">New position</param>
         protected virtual void OnPositionChanged(Vector2 newPosition)
@@ -76,8 +94,8 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// Called when size changes
-        ///  size 
+        ///     Called when size changes
+        ///     size
         /// </summary>
         /// <param name="newSize">New size</param>
         protected virtual void OnSizeChanged(Vector2 newSize)
@@ -85,30 +103,12 @@ namespace EssSystem.UIManager.Dao
         }
 
         /// <summary>
-        /// Called when scale changes
-        ///  scale 
+        ///     Called when scale changes
+        ///     scale
         /// </summary>
         /// <param name="newScale">New scale</param>
         protected virtual void OnScaleChanged(Vector2 newScale)
         {
-        }
-
-        #endregion
-
-        #region Utility Methods
-
-        /// <summary>
-        /// Apply properties to RectTransform
-        ///  RectTransform 
-        /// </summary>
-        /// <param name="rectTransform">Target RectTransform</param>
-        public virtual void ApplyToRectTransform(RectTransform rectTransform)
-        {
-            if (rectTransform == null) return;
-
-            rectTransform.anchoredPosition = Position;
-            rectTransform.sizeDelta = Size;
-            rectTransform.localScale = new Vector3(Scale.x, Scale.y, 1f);
         }
 
         #endregion

@@ -1,12 +1,12 @@
 using EssSystem.EssManager.UIManager.Entity;
+using EssSystem.UIManager.Dao;
 using UnityEngine;
 using UnityEngine.UI;
-using EssSystem.UIManager.Dao;
 
 namespace EssSystem.UIManager.Entity
 {
     /// <summary>
-    /// UI Entity
+    ///     UI Entity
     /// </summary>
     public class UIPanelEntity : UIEntity
     {
@@ -27,12 +27,12 @@ namespace EssSystem.UIManager.Entity
         protected override void SyncFromDao()
         {
             base.SyncFromDao();
-            if (Dao is UIPanelComponent panelDao && _image != null)
-            {
-                _image.color = panelDao.BackgroundColor;
-            }
+            if (Dao is UIPanelComponent panelDao && _image != null) _image.color = panelDao.BackgroundColor;
         }
 
-        public Image GetImage() => _image;
+        public Image GetImage()
+        {
+            return _image;
+        }
     }
 }

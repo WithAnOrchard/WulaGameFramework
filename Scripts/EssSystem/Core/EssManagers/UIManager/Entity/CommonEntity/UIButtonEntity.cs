@@ -1,12 +1,12 @@
 using EssSystem.EssManager.UIManager.Entity;
+using EssSystem.UIManager.Dao;
 using UnityEngine;
 using UnityEngine.UI;
-using EssSystem.UIManager.Dao;
 
 namespace EssSystem.UIManager.Entity
 {
     /// <summary>
-    /// UI Entity
+    ///     UI Entity
     /// </summary>
     public class UIButtonEntity : UIEntity
     {
@@ -60,13 +60,17 @@ namespace EssSystem.UIManager.Entity
 
         private void OnButtonClick()
         {
-            if (Dao is UIButtonComponent buttonDao)
-            {
-                buttonDao.Click();
-            }
+            if (Dao is UIButtonComponent buttonDao) buttonDao.Click();
         }
 
-        public Button GetButton() => _button;
-        public Text GetText() => _text;
+        public Button GetButton()
+        {
+            return _button;
+        }
+
+        public Text GetText()
+        {
+            return _text;
+        }
     }
 }

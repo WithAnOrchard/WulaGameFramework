@@ -1,12 +1,12 @@
+using EssSystem.EssManager.UIManager.Dao.CommonComponents;
 using EssSystem.EssManager.UIManager.Entity;
 using UnityEngine;
 using UnityEngine.UI;
-using EssSystem.UIManager.Dao;
 
 namespace EssSystem.UIManager.Entity
 {
     /// <summary>
-    /// UI Entity
+    ///     UI Entity
     /// </summary>
     public class UITextEntity : UIEntity
     {
@@ -47,6 +47,9 @@ namespace EssSystem.UIManager.Entity
             }
         }
 
-        public Text GetText() => _text;
+        public Text GetText()
+        {
+            return _text;
+        }
     }
 }

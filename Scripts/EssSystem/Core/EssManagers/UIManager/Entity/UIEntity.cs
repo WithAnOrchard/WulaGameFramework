@@ -1,21 +1,25 @@
+using System;
+using System.Collections.Generic;
+using EssSystem.Core.Event;
 using EssSystem.UIManager.Dao;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace EssSystem.EssManager.UIManager.Entity
 {
     /// <summary>
-    /// UI Entity - GameObjectDao
+    ///     UI Entity - GameObjectDao
     /// </summary>
     public abstract class UIEntity : MonoBehaviour
     {
         /// <summary>
-        /// Dao
+        ///     Dao
         /// </summary>
-        [SerializeField, HideInInspector]
-        private UIComponent _dao;
+        [SerializeField] [HideInInspector] private UIComponent _dao;
 
         /// <summary>
-        /// Dao
+        ///     Dao
         /// </summary>
         public UIComponent Dao
         {
@@ -24,12 +28,12 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// Dao ID
+        ///     Dao ID
         /// </summary>
         public string DaoId => _dao?.Id;
 
         /// <summary>
-        /// Dao
+        ///     Dao
         /// </summary>
         public UIType DaoType => _dao?.Type ?? UIType.Button;
 
@@ -44,40 +48,33 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// Dao
+        ///     Dao
         /// </summary>
         protected virtual void SetDao(UIComponent dao)
         {
             if (_dao == dao) return;
             _dao = dao;
-            if (_dao != null)
-            {
-                SyncFromDao();
-            }
+            if (_dao != null) SyncFromDao();
         }
 
         /// <summary>
-        /// Dao
+        ///     Dao
         /// </summary>
         protected virtual void SyncFromDao()
         {
             if (_dao == null) return;
             gameObject.name = _dao.Name ?? _dao.Id;
             gameObject.SetActive(_dao.Visible);
-            
+
             // Sync RectTransform properties
-            if (TryGetComponent<RectTransform>(out var rectTransform))
-            {
-                _dao.ApplyToRectTransform(rectTransform);
-            }
-            
+            if (TryGetComponent<RectTransform>(out var rectTransform)) _dao.ApplyToRectTransform(rectTransform);
+
             // Sync interactability for UI components
             SyncInteractability();
         }
 
         /// <summary>
-        /// Sync interactability based on component type
-        ///  
+        ///     Sync interactability based on component type
         /// </summary>
         protected virtual void SyncInteractability()
         {
@@ -86,13 +83,10 @@ namespace EssSystem.EssManager.UIManager.Entity
             // Handle Button interactability
             if (_dao.IsButton())
             {
-                var button = GetComponent<UnityEngine.UI.Button>();
-                if (button != null)
-                {
-                    button.interactable = _dao.Interactable;
-                }
+                var button = GetComponent<Button>();
+                if (button != null) button.interactable = _dao.Interactable;
             }
-            
+
             // Handle CanvasGroup for general interactability
             var canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup != null)
@@ -103,8 +97,8 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// Called when Dao property changes
-        ///  Dao 
+        ///     Called when Dao property changes
+        ///     Dao
         /// </summary>
         /// <param name="propertyName">Property name</param>
         /// <param name="value">New value</param>
@@ -117,51 +111,48 @@ namespace EssSystem.EssManager.UIManager.Entity
                 case "Name":
                     gameObject.name = _dao.Name ?? _dao.Id;
                     break;
-                    
+
                 case "Visible":
                     gameObject.SetActive(_dao.Visible);
                     break;
-                    
+
                 case "Position":
                 case "Size":
                 case "Scale":
-                    if (TryGetComponent<RectTransform>(out var rectTransform))
-                    {
-                        _dao.ApplyToRectTransform(rectTransform);
-                    }
+                    if (TryGetComponent<RectTransform>(out var rectTransform)) _dao.ApplyToRectTransform(rectTransform);
                     break;
-                    
+
                 case "Interactable":
                     SyncInteractability();
                     break;
-                    
+
                 case "BackgroundColor":
-                    SyncBackgroundColor((UnityEngine.Color)value);
+                    SyncBackgroundColor((Color)value);
                     break;
-                    
+
                 case "Text":
                     SyncText((string)value);
                     break;
-                    
+
                 case "FontSize":
                     SyncFontSize((int)value);
                     break;
-                    
+
                 case "Color":
-                    SyncTextColor((UnityEngine.Color)value);
+                    SyncTextColor((Color)value);
                     break;
-                    
+
                 case "Alignment":
-                    SyncTextAlignment((UnityEngine.TextAnchor)value);
+                    SyncTextAlignment((TextAnchor)value);
                     break;
             }
         }
 
-        protected virtual void SyncBackgroundColor(UnityEngine.Color color)
+        protected virtual void SyncBackgroundColor(Color color)
         {
             if (_dao?.IsPanel() == true)
             {
-                var image = GetComponent<UnityEngine.UI.Image>();
+                var image = GetComponent<Image>();
                 if (image != null) image.color = color;
             }
         }
@@ -170,8 +161,8 @@ namespace EssSystem.EssManager.UIManager.Entity
         {
             if (_dao?.IsButton() == true || _dao?.IsText() == true)
             {
-                var unityText = GetComponent<UnityEngine.UI.Text>();
-                var tmpText = GetComponent<TMPro.TextMeshProUGUI>();
+                var unityText = GetComponent<Text>();
+                var tmpText = GetComponent<TextMeshProUGUI>();
                 if (unityText != null) unityText.text = text ?? string.Empty;
                 if (tmpText != null) tmpText.text = text ?? string.Empty;
             }
@@ -181,67 +172,64 @@ namespace EssSystem.EssManager.UIManager.Entity
         {
             if (_dao?.IsText() == true)
             {
-                var text = GetComponent<UnityEngine.UI.Text>();
-                var tmp = GetComponent<TMPro.TextMeshProUGUI>();
+                var text = GetComponent<Text>();
+                var tmp = GetComponent<TextMeshProUGUI>();
                 if (text != null) text.fontSize = fontSize;
                 if (tmp != null) tmp.fontSize = fontSize;
             }
         }
 
-        protected virtual void SyncTextColor(UnityEngine.Color color)
+        protected virtual void SyncTextColor(Color color)
         {
             if (_dao?.IsText() == true)
             {
-                var text = GetComponent<UnityEngine.UI.Text>();
-                var tmp = GetComponent<TMPro.TextMeshProUGUI>();
+                var text = GetComponent<Text>();
+                var tmp = GetComponent<TextMeshProUGUI>();
                 if (text != null) text.color = color;
                 if (tmp != null) tmp.color = color;
             }
         }
 
-        protected virtual void SyncTextAlignment(UnityEngine.TextAnchor alignment)
+        protected virtual void SyncTextAlignment(TextAnchor alignment)
         {
             if (_dao?.IsText() == true)
             {
-                var text = GetComponent<UnityEngine.UI.Text>();
-                var tmp = GetComponent<TMPro.TextMeshProUGUI>();
+                var text = GetComponent<Text>();
+                var tmp = GetComponent<TextMeshProUGUI>();
                 if (text != null) text.alignment = alignment;
                 if (tmp != null) tmp.alignment = ConvertToTextMeshProAlignment(alignment);
             }
         }
 
-        private TMPro.TextAlignmentOptions ConvertToTextMeshProAlignment(UnityEngine.TextAnchor alignment) => alignment switch
+        private TextAlignmentOptions ConvertToTextMeshProAlignment(TextAnchor alignment)
         {
-            UnityEngine.TextAnchor.UpperLeft => TMPro.TextAlignmentOptions.TopLeft,
-            UnityEngine.TextAnchor.UpperCenter => TMPro.TextAlignmentOptions.Top,
-            UnityEngine.TextAnchor.UpperRight => TMPro.TextAlignmentOptions.TopRight,
-            UnityEngine.TextAnchor.MiddleLeft => TMPro.TextAlignmentOptions.Left,
-            UnityEngine.TextAnchor.MiddleCenter => TMPro.TextAlignmentOptions.Center,
-            UnityEngine.TextAnchor.MiddleRight => TMPro.TextAlignmentOptions.Right,
-            UnityEngine.TextAnchor.LowerLeft => TMPro.TextAlignmentOptions.BottomLeft,
-            UnityEngine.TextAnchor.LowerCenter => TMPro.TextAlignmentOptions.Bottom,
-            UnityEngine.TextAnchor.LowerRight => TMPro.TextAlignmentOptions.BottomRight,
-            _ => TMPro.TextAlignmentOptions.Center
-        };
+            return alignment switch
+            {
+                TextAnchor.UpperLeft => TextAlignmentOptions.TopLeft,
+                TextAnchor.UpperCenter => TextAlignmentOptions.Top,
+                TextAnchor.UpperRight => TextAlignmentOptions.TopRight,
+                TextAnchor.MiddleLeft => TextAlignmentOptions.Left,
+                TextAnchor.MiddleCenter => TextAlignmentOptions.Center,
+                TextAnchor.MiddleRight => TextAlignmentOptions.Right,
+                TextAnchor.LowerLeft => TextAlignmentOptions.BottomLeft,
+                TextAnchor.LowerCenter => TextAlignmentOptions.Bottom,
+                TextAnchor.LowerRight => TextAlignmentOptions.BottomRight,
+                _ => TextAlignmentOptions.Center
+            };
+        }
 
         private void RegisterEntity()
         {
-            if (_dao != null && !string.IsNullOrEmpty(_dao.Id))
-            {
-                UIService.Instance.RegisterUIEntity(_dao.Id, this);
-            }
+            if (_dao != null && !string.IsNullOrEmpty(_dao.Id)) UIService.Instance.RegisterUIEntity(_dao.Id, this);
         }
 
         private void UnregisterEntity()
         {
-            if (_dao != null && !string.IsNullOrEmpty(_dao.Id))
-            {
-                UIService.Instance.UnregisterUIEntity(_dao.Id);
-            }
+            if (_dao != null && !string.IsNullOrEmpty(_dao.Id)) UIService.Instance.UnregisterUIEntity(_dao.Id);
         }
 
         /// <summary>
-        /// DaoEntity
+        ///     DaoEntity
         /// </summary>
         public static UIEntity GetEntity(UIComponent dao)
         {
@@ -250,7 +238,7 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// IDEntity
+        ///     IDEntity
         /// </summary>
         public static UIEntity GetEntityById(string daoId)
         {
@@ -258,36 +246,33 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// 通过DataManager事件获取Entity（用于外部系统调用）
+        ///     通过DataManager事件获取Entity（用于外部系统调用）
         /// </summary>
         public static UIEntity GetEntityByIdViaEvent(string daoId)
         {
             try
             {
-                var eventManager = EssSystem.Core.Event.EventManager.Instance;
-                var result = eventManager.TriggerEvent("GetServiceDataById", new System.Collections.Generic.List<object> 
-                { 
-                    "UIService", 
-                    "UIEntities", 
-                    daoId 
-                });
-                
-                if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
+                var eventManager = EventManager.Instance;
+                var result = eventManager.TriggerEvent("GetServiceDataById", new List<object>
                 {
-                    return result[1] as UIEntity;
-                }
-                
+                    "UIService",
+                    "UIEntities",
+                    daoId
+                });
+
+                if (result != null && result.Count >= 2 && result[0].ToString() == "成功") return result[1] as UIEntity;
+
                 return null;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                UnityEngine.Debug.LogError($"通过Event获取UIEntity失败: {ex.Message}");
+                Debug.LogError($"通过Event获取UIEntity失败: {ex.Message}");
                 return null;
             }
         }
 
         /// <summary>
-        /// DaoGameObject
+        ///     DaoGameObject
         /// </summary>
         public static GameObject GetGameObject(UIComponent dao)
         {
@@ -296,7 +281,7 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// IDGameObject
+        ///     IDGameObject
         /// </summary>
         public static GameObject GetGameObjectById(string daoId)
         {
@@ -305,7 +290,7 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// GameObjectDao
+        ///     GameObjectDao
         /// </summary>
         public static UIComponent GetDao(GameObject gameObject)
         {
@@ -315,7 +300,7 @@ namespace EssSystem.EssManager.UIManager.Entity
         }
 
         /// <summary>
-        /// EntityDao
+        ///     EntityDao
         /// </summary>
         public static UIComponent GetDao(UIEntity entity)
         {
