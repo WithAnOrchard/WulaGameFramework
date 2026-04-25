@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using EssSystem.Core.Singleton;
+using EssSystem.Core.Event;
 
-namespace EssSystem.Core.Manager
+namespace EssSystem.Core.EssManagers.Manager
 {
     /// <summary>
     ///     Service抽象类，继承自Singleton，提供数据存储功能
@@ -27,7 +29,32 @@ namespace EssSystem.Core.Manager
         /// </summary>
         protected virtual void Initialize()
         {
-            // 子类可重写此方法进行初始化操作
+            // 触发 Service 初始化事件，通知 DataService 注册此 Service
+            TriggerServiceInitializedEvent();
+        }
+
+        /// <summary>
+        ///     触发 Service 初始化事件
+        /// </summary>
+        private void TriggerServiceInitializedEvent()
+        {
+            try
+            {
+                // DataService 不需要触发自己的初始化事件，它自己管理自己
+                if (this is EssSystem.Core.EssManagers.DataManager.DataService)
+                {
+                    return;
+                }
+
+                if (EventManager.HasInstance)
+                {
+                    EventManager.Instance.TriggerEvent("OnServiceInitialized", new List<object> { this });
+                }
+            }
+            catch
+            {
+                // EventManager 可能还未初始化，忽略错误
+            }
         }
 
         /// <summary>

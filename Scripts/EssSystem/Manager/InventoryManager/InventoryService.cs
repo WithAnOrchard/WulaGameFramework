@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
-using EssSystem.Core.Manager;
+using EssSystem.Core.EssManagers.Manager;
 using EssSystem.EssManager.InventoryManager.Dao;
 using EssSystem.EssManager.InventoryManager.Entity;
 
@@ -15,20 +15,24 @@ namespace EssSystem.EssManager.InventoryManager
     /// <list type="bullet">
     /// <item>所有持久化数据走 <c>_dataStorage</c>（由 DataService 自动扫描存档）</item>
     /// <item>Unity 端 Entity 注册表走内存字典，不参与序列化</item>
+    /// <item>对 Inventory 及其内部物品进行操作（添加、移除、移动）</item>
     /// <item>事件以 <c>[Event("Inventory*")]</c> 统一在此注册，供外部触发</item>
     /// </list>
     /// </summary>
     public class InventoryService : Service<InventoryService>
     {
-        #region Categories (stored in _dataStorage, auto-persisted)
+        #region 数据分类（存储在 _dataStorage 中，自动持久化）
 
         public const string CAT_INVENTORIES = "Inventories";
         public const string CAT_TEMPLATES   = "Templates";
+        public const string CAT_CONFIGS     = "Configs";
 
         #endregion
 
-        #region Event Names
+        #region 事件名称
 
+        public const string EVT_CREATE  = "InventoryCreate";
+        public const string EVT_DELETE  = "InventoryDelete";
         public const string EVT_ADD     = "InventoryAdd";
         public const string EVT_REMOVE  = "InventoryRemove";
         public const string EVT_MOVE    = "InventoryMove";
@@ -48,28 +52,59 @@ namespace EssSystem.EssManager.InventoryManager
         }
 
         // ─────────────────────────────────────────────────────────────
+        #region Config Management
+
+        /// <summary>注册容器配置</summary>
+        public void RegisterConfig(InventoryConfig config)
+        {
+            if (config == null || string.IsNullOrEmpty(config.ConfigId))
+            {
+                LogWarning("忽略空配置或缺 ConfigId 的配置");
+                return;
+            }
+            SetData(CAT_CONFIGS, config.ConfigId, config);
+            Log($"注册容器配置: {config.ConfigId} ({config.DisplayName})", Color.blue);
+        }
+
+        /// <summary>获取容器配置</summary>
+        public InventoryConfig GetConfig(string configId) =>
+            GetData<InventoryConfig>(CAT_CONFIGS, configId);
+
+        /// <summary>枚举所有配置</summary>
+        public IEnumerable<InventoryConfig> GetAllConfigs()
+        {
+            foreach (var key in GetKeys(CAT_CONFIGS))
+            {
+                var config = GetConfig(key);
+                if (config != null) yield return config;
+            }
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
         #region Inventory CRUD
 
-        /// <summary>创建新背包，返回 Inventory（若 Id 已存在则直接返回已有）</summary>
-        public Inventory CreateInventory(string id, string name = null, int maxSlots = 20, float maxWeight = 100f)
+        /// <summary>创建新容器，返回 Inventory（若 Id 已存在则直接返回已有）</summary>
+        public Inventory CreateInventory(string id, string name = null, int maxSlots = 20)
         {
             var existing = GetInventory(id);
             if (existing != null) return existing;
 
-            var inv = new Inventory(id, name, maxSlots, maxWeight);
+            var inv = new Inventory(id, name, maxSlots);
             SetData(CAT_INVENTORIES, id, inv);
-            Log($"新建背包 {id}（{maxSlots} 槽，权重 {maxWeight}）", Color.cyan);
+            Log($"新建容器 {id}（{maxSlots} 槽）", Color.cyan);
             return inv;
         }
 
-        /// <summary>按 ID 取背包，不存在返回 null</summary>
+        /// <summary>按 ID 取容器，不存在返回 null</summary>
         public Inventory GetInventory(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
             return GetData<Inventory>(CAT_INVENTORIES, id);
         }
 
-        /// <summary>枚举所有背包</summary>
+        /// <summary>枚举所有容器</summary>
         public IEnumerable<Inventory> GetAllInventories()
         {
             foreach (var key in GetKeys(CAT_INVENTORIES))
@@ -79,7 +114,7 @@ namespace EssSystem.EssManager.InventoryManager
             }
         }
 
-        /// <summary>删除背包</summary>
+        /// <summary>删除容器</summary>
         public bool DeleteInventory(string id)
         {
             UnregisterEntity(id);
@@ -129,11 +164,11 @@ namespace EssSystem.EssManager.InventoryManager
         // ─────────────────────────────────────────────────────────────
         #region Core Operations
 
-        /// <summary>向背包添加物品</summary>
+        /// <summary>向容器添加物品</summary>
         public InventoryResult AddItem(string inventoryId, InventoryItem item, int amount = 1)
         {
             var inv = GetInventory(inventoryId);
-            if (inv == null) return InventoryResult.Fail("背包不存在");
+            if (inv == null) return InventoryResult.Fail("容器不存在");
             if (item == null || amount <= 0) return InventoryResult.Fail("物品或数量不合法");
 
             int remaining = amount;
@@ -172,15 +207,15 @@ namespace EssSystem.EssManager.InventoryManager
             BroadcastChanged(inventoryId, "add", item.Id, added);
 
             return remaining > 0
-                ? InventoryResult.Partial(added, remaining, "背包已满，部分未放入")
+                ? InventoryResult.Partial(added, remaining, "容器已满，部分未放入")
                 : InventoryResult.Ok(added);
         }
 
-        /// <summary>从背包移除物品</summary>
+        /// <summary>从容器移除物品</summary>
         public InventoryResult RemoveItem(string inventoryId, string itemId, int amount = 1)
         {
             var inv = GetInventory(inventoryId);
-            if (inv == null) return InventoryResult.Fail("背包不存在");
+            if (inv == null) return InventoryResult.Fail("容器不存在");
             if (string.IsNullOrEmpty(itemId) || amount <= 0) return InventoryResult.Fail("参数不合法");
 
             int remaining = amount;
@@ -209,7 +244,7 @@ namespace EssSystem.EssManager.InventoryManager
         public InventoryResult MoveItem(string inventoryId, int fromIdx, int toIdx, int amount = -1)
         {
             var inv = GetInventory(inventoryId);
-            if (inv == null) return InventoryResult.Fail("背包不存在");
+            if (inv == null) return InventoryResult.Fail("容器不存在");
 
             var from = inv.GetSlot(fromIdx);
             var to   = inv.GetSlot(toIdx);
@@ -264,7 +299,7 @@ namespace EssSystem.EssManager.InventoryManager
         #endregion
 
         // ─────────────────────────────────────────────────────────────
-        #region Entity Registry (runtime only, not persisted)
+        #region 实体注册表（仅运行时，不持久化）
 
         public void RegisterEntity(string inventoryId, InventoryEntity entity)
         {
@@ -283,9 +318,42 @@ namespace EssSystem.EssManager.InventoryManager
         #endregion
 
         // ─────────────────────────────────────────────────────────────
-        #region Event Handlers ([Event] auto-registered)
+        #region 事件处理器（[Event] 自动注册）
 
-        /// <summary>事件: 向背包添加物品</summary>
+        /// <summary>事件: 创建容器</summary>
+        /// <param name="args">[id, name, maxSlots]</param>
+        [Event(EVT_CREATE)]
+        public List<object> OnEventCreate(List<object> args)
+        {
+            try
+            {
+                if (args == null || args.Count < 1) return Fail("参数不足");
+                var id = args[0]?.ToString();
+                var name = args.Count >= 2 ? args[1]?.ToString() : null;
+                var maxSlots = args.Count >= 3 ? Convert.ToInt32(args[2]) : 20;
+
+                var inv = CreateInventory(id, name, maxSlots);
+                return inv == null ? Fail("创建容器失败") : Ok(inv);
+            }
+            catch (Exception ex) { return Fail(ex.Message); }
+        }
+
+        /// <summary>事件: 删除容器</summary>
+        /// <param name="args">[id]</param>
+        [Event(EVT_DELETE)]
+        public List<object> OnEventDelete(List<object> args)
+        {
+            try
+            {
+                if (args == null || args.Count < 1) return Fail("参数不足");
+                var id = args[0]?.ToString();
+                var result = DeleteInventory(id);
+                return result ? Ok("删除成功") : Fail("删除失败");
+            }
+            catch (Exception ex) { return Fail(ex.Message); }
+        }
+
+        /// <summary>事件: 向容器添加物品</summary>
         /// <param name="args">[inventoryId, itemIdOrItem, amount]</param>
         [Event(EVT_ADD)]
         public List<object> OnEventAdd(List<object> args)
@@ -308,7 +376,7 @@ namespace EssSystem.EssManager.InventoryManager
             catch (Exception ex) { return Fail(ex.Message); }
         }
 
-        /// <summary>事件: 从背包移除物品</summary>
+        /// <summary>事件: 从容器移除物品</summary>
         /// <param name="args">[inventoryId, itemId, amount]</param>
         [Event(EVT_REMOVE)]
         public List<object> OnEventRemove(List<object> args)
@@ -343,7 +411,7 @@ namespace EssSystem.EssManager.InventoryManager
             catch (Exception ex) { return Fail(ex.Message); }
         }
 
-        /// <summary>事件: 查询背包</summary>
+        /// <summary>事件: 查询容器</summary>
         /// <param name="args">[inventoryId]</param>
         [Event(EVT_QUERY)]
         public List<object> OnEventQuery(List<object> args)
@@ -352,7 +420,7 @@ namespace EssSystem.EssManager.InventoryManager
             {
                 if (args == null || args.Count < 1) return Fail("参数不足");
                 var inv = GetInventory(args[0]?.ToString());
-                return inv == null ? Fail("背包不存在") : Ok(inv);
+                return inv == null ? Fail("容器不存在") : Ok(inv);
             }
             catch (Exception ex) { return Fail(ex.Message); }
         }
@@ -371,7 +439,7 @@ namespace EssSystem.EssManager.InventoryManager
     {
         public readonly bool   Success;
         public readonly int    Amount;      // 实际操作的数量
-        public readonly int    Remaining;   // 剩余未处理
+        public readonly int    Remaining;   // 剩余未处理数量
         public readonly string Message;
 
         public InventoryResult(bool success, int amount, int remaining, string message)
@@ -389,6 +457,6 @@ namespace EssSystem.EssManager.InventoryManager
             new InventoryResult(false, 0, 0, msg);
 
         public override string ToString() =>
-            Success ? $"OK(+{Amount}, remaining={Remaining})" : $"FAIL({Message})";
+            Success ? $"成功(+{Amount}, 剩余={Remaining})" : $"失败({Message})";
     }
 }

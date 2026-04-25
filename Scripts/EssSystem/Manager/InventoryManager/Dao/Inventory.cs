@@ -35,7 +35,7 @@ namespace EssSystem.EssManager.InventoryManager.Dao
     }
 
     /// <summary>
-    /// 背包 Dao — 一个有限槽位 + 权重上限的物品容器
+    /// 背包 Dao — 一个有限槽位的物品容器
     /// </summary>
     [Serializable]
     public class Inventory
@@ -45,7 +45,6 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public string Id;
         public string Name;
         public int MaxSlots;
-        public float MaxWeight;
         public DateTime LastModified;
         public List<InventorySlot> Slots;
 
@@ -53,16 +52,8 @@ namespace EssSystem.EssManager.InventoryManager.Dao
 
         #region Derived
 
-        /// <summary>当前总权重（随物品即时计算）</summary>
-        public float CurrentWeight => Slots == null
-            ? 0f
-            : Slots.Where(s => !s.IsEmpty).Sum(s => s.Item.TotalWeight);
-
         /// <summary>已占用槽位数</summary>
         public int UsedSlots => Slots == null ? 0 : Slots.Count(s => !s.IsEmpty);
-
-        /// <summary>权重是否已达上限</summary>
-        public bool IsOverweight => MaxWeight > 0 && CurrentWeight > MaxWeight;
 
         #endregion
 
@@ -72,12 +63,11 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public Inventory() { }
 
         /// <summary>新建空背包</summary>
-        public Inventory(string id, string name, int maxSlots = 20, float maxWeight = 100f)
+        public Inventory(string id, string name, int maxSlots = 20)
         {
             Id = id;
             Name = name ?? id;
             MaxSlots = Math.Max(1, maxSlots);
-            MaxWeight = Math.Max(0f, maxWeight);
             LastModified = DateTime.Now;
             Slots = new List<InventorySlot>(MaxSlots);
             for (int i = 0; i < MaxSlots; i++) Slots.Add(new InventorySlot(i));

@@ -324,8 +324,8 @@ namespace EssSystem.Core.Util
                     while (_i < _s.Length && char.IsDigit(_s[_i])) _i++;
                 }
                 string token = _s.Substring(start, _i - start);
-                if (isFloat) return double.Parse(token, NumberStyles.Float, CultureInfo.InvariantCulture);
-                return long.Parse(token, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                if (isFloat) return double.Parse(token, CultureInfo.InvariantCulture);
+                return long.Parse(token, CultureInfo.InvariantCulture);
             }
 
             private bool ParseBool()

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EssSystem.EssManager.UIManager.Dao;
-using EssSystem.EssManager.UIManager.Dao.CommonComponents;
-using EssSystem.EssManager.UIManager.Entity;
+using EssSystem.Core.EssManagers.UIManager.Dao;
+using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
+using EssSystem.Core.EssManagers.UIManager.Entity;
 using UnityEngine;
 
-namespace EssSystem.UIManager.Dao
+namespace EssSystem.Core.EssManagers.UIManager.Dao
 {
     /// <summary>
     ///     UI组件 - 所有UI元素的抽象基类

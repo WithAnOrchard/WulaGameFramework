@@ -1,8 +1,8 @@
 using System;
-using EssSystem.UIManager.Dao;
+using EssSystem.Core.EssManagers.UIManager.Dao;
 using UnityEngine;
 
-namespace EssSystem.EssManager.UIManager.Dao.CommonComponents
+namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
 {
     /// <summary>
     ///     UI文本组件
@@ -169,27 +169,27 @@ namespace EssSystem.EssManager.UIManager.Dao.CommonComponents
         }
 
         // Simplified chain methods for better usability
-        public new UITextComponent SetPosition(float x, float y)
+        public UITextComponent SetPosition(float x, float y)
         {
             return SetPosition<UITextComponent>(x, y);
         }
 
-        public new UITextComponent SetSize(float width, float height)
+        public UITextComponent SetSize(float width, float height)
         {
             return SetSize<UITextComponent>(width, height);
         }
 
-        public new UITextComponent SetScale(float scaleX, float scaleY)
+        public UITextComponent SetScale(float scaleX, float scaleY)
         {
             return SetScale<UITextComponent>(scaleX, scaleY);
         }
 
-        public new UITextComponent SetVisible(bool visible)
+        public UITextComponent SetVisible(bool visible)
         {
             return SetVisible<UITextComponent>(visible);
         }
 
-        public new UITextComponent SetInteractable(bool interactable)
+        public UITextComponent SetInteractable(bool interactable)
         {
             return SetInteractable<UITextComponent>(interactable);
         }

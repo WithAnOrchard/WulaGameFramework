@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.UIManager.Dao
+namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
 {
     /// <summary>
     ///     UI按钮组件
@@ -59,27 +59,27 @@ namespace EssSystem.UIManager.Dao
         }
 
         // Simplified chain methods for better usability
-        public new UIButtonComponent SetPosition(float x, float y)
+        public UIButtonComponent SetPosition(float x, float y)
         {
             return SetPosition<UIButtonComponent>(x, y);
         }
 
-        public new UIButtonComponent SetSize(float width, float height)
+        public UIButtonComponent SetSize(float width, float height)
         {
             return SetSize<UIButtonComponent>(width, height);
         }
 
-        public new UIButtonComponent SetScale(float scaleX, float scaleY)
+        public UIButtonComponent SetScale(float scaleX, float scaleY)
         {
             return SetScale<UIButtonComponent>(scaleX, scaleY);
         }
 
-        public new UIButtonComponent SetVisible(bool visible)
+        public UIButtonComponent SetVisible(bool visible)
         {
             return SetVisible<UIButtonComponent>(visible);
         }
 
-        public new UIButtonComponent SetInteractable(bool interactable)
+        public UIButtonComponent SetInteractable(bool interactable)
         {
             return SetInteractable<UIButtonComponent>(interactable);
         }

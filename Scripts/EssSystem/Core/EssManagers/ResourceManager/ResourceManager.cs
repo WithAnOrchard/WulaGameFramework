@@ -1,10 +1,9 @@
 using System.Collections.Generic;
-using UnityEngine;
-using EssSystem.Core.Manager;
-using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
+using EssSystem.Core.EssManagers.Manager;
+using UnityEngine;
 
-namespace EssSystem.Core.ResourceManager
+namespace EssSystem.Core.EssManagers.ResourceManager
 {
     /// <summary>
     /// 资源管理器 - 符合架构规范
@@ -14,11 +13,44 @@ namespace EssSystem.Core.ResourceManager
     {
         private ResourceService _resourceService;
 
+        #region Inspector Debug Fields
+
+        [Header("Debug Information")]
+        [SerializeField]
+        private int _loadedResourceCount = 0;
+
+        [SerializeField]
+        private string[] _loadedResourcePaths = new string[0];
+
+        #endregion
+
         protected override void Initialize()
         {
             base.Initialize();
             _resourceService = ResourceService.Instance;
             Log("ResourceManager 初始化完成", Color.green);
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            UpdateDebugInfo();
+        }
+
+        private void UpdateDebugInfo()
+        {
+            if (_resourceService != null)
+            {
+                var loadedResources = _resourceService.GetLoadedResources();
+                _loadedResourceCount = loadedResources.Count;
+                _loadedResourcePaths = new string[loadedResources.Count];
+                int index = 0;
+                foreach (var kvp in loadedResources)
+                {
+                    _loadedResourcePaths[index] = $"{kvp.Key} ({kvp.Value?.GetType().Name})";
+                    index++;
+                }
+            }
         }
 
         protected override void Start()

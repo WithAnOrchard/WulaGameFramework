@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Manager;
+using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Util;
 using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
 
-namespace EssSystem.Core.ResourceManager
+namespace EssSystem.Core.EssManagers.ResourceManager
 {
     /// <summary>
     /// 资源缓存键（性能优化）
@@ -84,6 +84,14 @@ namespace EssSystem.Core.ResourceManager
         {
             base.Initialize();
             Log("ResourceService 初始化完成", Color.green);
+        }
+
+        /// <summary>
+        /// 获取已加载的资源（用于调试）
+        /// </summary>
+        public Dictionary<ResourceKey, UnityEngine.Object> GetLoadedResources()
+        {
+            return _loadedResources;
         }
 
         /// <summary>
@@ -194,7 +202,6 @@ namespace EssSystem.Core.ResourceManager
             }
 
             // 根据类型加载
-            UnityEngine.Object resource = null;
             switch (typeStr)
             {
                 case "Prefab":

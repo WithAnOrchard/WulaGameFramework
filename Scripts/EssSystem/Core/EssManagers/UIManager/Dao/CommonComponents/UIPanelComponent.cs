@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace EssSystem.UIManager.Dao
+namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
 {
     /// <summary>
     ///     UI面板组件 - 容器类UI组件
@@ -53,27 +53,27 @@ namespace EssSystem.UIManager.Dao
         }
 
         // Simplified chain methods for better usability
-        public new UIPanelComponent SetPosition(float x, float y)
+        public UIPanelComponent SetPosition(float x, float y)
         {
             return SetPosition<UIPanelComponent>(x, y);
         }
 
-        public new UIPanelComponent SetSize(float width, float height)
+        public UIPanelComponent SetSize(float width, float height)
         {
             return SetSize<UIPanelComponent>(width, height);
         }
 
-        public new UIPanelComponent SetScale(float scaleX, float scaleY)
+        public UIPanelComponent SetScale(float scaleX, float scaleY)
         {
             return SetScale<UIPanelComponent>(scaleX, scaleY);
         }
 
-        public new UIPanelComponent SetVisible(bool visible)
+        public UIPanelComponent SetVisible(bool visible)
         {
             return SetVisible<UIPanelComponent>(visible);
         }
 
-        public new UIPanelComponent SetInteractable(bool interactable)
+        public UIPanelComponent SetInteractable(bool interactable)
         {
             return SetInteractable<UIPanelComponent>(interactable);
         }

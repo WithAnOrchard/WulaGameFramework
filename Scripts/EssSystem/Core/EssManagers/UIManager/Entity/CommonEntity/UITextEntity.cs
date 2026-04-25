@@ -1,9 +1,9 @@
-using EssSystem.EssManager.UIManager.Dao.CommonComponents;
-using EssSystem.EssManager.UIManager.Entity;
+using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
+using EssSystem.Core.EssManagers.UIManager.Entity;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace EssSystem.UIManager.Entity
+namespace EssSystem.Core.EssManagers.UIManager.Entity
 {
     /// <summary>
     ///     UI Entity

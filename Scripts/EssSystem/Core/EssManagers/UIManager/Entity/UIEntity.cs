@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using EssSystem.Core.Event;
-using EssSystem.UIManager.Dao;
+using EssSystem.Core.EssManagers.UIManager.Dao;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace EssSystem.EssManager.UIManager.Entity
+namespace EssSystem.Core.EssManagers.UIManager.Entity
 {
     /// <summary>
     ///     UI Entity - GameObjectDao

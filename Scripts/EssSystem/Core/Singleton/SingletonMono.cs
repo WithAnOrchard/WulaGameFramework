@@ -1,19 +1,19 @@
 using UnityEngine;
 
 /// <summary>
-/// Unity MonoBehaviour Singleton Pattern with Mono suffix
-///  MonoBehaviour  singleton 
+///     Unity MonoBehaviour Singleton Pattern with Mono suffix
+///     MonoBehaviour  singleton
 /// </summary>
 /// <typeparam name="T">The type that will be singleton</typeparam>
 public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
 {
     private static T _instance;
-    private static readonly object _lock = new object();
-    private static bool _applicationIsQuitting = false;
+    private static readonly object _lock = new();
+    private static bool _applicationIsQuitting;
 
     /// <summary>
-    /// The singleton instance
-    ///  singleton 
+    ///     The singleton instance
+    ///     singleton
     /// </summary>
     public static T Instance
     {
@@ -35,13 +35,13 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
                     var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include, FindObjectsSortMode.None);
                     if (all.Length > 1)
                     {
-                        Debug.LogError($"[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");
+                        Debug.LogError("[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");
                         return _instance;
                     }
 
                     if (_instance == null)
                     {
-                        GameObject singleton = new GameObject();
+                        var singleton = new GameObject();
                         _instance = singleton.AddComponent<T>();
                         singleton.name = $"(singleton_mono) {typeof(T)}";
 
@@ -61,15 +61,27 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     }
 
     /// <summary>
-    /// Called when the instance is created
-     ///  
+    ///     Check if instance exists
+    ///     instance
+    /// </summary>
+    public static bool HasInstance => _instance != null;
+
+    /// <summary>
+    ///     Called when the instance is created
     /// </summary>
     protected virtual void Awake()
     {
         if (_instance == null)
         {
             _instance = this as T;
-            DontDestroyOnLoad(gameObject);
+            
+            // DontDestroyOnLoad only works on root GameObjects
+            // If this GameObject has a parent, skip DontDestroyOnLoad
+            // (e.g., when managed by AbstractGameManager in a hierarchy)
+            if (gameObject.transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
         }
         else if (_instance != this)
         {
@@ -77,43 +89,31 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
         }
     }
 
-
-    protected virtual void Initialize()
+    /// <summary>
+    ///     Unity 销毁回调 — 清理静态单例引用，避免场景切换后 stale ref
+    /// </summary>
+    protected virtual void OnDestroy()
     {
+        if (_instance == this) _instance = null;
     }
 
 
     /// <summary>
-    /// Called when the application is quitting
+    ///     Called when the application is quitting
     /// </summary>
     protected virtual void OnApplicationQuit()
     {
         _applicationIsQuitting = true;
     }
 
-    /// <summary>
-    /// Unity 销毁回调 — 清理静态单例引用，避免场景切换后 stale ref
-    /// </summary>
-    protected virtual void OnDestroy()
+
+    protected virtual void Initialize()
     {
-        if (_instance == this)
-        {
-            _instance = null;
-        }
     }
 
     /// <summary>
-    /// Check if instance exists
-    ///  instance 
-    /// </summary>
-    public static bool HasInstance
-    {
-        get { return _instance != null; }
-    }
-
-    /// <summary>
-    /// Get instance without creating new one
-    ///  instance
+    ///     Get instance without creating new one
+    ///     instance
     /// </summary>
     public static T TryGetInstance()
     {
@@ -121,7 +121,7 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     }
 
     /// <summary>
-    /// 日志输出方法
+    ///     日志输出方法
     /// </summary>
     /// <param name="message">日志消息</param>
     /// <param name="color">日志颜色</param>
@@ -132,7 +132,7 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     }
 
     /// <summary>
-    /// 警告日志输出方法
+    ///     警告日志输出方法
     /// </summary>
     /// <param name="message">警告消息</param>
     protected virtual void LogWarning(string message)
@@ -141,7 +141,7 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     }
 
     /// <summary>
-    /// 错误日志输出方法
+    ///     错误日志输出方法
     /// </summary>
     /// <param name="message">错误消息</param>
     protected virtual void LogError(string message)
