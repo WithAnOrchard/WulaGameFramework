@@ -4,6 +4,13 @@
 
 UIManager 是 EssSystem 的 UI 管理系统，提供统一的 UI 实体注册、获取和注销功能。本指南面向 AI Agent，说明如何使用 UIManager 和 UIService 进行 UI 管理。
 
+## 架构定位
+
+UIManager 是 EssSystem 框架中唯一负责 UI Entity 管理的模块。根据架构规范：
+- UI Entity 统一由 UIManager 管理
+- 其他模块不得包含 Entity 文件夹
+- 业务模块只负责 Dao 数据和 Service 业务逻辑，UI 表现层由 UIManager 统一处理
+
 ## 核心组件
 
 ### 1. UIManager
@@ -285,12 +292,14 @@ else
 ## 注意事项
 
 1. **架构规范**: UIManager 只能通过 Event 调用本地 UIService，不能直接访问
-2. **实体 ID**: 使用有意义的实体 ID，避免重复
-3. **生命周期**: 及时注销不再使用的 UI 实体，避免内存泄漏
-4. **数据持久化**: UIService 的数据会自动被 DataService 持久化
-5. **线程安全**: UIManager 主要在主线程运行
-6. **序列化要求**: UIEntity 必须标记 `[Serializable]` 属性以支持数据持久化
-7. **跨 Manager 通信**: 使用 EventManager 触发事件，不要直接访问其他 Manager
+2. **UI Entity 统一管理**: 其他模块不得包含 Entity 文件夹，所有 UI Entity 统一由 UIManager 管理
+3. **实体 ID**: 使用有意义的实体 ID，避免重复
+4. **生命周期**: 及时注销不再使用的 UI 实体，避免内存泄漏
+5. **数据持久化**: UIService 的数据会自动被 DataManager 持久化
+6. **线程安全**: UIManager 主要在主线程运行
+7. **序列化要求**: UIEntity 必须标记 `[Serializable]` 属性以支持数据持久化
+8. **跨 Manager 通信**: 使用 EventManager 触发事件，不要直接访问其他 Manager
+9. **CanvasGroup 添加规则**: CanvasGroup 组件必须在 UIType.Panel 的创建过程中添加，因为其他 UI 操作可能依赖 CanvasGroup。其他地方进行 UI 操作时应该先创建 Panel 再进行别的操作
 
 ## 常见问题
 
@@ -309,7 +318,7 @@ var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity",
 ```
 
 ### Q: UI 实体数据会持久化吗？
-A: 会。UIService 继承自 Service，其数据会自动被 DataService 持久化到本地文件。
+A: 会。UIService 继承自 Service，其数据会自动被 DataManager 持久化到本地文件。
 
 ### Q: UIManager 和 UIService 有什么区别？
 A:

@@ -6,7 +6,6 @@ using EssSystem.Core.Event;
 using EssSystem.Core.Event.AutoRegisterEvent;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.EssManager.InventoryManager.Dao;
-using EssSystem.EssManager.InventoryManager.Entity;
 
 namespace EssSystem.EssManager.InventoryManager
 {
@@ -24,7 +23,7 @@ namespace EssSystem.EssManager.InventoryManager
         #region 数据分类（存储在 _dataStorage 中，自动持久化）
 
         public const string CAT_INVENTORIES = "Inventories";
-        public const string CAT_TEMPLATES   = "Templates";
+        public const string CAT_TEMPLATES   = "Items";
         public const string CAT_CONFIGS     = "Configs";
 
         #endregion
@@ -38,17 +37,32 @@ namespace EssSystem.EssManager.InventoryManager
         public const string EVT_MOVE    = "InventoryMove";
         public const string EVT_CHANGED = "InventoryChanged";
         public const string EVT_QUERY   = "InventoryQuery";
+        public const string EVT_OPEN_UI = "OnOpenInventoryUI";
+        public const string EVT_CLOSE_UI = "OnCloseInventoryUI";
 
         #endregion
-
-        /// <summary>运行时 Entity 注册表（不持久化）</summary>
-        private readonly Dictionary<string, InventoryEntity> _entities =
-            new Dictionary<string, InventoryEntity>();
 
         protected override void Initialize()
         {
             base.Initialize();
             Log("InventoryService 初始化完成", Color.green);
+        }
+
+        /// <summary>
+        /// 热重载Service数据
+        /// </summary>
+        public void ReloadData()
+        {
+            // 只清空配置数据，保留Inventory数据
+            if (_dataStorage.ContainsKey(CAT_CONFIGS))
+            {
+                _dataStorage[CAT_CONFIGS].Clear();
+            }
+
+            // 重新加载数据
+            LoadData();
+
+            Log("InventoryService配置热重载完成", Color.green);
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -117,7 +131,6 @@ namespace EssSystem.EssManager.InventoryManager
         /// <summary>删除容器</summary>
         public bool DeleteInventory(string id)
         {
-            UnregisterEntity(id);
             return RemoveData(CAT_INVENTORIES, id);
         }
 
@@ -293,32 +306,8 @@ namespace EssSystem.EssManager.InventoryManager
         private void BroadcastChanged(string invId, string op, string itemId, int amount)
         {
             EventManager.Instance.TriggerEvent(EVT_CHANGED,
-                new List<object> { invId, op, itemId ?? string.Empty, amount });
+                new List<object> { invId, op, itemId, amount });
         }
-
-        #endregion
-
-        // ─────────────────────────────────────────────────────────────
-        #region 实体注册表（仅运行时，不持久化）
-
-        public void RegisterEntity(string inventoryId, InventoryEntity entity)
-        {
-            if (string.IsNullOrEmpty(inventoryId) || entity == null) return;
-            _entities[inventoryId] = entity;
-        }
-
-        public InventoryEntity GetEntity(string inventoryId) =>
-            (!string.IsNullOrEmpty(inventoryId) && _entities.TryGetValue(inventoryId, out var e)) ? e : null;
-
-        public void UnregisterEntity(string inventoryId)
-        {
-            if (!string.IsNullOrEmpty(inventoryId)) _entities.Remove(inventoryId);
-        }
-
-        #endregion
-
-        // ─────────────────────────────────────────────────────────────
-        #region 事件处理器（[Event] 自动注册）
 
         /// <summary>事件: 创建容器</summary>
         /// <param name="args">[id, name, maxSlots]</param>

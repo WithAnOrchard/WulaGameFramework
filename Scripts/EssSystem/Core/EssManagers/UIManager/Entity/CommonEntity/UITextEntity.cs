@@ -35,7 +35,7 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
             _text.alignment = TextAnchor.MiddleCenter;
         }
 
-        protected override void SyncFromDao()
+        public override void SyncFromDao()
         {
             base.SyncFromDao();
             if (Dao is UITextComponent textDao && _text != null)

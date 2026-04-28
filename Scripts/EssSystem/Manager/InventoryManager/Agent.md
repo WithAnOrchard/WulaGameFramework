@@ -33,7 +33,6 @@ public class InventoryService : Service<InventoryService>
 - 所有公开方法标记 `[Event]` 特性
 - 内置分层数据存储
 - 自动数据持久化
-- Entity 注册表（运行时内存）
 - 初始化时自动触发 OnServiceInitialized 事件
 - DataService 自动注册此 Service
 
@@ -41,10 +40,14 @@ public class InventoryService : Service<InventoryService>
 - **Inventory** - 背包容器，包含槽位列表
 - **InventorySlot** - 槽位单元，包含物品、锁定状态
 - **InventoryItem** - 物品数据，支持堆叠、链式构造
+- **InventoryConfig** - 背包UI配置，包含SlotConfig、PanelConfig、ButtonConfig
+- **SlotConfig** - 槽位UI配置
+- **PanelConfig** - 面板UI配置
+- **ButtonConfig** - 按钮UI配置
 
-### 4. 实体类（Entity）
-- **InventoryEntity** - 背包 Unity 实体，绑定 Inventory Dao 到 GameObject
-- **InventoryItemEntity** - 物品 Unity 实体，绑定 Item Dao 到 GameObject
+### 4. UI管理
+- UI Entity统一由UIManager管理，InventoryManager不包含Entity文件夹
+- 业务模块只负责Dao数据和Service业务逻辑，UI表现层由UIManager统一处理
 
 ## 使用方法
 
@@ -307,12 +310,11 @@ else
 ## 注意事项
 
 1. **架构规范**: InventoryManager 可以直接调用本地 InventoryService，其他 Manager 必须通过 Event 调用
-2. **文件组织**: 数据类放在 Dao 文件夹，GameObject 放在 Entity 文件夹
+2. **文件组织**: 数据类放在 Dao 文件夹，UI Entity 统一由 UIManager 管理
 3. **序列化要求**: 所有 Dao 类必须标记 `[Serializable]` 属性
 4. **堆叠规则**: 只有相同 ID 且 MaxStack > 1 的物品才能堆叠
-5. **Entity 注册**: InventoryEntity 在 Awake 时自动注册，OnDestroy 时自动注销
-6. **数据持久化**: 背包和模板数据自动持久化，Entity 注册表不持久化
-7. **事件通知**: 背包操作会触发 `InventoryChanged` 事件
+5. **数据持久化**: 背包和模板数据自动持久化
+6. **事件通知**: 背包操作会触发 `InventoryChanged` 事件
 
 ## 常见问题
 
@@ -354,9 +356,6 @@ public List<object> OnInventoryChanged(string eventName, List<object> data)
     // 处理背包变化
 }
 ```
-
-### Q: Entity 会持久化吗？
-A: 不会。Entity 注册表只存在于运行时内存，不参与序列化持久化。
 
 ### Q: 如何锁定槽位？
 A: 设置 InventorySlot.Locked = true，业务自定义锁定逻辑。

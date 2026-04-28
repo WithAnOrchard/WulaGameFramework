@@ -13,18 +13,29 @@ namespace EssSystem.Core.EssManagers.ResourceManager
     /// </summary>
     public struct ResourceKey : IEquatable<ResourceKey>
     {
-        public readonly string Path;
+        public readonly string FileName; // 文件名（不带扩展名）
         public readonly bool IsExternal;
 
         public ResourceKey(string path, bool isExternal)
         {
-            Path = path;
+            FileName = ExtractFileNameWithoutExtension(path);
             IsExternal = isExternal;
+        }
+
+        private static string ExtractFileNameWithoutExtension(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return path;
+
+            var fileName = System.IO.Path.GetFileName(path);
+            if (string.IsNullOrEmpty(fileName)) return path;
+
+            var fileNameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(fileName);
+            return fileNameWithoutExt ?? path;
         }
 
         public bool Equals(ResourceKey other)
         {
-            return Path == other.Path && IsExternal == other.IsExternal;
+            return FileName == other.FileName && IsExternal == other.IsExternal;
         }
 
         public override bool Equals(object obj)
@@ -37,7 +48,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             unchecked
             {
                 int hash = 17;
-                hash = hash * 31 + (Path?.GetHashCode() ?? 0);
+                hash = hash * 31 + (FileName?.GetHashCode() ?? 0);
                 hash = hash * 31 + IsExternal.GetHashCode();
                 return hash;
             }
@@ -45,7 +56,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
         public override string ToString()
         {
-            return IsExternal ? $"external:{Path}" : $"unity:{Path}";
+            return IsExternal ? $"external:{FileName}" : $"unity:{FileName}";
         }
     }
 
@@ -111,6 +122,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// </summary>
         private void LoadAndPreloadResources()
         {
+            // 预加载配置文件中指定的资源
             PreloadCategory<GameObject>("Prefab");
             PreloadCategory<AudioClip>("AudioClip");
             PreloadCategory<Texture2D>("Texture");
@@ -122,9 +134,49 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 if (config == null) continue;
 
                 if (config.isExternal)
-                    LoadExternalImageAsync(config.path, s => { if (s != null) Debug.Log($"预加载外部Sprite: {config.path}"); });
+                    LoadExternalImageAsync(config.path, s => { if (s != null) Log($"预加载外部Sprite: {config.path}"); });
                 else
-                    LoadAsync<Sprite>(config.path, s => { if (s != null) Debug.Log($"预加载Sprite: {config.path}"); });
+                    LoadAsync<Sprite>(config.path, s => { if (s != null) Log($"预加载Sprite: {config.path}"); });
+            }
+
+            // 自动加载Resources文件夹下的所有资源
+            AutoLoadAllResources();
+        }
+
+        /// <summary>
+        /// 自动加载Resources文件夹下的所有资源
+        /// </summary>
+        private void AutoLoadAllResources()
+        {
+            // Unity没有LoadAllAsync方法，使用LoadAll同步获取资源列表，然后异步加载
+            LoadAllResourcesAsync<GameObject>();
+            LoadAllResourcesAsync<Sprite>();
+            LoadAllResourcesAsync<AudioClip>();
+            LoadAllResourcesAsync<Texture2D>();
+        }
+
+        /// <summary>
+        /// 异步加载指定类型的所有资源
+        /// </summary>
+        private void LoadAllResourcesAsync<T>() where T : UnityEngine.Object
+        {
+            // 先同步获取资源列表
+            var resources = Resources.LoadAll<T>("");
+            if (resources != null)
+            {
+                foreach (var resource in resources)
+                {
+                    if (resource != null)
+                    {
+                        // 使用资源名称作为路径的一部分
+                        var resourceKey = new ResourceKey($"Resources/{resource.name}", false);
+                        if (!_loadedResources.ContainsKey(resourceKey))
+                        {
+                            _loadedResources[resourceKey] = resource;
+                            Log($"自动加载资源: {resource.name} ({typeof(T).Name})");
+                        }
+                    }
+                }
             }
         }
 
@@ -137,7 +189,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             {
                 var config = GetData<ResourceConfigItem>(category, key);
                 if (config == null) continue;
-                LoadAsync<T>(config.path, asset => { if (asset != null) Debug.Log($"预加载{category}: {config.path}"); });
+                LoadAsync<T>(config.path, asset => { if (asset != null) Log($"预加载{category}: {config.path}"); });
             }
         }
 
@@ -162,6 +214,15 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         }
 
         /// <summary>
+        /// 通过ResourceKey获取资源ID
+        /// </summary>
+        public string GetResourceId(ResourceKey key)
+        {
+            // ResourceKey已经存储了文件名（不带扩展名），直接返回
+            return key.FileName;
+        }
+
+        /// <summary>
         /// 添加预加载配置
         /// </summary>
         [Event("AddResourceConfig")]
@@ -171,6 +232,13 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             string path = data[1] as string;
             ResourceType type = (ResourceType)data[2];
             bool isExternal = data.Count > 3 ? (bool)data[3] : false;
+
+            // 如果未提供ID，自动从路径中提取文件名（不带扩展名）
+            if (string.IsNullOrEmpty(id))
+            {
+                var key = new ResourceKey(path, isExternal);
+                id = key.FileName;
+            }
 
             string category = type.ToString();
             var config = new ResourceConfigItem { id = id, path = path, isExternal = isExternal, type = type };
@@ -302,7 +370,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                     {
                         Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
                         _loadedResources[key] = sprite;
-                        Debug.Log($"外部 Sprite 加载成功: {filePath}");
+                        Log($"外部 Sprite 加载成功: {filePath}");
 
                         callback?.Invoke(sprite);
 
@@ -357,6 +425,42 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             }
             _loadedResources.Clear();
             return new List<object> { "成功" };
+        }
+
+        /// <summary>
+        /// 更新 Inspector 信息
+        /// </summary>
+        public override void UpdateInspectorInfo()
+        {
+            base.UpdateInspectorInfo();
+
+            // 添加已加载资源信息
+            if (InspectorInfo == null)
+            {
+                InspectorInfo = new ServiceDataInspectorInfo();
+            }
+
+            var resourceCategory = new ServiceDataInspectorInfo.CategoryInfo
+            {
+                CategoryName = "已加载资源",
+                DataCount = _loadedResources.Count,
+                DataItems = new List<ServiceDataInspectorInfo.DataInfo>()
+            };
+
+            foreach (var kvp in _loadedResources)
+            {
+                var resourceKey = kvp.Key;
+                var resource = kvp.Value;
+                var dataInfo = new ServiceDataInspectorInfo.DataInfo
+                {
+                    Key = resourceKey.ToString(),
+                    TypeName = resource?.GetType().Name ?? "null",
+                    ValueSummary = resource?.name ?? "null"
+                };
+                resourceCategory.DataItems.Add(dataInfo);
+            }
+
+            InspectorInfo.Categories.Add(resourceCategory);
         }
     }
 }

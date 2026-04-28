@@ -13,6 +13,11 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
         private string _text = string.Empty;
 
         /// <summary>
+        ///     按钮背景 Sprite ID
+        /// </summary>
+        private string _buttonSpriteId;
+
+        /// <summary>  
         ///     构造函数
         /// </summary>
         /// <param name="id">组件ID</param>
@@ -38,6 +43,22 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
         }
 
         /// <summary>
+        ///     按钮背景 Sprite ID
+        /// </summary>
+        public string ButtonSpriteId
+        {
+            get => _buttonSpriteId;
+            set
+            {
+                if (_buttonSpriteId != value)
+                {
+                    _buttonSpriteId = value;
+                    OnButtonSpriteIdChanged(value);
+                }
+            }
+        }
+
+        /// <summary>
         ///     点击事件
         /// </summary>
         public event Action<UIButtonComponent> OnClick;
@@ -53,9 +74,27 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
             return this;
         }
 
+        /// <summary>
+        ///     设置按钮背景 Sprite ID
+        /// </summary>
+        /// <param name="spriteId">Sprite ID</param>
+        /// <returns>当前组件，支持链式调用</returns>
+        public UIButtonComponent SetButtonSpriteId(string spriteId)
+        {
+            ButtonSpriteId = spriteId;
+            return this;
+        }
+
+      
+
         protected virtual void OnTextChanged(string newText)
         {
             NotifyEntityPropertyChanged("Text", newText);
+        }
+
+        protected virtual void OnButtonSpriteIdChanged(string newId)
+        {
+            NotifyEntityPropertyChanged("ButtonSpriteId", newId);
         }
 
         // Simplified chain methods for better usability

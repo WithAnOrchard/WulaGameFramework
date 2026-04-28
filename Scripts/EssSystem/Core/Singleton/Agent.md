@@ -2,7 +2,13 @@
 
 ## 概述
 
-Singleton 机制提供两种单例模式实现：`SingletonNormal<T>` 用于普通类，`SingletonMono<T>` 用于 Unity MonoBehaviour。本指南面向 AI Agent，说明如何使用单例模式管理全局唯一实例。
+Singleton 机制提供两种单例模式实现：`SingletonNormal<T>` 用于普通类（Service基类），`SingletonMono<T>` 用于 Unity MonoBehaviour（Manager基类）。本指南面向 AI Agent，说明如何使用单例模式管理全局唯一实例。
+
+## 架构定位
+
+Singleton 是 EssSystem 框架的基础单例模式实现，为 Manager<T> 和 Service<T> 提供单例支持：
+- Manager<T> 继承自 SingletonMono<T>
+- Service<T> 继承自 SingletonNormal<T>
 
 ## 核心组件
 
@@ -363,6 +369,7 @@ protected override void OnDestroy()
 6. **构造函数访问**: SingletonNormal 的构造函数应该是 protected 或 private
 7. **IDisposable 支持**: SingletonNormal 支持 IDisposable，在销毁时会自动调用 Dispose
 8. **初始化时机**: SingletonNormal 在首次访问 Instance 时初始化，SingletonMono 在 Awake 时初始化
+9. **架构规范**: SingletonNormal 用于 Service，SingletonMono 用于 Manager，不要混用
 
 ## 常见问题
 

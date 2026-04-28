@@ -11,8 +11,9 @@ EssSystem.Core 是 EssSystem 框架的核心模块，提供基础架构和管理
 Core 包含以下主要子模块：
 
 1. **EssManagers** - 管理器系统
-   - DataManager - 数据管理
    - Manager - 管理器基类
+   - Service - 服务基类
+   - DataManager - 数据管理
    - ResourceManager - 资源管理
    - UIManager - UI 管理
    - Agent.md: `EssSystem/Core/EssManagers/Agent.md`
@@ -20,8 +21,8 @@ Core 包含以下主要子模块：
 2. **Event** - 事件系统
    - EventManager - 事件管理器
    - EventProcessor - 事件处理器
-   - Event - 事件基类
-   - AutoRegisterEvent - 自动注册事件
+   - Event - 事件特性
+   - EventListener - 事件监听器特性
    - Agent.md: `EssSystem/Core/Event/Agent.md`
 
 3. **Singleton** - 单例模式
@@ -31,6 +32,7 @@ Core 包含以下主要子模块：
 
 4. **Util** - 工具类
    - MainThreadDispatcher - 主线程调度器
+   - MiniJson - JSON序列化工具
 
 5. **AbstractGameManager** - 游戏管理器基类
    - 负责自动发现和初始化所有 Manager
@@ -139,7 +141,7 @@ public class MyManager : Manager<MyManager>
 public class MyService : Service<MyService>
 {
     public const string MY_CATEGORY = "MyData";
-    
+
     protected override void Initialize()
     {
         base.Initialize();
@@ -147,7 +149,7 @@ public class MyService : Service<MyService>
         // Service 会自动触发 OnServiceInitialized 事件
         // DataService 会自动注册并加载此 Service 的数据
     }
-    
+
     [Event("MyServiceMethod")]
     public List<object> MyMethod(List<object> data)
     {
@@ -189,7 +191,8 @@ EventProcessor.Instance.TriggerEventMethod("MyServiceMethod", new List<object> {
 
 ### 4. 文件组织规范
 - 数据类（Dao）必须放在 Dao 文件夹
-- GameObject 实体类（Entity）必须放在 Entity 文件夹
+- UI Entity 统一由 UIManager 管理，其他模块不得包含 Entity 文件夹
+- 业务模块只负责 Dao 数据和 Service 业务逻辑，UI 表现层由 UIManager 统一处理
 
 ## 快速参考
 
@@ -214,8 +217,8 @@ EventProcessor.Instance.TriggerEventMethod("MyServiceMethod", new List<object> {
 ### Q: 如何确定 Manager 的优先级？
 A: 根据依赖关系，被依赖的 Manager 优先级更高（数值更小）。EventManager 必须是 -30，DataManager 必须是 -20。
 
-### Q: Service 如何自动注册到 DataService？
-A: Service 在初始化时会自动触发 OnServiceInitialized 事件，DataService 监听该事件并自动注册。
+### Q: Service 如何自动注册到 DataManager？
+A: Service 在初始化时会自动触发 OnServiceInitialized 事件，DataManager 监听该事件并自动注册。
 
 ### Q: 如何在 Manager 中调用本地 Service？
 A: 使用 EventProcessor.Instance.TriggerEventMethod("ServiceMethodName", data)。
@@ -227,19 +230,21 @@ A: 使用 EventManager.Instance.TriggerEvent("EventName", data)，目标 Manager
 A: EventManager 作为 Manager 可以确保它在其他 Manager 和 Service 初始化前完成初始化，避免初始化顺序问题。
 
 ### Q: Service 数据何时保存？
-A: DataService 在 Application.quitting 时自动保存所有 Service 数据。
+A: DataManager 在 Application.quitting 时自动保存所有 Service 数据。
 
 ### Q: 如何查看所有已注册的 Service？
-A: 使用 DataService.Instance.GetServiceInstances() 方法。
+A: 使用 DataManager.Instance.GetServiceInstances() 方法。
 
 ## 更新日志
 
 ### 最新更新
 - EventManager 改为继承自 Manager<EventManager>，优先级设置为 -30
 - Service 初始化时自动触发 OnServiceInitialized 事件
-- DataService 通过事件机制自动注册 Service，移除扫描功能
-- DataService 精简，移除备份功能
+- DataManager 通过事件机制自动注册 Service，移除扫描功能
+- DataManager 精简，移除备份功能
 - 即使 Service 数据为空也会生成保存文件
+- UI Entity 统一由 UIManager 管理，其他模块不得包含 Entity 文件夹
+- Service 数据持久化使用 MiniJson 支持嵌套对象和友好格式
 
 ## 相关文档
 

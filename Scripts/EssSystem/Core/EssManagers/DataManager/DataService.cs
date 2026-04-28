@@ -34,7 +34,6 @@ namespace EssSystem.Core.EssManagers.DataManager
         /// </summary>
         protected override void Initialize()
         {
-            base.Initialize();
             // 设置数据文件夹路径
             _dataFolder = Path.Combine(Application.persistentDataPath, DATA_FOLDER);
 
@@ -45,7 +44,7 @@ namespace EssSystem.Core.EssManagers.DataManager
             // 初始化 Service 实例列表
             _serviceInstances = new List<object>();
 
-            // 注册 Service 初始化事件监听器
+            // 注册 Service 初始化事件监听器（必须在base.Initialize()之前注册）
             if (EventManager.HasInstance)
             {
                 EventManager.Instance.AddListener("OnServiceInitialized", OnServiceInitialized);
@@ -54,8 +53,8 @@ namespace EssSystem.Core.EssManagers.DataManager
             // DataService 自己注册自己
             _serviceInstances.Add(this);
 
-            // 加载所有已保存的 Service 数据
-            LoadAllServiceData();
+            // 调用基类初始化（会触发OnServiceInitialized事件）
+            base.Initialize();
 
             Log("数据服务初始化完成", Color.green);
 
@@ -81,18 +80,8 @@ namespace EssSystem.Core.EssManagers.DataManager
         }
 
         /// <summary>
-        /// 获取指定 Service 的数据文件路径
-        /// </summary>
-        /// <param name="serviceName">Service 名称</param>
-        /// <returns>数据文件完整路径</returns>
-        private string GetServiceFilePath(string serviceName)
-        {
-            return Path.Combine(_dataFolder, $"{serviceName}.json");
-        }
-
-        /// <summary>
         /// Service 初始化事件处理器
-        /// 当有新 Service 初始化时，自动注册并加载其数据
+        /// 当有新 Service 初始化时，自动注册
         /// </summary>
         /// <param name="eventName">事件名称</param>
         /// <param name="data">事件数据，包含 Service 实例</param>
@@ -102,77 +91,19 @@ namespace EssSystem.Core.EssManagers.DataManager
             if (data.Count > 0 && data[0] != null)
             {
                 var serviceInstance = data[0];
-                // 如果 Service 尚未注册，则注册并加载数据
+                var serviceTypeName = serviceInstance.GetType().Name;
+                // 如果 Service 尚未注册，则注册
                 if (!_serviceInstances.Contains(serviceInstance))
                 {
                     _serviceInstances.Add(serviceInstance);
-                    LoadServiceData(serviceInstance);
+                    Log($"Service 初始化并注册: {serviceTypeName}", Color.blue);
+                }
+                else
+                {
+                    LogWarning($"Service 已存在，跳过注册: {serviceTypeName}");
                 }
             }
             return new List<object>();
-        }
-
-        /// <summary>
-        /// 加载所有已注册 Service 的数据
-        /// </summary>
-        private void LoadAllServiceData()
-        {
-            if (!Directory.Exists(_dataFolder)) return;
-
-            foreach (var serviceInstance in _serviceInstances)
-            {
-                LoadServiceData(serviceInstance);
-            }
-        }
-
-        /// <summary>
-        /// 加载指定 Service 的数据
-        /// </summary>
-        /// <param name="serviceInstance">Service 实例</param>
-        private void LoadServiceData(object serviceInstance)
-        {
-            try
-            {
-                var serviceType = serviceInstance.GetType();
-                var serviceFilePath = GetServiceFilePath(serviceType.Name);
-
-                // 如果数据文件不存在，跳过
-                if (!File.Exists(serviceFilePath)) return;
-
-                // 读取 JSON 数据
-                var jsonData = File.ReadAllText(serviceFilePath);
-
-                // 通过反射获取 Service 的 _dataStorage 字段
-                var dataStorageField = serviceType.GetField("_dataStorage",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-                if (dataStorageField != null)
-                {
-                    var dataStorage = dataStorageField.GetValue(serviceInstance) as
-                        Dictionary<string, Dictionary<string, object>>;
-                    var parsed = MiniJson.Deserialize(jsonData) as Dictionary<string, object>;
-
-                    // 解析 JSON 并填充到 dataStorage
-                    if (dataStorage != null && parsed != null && parsed.ContainsKey("categories"))
-                    {
-                        var categories = parsed["categories"] as Dictionary<string, object>;
-                        if (categories != null)
-                        {
-                            foreach (var kvp in categories)
-                            {
-                                if (kvp.Value is Dictionary<string, object> categoryData)
-                                {
-                                    dataStorage[kvp.Key] = categoryData;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogWarning($"加载Service数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
-            }
         }
 
         /// <summary>
@@ -188,6 +119,7 @@ namespace EssSystem.Core.EssManagers.DataManager
 
         /// <summary>
         /// 保存指定 Service 的数据
+        /// 通过反射调用Service的SaveCategoryData方法保存每个category
         /// </summary>
         /// <param name="serviceInstance">Service 实例</param>
         private void SaveServiceData(object serviceInstance)
@@ -205,15 +137,22 @@ namespace EssSystem.Core.EssManagers.DataManager
                     var dataStorage = dataStorageField.GetValue(serviceInstance) as
                         Dictionary<string, Dictionary<string, object>>;
 
-                    // 构建保存的数据结构
-                    var serviceData = new Dictionary<string, object>
+                    if (dataStorage != null)
                     {
-                        ["categories"] = dataStorage ?? new Dictionary<string, Dictionary<string, object>>()
-                    };
+                        // 获取SaveCategoryData方法
+                        var saveCategoryDataMethod = serviceType.GetMethod("SaveCategoryData",
+                            BindingFlags.NonPublic | BindingFlags.Instance);
 
-                    // 序列化为 JSON 并保存到文件
-                    var jsonData = MiniJson.Serialize(serviceData, pretty: true);
-                    File.WriteAllText(GetServiceFilePath(serviceType.Name), jsonData);
+                        if (saveCategoryDataMethod != null)
+                        {
+                            // 对每个category调用SaveCategoryData
+                            foreach (var category in dataStorage.Keys)
+                            {
+                                saveCategoryDataMethod.Invoke(serviceInstance, new object[] { category });
+                            }
+                            Log($"保存Service数据: {serviceType.Name} ({dataStorage.Count}个category)", Color.green);
+                        }
+                    }
                 }
             }
             catch (Exception ex)

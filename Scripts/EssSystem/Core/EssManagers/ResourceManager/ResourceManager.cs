@@ -28,6 +28,13 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         {
             base.Initialize();
             _resourceService = ResourceService.Instance;
+
+            // 从Service加载日志设置
+            if (_resourceService != null)
+            {
+                _serviceEnableLogging = _resourceService.EnableLogging;
+            }
+
             Log("ResourceManager 初始化完成", Color.green);
         }
 
@@ -35,6 +42,23 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         {
             base.Update();
             UpdateDebugInfo();
+        }
+
+        protected override void UpdateServiceInspectorInfo()
+        {
+            if (_resourceService != null)
+            {
+                _resourceService.UpdateInspectorInfo();
+                _serviceInspectorInfo = _resourceService.InspectorInfo;
+            }
+        }
+
+        protected override void SyncServiceLoggingSettings()
+        {
+            if (_resourceService != null)
+            {
+                _resourceService.EnableLogging = _serviceEnableLogging;
+            }
         }
 
         private void UpdateDebugInfo()
@@ -47,7 +71,8 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 int index = 0;
                 foreach (var kvp in loadedResources)
                 {
-                    _loadedResourcePaths[index] = $"{kvp.Key} ({kvp.Value?.GetType().Name})";
+                    var resourceId = _resourceService.GetResourceId(kvp.Key);
+                    _loadedResourcePaths[index] = $"{resourceId} ({kvp.Value?.GetType().Name})";
                     index++;
                 }
             }

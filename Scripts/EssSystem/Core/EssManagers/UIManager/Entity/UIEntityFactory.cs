@@ -2,6 +2,7 @@ using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
 using EssSystem.Core.EssManagers.UIManager.Entity;
 using EssSystem.Core.EssManagers.UIManager.Dao;
 using EssSystem.Core.EssManagers.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Event.AutoRegisterEvent;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -54,6 +55,12 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
                     var button = gameObject.AddComponent<Button>();
                     button.targetGraphic = image;
 
+                    // 如果ButtonSpriteId不为空，通过Event机制加载Sprite
+                    if (dao is UIButtonComponent buttonComponent && !string.IsNullOrEmpty(buttonComponent.ButtonSpriteId))
+                    {
+                        LoadSpriteFromId(buttonComponent.ButtonSpriteId, image);
+                    }
+
                     var textObject = new GameObject("Text");
                     textObject.transform.SetParent(gameObject.transform);
                     var textRect = textObject.AddComponent<RectTransform>();
@@ -63,30 +70,36 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
 
                     var text = textObject.AddComponent<Text>();
                     text.text = dao is UIButtonComponent buttonDao ? buttonDao.Text : "Button";
-                    text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                     text.fontSize = 14;
                     text.color = Color.black;
                     text.alignment = TextAnchor.MiddleCenter;
                     break;
 
                 case UIType.Panel:
+                    // Panel必须先添加CanvasGroup，因为其他UI操作可能依赖它
+                    var canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                    canvasGroup.alpha = dao.Visible ? 1f : 0f;
+                    canvasGroup.interactable = canvasGroup.blocksRaycasts = dao.Interactable;
+
                     var panelImage = gameObject.AddComponent<Image>();
-                    panelImage.color = dao is UIPanelComponent panelDao ? panelDao.BackgroundColor : Color.clear;
+                    panelImage.color = dao is UIPanelComponent panelDao ? panelDao.BackgroundColor : Color.white;
+                    // 如果BackgroundSpriteId不为空，通过Event机制加载Sprite
+                    if (dao is UIPanelComponent panelComponent && !string.IsNullOrEmpty(panelComponent.BackgroundSpriteId))
+                    {
+                        LoadSpriteFromId(panelComponent.BackgroundSpriteId, panelImage);
+                    }
                     break;
 
                 case UIType.Text:
                     var textComponent = gameObject.AddComponent<Text>();
                     textComponent.text = dao is UITextComponent textDao ? textDao.Text : "Text";
-                    textComponent.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    textComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                     textComponent.fontSize = 14;
                     textComponent.color = Color.black;
                     textComponent.alignment = TextAnchor.MiddleCenter;
                     break;
             }
-
-            var canvasGroup = gameObject.GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
-            canvasGroup.alpha = dao.Visible ? 1f : 0f;
-            canvasGroup.interactable = canvasGroup.blocksRaycasts = dao.Interactable;
         }
 
         /// <summary>
@@ -117,6 +130,30 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
             {
                 var childEntity = CreateEntity(childDao, parentEntity.transform);
                 if (childEntity != null) CreateChildrenRecursive(childDao, childEntity);
+            }
+        }
+
+        private static void LoadSpriteFromId(string spriteId, Image targetImage)
+        {
+            try
+            {
+                
+
+                var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
+                    new System.Collections.Generic.List<object> { spriteId, "Sprite", false });
+
+                if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
+                {
+                    var sprite = result[1] as Sprite;
+                    if (sprite != null && targetImage != null)
+                    {
+                        targetImage.sprite = sprite;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogError($"加载Sprite失败: {spriteId}, 错误: {ex.Message}");
             }
         }
     }

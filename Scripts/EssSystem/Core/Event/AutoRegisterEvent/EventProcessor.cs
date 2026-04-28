@@ -175,7 +175,25 @@ namespace EssSystem.Core.Event.AutoRegisterEvent
                 var instance = FindFirstObjectByType(type, FindObjectsInactive.Include) as MonoBehaviour;
                 if (instance != null) return instance;
 
-                LogWarning($"未找到 {type.Name} 的MonoBehaviour实例，请确保场景中存在该组件");
+                // 检查是否是 Manager 类型，Manager 通常由用户手动添加到场景
+                var isManagerType = false;
+                var currentType = type.BaseType;
+                while (currentType != null && currentType != typeof(MonoBehaviour))
+                {
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(EssSystem.Core.EssManagers.Manager.Manager<>))
+                    {
+                        isManagerType = true;
+                        break;
+                    }
+                    currentType = currentType.BaseType;
+                }
+
+                // Manager 类型不警告，因为它们可能还未添加到场景
+                if (!isManagerType)
+                {
+                    LogWarning($"未找到 {type.Name} 的MonoBehaviour实例，请确保场景中存在该组件");
+                }
+
                 return null;
             }
 

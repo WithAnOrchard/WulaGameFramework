@@ -18,7 +18,8 @@ Manager 机制是 EssSystem 的核心管理器系统，提供统一的 MonoBehav
 
 ### 文件组织规则
 6. **数据类必须放在 Dao 文件夹**: 所有数据类（Data Access Object）必须放在各自包下的 `Dao` 文件夹内
-7. **GameObject 必须放在 Entity 文件夹**: 所有 Unity GameObject 相关的实体类必须放在各自包下的 `Entity` 文件夹内
+7. **UI Entity 统一由 UIManager 管理**: 其他模块不得包含 Entity 文件夹，UI Entity 统一由 UIManager 管理
+8. **业务模块职责**: 业务模块只负责 Dao 数据和 Service 业务逻辑，UI 表现层由 UIManager 统一处理
 
 ## 核心组件
 
@@ -111,7 +112,7 @@ public class InventoryService : Service<InventoryService>
         base.Initialize();
         // 初始化逻辑
         // Service 初始化时会自动触发 OnServiceInitialized 事件
-        // DataService 会监听该事件并自动注册此 Service
+        // DataManager 会监听该事件并自动注册此 Service
     }
 
     [Event("AddInventoryItem")]
@@ -135,8 +136,8 @@ public class InventoryService : Service<InventoryService>
 
 **Service 自动注册机制**:
 - Service 在构造函数调用 Initialize() 时会自动触发 `OnServiceInitialized` 事件
-- DataService 监听该事件并自动注册 Service 实例
-- DataService 特殊处理，不触发自己的初始化事件
+- DataManager 监听该事件并自动注册 Service 实例
+- DataManager 特殊处理，不触发自己的初始化事件
 - 无需手动调用任何注册方法
 
 **访问方式**（必须通过 Event）:
@@ -542,10 +543,10 @@ InventoryService.DestroyInstance()
 public class EventManager : Manager<EventManager> { }
 
 [Manager(-5)]
-public class DataService : Service<DataService> { }
+public class DataManager : Manager<DataManager> { }
 
 [Manager(0)]
-public class ResourceManager : Service<ResourceService> { }
+public class ResourceManager : Manager<ResourceManager> { }
 
 [Manager(5)]
 public class UIManager : Manager<UIManager> { }
@@ -616,8 +617,8 @@ public class MyService : Service<MyService>
 7. **Service 不需要 MonoBehaviour**: Service 是普通类，通过单例模式管理
 8. **Initialize 必须调用 base**: 重写 Initialize 方法时必须调用 `base.Initialize()`
 9. **OnDestroy 必须调用 base**: 重写 OnDestroy 方法时必须调用 `base.OnDestroy()`
-10. **Service 自动发现**: Service 会被 DataService 自动发现和管理
-11. **数据持久化**: Service 的数据会自动被 DataService 持久化
+10. **Service 自动发现**: Service 会被 DataManager 自动发现和管理
+11. **数据持久化**: Service 的数据会自动被 DataManager 持久化
 12. **优先级影响初始化顺序**: 确保依赖的 Manager 优先级更高
 13. **避免在构造函数中访问单例**: Manager 的构造函数可能在单例创建前调用
 
@@ -655,7 +656,7 @@ EventManager.Instance.TriggerEvent("EventName", data);
 ```
 
 ### Q: Service 的数据什么时候保存？
-A: DataService 会在应用退出时自动保存所有 Service 的数据，也可以通过事件手动触发保存。
+A: DataManager 会在应用退出时自动保存所有 Service 的数据，也可以通过事件手动触发保存。
 
 ### Q: 如何在 Service 中访问 Manager？
 A: Service 不能直接访问 Manager，必须通过 EventManager 触发事件：
@@ -664,7 +665,7 @@ EventManager.Instance.TriggerEvent("SomeEvent", data);
 ```
 
 ### Q: Manager 的优先级如何设置？
-A: 根据依赖关系设置，被依赖的 Manager 优先级更高（数值更小）。推荐：EventManager (-10), DataService (-5), 其他 Manager (0+)。
+A: 根据依赖关系设置，被依赖的 Manager 优先级更高（数值更小）。推荐：EventManager (-30), DataManager (-20), ResourceManager (0), UIManager (5), 其他 Manager (10+)。
 
 ### Q: 如果需要访问其他 Manager 的 Service 怎么办？
 A: 不允许直接访问其他 Manager 的 Service。应该：

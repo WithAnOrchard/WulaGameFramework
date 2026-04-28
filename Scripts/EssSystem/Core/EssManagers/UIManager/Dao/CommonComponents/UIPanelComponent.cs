@@ -14,6 +14,11 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
         private Color _backgroundColor = Color.clear;
 
         /// <summary>
+        ///     背景Sprite ID
+        /// </summary>
+        private string _backgroundSpriteId;
+
+        /// <summary>
         ///     构造函数
         /// </summary>
         /// <param name="id">组件ID</param>
@@ -37,6 +42,22 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
         }
 
         /// <summary>
+        ///     背景Sprite ID
+        /// </summary>
+        public string BackgroundSpriteId
+        {
+            get => _backgroundSpriteId;
+            set
+            {
+                if (_backgroundSpriteId != value)
+                {
+                    _backgroundSpriteId = value;
+                    OnBackgroundSpriteIdChanged(value);
+                }
+            }
+        }
+
+        /// <summary>
         ///     设置背景颜色
         /// </summary>
         /// <param name="color">颜色</param>
@@ -47,9 +68,25 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
             return this;
         }
 
+        /// <summary>
+        ///     设置背景Sprite ID
+        /// </summary>
+        /// <param name="spriteId">Sprite ID</param>
+        /// <returns>当前组件，支持链式调用</returns>
+        public UIPanelComponent SetBackgroundSpriteId(string spriteId)
+        {
+            BackgroundSpriteId = spriteId;
+            return this;
+        }
+
         protected virtual void OnBackgroundColorChanged(Color newColor)
         {
             NotifyEntityPropertyChanged("BackgroundColor", newColor);
+        }
+
+        protected virtual void OnBackgroundSpriteIdChanged(string newId)
+        {
+            NotifyEntityPropertyChanged("BackgroundSpriteId", newId);
         }
 
         // Simplified chain methods for better usability

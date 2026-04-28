@@ -21,7 +21,7 @@ namespace EssSystem.Core.EssManagers.DataManager
         [SerializeField]
         private string[] _serviceNames = new string[0];
 
-        [SerializeField]
+        [SerializeField, Tooltip("数据文件夹路径")]
         private string _dataFolderPath = "";
 
         #endregion
@@ -44,13 +44,16 @@ namespace EssSystem.Core.EssManagers.DataManager
             if (_dataService != null)
             {
                 var serviceInstances = _dataService.GetServiceInstances();
-                _serviceCount = serviceInstances.Count;
-                _serviceNames = new string[serviceInstances.Count];
-                for (int i = 0; i < serviceInstances.Count; i++)
+                if (serviceInstances != null)
                 {
-                    _serviceNames[i] = serviceInstances[i].GetType().Name;
+                    _serviceCount = serviceInstances.Count;
+                    _serviceNames = new string[serviceInstances.Count];
+                    for (int i = 0; i < serviceInstances.Count; i++)
+                    {
+                        _serviceNames[i] = serviceInstances[i]?.GetType().Name ?? "Unknown";
+                    }
+                    _dataFolderPath = Application.persistentDataPath + "/ServiceData";
                 }
-                _dataFolderPath = Application.persistentDataPath + "/ServiceData";
             }
         }
     }

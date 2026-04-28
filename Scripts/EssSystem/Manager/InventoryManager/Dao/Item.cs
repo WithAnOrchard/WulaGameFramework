@@ -15,6 +15,8 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         Weapon,
         /// <summary>防具</summary>
         Armor,
+        /// <summary>装备（通用）</summary>
+        Equipment,
         /// <summary>材料</summary>
         Material,
         /// <summary>任务物品（不可丢弃）</summary>
@@ -71,6 +73,12 @@ namespace EssSystem.EssManager.InventoryManager.Dao
             Id = id;
         }
 
+        public InventoryItem(string id, string name)
+        {
+            Id = id;
+            Name = name;
+        }
+
         #endregion
 
         #region Chain API (Template Building)
@@ -81,6 +89,7 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public InventoryItem WithWeight(float weight) { Weight = weight; return this; }
         public InventoryItem WithValue(int value) { Value = value; return this; }
         public InventoryItem WithMaxStack(int max) { MaxStack = Math.Max(1, max); return this; }
+        public InventoryItem WithCurrentStack(int current) { CurrentStack = current; return this; }
 
         #endregion
 

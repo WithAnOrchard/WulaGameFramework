@@ -60,7 +60,7 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
         /// <summary>
         ///     Dao
         /// </summary>
-        protected virtual void SyncFromDao()
+        public virtual void SyncFromDao()
         {
             if (_dao == null) return;
             gameObject.name = _dao.Name ?? _dao.Id;

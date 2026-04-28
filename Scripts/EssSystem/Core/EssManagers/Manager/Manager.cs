@@ -23,6 +23,21 @@ namespace EssSystem.Core.EssManagers.Manager
     /// <typeparam name="T">Manager类型</typeparam>
     public abstract class Manager<T> : SingletonMono<T> where T : MonoBehaviour
     {
+        #region Service Data Inspector
+
+        [Header("Service Data Inspector")]
+        [Tooltip("是否在 Inspector 中显示关联 Service 的数据（每帧更新）")]
+        [SerializeField] protected bool _showServiceDataInInspector = true;
+
+        [Tooltip("Service 数据摘要（只读显示，由 Service 自动更新）")]
+        [SerializeField] protected ServiceDataInspectorInfo _serviceInspectorInfo;
+
+        [Header("Service Settings")]
+        [Tooltip("是否启用 Service 日志打印")]
+        [SerializeField] protected bool _serviceEnableLogging = true;
+
+        #endregion
+
         /// <summary>
         ///     Unity Awake方法
         /// </summary>
@@ -45,7 +60,33 @@ namespace EssSystem.Core.EssManagers.Manager
         /// </summary>
         protected virtual void Update()
         {
-            // 子类可重写此方法
+            // 自动更新 Service 数据到 Inspector
+            if (_showServiceDataInInspector)
+            {
+                UpdateServiceInspectorInfo();
+            }
+
+            // 同步日志设置到Service
+            SyncServiceLoggingSettings();
+        }
+
+        /// <summary>
+        ///     同步日志设置到Service（子类重写以同步特定的Service）
+        /// </summary>
+        protected virtual void SyncServiceLoggingSettings()
+        {
+            // 子类重写此方法，将 _serviceEnableLogging 同步到其 Service
+            // 例如：Service.EnableLogging = _serviceEnableLogging;
+        }
+
+        /// <summary>
+        ///     更新 Service 数据到 Inspector（子类重写以更新特定的 Service）
+        /// </summary>
+        protected virtual void UpdateServiceInspectorInfo()
+        {
+            // 子类重写此方法，调用其 Service 的 UpdateInspectorInfo()
+            // 例如：Service?.UpdateInspectorInfo(); _serviceInspectorInfo = Service?.InspectorInfo;
+            // 同时同步日志设置：_serviceEnableLogging = Service?.EnableLogging ?? true;
         }
 
         /// <summary>
