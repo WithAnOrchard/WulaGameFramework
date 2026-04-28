@@ -1,8 +1,9 @@
+using EssSystem.Core;
 using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
 using EssSystem.Core.EssManagers.UIManager.Entity;
 using EssSystem.Core.EssManagers.UIManager.Dao;
 using EssSystem.Core.EssManagers.UIManager.Entity.CommonEntity;
-using EssSystem.Core.Event.AutoRegisterEvent;
+using EssSystem.Core.Event;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -142,7 +143,7 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
                 var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
                     new System.Collections.Generic.List<object> { spriteId, "Sprite", false });
 
-                if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
+                if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                 {
                     var sprite = result[1] as Sprite;
                     if (sprite != null && targetImage != null)

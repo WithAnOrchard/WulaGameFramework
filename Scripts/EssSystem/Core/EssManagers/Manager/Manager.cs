@@ -6,7 +6,7 @@ namespace EssSystem.Core.EssManagers.Manager
     /// <summary>
     ///     Manager 优先级特性 — 等效于 Unity 的 <see cref="DefaultExecutionOrder" />。
     ///     <para>
-    ///         数值越小越先 Awake/Start。推荐 EventManager 用 -10，DataManager 用 -5，业务 Manager &gt;= 0。
+    ///         数值越小越先 Awake/Start。推荐 EventProcessor 用 -30，DataManager 用 -20，业务 Manager &gt;= 0。
     ///     </para>
     /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
@@ -18,13 +18,12 @@ namespace EssSystem.Core.EssManagers.Manager
     }
 
     /// <summary>
-    ///     Manager抽象类，继承自SingletonMono，用于Unity GameObject管理器
+    ///     Manager 抽象基类（MonoBehaviour 单例）。
+    ///     <para>子类如需 Start/FixedUpdate/LateUpdate/OnEnable/OnDisable 等生命周期，直接在子类声明即可（Unity 反射调用）。</para>
+    ///     <para>必须 override 的钩子：<see cref="Initialize" />, <see cref="SyncServiceLoggingSettings" />, <see cref="UpdateServiceInspectorInfo" />。</para>
     /// </summary>
-    /// <typeparam name="T">Manager类型</typeparam>
     public abstract class Manager<T> : SingletonMono<T> where T : MonoBehaviour
     {
-        #region Service Data Inspector
-
         [Header("Service Data Inspector")]
         [Tooltip("是否在 Inspector 中显示关联 Service 的数据（每帧更新）")]
         [SerializeField] protected bool _showServiceDataInInspector = true;
@@ -36,133 +35,25 @@ namespace EssSystem.Core.EssManagers.Manager
         [Tooltip("是否启用 Service 日志打印")]
         [SerializeField] protected bool _serviceEnableLogging = true;
 
-        #endregion
-
-        /// <summary>
-        ///     Unity Awake方法
-        /// </summary>
         protected override void Awake()
         {
             base.Awake();
             Initialize();
         }
 
-        /// <summary>
-        ///     Unity Start方法
-        /// </summary>
-        protected virtual void Start()
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity Update方法
-        /// </summary>
         protected virtual void Update()
         {
-            // 自动更新 Service 数据到 Inspector
-            if (_showServiceDataInInspector)
-            {
-                UpdateServiceInspectorInfo();
-            }
-
-            // 同步日志设置到Service
+            if (_showServiceDataInInspector) UpdateServiceInspectorInfo();
             SyncServiceLoggingSettings();
         }
 
-        /// <summary>
-        ///     同步日志设置到Service（子类重写以同步特定的Service）
-        /// </summary>
-        protected virtual void SyncServiceLoggingSettings()
-        {
-            // 子类重写此方法，将 _serviceEnableLogging 同步到其 Service
-            // 例如：Service.EnableLogging = _serviceEnableLogging;
-        }
+        /// <summary>子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。</summary>
+        protected virtual void SyncServiceLoggingSettings() { }
 
-        /// <summary>
-        ///     更新 Service 数据到 Inspector（子类重写以更新特定的 Service）
-        /// </summary>
-        protected virtual void UpdateServiceInspectorInfo()
-        {
-            // 子类重写此方法，调用其 Service 的 UpdateInspectorInfo()
-            // 例如：Service?.UpdateInspectorInfo(); _serviceInspectorInfo = Service?.InspectorInfo;
-            // 同时同步日志设置：_serviceEnableLogging = Service?.EnableLogging ?? true;
-        }
+        /// <summary>子类重写：调用 Service.UpdateInspectorInfo() 并赋值 <c>_serviceInspectorInfo</c>。</summary>
+        protected virtual void UpdateServiceInspectorInfo() { }
 
-        /// <summary>
-        ///     Unity FixedUpdate方法
-        /// </summary>
-        protected virtual void FixedUpdate()
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity LateUpdate方法
-        /// </summary>
-        protected virtual void LateUpdate()
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity OnEnable方法
-        /// </summary>
-        protected virtual void OnEnable()
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity OnDisable方法
-        /// </summary>
-        protected virtual void OnDisable()
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity OnDestroy方法 — 基类负责清理静态单例引用，子类可重写追加业务清理
-        /// </summary>
-        protected override void OnDestroy()
-        {
-            // 子类可重写此方法进行清理操作，但需要记得调用 base.OnDestroy()
-            base.OnDestroy();
-        }
-
-        /// <summary>
-        ///     Unity OnApplicationFocus方法
-        /// </summary>
-        /// <param name="hasFocus">是否有焦点</param>
-        protected virtual void OnApplicationFocus(bool hasFocus)
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Unity OnApplicationPause方法
-        /// </summary>
-        /// <param name="pauseStatus">暂停状态</param>
-        protected virtual void OnApplicationPause(bool pauseStatus)
-        {
-            // 子类可重写此方法
-        }
-
-        /// <summary>
-        ///     Manager初始化方法，在Awake后调用
-        /// </summary>
-        protected override void Initialize()
-        {
-            // 子类可重写此方法进行初始化操作
-            base.Initialize();
-        }
-
-        /// <summary>
-        ///     Manager销毁时的清理方法
-        /// </summary>
-        protected virtual void Cleanup()
-        {
-            // 子类可重写此方法进行清理操作
-        }
+        /// <summary>初始化（Awake 内自动调用）。子类重写记得调用 <c>base.Initialize()</c>。</summary>
+        protected override void Initialize() => base.Initialize();
     }
 }

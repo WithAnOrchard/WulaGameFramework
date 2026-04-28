@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using EssSystem.Core.Util;
 using UnityEngine;
 
 namespace EssSystem.Core
@@ -38,14 +39,14 @@ namespace EssSystem.Core
         }
 
         /// <summary>
-        /// 确保基础 Manager 存在（EventManager、DataManager、ResourceManager、UIManager）
+        /// 确保基础 Manager 存在（EventProcessor、DataManager、ResourceManager、UIManager）
         /// </summary>
         private void EnsureBaseManagers()
         {
             // 按优先级顺序定义基础 Manager 类型
             var baseManagerTypes = new[]
             {
-                ("EventManager", -30),
+                ("EventProcessor", -30),
                 ("DataManager", -20),
                 ("ResourceManager", 0),
                 ("UIManager", 5)
@@ -71,7 +72,7 @@ namespace EssSystem.Core
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (IsSystemAssembly(assembly)) continue;
+                if (AssemblyUtils.IsSystemAssembly(assembly)) continue;
 
                 try
                 {
@@ -87,24 +88,6 @@ namespace EssSystem.Core
             return null;
         }
 
-        /// <summary>
-        /// 判断是否为系统/引擎程序集
-        /// </summary>
-        private static bool IsSystemAssembly(System.Reflection.Assembly asm)
-        {
-            var name = asm.GetName().Name;
-            if (string.IsNullOrEmpty(name)) return true;
-            return name.StartsWith("System.", System.StringComparison.Ordinal)
-                   || name.StartsWith("Microsoft.", System.StringComparison.Ordinal)
-                   || name.StartsWith("Unity.", System.StringComparison.Ordinal)
-                   || name.StartsWith("UnityEngine", System.StringComparison.Ordinal)
-                   || name.StartsWith("UnityEditor", System.StringComparison.Ordinal)
-                   || name.StartsWith("Mono.", System.StringComparison.Ordinal)
-                   || name.StartsWith("nunit.", System.StringComparison.Ordinal)
-                   || name == "mscorlib"
-                   || name == "netstandard"
-                   || name == "System";
-        }
 
         /// <summary>
         /// 发现并初始化所有 Manager

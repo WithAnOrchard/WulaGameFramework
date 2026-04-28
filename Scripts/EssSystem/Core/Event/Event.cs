@@ -3,14 +3,14 @@ namespace EssSystem.Core.Event
     /// <summary>
     ///     事件基类 - 所有事件的基础类
     /// </summary>
-    public abstract class Event
+    public abstract class EventBase
     {
         /// <summary>
         ///     构造函数
         /// </summary>
         /// <param name="eventName">事件名称</param>
         /// <param name="data">事件数据</param>
-        protected Event(string eventName, object data = null)
+        protected EventBase(string eventName, object data = null)
         {
             EventName = eventName;
             Data = data;
@@ -31,14 +31,14 @@ namespace EssSystem.Core.Event
     ///     泛型事件类 - 类型安全的事件类
     /// </summary>
     /// <typeparam name="T">数据类型</typeparam>
-    public abstract class Event<T> : Event
+    public abstract class EventBase<T> : EventBase
     {
         /// <summary>
         ///     构造函数
         /// </summary>
         /// <param name="eventName">事件名称</param>
         /// <param name="data">事件数据</param>
-        protected Event(string eventName, T data = default) : base(eventName, data)
+        protected EventBase(string eventName, T data = default) : base(eventName, data)
         {
         }
 

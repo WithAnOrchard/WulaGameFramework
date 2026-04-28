@@ -1,364 +1,180 @@
-# InventoryManager 机制 Agent 指南
+# InventoryManager 指南
 
 ## 概述
 
-InventoryManager 是 EssSystem 的背包管理系统，提供统一的物品背包管理、物品模板、堆叠等功能。本指南面向 AI Agent，说明如何使用 InventoryManager 和 InventoryService 进行背包管理。
+`InventoryManager`（`[Manager(10)]`，薄门面）+ `InventoryService`（业务逻辑 + 持久化）提供完整的背包系统：
 
-## 核心组件
+- 多容器（玩家背包、箱子等）
+- 物品模板 + 链式 API（`InventoryItem`）
+- 堆叠 / 权重上限 / 槽位锁定 / 移动/拆堆
+- 配置驱动 UI（`InventoryConfig` + `PanelConfig` + `SlotConfig` + `ButtonConfig`）
+- 通过 Event 调用 UIManager，**完全解耦**
 
-### 1. InventoryManager
-```csharp
-[Manager(5)]
-public class InventoryManager : Manager<InventoryManager>
+## 文件结构
+
+```
+InventoryManager/
+├── InventoryManager.cs       薄门面 + 调试菜单 + UI 打开/关闭
+├── InventoryService.cs       业务核心 + 持久化 + Event 处理
+├── Agent.md                  本文档
+└── Dao/
+    ├── Inventory.cs          Inventory + InventorySlot
+    ├── Item.cs               InventoryItem + InventoryItemType
+    ├── InventoryConfig.cs    UI 配置
+    ├── PanelConfig.cs
+    ├── SlotConfig.cs
+    └── ButtonConfig.cs
 ```
 
-**用途**: Unity MonoBehaviour 背包管理器，提供对外的 Event 接口
+## 数据分类（持久化）
 
-**特性**:
-- 继承自 Manager<InventoryManager>
-- 所有公开方法标记 `[Event]` 特性
-- 直接调用本地 InventoryService
-- 优先级设置为 5（业务 Manager 推荐值）
-- 提供玩家背包便利 API
+| 常量 | 用途 |
+|---|---|
+| `InventoryService.CAT_INVENTORIES` = `"Inventories"` | 所有容器实例 |
+| `InventoryService.CAT_TEMPLATES`   = `"Items"` | 物品模板（`InventoryItem`） |
+| `InventoryService.CAT_CONFIGS`     = `"Configs"` | UI 配置 |
 
-### 2. InventoryService
-```csharp
-public class InventoryService : Service<InventoryService>
-```
+## Event API
 
-**用途**: 背包服务，实现具体的背包管理逻辑
+> 共 11 个：2 个 Manager 命令 + 7 个 Service 命令/查询 + 2 个 Service 广播。
 
-**特性**:
-- 继承自 Service<InventoryService>
-- 所有公开方法标记 `[Event]` 特性
-- 内置分层数据存储
-- 自动数据持久化
-- 初始化时自动触发 OnServiceInitialized 事件
-- DataService 自动注册此 Service
+### 命令类（调用方主动触发，期望返回结果）
 
-### 3. 数据类（Dao）
-- **Inventory** - 背包容器，包含槽位列表
-- **InventorySlot** - 槽位单元，包含物品、锁定状态
-- **InventoryItem** - 物品数据，支持堆叠、链式构造
-- **InventoryConfig** - 背包UI配置，包含SlotConfig、PanelConfig、ButtonConfig
-- **SlotConfig** - 槽位UI配置
-- **PanelConfig** - 面板UI配置
-- **ButtonConfig** - 按钮UI配置
+#### `InventoryManager.EVT_OPEN_UI` — 打开背包 UI
+- **常量**: `InventoryManager.EVT_OPEN_UI` = `"OpenInventoryUI"`
+- **参数**: `[string inventoryId, string configId?]`（configId 缺省时用 inventoryId）
+- **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
+- **副作用**: 调 `UIManager.EVT_REGISTER_ENTITY` 创建 UI 实体；UI 打开后广播 `InventoryService.EVT_OPEN_UI`
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      InventoryManager.EVT_OPEN_UI,
+      new List<object> { "player", "PlayerBackPack" });
+  ```
 
-### 4. UI管理
-- UI Entity统一由UIManager管理，InventoryManager不包含Entity文件夹
-- 业务模块只负责Dao数据和Service业务逻辑，UI表现层由UIManager统一处理
+#### `InventoryManager.EVT_CLOSE_UI` — 关闭背包 UI
+- **常量**: `InventoryManager.EVT_CLOSE_UI` = `"CloseInventoryUI"`
+- **参数**: `[string inventoryId]`
+- **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
+- **副作用**: 调 `UIManager.EVT_UNREGISTER_ENTITY`；广播 `InventoryService.EVT_CLOSE_UI`
 
-## 使用方法
+#### `InventoryService.EVT_CREATE` — 创建容器
+- **常量**: `InventoryService.EVT_CREATE` = `"InventoryCreate"`
+- **参数**: `[string id, string name, int maxSlots]`
+- **返回**: `ResultCode.Ok(Inventory)` / `ResultCode.Fail(msg)`
+- **副作用**: 写入 `CAT_INVENTORIES` 持久化分类
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      InventoryService.EVT_CREATE,
+      new List<object> { "chest", "箱子", 20 });
+  ```
 
-### 1. 创建背包
+#### `InventoryService.EVT_DELETE` — 删除容器
+- **常量**: `InventoryService.EVT_DELETE` = `"InventoryDelete"`
+- **参数**: `[string id]`
+- **返回**: `ResultCode.Ok()` / `ResultCode.Fail(msg)`
 
-```csharp
-// 通过 InventoryService 创建
-var service = InventoryService.Instance;
-var inventory = service.CreateInventory("player", "玩家背包", 30);
-```
+#### `InventoryService.EVT_ADD` — 添加物品
+- **常量**: `InventoryService.EVT_ADD` = `"InventoryAdd"`
+- **参数**: `[string inventoryId, object itemIdOrItem, int amount]`
+  - `itemIdOrItem` 可以是 `string`（模板 id）或 `InventoryItem` 实例
+- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`（`InventoryResult` 含 `Success/Amount/Remaining`）
+- **副作用**: 修改 `CAT_INVENTORIES`；广播 `EVT_CHANGED`
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      InventoryService.EVT_ADD,
+      new List<object> { "player", "potion_heal", 5 });
+  ```
 
-### 2. 注册物品模板
+#### `InventoryService.EVT_REMOVE` — 移除物品
+- **常量**: `InventoryService.EVT_REMOVE` = `"InventoryRemove"`
+- **参数**: `[string inventoryId, string itemId, int amount]`
+- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
+- **副作用**: 修改 `CAT_INVENTORIES`；广播 `EVT_CHANGED`
 
-```csharp
-// 链式构造物品模板
-service.RegisterTemplate(new InventoryItem("potion_heal")
-    .WithName("治疗药水")
-    .WithDescription("恢复 50 HP")
-    .WithType(InventoryItemType.Consumable)
-    .WithWeight(0.5f)
-    .WithValue(25)
-    .WithMaxStack(99));
-```
+#### `InventoryService.EVT_MOVE` — 移动物品
+- **常量**: `InventoryService.EVT_MOVE` = `"InventoryMove"`
+- **参数**: `[string inventoryId, int fromSlot, int toSlot, int amount]`
+- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
+- **副作用**: 修改槽位状态；广播 `EVT_CHANGED`
 
-### 3. 给玩家发放物品
+#### `InventoryService.EVT_QUERY` — 查询容器
+- **常量**: `InventoryService.EVT_QUERY` = `"InventoryQuery"`
+- **参数**: `[string inventoryId]`
+- **返回**: `ResultCode.Ok(Inventory)` / `ResultCode.Fail(msg)`
+- **副作用**: 无（纯查询）
 
-```csharp
-// 通过 Event 调用
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryGivePlayer", 
-    new List<object> { "potion_heal", 10 });
+### 广播类（用 `[EventListener]` 订阅，无返回值期望）
 
-if (result != null && result[0].ToString() == "成功")
-{
-    var inventoryResult = result[1] as InventoryResult?;
-    Log($"发放成功: {inventoryResult}");
-}
-```
+#### `InventoryService.EVT_CHANGED` — 背包内容变化
+- **常量**: `InventoryService.EVT_CHANGED` = `"InventoryChanged"`
+- **触发条件**: 任何 ADD/REMOVE/MOVE 操作成功后
+- **参数**: `[string inventoryId, string op, string itemId, int amount]`
+  - `op` ∈ `{"add", "remove", "move"}`
+- **典型订阅**: UI 刷新槽位显示
+- **示例**:
+  ```csharp
+  [EventListener(InventoryService.EVT_CHANGED)]
+  public List<object> OnInventoryChanged(string evt, List<object> args)
+  {
+      var inventoryId = args[0] as string;
+      var op = args[1] as string;
+      // 刷新 UI...
+      return null;
+  }
+  ```
 
-### 4. 从玩家拿走物品
+#### `InventoryService.EVT_OPEN_UI` — UI 已打开（广播）
+- **常量**: `InventoryService.EVT_OPEN_UI` = `"OnOpenInventoryUI"`
+- **触发条件**: `InventoryManager.EVT_OPEN_UI` 命令成功执行后
+- **参数**: `[string inventoryId]`
+- ⚠️ **注意**: 与 `InventoryManager.EVT_OPEN_UI`（命令，`"OpenInventoryUI"`）**不同**
 
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryTakeFromPlayer", 
-    new List<object> { "potion_heal", 5 });
+#### `InventoryService.EVT_CLOSE_UI` — UI 已关闭（广播）
+- **常量**: `InventoryService.EVT_CLOSE_UI` = `"OnCloseInventoryUI"`
+- **触发条件**: `InventoryManager.EVT_CLOSE_UI` 命令成功执行后
+- **参数**: `[string inventoryId]`
 
-if (result != null && result[0].ToString() == "成功")
-{
-    Log($"移除成功");
-}
-```
+## 命令 vs 广播 对照表
 
-### 5. 查询玩家物品数量
+| 区分维度 | `InventoryManager.EVT_OPEN_UI`（命令） | `InventoryService.EVT_OPEN_UI`（广播） |
+|---|---|---|
+| 字符串值 | `"OpenInventoryUI"` | `"OnOpenInventoryUI"` |
+| 触发者 | 调用方主动调 `TriggerEventMethod` | Service 在命令完成后调 `TriggerEvent` |
+| 注解 | `[Event]` | `EventProcessor.Instance.TriggerEvent` 直接发出 |
+| 期望响应 | 返回成功/失败结果 | 无（订阅者按需响应） |
+| 接入方式 | `TriggerEventMethod(...)` | `[EventListener("OnOpenInventoryUI")]` |
 
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryPlayerHas", 
-    new List<object> { "potion_heal" });
-
-if (result != null && result[0].ToString() == "成功")
-{
-    int count = (int)result[1];
-    Log($"玩家有 {count} 个治疗药水");
-}
-```
-
-## 内部 Event 方法
-
-### InventoryManager Event 方法
-- `InventoryGivePlayer(templateId, count)` - 给玩家发放物品
-- `InventoryTakeFromPlayer(itemId, count)` - 从玩家拿走物品
-- `InventoryPlayerHas(itemId)` - 查询玩家物品数量
-
-### InventoryService Event 方法
-- `InventoryAdd` - 添加物品到背包
-- `InventoryRemove` - 从背包移除物品
-- `InventoryMove` - 在背包内移动物品
-- `InventoryQuery` - 查询背包信息
-- `InventoryChanged` - 背包变化通知
-
-## 数据存储结构
-
-### Service 内部存储格式
-```
-Dictionary<string, Dictionary<string, object>>
-{
-    "Inventories": {
-        "player": Inventory { Id, Name, Slots },
-        "chest_001": Inventory { ... }
-    },
-    "Templates": {
-        "potion_heal": InventoryItem { ... },
-        "sword_iron": InventoryItem { ... }
-    }
-}
-```
-
-### 数据分类
-- **CAT_INVENTORIES** - 背包数据（自动持久化）
-- **CAT_TEMPLATES** - 物品模板数据（自动持久化）
-
-## 物品堆叠机制
-
-### 可堆叠物品
-- `MaxStack > 1` 表示可堆叠
-- 自动堆叠到现有相同物品槽位
-- 堆叠满后自动填入空槽
-
-### 堆叠操作
-```csharp
-// 判断是否可堆叠
-bool canStack = item.CanStackWith(otherItem);
-
-// 尝试添加到堆叠
-int added = item.TryAdd(amount);
-
-// 尝试从堆叠移除
-int removed = item.TryRemove(amount);
-
-// 拆分堆叠
-var piece = item.Split(amount);
-```
-
-## 使用示例
-
-### 示例 1: 在 GameplayManager 中给玩家发放物品
+## 物品模板注册示例
 
 ```csharp
-[Manager(10)]
-public class GameplayManager : Manager<GameplayManager>
-{
-    [Event("OnEnemyKilled")]
-    public List<object> OnEnemyKilled(List<object> data)
-    {
-        string enemyType = data[0] as string;
-
-        // 根据敌人类型给玩家奖励
-        if (enemyType == "boss")
-        {
-            var result = EventProcessor.Instance.TriggerEventMethod("InventoryGivePlayer", 
-                new List<object> { "legendary_sword", 1 });
-        }
-
-        return new List<object> { "成功" };
-    }
-}
+InventoryService.Instance.RegisterTemplate(
+    new InventoryItem("potion_heal")
+        .WithName("治疗药水")
+        .WithType(InventoryItemType.Consumable)
+        .WithWeight(0.5f)
+        .WithValue(25)
+        .WithMaxStack(99));
 ```
 
-### 示例 2: 在 UIManager 中显示物品数量
+## 与 UIManager 的解耦关系
 
-```csharp
-[Manager(5)]
-public class UIManager : Manager<UIManager>
-{
-    [EventListener("InventoryChanged")]
-    public List<object> OnInventoryChanged(string eventName, List<object> data)
-    {
-        string inventoryId = data[0] as string;
-        string operation = data[1] as string;
-        string itemId = data[2] as string;
-        int amount = (int)data[3];
+InventoryManager 通过 Event 调 UIManager，**不直接 `using`** 业务方法：
 
-        // 更新 UI 显示
-        UpdateItemCountDisplay(itemId);
-
-        return new List<object>();
-    }
-
-    private void UpdateItemCountDisplay(string itemId)
-    {
-        var result = EventProcessor.Instance.TriggerEventMethod("InventoryPlayerHas", 
-            new List<object> { itemId });
-
-        if (result != null && result[0].ToString() == "成功")
-        {
-            int count = (int)result[1];
-            itemCounter.text = count.ToString();
-        }
-    }
-}
+```
+InventoryManager.OpenInventoryUI()
+  → EventProcessor.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY, ...)
+       → UIManager.RegisterUIEntity()
+            → UIService.RegisterUIEntity()
 ```
 
-### 示例 3: 使用 InventoryService 直接操作
-
-```csharp
-// 在本地 Manager 中直接调用本地 Service
-[Manager(10)]
-public class ShopManager : Manager<ShopManager>
-{
-    private InventoryService _inventoryService;
-
-    protected override void Initialize()
-    {
-        base.Initialize();
-        _inventoryService = InventoryService.Instance;
-    }
-
-    [Event("BuyItem")]
-    public List<object> BuyItem(List<object> data)
-    {
-        string templateId = data[0] as string;
-        int quantity = (int)data[1];
-
-        // 直接调用本地 Service
-        var item = _inventoryService.InstantiateTemplate(templateId, quantity);
-        var result = _inventoryService.AddItem("player", item, quantity);
-
-        return new List<object> { result.Success ? "成功" : "失败", result };
-    }
-}
-```
-
-## 最佳实践
-
-### 1. 物品模板管理
-```csharp
-public class ItemTemplates
-{
-    public const string POTION_HEAL = "potion_heal";
-    public const string SWORD_IRON = "sword_iron";
-    public const string ARMOR_LEATHER = "armor_leather";
-}
-
-// 使用常量
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryGivePlayer", 
-    new List<object> { ItemTemplates.POTION_HEAL, 10 });
-```
-
-
-### 3. 槽位锁定
-```csharp
-// 锁定槽位（业务自定义）
-var slot = inventory.GetSlot(0);
-slot.Locked = true;
-
-// 操作时跳过锁定槽位
-var emptySlots = inventory.GetEmptySlots(); // 自动过滤锁定槽位
-```
-
-### 4. 错误处理
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryGivePlayer", 
-    new List<object> { templateId, count });
-
-if (result == null || result.Count == 0)
-{
-    LogError("发放物品失败：返回结果为空");
-}
-else if (result[0].ToString() != "成功")
-{
-    LogWarning($"发放物品失败：{result[1]}");
-}
-else
-{
-    var inventoryResult = result[1] as InventoryResult?;
-    if (inventoryResult.HasValue)
-    {
-        Log($"发放成功：+{inventoryResult.Value.Amount}");
-    }
-}
-```
+UIManager 的常量名引用是允许的（编译期依赖换 IDE 跳转，可接受）。如要完全解耦，未来可把 UI 相关常量移到 `Core/Event/CoreEvents.cs`。
 
 ## 注意事项
 
-1. **架构规范**: InventoryManager 可以直接调用本地 InventoryService，其他 Manager 必须通过 Event 调用
-2. **文件组织**: 数据类放在 Dao 文件夹，UI Entity 统一由 UIManager 管理
-3. **序列化要求**: 所有 Dao 类必须标记 `[Serializable]` 属性
-4. **堆叠规则**: 只有相同 ID 且 MaxStack > 1 的物品才能堆叠
-5. **数据持久化**: 背包和模板数据自动持久化
-6. **事件通知**: 背包操作会触发 `InventoryChanged` 事件
-
-## 常见问题
-
-### Q: 如何给玩家发放物品？
-A: 使用 Event 调用 InventoryGivePlayer：
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryGivePlayer", 
-    new List<object> { templateId, count });
-```
-
-### Q: 如何查询玩家物品数量？
-A: 使用 Event 调用 InventoryPlayerHas：
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("InventoryPlayerHas", 
-    new List<object> { itemId });
-```
-
-### Q: 物品如何堆叠？
-A: 设置物品的 MaxStack > 1，系统会自动堆叠到相同物品的槽位。
-
-### Q: 如何限制背包容量？
-A: 创建背包时设置 MaxSlots：
-```csharp
-service.CreateInventory(id, name, maxSlots);
-```
-
-### Q: InventoryManager 和 InventoryService 有什么区别？
-A:
-- **InventoryManager**: 对外的 Event 接口，符合架构规范，提供玩家便利 API
-- **InventoryService**: 内部实现，处理具体的背包管理逻辑
-- InventoryManager 可以直接调用 InventoryService
-
-### Q: 如何监听背包变化？
-A: 监听 InventoryChanged 事件：
-```csharp
-[EventListener("InventoryChanged")]
-public List<object> OnInventoryChanged(string eventName, List<object> data)
-{
-    // 处理背包变化
-}
-```
-
-### Q: 如何锁定槽位？
-A: 设置 InventorySlot.Locked = true，业务自定义锁定逻辑。
-
-### Q: 背包数据会自动保存吗？
-A: 会。InventoryService 继承自 Service，其数据会自动被 DataService 持久化到本地文件。
+- 物品模板 (`InventoryItem`) 必须 `[Serializable]` 才能持久化
+- `InventoryResult` 是 `readonly struct`（值类型），跨 Event 传输时已被装箱到 `List<object>`
+- `EVT_CHANGED` 内**不要**调可能再次修改背包的代码（避免无限循环）
+- 调试菜单：右键 InventoryManager 组件 → `[ContextMenu]` 列表

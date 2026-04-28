@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.Event.AutoRegisterEvent;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.EssManager.InventoryManager.Dao;
 
@@ -305,7 +305,7 @@ namespace EssSystem.EssManager.InventoryManager
 
         private void BroadcastChanged(string invId, string op, string itemId, int amount)
         {
-            EventManager.Instance.TriggerEvent(EVT_CHANGED,
+            EventProcessor.Instance.TriggerEvent(EVT_CHANGED,
                 new List<object> { invId, op, itemId, amount });
         }
 
@@ -316,15 +316,15 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 1) return Fail("参数不足");
+                if (args == null || args.Count < 1) return ResultCode.Fail("参数不足");
                 var id = args[0]?.ToString();
                 var name = args.Count >= 2 ? args[1]?.ToString() : null;
                 var maxSlots = args.Count >= 3 ? Convert.ToInt32(args[2]) : 20;
 
                 var inv = CreateInventory(id, name, maxSlots);
-                return inv == null ? Fail("创建容器失败") : Ok(inv);
+                return inv == null ? ResultCode.Fail("创建容器失败") : ResultCode.Ok(inv);
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
         /// <summary>事件: 删除容器</summary>
@@ -334,12 +334,12 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 1) return Fail("参数不足");
+                if (args == null || args.Count < 1) return ResultCode.Fail("参数不足");
                 var id = args[0]?.ToString();
                 var result = DeleteInventory(id);
-                return result ? Ok("删除成功") : Fail("删除失败");
+                return result ? ResultCode.Ok("删除成功") : ResultCode.Fail("删除失败");
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
         /// <summary>事件: 向容器添加物品</summary>
@@ -349,7 +349,7 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 2) return Fail("参数不足");
+                if (args == null || args.Count < 2) return ResultCode.Fail("参数不足");
                 var invId = args[0]?.ToString();
                 var amount = args.Count >= 3 ? Convert.ToInt32(args[2]) : 1;
 
@@ -357,12 +357,12 @@ namespace EssSystem.EssManager.InventoryManager
                 if (item == null && args[1] is string templateId)
                     item = InstantiateTemplate(templateId, amount);
 
-                if (item == null) return Fail("未知物品或模板 ID");
+                if (item == null) return ResultCode.Fail("未知物品或模板 ID");
 
                 var result = AddItem(invId, item, amount);
-                return result.Success ? Ok(result) : Fail(result.Message);
+                return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
         /// <summary>事件: 从容器移除物品</summary>
@@ -372,14 +372,14 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 2) return Fail("参数不足");
+                if (args == null || args.Count < 2) return ResultCode.Fail("参数不足");
                 var result = RemoveItem(
                     args[0]?.ToString(),
                     args[1]?.ToString(),
                     args.Count >= 3 ? Convert.ToInt32(args[2]) : 1);
-                return result.Success ? Ok(result) : Fail(result.Message);
+                return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
         /// <summary>事件: 移动物品</summary>
@@ -389,15 +389,15 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 3) return Fail("参数不足");
+                if (args == null || args.Count < 3) return ResultCode.Fail("参数不足");
                 var result = MoveItem(
                     args[0]?.ToString(),
                     Convert.ToInt32(args[1]),
                     Convert.ToInt32(args[2]),
                     args.Count >= 4 ? Convert.ToInt32(args[3]) : -1);
-                return result.Success ? Ok(result) : Fail(result.Message);
+                return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
         /// <summary>事件: 查询容器</summary>
@@ -407,15 +407,13 @@ namespace EssSystem.EssManager.InventoryManager
         {
             try
             {
-                if (args == null || args.Count < 1) return Fail("参数不足");
+                if (args == null || args.Count < 1) return ResultCode.Fail("参数不足");
                 var inv = GetInventory(args[0]?.ToString());
-                return inv == null ? Fail("容器不存在") : Ok(inv);
+                return inv == null ? ResultCode.Fail("容器不存在") : ResultCode.Ok(inv);
             }
-            catch (Exception ex) { return Fail(ex.Message); }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
-        private static List<object> Ok(object data)   => new List<object> { "成功", data };
-        private static List<object> Fail(string msg)  => new List<object> { "错误", msg };
 
         #endregion
     }

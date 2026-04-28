@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Util;
@@ -27,7 +26,7 @@ namespace EssSystem.Core.EssManagers.DataManager
         /// <summary>
         /// 所有已注册的 Service 实例列表
         /// </summary>
-        private List<object> _serviceInstances;
+        private List<IServicePersistence> _serviceInstances;
 
         /// <summary>
         /// 初始化数据服务
@@ -42,12 +41,12 @@ namespace EssSystem.Core.EssManagers.DataManager
                 Directory.CreateDirectory(_dataFolder);
 
             // 初始化 Service 实例列表
-            _serviceInstances = new List<object>();
+            _serviceInstances = new List<IServicePersistence>();
 
             // 注册 Service 初始化事件监听器（必须在base.Initialize()之前注册）
-            if (EventManager.HasInstance)
+            if (EventProcessor.HasInstance)
             {
-                EventManager.Instance.AddListener("OnServiceInitialized", OnServiceInitialized);
+                EventProcessor.Instance.AddListener(EVT_INITIALIZED, OnServiceInitialized);
             }
 
             // DataService 自己注册自己
@@ -74,7 +73,7 @@ namespace EssSystem.Core.EssManagers.DataManager
         /// 获取所有已注册的 Service 实例
         /// </summary>
         /// <returns>Service 实例列表</returns>
-        public List<object> GetServiceInstances()
+        public IReadOnlyList<IServicePersistence> GetServiceInstances()
         {
             return _serviceInstances;
         }
@@ -88,14 +87,12 @@ namespace EssSystem.Core.EssManagers.DataManager
         /// <returns>空列表</returns>
         public List<object> OnServiceInitialized(string eventName, List<object> data)
         {
-            if (data.Count > 0 && data[0] != null)
+            if (data.Count > 0 && data[0] is IServicePersistence service)
             {
-                var serviceInstance = data[0];
-                var serviceTypeName = serviceInstance.GetType().Name;
-                // 如果 Service 尚未注册，则注册
-                if (!_serviceInstances.Contains(serviceInstance))
+                var serviceTypeName = service.GetType().Name;
+                if (!_serviceInstances.Contains(service))
                 {
-                    _serviceInstances.Add(serviceInstance);
+                    _serviceInstances.Add(service);
                     Log($"Service 初始化并注册: {serviceTypeName}", Color.blue);
                 }
                 else
@@ -118,46 +115,18 @@ namespace EssSystem.Core.EssManagers.DataManager
         }
 
         /// <summary>
-        /// 保存指定 Service 的数据
-        /// 通过反射调用Service的SaveCategoryData方法保存每个category
+        /// 保存指定 Service 的数据 — 通过 IServicePersistence 接口直接调用，零反射
         /// </summary>
-        /// <param name="serviceInstance">Service 实例</param>
-        private void SaveServiceData(object serviceInstance)
+        private void SaveServiceData(IServicePersistence service)
         {
             try
             {
-                var serviceType = serviceInstance.GetType();
-
-                // 通过反射获取 Service 的 _dataStorage 字段
-                var dataStorageField = serviceType.GetField("_dataStorage",
-                    BindingFlags.NonPublic | BindingFlags.Instance);
-
-                if (dataStorageField != null)
-                {
-                    var dataStorage = dataStorageField.GetValue(serviceInstance) as
-                        Dictionary<string, Dictionary<string, object>>;
-
-                    if (dataStorage != null)
-                    {
-                        // 获取SaveCategoryData方法
-                        var saveCategoryDataMethod = serviceType.GetMethod("SaveCategoryData",
-                            BindingFlags.NonPublic | BindingFlags.Instance);
-
-                        if (saveCategoryDataMethod != null)
-                        {
-                            // 对每个category调用SaveCategoryData
-                            foreach (var category in dataStorage.Keys)
-                            {
-                                saveCategoryDataMethod.Invoke(serviceInstance, new object[] { category });
-                            }
-                            Log($"保存Service数据: {serviceType.Name} ({dataStorage.Count}个category)", Color.green);
-                        }
-                    }
-                }
+                service.SaveAllCategories();
+                Log($"保存Service数据: {service.GetType().Name}", Color.green);
             }
             catch (Exception ex)
             {
-                LogWarning($"保存Service数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
+                LogWarning($"保存Service数据失败: {service.GetType().Name} - {ex.Message}");
             }
         }
     }

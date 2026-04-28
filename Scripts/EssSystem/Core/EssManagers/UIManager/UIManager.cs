@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Event;
-using EssSystem.Core.Event.AutoRegisterEvent;
-using EssSystem.EssManager.InventoryManager.Dao;
+using EssSystem.Core.EssManagers.UIManager.Dao;
+using EssSystem.Core;
 
 namespace EssSystem.Core.EssManagers.UIManager
 {
@@ -13,12 +13,14 @@ namespace EssSystem.Core.EssManagers.UIManager
     [Manager(5)]
     public class UIManager : Manager<UIManager>
     {
+        // ─── Event 名常量（供调用方使用，避免魔法字符串）
+        public const string EVT_REGISTER_ENTITY   = "RegisterUIEntity";
+        public const string EVT_GET_ENTITY        = "GetUIEntity";
+        public const string EVT_UNREGISTER_ENTITY = "UnregisterUIEntity";
+        public const string EVT_HOT_RELOAD        = "HotReloadUIConfigs";
+
         [Header("UI Canvas")]
         [SerializeField] private Canvas _uiCanvas;
-
- 
-
-        private readonly Dictionary<string, GameObject> _inventoryUIs = new Dictionary<string, GameObject>();
 
         protected override void Initialize()
         {
@@ -28,10 +30,21 @@ namespace EssSystem.Core.EssManagers.UIManager
             if (_uiCanvas == null)
             {
                 _uiCanvas = CreateCanvas();
-                Log("UIManager 自动创建Canvas", UnityEngine.Color.green);
+                Log("UIManager 自动创建Canvas", Color.green);
             }
 
-            Log("UIManager 初始化完成", UnityEngine.Color.green);
+            Log("UIManager 初始化完成", Color.green);
+        }
+
+        // ─────────────────────────────────────────────────────────────
+        #region Canvas
+
+        /// <summary>
+        /// 获取 Canvas Transform — 供 UIService 直接调用，替代反射
+        /// </summary>
+        public Transform GetCanvasTransform()
+        {
+            return _uiCanvas != null ? _uiCanvas.transform : transform;
         }
 
         /// <summary>
@@ -54,101 +67,73 @@ namespace EssSystem.Core.EssManagers.UIManager
 
             return canvas;
         }
-  
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region Event Handlers (外部通过 EventProcessor 调用，内部直接调用 UIService)
 
         /// <summary>
         ///     注册UI实体
         /// </summary>
-        [Event("RegisterUIEntity")]
-        public System.Collections.Generic.List<object> RegisterUIEntity(System.Collections.Generic.List<object> data)
+        [Event(EVT_REGISTER_ENTITY)]
+        public List<object> RegisterUIEntity(List<object> data)
         {
-            string daoId = data[0] as string;
-            var component = data[1] as Dao.UIComponent;
+            var daoId = data[0] as string;
+            var component = data[1] as UIComponent;
 
             if (string.IsNullOrEmpty(daoId) || component == null)
-            {
-                Log($"UIManager.RegisterUIEntity 参数无效: daoId={daoId}, component={(component != null)}", UnityEngine.Color.red);
-                return new System.Collections.Generic.List<object> { "参数无效" };
-            }
+                return ResultCode.Fail("参数无效");
 
-            Log($"UIManager.RegisterUIEntity 调用ServiceRegisterUIEntity: {daoId}", UnityEngine.Color.yellow);
-
-            // 通过 EventProcessor 调用本地 Service
-            var result = EventProcessor.Instance.TriggerEventMethod("ServiceRegisterUIEntity",
-                new System.Collections.Generic.List<object> { daoId, component });
-
-            Log($"UIManager.RegisterUIEntity ServiceRegisterUIEntity返回: {(result != null ? result[0] : "null")}", UnityEngine.Color.yellow);
-
-            return result ?? new System.Collections.Generic.List<object> { "调用失败" };
+            var canvasTransform = GetCanvasTransform();
+            var entity = UIService.Instance.RegisterUIEntity(daoId, component, canvasTransform);
+            return entity != null ? ResultCode.Ok(daoId) : ResultCode.Fail("创建UIEntity失败");
         }
 
         /// <summary>
         ///     获取UI实体
         /// </summary>
-        [Event("GetUIEntity")]
-        public System.Collections.Generic.List<object> GetUIEntity(System.Collections.Generic.List<object> data)
+        [Event(EVT_GET_ENTITY)]
+        public List<object> GetUIEntity(List<object> data)
         {
-            string daoId = data[0] as string;
-
+            var daoId = data[0] as string;
             if (string.IsNullOrEmpty(daoId))
-            {
-                return new System.Collections.Generic.List<object> { "参数无效" };
-            }
+                return ResultCode.Fail("参数无效");
 
-            // 通过 EventProcessor 调用本地 Service
-            var result = EventProcessor.Instance.TriggerEventMethod("ServiceGetUIEntity",
-                new System.Collections.Generic.List<object> { daoId });
-
-            return result ?? new System.Collections.Generic.List<object> { "调用失败" };
+            var entity = UIService.Instance.GetUIEntity(daoId);
+            return entity != null ? ResultCode.Ok(entity) : ResultCode.Fail("未找到实体");
         }
 
         /// <summary>
         ///     注销UI实体
         /// </summary>
-        [Event("UnregisterUIEntity")]
-        public System.Collections.Generic.List<object> UnregisterUIEntity(System.Collections.Generic.List<object> data)
+        [Event(EVT_UNREGISTER_ENTITY)]
+        public List<object> UnregisterUIEntity(List<object> data)
         {
-            string daoId = data[0] as string;
-
+            var daoId = data[0] as string;
             if (string.IsNullOrEmpty(daoId))
-            {
-                Log($"UIManager.UnregisterUIEntity 参数无效: daoId={daoId}", UnityEngine.Color.red);
-                return new System.Collections.Generic.List<object> { "参数无效" };
-            }
+                return ResultCode.Fail("参数无效");
 
-            // 通过 EventProcessor 调用本地 Service
-            var result = EventProcessor.Instance.TriggerEventMethod("ServiceUnregisterUIEntity",
-                new System.Collections.Generic.List<object> { daoId });
-
-            return result ?? new System.Collections.Generic.List<object> { "调用失败" };
+            UIService.Instance.DestroyUIEntity(daoId);
+            return ResultCode.Ok();
         }
 
         /// <summary>
         ///     热重载UI配置
         /// </summary>
-        [Event("HotReloadUIConfigs")]
-        public System.Collections.Generic.List<object> HotReloadUIConfigs(System.Collections.Generic.List<object> data)
+        [Event(EVT_HOT_RELOAD)]
+        public List<object> HotReloadUIConfigs(List<object> data)
         {
-            Log("UIManager 开始热重载UI配置", UnityEngine.Color.yellow);
-
-            // 通过 EventProcessor 调用本地 Service
-            var result = EventProcessor.Instance.TriggerEventMethod("ServiceHotReloadUIConfigs",
-                new System.Collections.Generic.List<object> { });
-
-            if (result != null && result.Count >= 1 && result[0].ToString() == "成功")
-            {
-                Log("UIManager UI配置热重载成功", UnityEngine.Color.green);
-            }
+            var success = UIService.Instance.HotReloadConfigs();
+            if (success)
+                Log("UIManager UI配置热重载成功", Color.green);
             else
-            {
-                Log($"UIManager UI配置热重载失败: {(result != null ? result[0] : "null")}", UnityEngine.Color.red);
-            }
+                Log("UIManager UI配置热重载失败", Color.red);
 
-            return result ?? new System.Collections.Generic.List<object> { "调用失败" };
+            return success ? ResultCode.Ok() : ResultCode.Fail("热重载失败");
         }
 
-        private static List<object> Ok(object data) => new List<object> { "成功", data };
-        private static List<object> Fail(string msg) => new List<object> { "错误", msg };
+        #endregion
 
         #region Editor Methods
 
@@ -158,7 +143,7 @@ namespace EssSystem.Core.EssManagers.UIManager
         [ContextMenu("热重载UI配置")]
         private void EditorHotReloadUIConfigs()
         {
-            HotReloadUIConfigs(new System.Collections.Generic.List<object> { });
+            UIService.Instance.HotReloadConfigs();
         }
 
         #endregion

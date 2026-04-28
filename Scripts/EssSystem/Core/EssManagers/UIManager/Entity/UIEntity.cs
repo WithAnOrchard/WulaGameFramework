@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.UIManager.Dao;
 using TMPro;
@@ -252,15 +253,15 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
         {
             try
             {
-                var eventManager = EventManager.Instance;
-                var result = eventManager.TriggerEvent("GetServiceDataById", new List<object>
+                var eventProcessor = EventProcessor.Instance;
+                var result = eventProcessor.TriggerEvent("GetServiceDataById", new List<object>
                 {
                     "UIService",
                     "UIEntities",
                     daoId
                 });
 
-                if (result != null && result.Count >= 2 && result[0].ToString() == "成功") return result[1] as UIEntity;
+                if (ResultCode.IsOk(result) && result.Count >= 2) return result[1] as UIEntity;
 
                 return null;
             }

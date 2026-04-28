@@ -2,8 +2,8 @@ using System.Linq;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.Event.AutoRegisterEvent;
 using EssSystem.EssManager.InventoryManager;
+using EssSystem.Core.EssManagers.UIManager;
 
 /// <summary>
 /// 游戏管理器 - 用于测试 EssSystem 框架
@@ -96,21 +96,21 @@ public class GameManager : AbstractGameManager
     private void TogglePlayerInventory()
     {
         // 检查玩家背包UI是否已打开
-        var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity",
+        var result = EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY,
             new System.Collections.Generic.List<object> { "player" });
 
-        if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
+        if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
         {
             // UI已打开，关闭它
             Debug.Log("[GameManager] 关闭玩家背包 (B键)");
-            EventProcessor.Instance.TriggerEventMethod("CloseInventoryUI",
+            EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_CLOSE_UI,
                 new System.Collections.Generic.List<object> { "player" });
         }
         else
         {
             // UI未打开，打开它
             Debug.Log("[GameManager] 打开玩家背包 (B键)");
-            EventProcessor.Instance.TriggerEventMethod("OpenInventoryUI",
+            EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI,
                 new System.Collections.Generic.List<object> { "player", "PlayerBackPack" });
         }
     }

@@ -1,366 +1,126 @@
-# UIManager 机制 Agent 指南
+# UIManager 指南
 
 ## 概述
 
-UIManager 是 EssSystem 的 UI 管理系统，提供统一的 UI 实体注册、获取和注销功能。本指南面向 AI Agent，说明如何使用 UIManager 和 UIService 进行 UI 管理。
+`UIManager`（`[Manager(5)]`）+ `UIService` 是框架唯一的 UI 实体管理中心。
 
-## 架构定位
+**架构规则**：
+- 其他模块**禁止**自建 `Entity/` 文件夹
+- 业务模块只构造 `UIComponent` 数据（Dao），UI 表现层统一交给 UIManager
+- UI 实体（`UIEntity`，MonoBehaviour）实例化由 `UIService` + `UIEntityFactory` 完成
 
-UIManager 是 EssSystem 框架中唯一负责 UI Entity 管理的模块。根据架构规范：
-- UI Entity 统一由 UIManager 管理
-- 其他模块不得包含 Entity 文件夹
-- 业务模块只负责 Dao 数据和 Service 业务逻辑，UI 表现层由 UIManager 统一处理
+## Event API
 
-## 核心组件
+### `EVT_REGISTER_ENTITY` — 注册 UI 实体
+- **常量**: `UIManager.EVT_REGISTER_ENTITY` = `"RegisterUIEntity"`
+- **参数**: `[string daoId, UIComponent component]`
+- **返回**: `ResultCode.Ok(UIEntity)` / `ResultCode.Fail("参数无效")`
+- **副作用**: 在 UI Canvas 下递归创建 GameObject 树；component 树存入 `UIComponents` 分类（持久化）
+- **示例**:
+  ```csharp
+  var panel = new UIPanelComponent("inv", "背包").SetSize(680, 560);
+  EventProcessor.Instance.TriggerEventMethod(
+      UIManager.EVT_REGISTER_ENTITY,
+      new List<object> { "inv", panel });
+  ```
 
-### 1. UIManager
-```csharp
-[Manager(5)]
-public class UIManager : Manager<UIManager>
-```
+### `EVT_GET_ENTITY` — 获取已注册的 UI 实体
+- **常量**: `UIManager.EVT_GET_ENTITY` = `"GetUIEntity"`
+- **参数**: `[string daoId]`
+- **返回**: `ResultCode.Ok(UIEntity)` / `ResultCode.Fail("未找到实体")`
+- **副作用**: 无（纯查询）
+- **典型用法**: 探测 UI 是否已打开
+- **示例**:
+  ```csharp
+  var r = EventProcessor.Instance.TriggerEventMethod(
+      UIManager.EVT_GET_ENTITY, new List<object> { "inv" });
+  bool isOpen = ResultCode.IsOk(r);
+  ```
 
-**用途**: Unity MonoBehaviour UI 管理器，提供对外的 Event 接口
+### `EVT_UNREGISTER_ENTITY` — 注销并销毁 UI 实体
+- **常量**: `UIManager.EVT_UNREGISTER_ENTITY` = `"UnregisterUIEntity"`
+- **参数**: `[string daoId]`
+- **返回**: `ResultCode.Ok()` / `ResultCode.Fail("参数无效")`
+- **副作用**: 销毁对应 GameObject，从 `_uiEntityCache` 移除；持久化的 UIComponents 数据**不会**删除
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      UIManager.EVT_UNREGISTER_ENTITY, new List<object> { "inv" });
+  ```
 
-**特性**:
-- 继承自 Manager<UIManager>
-- 所有公开方法标记 `[Event]` 特性
-- 通过 Event 调用本地 UIService
-- 优先级设置为 5（业务 Manager 推荐值）
+### `EVT_HOT_RELOAD` — 热重载 UI 配置
+- **常量**: `UIManager.EVT_HOT_RELOAD` = `"HotReloadUIConfigs"`
+- **参数**: `[]`（无）
+- **返回**: `ResultCode.Ok()` / `ResultCode.Fail("热重载失败")`
+- **副作用**: 重新读 `{persistentDataPath}/ServiceData/UIService/UIComponents.json`
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      UIManager.EVT_HOT_RELOAD, new List<object>());
+  ```
 
-### 2. UIService
-```csharp
-public class UIService : Service<UIService>
-```
+## 调用方式
 
-**用途**: UI 服务，实现具体的 UI 实体管理逻辑
-
-**特性**:
-- 继承自 Service<UIService>
-- 所有公开方法标记 `[Event]` 特性
-- 内置分层数据存储
-- 自动数据持久化
-
-### 3. UIEntity
-UI 实体基类，用于表示 UI 组件的数据结构
-
-## 使用方法
-
-### 1. 注册 UI 实体
-
-```csharp
-// 创建 UI 实体
-var uiEntity = new UIEntity
-{
-    // 设置实体属性
-};
-
-// 注册实体
-var result = EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity", 
-    new List<object> { "entity_id_001", uiEntity });
-
-if (result != null && result.Count >= 1 && result[0].ToString() == "成功")
-{
-    Log("UI 实体注册成功");
-}
-```
-
-### 2. 获取 UI 实体
+### 跨模块调用（推荐）
 
 ```csharp
-// 获取实体
-var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-    new List<object> { "entity_id_001" });
+EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY,
+    new List<object> { "player_panel", panelComponent });
 
-if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
-{
-    var entity = result[1] as UIEntity;
-    // 使用实体
-}
+var r = EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY,
+    new List<object> { "player_panel" });
+if (ResultCode.IsOk(r)) { var entity = r[1] as UIEntity; }
 ```
 
-### 3. 注销 UI 实体
+### 内部调用（UIManager 自己用）
 
 ```csharp
-// 注销实体
-var result = EventProcessor.Instance.TriggerEventMethod("UnregisterUIEntity", 
-    new List<object> { "entity_id_001" });
-
-if (result != null && result.Count >= 1 && result[0].ToString() == "成功")
-{
-    Log("UI 实体注销成功");
-}
+var canvas = UIManager.Instance.GetCanvasTransform();
+var entity = UIService.Instance.RegisterUIEntity(daoId, component, canvas);
 ```
 
-## 内部 Event 方法
+外部模块**不要**这样做——破坏解耦。
 
-### UIManager Event 方法
-- `RegisterUIEntity(daoId, entity)` - 注册 UI 实体
-- `GetUIEntity(daoId)` - 获取 UI 实体
-- `UnregisterUIEntity(daoId)` - 注销 UI 实体
+## UIComponent 体系
 
-### UIService Event 方法
-- `ServiceRegisterUIEntity(daoId, entity)` - 注册 UI 实体（内部实现）
-- `ServiceGetUIEntity(daoId)` - 获取 UI 实体（内部实现）
-- `ServiceUnregisterUIEntity(daoId)` - 注销 UI 实体（内部实现）
-
-## 数据存储结构
-
-### Service 内部存储格式
-```
-Dictionary<string, Dictionary<string, object>>
-{
-    "UIComponents": {
-        "Component1": Value1,
-        "Component2": Value2
-    },
-    "UIEntities": {
-        "entity_id_001": UIEntity1,
-        "entity_id_002": UIEntity2
-    }
-}
-```
-
-### 数据分类
-- **UI_COMPONENTS_CATEGORY** - UI 组件数据
-- **UI_ENTITIES_CATEGORY** - UI 实体数据
-
-## 使用示例
-
-### 示例 1: 在 GameplayManager 中注册 UI 实体
+业务模块通过 `UIComponent`（`UIPanelComponent` / `UIButtonComponent` / ...）描述 UI 树：
 
 ```csharp
-[Manager(10)]
-public class GameplayManager : Manager<GameplayManager>
-{
-    protected override void Initialize()
-    {
-        base.Initialize();
-        // 初始化逻辑
-    }
+var panel = new UIPanelComponent("inv", "背包")
+    .SetPosition(960, 540).SetSize(680, 560)
+    .SetBackgroundColor(...).SetVisible(true);
 
-    [Event("ShowPlayerHUD")]
-    public List<object> ShowPlayerHUD(List<object> data)
-    {
-        string playerId = data[0] as string;
+panel.AddChild(new UIButtonComponent("inv_close", "关闭", "×")
+    .SetPosition(640, 520).SetSize(36, 36));
 
-        // 创建 UI 实体
-        var hudEntity = new UIEntity
-        {
-            // 设置 HUD 属性
-        };
-
-        // 注册 UI 实体
-        var result = EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity", 
-            new List<object> { $"hud_{playerId}", hudEntity });
-
-        return result ?? new List<object> { "调用失败" };
-    }
-}
+EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY,
+    new List<object> { panel.Id, panel });
 ```
 
-### 示例 2: 在其他 Manager 中获取 UI 实体
+`UIService.RegisterUIEntity` 内部递归：
+1. `StoreComponentTreeRecursive` — 把 UIComponent 树存到 `UIComponents` 分类（用于热重载）
+2. `CreateEntityRecursive` — 用 `UIEntityFactory` 实例化 GameObject 树
+
+## Canvas 管理
+
+UIManager 持有 `_uiCanvas`：
+- 没有则自动创建（1920×1080 ScaleWithScreenSize）
+- `GetCanvasTransform()` 暴露给 UIService
+
+## 内存缓存
+
+`_uiEntityCache: Dictionary<string, UIEntity>` 存储 daoId → 实体引用。`UnregisterUIEntity` 销毁后从缓存移除。
+
+## 热重载
 
 ```csharp
-[Manager(6)]
-public class AudioManager : Manager<AudioManager>
-{
-    [EventListener("OnUIEntityCreated")]
-    public List<object> OnUIEntityCreated(string eventName, List<object> data)
-    {
-        string entityId = data[0] as string;
-
-        // 获取 UI 实体
-        var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-            new List<object> { entityId });
-
-        if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
-        {
-            var entity = result[1] as UIEntity;
-            // 根据实体类型播放音效
-        }
-
-        return new List<object>();
-    }
-}
+EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_HOT_RELOAD, new List<object>());
 ```
 
-### 示例 3: 跨 Manager 通信
-
-```csharp
-// UIManager 监听游戏状态变化
-[Manager(5)]
-public class UIManager : Manager<UIManager>
-{
-    [EventListener("OnPlayerHealthChanged")]
-    public List<object> UpdateHealthBar(string eventName, List<object> data)
-    {
-        float health = (float)data[0];
-        float maxHealth = (float)data[1];
-
-        // 获取血条 UI 实体
-        var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-            new List<object> { "health_bar" });
-
-        if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
-        {
-            var healthBar = result[1] as UIEntity;
-            // 更新血条显示
-            healthBar.SetValue(health / maxHealth);
-        }
-
-        return new List<object>();
-    }
-}
-```
-
-## 最佳实践
-
-### 1. 实体 ID 管理
-```csharp
-public class UIEntityIds
-{
-    public const string MAIN_MENU = "main_menu";
-    public const string HUD = "hud";
-    public const string SETTINGS_PANEL = "settings_panel";
-}
-
-// 使用常量
-var result = EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity", 
-    new List<object> { UIEntityIds.HUD, hudEntity });
-```
-
-### 2. 实体生命周期管理
-```csharp
-// 场景加载时注册 UI 实体
-[Event("OnSceneLoaded")]
-public List<object> OnSceneLoaded(List<object> data)
-{
-    string sceneName = data[0] as string;
-    
-    if (sceneName == "Gameplay")
-    {
-        // 注册游戏 UI 实体
-        RegisterGameUI();
-    }
-    
-    return new List<object> { "成功" };
-}
-
-// 场景卸载时注销 UI 实体
-[Event("OnSceneUnload")]
-public List<object> OnSceneUnload(List<object> data)
-{
-    string sceneName = data[0] as string;
-    
-    if (sceneName == "Gameplay")
-    {
-        // 注销游戏 UI 实体
-        UnregisterGameUI();
-    }
-    
-    return new List<object> { "成功" };
-}
-```
-
-### 3. 错误处理
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-    new List<object> { entityId });
-
-if (result == null || result.Count == 0)
-{
-    LogError("获取 UI 实体失败：返回结果为空");
-}
-else if (result[0].ToString() != "成功")
-{
-    LogWarning($"获取 UI 实体失败：{result[0]}");
-}
-else if (result.Count < 2)
-{
-    LogError("获取 UI 实体失败：返回数据不完整");
-}
-else
-{
-    var entity = result[1] as UIEntity;
-    if (entity == null)
-    {
-        LogError("获取 UI 实体失败：实体为 null");
-    }
-}
-```
+→ `UIService.HotReloadConfigs()` → `LoadData()` 重新读磁盘 JSON。
 
 ## 注意事项
 
-1. **架构规范**: UIManager 只能通过 Event 调用本地 UIService，不能直接访问
-2. **UI Entity 统一管理**: 其他模块不得包含 Entity 文件夹，所有 UI Entity 统一由 UIManager 管理
-3. **实体 ID**: 使用有意义的实体 ID，避免重复
-4. **生命周期**: 及时注销不再使用的 UI 实体，避免内存泄漏
-5. **数据持久化**: UIService 的数据会自动被 DataManager 持久化
-6. **线程安全**: UIManager 主要在主线程运行
-7. **序列化要求**: UIEntity 必须标记 `[Serializable]` 属性以支持数据持久化
-8. **跨 Manager 通信**: 使用 EventManager 触发事件，不要直接访问其他 Manager
-9. **CanvasGroup 添加规则**: CanvasGroup 组件必须在 UIType.Panel 的创建过程中添加，因为其他 UI 操作可能依赖 CanvasGroup。其他地方进行 UI 操作时应该先创建 Panel 再进行别的操作
-
-## 常见问题
-
-### Q: 如何注册 UI 实体？
-A: 使用 Event 调用 RegisterUIEntity 方法：
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity", 
-    new List<object> { entityId, uiEntity });
-```
-
-### Q: 如何获取 UI 实体？
-A: 使用 Event 调用 GetUIEntity 方法：
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-    new List<object> { entityId });
-```
-
-### Q: UI 实体数据会持久化吗？
-A: 会。UIService 继承自 Service，其数据会自动被 DataManager 持久化到本地文件。
-
-### Q: UIManager 和 UIService 有什么区别？
-A:
-- **UIManager**: 对外的 Event 接口，符合架构规范
-- **UIService**: 内部实现，处理具体的 UI 实体管理逻辑
-- UIManager 通过 Event 调用 UIService
-
-### Q: 如何在场景切换时管理 UI 实体？
-A: 监听场景加载和卸载事件，在适当的时候注册和注销 UI 实体：
-```csharp
-[EventListener("OnSceneLoaded")]
-public List<object> OnSceneLoaded(string eventName, List<object> data)
-{
-    // 注册场景 UI 实体
-}
-
-[EventListener("OnSceneUnload")]
-public List<object> OnSceneUnload(string eventName, List<object> data)
-{
-    // 注销场景 UI 实体
-}
-```
-
-### Q: UIEntity 需要什么要求？
-A: UIEntity 必须标记 `[Serializable]` 属性以支持数据持久化，并且应该是可序列化的类。
-
-### Q: 如何检查 UI 实体是否存在？
-A: 获取实体后检查返回结果：
-```csharp
-var result = EventProcessor.Instance.TriggerEventMethod("GetUIEntity", 
-    new List<object> { entityId });
-
-if (result != null && result.Count >= 2 && result[0].ToString() == "成功")
-{
-    var entity = result[1] as UIEntity;
-    // 实体存在
-}
-else
-{
-    // 实体不存在
-}
-```
-
-### Q: 可以在其他 Manager 中直接访问 UIManager 吗？
-A: 不可以。必须通过 EventManager 触发事件或 EventProcessor 调用 Event 方法。
+- `UIComponent.Id` 必须唯一，`RegisterUIEntity` 用它作 daoId
+- 持久化只保存 `UIComponent` 数据，`UIEntity`（GameObject）运行时重建
+- `UIEntity` 是 MonoBehaviour，在 `OnDestroy` 中应调用 `UIService.Instance.UnregisterUIEntity` 清理缓存

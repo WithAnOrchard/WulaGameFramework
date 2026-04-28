@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# ----------------------------------------------------------------------
+# pre-commit: enforce Agent.md / Event constant consistency
+# Runs tools/agent_lint.ps1 -Strict; aborts commit on any error or warning.
+#
+# Install: run `pwsh tools/install-hooks.ps1` (or `powershell` on Windows)
+# ----------------------------------------------------------------------
+set -e
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if command -v pwsh >/dev/null 2>&1; then
+    PS=pwsh
+elif command -v powershell >/dev/null 2>&1; then
+    PS=powershell
+else
+    echo "[pre-commit] PowerShell not found; skipping agent_lint" >&2
+    exit 0
+fi
+
+echo "[pre-commit] Running tools/agent_lint.ps1 -Strict ..."
+"$PS" -NoProfile -ExecutionPolicy Bypass -File ./tools/agent_lint.ps1 -Strict
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo "" >&2
+    echo "[pre-commit] FAIL: agent_lint reported issues. Fix or run with --no-verify to bypass." >&2
+fi
+exit $status

@@ -4,7 +4,7 @@ using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Util;
 using EssSystem.Core.Event;
-using EssSystem.Core.Event.AutoRegisterEvent;
+using EssSystem.Core;
 
 namespace EssSystem.Core.EssManagers.ResourceManager
 {
@@ -88,6 +88,19 @@ namespace EssSystem.Core.EssManagers.ResourceManager
     /// </summary>
     public class ResourceService : Service<ResourceService>
     {
+        // ===== Event Constants (Service 内部 / 低层 API) =====
+        public const string EVT_DATA_LOADED               = "OnResourceDataLoaded";
+        public const string EVT_GET_RESOURCE              = "GetResource";
+        public const string EVT_ADD_RESOURCE_CONFIG       = "AddResourceConfig";
+        public const string EVT_LOAD_RESOURCE_ASYNC       = "LoadResourceAsync";
+        public const string EVT_LOAD_EXTERNAL_IMAGE_ASYNC = "LoadExternalImageAsync";
+        // 外部图片加载广播事件（广播 / 订阅用）
+        public const string EVT_EXTERNAL_IMAGE_LOADED      = "OnExternalImageLoaded";
+        public const string EVT_EXTERNAL_IMAGE_LOAD_FAILED = "OnExternalImageLoadFailed";
+        // 以下两个与 ResourceManager façade 同名（同一个字符串 key）。
+        public const string EVT_UNLOAD_RESOURCE           = ResourceManager.EVT_UNLOAD_RESOURCE;
+        public const string EVT_UNLOAD_ALL_RESOURCES      = ResourceManager.EVT_UNLOAD_ALL_RESOURCES;
+
         private Dictionary<ResourceKey, UnityEngine.Object> _loadedResources = new Dictionary<ResourceKey, UnityEngine.Object>();
         private bool _dataLoaded = false;
 
@@ -108,13 +121,13 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 当 DataManager 完成数据加载后调用此方法
         /// </summary>
-        [Event("OnResourceDataLoaded")]
+        [Event(EVT_DATA_LOADED)]
         public List<object> OnDataLoaded(List<object> data)
         {
             if (_dataLoaded) return new List<object> { "已加载" };
             _dataLoaded = true;
             LoadAndPreloadResources();
-            return new List<object> { "成功" };
+            return new List<object> { ResultCode.OK };
         }
 
         /// <summary>
@@ -196,7 +209,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 获取已加载的资源（同步）
         /// </summary>
-        [Event("GetResource")]
+        [Event(EVT_GET_RESOURCE)]
         public List<object> Get(List<object> data)
         {
             string path = data[0] as string;
@@ -207,7 +220,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
             if (_loadedResources.ContainsKey(key))
             {
-                return new List<object> { "成功", _loadedResources[key] };
+                return new List<object> { ResultCode.OK, _loadedResources[key] };
             }
 
             return new List<object> { "资源未加载" };
@@ -225,7 +238,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 添加预加载配置
         /// </summary>
-        [Event("AddResourceConfig")]
+        [Event(EVT_ADD_RESOURCE_CONFIG)]
         public List<object> AddPreloadConfig(List<object> data)
         {
             string id = data[0] as string;
@@ -244,13 +257,13 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             var config = new ResourceConfigItem { id = id, path = path, isExternal = isExternal, type = type };
             SetData(category, id, config);
 
-            return new List<object> { "成功" };
+            return new List<object> { ResultCode.OK };
         }
 
         /// <summary>
         /// 异步加载 Unity 内部资源
         /// </summary>
-        [Event("LoadResourceAsync")]
+        [Event(EVT_LOAD_RESOURCE_ASYNC)]
         public List<object> LoadAsync(List<object> data)
         {
             string path = data[0] as string;
@@ -266,7 +279,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
             if (_loadedResources.ContainsKey(key))
             {
-                return new List<object> { "成功", _loadedResources[key] };
+                return new List<object> { ResultCode.OK, _loadedResources[key] };
             }
 
             // 根据类型加载
@@ -320,7 +333,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 异步加载外部文件图片
         /// </summary>
-        [Event("LoadExternalImageAsync")]
+        [Event(EVT_LOAD_EXTERNAL_IMAGE_ASYNC)]
         public List<object> LoadExternalImageAsync(List<object> data)
         {
             string filePath = data[0] as string;
@@ -328,7 +341,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
             if (_loadedResources.ContainsKey(key))
             {
-                return new List<object> { "成功", _loadedResources[key] };
+                return new List<object> { ResultCode.OK, _loadedResources[key] };
             }
 
             if (!System.IO.File.Exists(filePath))
@@ -375,7 +388,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                         callback?.Invoke(sprite);
 
                         // 触发加载完成事件
-                        EventProcessor.Instance.TriggerEventMethod("OnExternalImageLoaded",
+                        EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOADED,
                             new List<object> { new Dictionary<string, object> { ["path"] = filePath, ["sprite"] = sprite } });
                     }
                     else
@@ -385,7 +398,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                         callback?.Invoke(null);
 
                         // 触发加载失败事件
-                        EventProcessor.Instance.TriggerEventMethod("OnExternalImageLoadFailed",
+                        EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOAD_FAILED,
                             new List<object> { new Dictionary<string, object> { ["path"] = filePath, ["error"] = "加载失败" } });
                     }
                 });
@@ -395,7 +408,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 卸载资源
         /// </summary>
-        [Event("UnloadResource")]
+        [Event(EVT_UNLOAD_RESOURCE)]
         public List<object> Unload(List<object> data)
         {
             string path = data[0] as string;
@@ -407,7 +420,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             {
                 Resources.UnloadAsset(_loadedResources[key]);
                 _loadedResources.Remove(key);
-                return new List<object> { "成功" };
+                return new List<object> { ResultCode.OK };
             }
 
             return new List<object> { "资源未加载" };
@@ -416,7 +429,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// <summary>
         /// 卸载所有资源
         /// </summary>
-        [Event("UnloadAllResources")]
+        [Event(EVT_UNLOAD_ALL_RESOURCES)]
         public List<object> UnloadAll(List<object> data)
         {
             foreach (var resource in _loadedResources.Values)
@@ -424,7 +437,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 Resources.UnloadAsset(resource);
             }
             _loadedResources.Clear();
-            return new List<object> { "成功" };
+            return new List<object> { ResultCode.OK };
         }
 
         /// <summary>
