@@ -104,8 +104,15 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY,
 ## Canvas 管理
 
 UIManager 持有 `_uiCanvas`：
-- 没有则自动创建（1920×1080 ScaleWithScreenSize）
+- 没有则自动创建（1920×1080 ScaleWithScreenSize，自带 `GraphicRaycaster`）
 - `GetCanvasTransform()` 暴露给 UIService
+
+## EventSystem 管理
+
+`Initialize()` 末尾调用 `EnsureEventSystem()`：
+- 检查 `EventSystem.current`，不存在则建一个 GameObject 加 `EventSystem` + `StandaloneInputModule`
+- **没有它，整个场景的 UGUI 按钮都收不到点击** —— UIManager 自动兜底，业务模块无需关心
+- 若项目改用 new Input System，需把 `StandaloneInputModule` 替换为 `InputSystemUIInputModule`
 
 ## 内存缓存
 

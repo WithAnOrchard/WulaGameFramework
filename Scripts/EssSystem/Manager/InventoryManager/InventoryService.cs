@@ -15,7 +15,7 @@ namespace EssSystem.EssManager.InventoryManager
     /// <item>所有持久化数据走 <c>_dataStorage</c>（由 DataService 自动扫描存档）</item>
     /// <item>Unity 端 Entity 注册表走内存字典，不参与序列化</item>
     /// <item>对 Inventory 及其内部物品进行操作（添加、移除、移动）</item>
-    /// <item>事件以 <c>[Event("Inventory*")]</c> 统一在此注册，供外部触发</item>
+    /// <item>事件以 <c>[Event(EVT_*)]</c> 常量引用注册（见 #region 事件名称），供外部触发</item>
     /// </list>
     /// </summary>
     public class InventoryService : Service<InventoryService>

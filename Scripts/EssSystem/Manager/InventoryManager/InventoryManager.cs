@@ -221,12 +221,18 @@ namespace EssSystem.EssManager.InventoryManager
             }
 
             var cb = config.CloseButtonConfig;
-            panel.AddChild(new UIButtonComponent($"{inventoryId}_CloseButton", "CloseButton", cb.ButtonText)
+            var closeBtn = new UIButtonComponent($"{inventoryId}_CloseButton", "CloseButton", cb.ButtonText)
                 .SetPosition(cb.Position.x, cb.Position.y)
                 .SetSize(cb.Size.x, cb.Size.y)
                 .SetScale(cb.Scale.x, cb.Scale.y)
                 .SetVisible(cb.IsVisible)
-                .SetInteractable(cb.IsInteractable));
+                .SetInteractable(cb.IsInteractable);
+
+            // 关闭按钮点击 → 通过事件触发 CloseInventoryUI（与外部主动调用走同一路径）
+            closeBtn.OnClick += _ => EventProcessor.Instance.TriggerEventMethod(
+                EVT_CLOSE_UI, new List<object> { inventoryId });
+
+            panel.AddChild(closeBtn);
 
             return panel;
         }

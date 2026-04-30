@@ -14,16 +14,19 @@
 
 ```
 InventoryManager/
-├── InventoryManager.cs       薄门面 + 调试菜单 + UI 打开/关闭
-├── InventoryService.cs       业务核心 + 持久化 + Event 处理
-├── Agent.md                  本文档
+├── InventoryManager.cs            薄门面 + 调试菜单 + UI 打开/关闭（含广播 EVT_OPEN_UI / EVT_CLOSE_UI）
+├── InventoryService.cs            业务核心 + 持久化 + 7 个 [Event] handler
+├── Agent.md                       本文档
+├── Editor/
+│   └── InventoryManagerEditor.cs  Inspector 自定义绘制
 └── Dao/
-    ├── Inventory.cs          Inventory + InventorySlot
-    ├── Item.cs               InventoryItem + InventoryItemType
-    ├── InventoryConfig.cs    UI 配置
-    ├── PanelConfig.cs
-    ├── SlotConfig.cs
-    └── ButtonConfig.cs
+    ├── Inventory.cs               Inventory + InventorySlot
+    ├── Item.cs                    InventoryItem + InventoryItemType
+    └── UIConfig/                  UI 配置组（容器/面板/槽位/按钮）
+        ├── InventoryConfig.cs
+        ├── PanelConfig.cs
+        ├── SlotConfig.cs
+        └── ButtonConfig.cs
 ```
 
 ## 数据分类（持久化）

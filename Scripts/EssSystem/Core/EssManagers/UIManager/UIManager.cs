@@ -33,7 +33,24 @@ namespace EssSystem.Core.EssManagers.UIManager
                 Log("UIManager 自动创建Canvas", Color.green);
             }
 
+            // 确保场景里有 EventSystem，否则 UGUI 按钮全都收不到点击
+            EnsureEventSystem();
+
             Log("UIManager 初始化完成", Color.green);
+        }
+
+        /// <summary>
+        /// 确保场景里存在 EventSystem（缺一个 UGUI 全场不响应输入）。
+        /// 已存在则不动；不存在则创建带 StandaloneInputModule 的新 GameObject。
+        /// </summary>
+        private void EnsureEventSystem()
+        {
+            if (UnityEngine.EventSystems.EventSystem.current != null) return;
+
+            var go = new GameObject("EventSystem");
+            go.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            go.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            Log("UIManager 自动创建 EventSystem (StandaloneInputModule)", Color.green);
         }
 
         // ─────────────────────────────────────────────────────────────
