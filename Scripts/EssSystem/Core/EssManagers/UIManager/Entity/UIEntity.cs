@@ -40,7 +40,8 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
 
         protected virtual void Awake()
         {
-            RegisterEntity();
+            // 注意：Dao 在 Awake 之后才由 Factory 通过 entity.Dao = dao 赋值，
+            // 这里不能注册（_dao 为 null）。RegisterEntity 改在 SetDao 里调用。
         }
 
         protected virtual void OnDestroy()
@@ -54,8 +55,13 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
         protected virtual void SetDao(UIComponent dao)
         {
             if (_dao == dao) return;
+            UnregisterEntity();
             _dao = dao;
-            if (_dao != null) SyncFromDao();
+            if (_dao != null)
+            {
+                RegisterEntity();
+                SyncFromDao();
+            }
         }
 
         /// <summary>

@@ -22,17 +22,19 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
         {
             _text = gameObject.GetComponent<Text>() ?? gameObject.AddComponent<Text>();
 
+            // 使用中心锚点 + 中心 pivot，使 Adjustable.ApplyToRectTransform 中的
+            // sizeDelta / anchoredPosition 表达绝对宽高与位置（与 Panel/Button 一致）。
+            // 之前的 stretch 锚点会让 DAO 的 Size/Position 失效。
             var rectTransform = _text.GetComponent<RectTransform>();
-            rectTransform.anchorMin = Vector2.zero;
-            rectTransform.anchorMax = Vector2.one;
-            rectTransform.offsetMin = Vector2.zero;
-            rectTransform.offsetMax = Vector2.zero;
-            rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            rectTransform.pivot     = new Vector2(0.5f, 0.5f);
 
-            _text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            _text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             _text.fontSize = 14;
             _text.color = Color.black;
             _text.alignment = TextAnchor.MiddleCenter;
+            _text.raycastTarget = false; // 装饰性文字默认不拦截点击，避免遮挡父按钮
         }
 
         public override void SyncFromDao()

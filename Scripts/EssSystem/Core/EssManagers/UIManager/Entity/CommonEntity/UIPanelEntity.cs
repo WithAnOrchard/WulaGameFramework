@@ -23,6 +23,7 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity.CommonEntity
         {
             _image = gameObject.GetComponent<Image>() ?? gameObject.AddComponent<Image>();
             _image.color = Color.clear;
+            _image.raycastTarget = false; // 背景面板默认不拦截点击；需要交互的请用 UIButtonComponent
         }
 
         public override void SyncFromDao()

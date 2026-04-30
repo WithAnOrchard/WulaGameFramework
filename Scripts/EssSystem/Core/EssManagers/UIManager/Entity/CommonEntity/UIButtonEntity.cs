@@ -43,7 +43,7 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity.CommonEntity
             textRect.offsetMax = Vector2.zero;
             textRect.pivot = new Vector2(0.5f, 0.5f);
 
-            text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.fontSize = 14;
             text.color = Color.black;
             text.alignment = TextAnchor.MiddleCenter;

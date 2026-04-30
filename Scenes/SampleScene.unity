@@ -309,9 +309,8 @@ MonoBehaviour:
     TotalCategories: 0
     TotalDataCount: 0
     Categories: []
+  _serviceEnableLogging: 1
   _registerDebugTemplates: 1
-  _slotPrefab: {fileID: 0}
-  _inventoryUIPrefab: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

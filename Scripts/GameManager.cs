@@ -95,20 +95,26 @@ public class GameManager : AbstractGameManager
     /// </summary>
     private void TogglePlayerInventory()
     {
-        // 检查玩家背包UI是否已打开
+        // InventoryManager 缓存了 UI（关闭=隐藏不销毁），所以「实体存在」已不能代表「正在显示」。
+        // 改为检查 GameObject 是否处于激活状态。
         var result = EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY,
             new System.Collections.Generic.List<object> { "player" });
 
+        var isVisible = false;
         if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
         {
-            // UI已打开，关闭它
+            var entity = result[1] as EssSystem.Core.EssManagers.UIManager.Entity.UIEntity;
+            isVisible = entity != null && entity.gameObject != null && entity.gameObject.activeSelf;
+        }
+
+        if (isVisible)
+        {
             Debug.Log("[GameManager] 关闭玩家背包 (B键)");
             EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_CLOSE_UI,
                 new System.Collections.Generic.List<object> { "player" });
         }
         else
         {
-            // UI未打开，打开它
             Debug.Log("[GameManager] 打开玩家背包 (B键)");
             EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI,
                 new System.Collections.Generic.List<object> { "player", "PlayerBackPack" });
