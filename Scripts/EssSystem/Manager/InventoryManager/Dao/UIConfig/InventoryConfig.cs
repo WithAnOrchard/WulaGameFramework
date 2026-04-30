@@ -35,6 +35,18 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         /// <summary>关闭按钮配置</summary>
         public ButtonConfig CloseButtonConfig = new ButtonConfig();
 
+        /// <summary>是否在主面板上额外显示物品描述子面板（点击 slot 后填充当前物品的 Description）</summary>
+        public bool ShowDescription = false;
+
+        /// <summary>描述面板配置（仅当 <see cref="ShowDescription"/> = true 时生效）</summary>
+        public DescriptionPanelConfig DescriptionPanelConfig = new DescriptionPanelConfig();
+
+        /// <summary>是否显示容器标题（默认使用 <see cref="DisplayName"/>，可通过 <see cref="TitleConfig.CustomText"/> 覆盖）</summary>
+        public bool ShowTitle = true;
+
+        /// <summary>标题配置</summary>
+        public TitleConfig TitleConfig = new TitleConfig();
+
         #endregion
 
         #region Constructors
@@ -82,6 +94,30 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public InventoryConfig WithCloseButtonConfig(ButtonConfig buttonConfig)
         {
             CloseButtonConfig = buttonConfig ?? new ButtonConfig();
+            return this;
+        }
+
+        public InventoryConfig WithShowDescription(bool show)
+        {
+            ShowDescription = show;
+            return this;
+        }
+
+        public InventoryConfig WithDescriptionPanelConfig(DescriptionPanelConfig config)
+        {
+            DescriptionPanelConfig = config ?? new DescriptionPanelConfig();
+            return this;
+        }
+
+        public InventoryConfig WithShowTitle(bool show)
+        {
+            ShowTitle = show;
+            return this;
+        }
+
+        public InventoryConfig WithTitleConfig(TitleConfig config)
+        {
+            TitleConfig = config ?? new TitleConfig();
             return this;
         }
 

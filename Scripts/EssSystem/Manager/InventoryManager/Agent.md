@@ -14,19 +14,26 @@
 
 ```
 InventoryManager/
-├── InventoryManager.cs            薄门面 + 调试菜单 + UI 打开/关闭（含广播 EVT_OPEN_UI / EVT_CLOSE_UI）
+├── InventoryManager.cs            薄门面：生命周期、默认注册、EVT_OPEN_UI / EVT_CLOSE_UI、缓存
 ├── InventoryService.cs            业务核心 + 持久化 + 7 个 [Event] handler
 ├── Agent.md                       本文档
 ├── Editor/
 │   └── InventoryManagerEditor.cs  Inspector 自定义绘制
+├── UI/
+│   ├── InventoryUIBuilder.cs      纯静态 UI 构建/绑定/拖拽挂载（BuildPanelTree / ApplyItemToSlot 等）
+│   ├── InventoryUIRefs.cs         SlotUIRefs / DescUIRefs 引用集合
+│   └── InventorySlotDragHandler.cs slot 拖拽实现（IBeginDrag/IDrag/IEndDrag/IDropHandler）
 └── Dao/
     ├── Inventory.cs               Inventory + InventorySlot
     ├── Item.cs                    InventoryItem + InventoryItemType
-    └── UIConfig/                  UI 配置组（容器/面板/槽位/按钮）
-        ├── InventoryConfig.cs
-        ├── PanelConfig.cs
-        ├── SlotConfig.cs
-        └── ButtonConfig.cs
+    └── UIConfig/                  UI 配置组
+        ├── InventoryConfig.cs         容器主配置（含 ShowTitle / ShowDescription 开关）
+        ├── PanelConfig.cs             主面板尺寸/位置/背景
+        ├── SlotConfig.cs              槽位布局/背景
+        ├── ButtonConfig.cs            通用按钮配置（关闭按钮等）
+        ├── TitleConfig.cs             容器标题文本
+        ├── DescriptionPanelConfig.cs  描述子面板：背景 + 4 个子组件
+        └── DescriptionElementConfig.cs DescriptionIconConfig / DescriptionTextElementConfig
 ```
 
 ## 数据分类（持久化）
@@ -150,6 +157,47 @@ InventoryManager/
 | 期望响应 | 返回成功/失败结果 | 无（订阅者按需响应） |
 | 接入方式 | `TriggerEventMethod(...)` | `[EventListener("OnOpenInventoryUI")]` |
 
+## Slot 信息显示
+
+`BuildPanelTree` 为每个 slot 生成三层 UI：
+
+| 子节点 ID 后缀 | 内容 | 位置 |
+|---|---|---|
+| `_Slot_{i}` | 背景按钮（点击可触发描述更新） | 整槽 |
+| `_Slot_{i}_NameText` | 物品 `Name`（空槽留空） | 上半居中 |
+| `_Slot_{i}_StackText` | `当前/最大`（仅 `MaxStack > 1` 显示） | 下半居中 |
+
+打开 UI 时会读取 `InventoryService.GetInventory(id)` 当前状态填充。
+
+**自动刷新**：`InventoryManager.OnInventoryChanged` 监听 `InventoryService.EVT_CHANGED`，
+对**当前已打开 UI** 的容器原地更新所有 slot 的 NameText / StackText（不重建 GameObject，
+不影响描述面板已选中状态）。`OpenInventoryUI` 把每个 slot 的两个 `UITextComponent` 引用
+缓存进 `_slotTextRefs[inventoryId]`，`CloseInventoryUI` 时清除。其他容器的 `EVT_CHANGED`
+事件不会触发额外开销。
+
+## 描述子面板
+
+通过 `InventoryConfig` 开启：
+
+```csharp
+new InventoryConfig("PlayerBackPack", "玩家背包")
+    .WithShowDescription(true)
+    .WithDescriptionPanelConfig(new DescriptionPanelConfig(240f, 220f)
+        .WithOffset(710f, 150f)             // 相对主面板左下角
+        .WithBackgroundColor(new Color(0.05f, 0.05f, 0.08f, 0.92f))
+        .WithTextPadding(14f, 14f)
+        .WithFontSize(14)
+        .WithTextColor(Color.white)
+        .WithEmptyPlaceholder("（点击物品查看描述）"));
+```
+
+行为：
+- 描述面板作为主 panel 的子节点，`Offset` 是相对主面板左下角的位置（与所有子组件一致）
+- 点击任意 slot：若有物品 → 显示 `Name\n\nDescription`；空槽 → 恢复 `EmptyPlaceholder`
+- 关闭即销毁，重新打开重建
+
+`ShowDescription = false`（默认 / Chest 配置）时不创建描述面板，slot 点击不产生额外副作用。
+
 ## 物品模板注册示例
 
 ```csharp
@@ -157,7 +205,7 @@ InventoryService.Instance.RegisterTemplate(
     new InventoryItem("potion_heal")
         .WithName("治疗药水")
         .WithType(InventoryItemType.Consumable)
-        .WithWeight(0.5f)
+        .WithIcon("Sprites/Items/PotionHeal")   // 通过 ResourceManager 解析的 sprite id
         .WithValue(25)
         .WithMaxStack(99));
 ```

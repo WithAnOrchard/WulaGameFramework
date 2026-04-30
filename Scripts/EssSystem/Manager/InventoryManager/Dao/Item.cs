@@ -39,8 +39,9 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public string Name;
         public string Description;
         public InventoryItemType Type;
-        public float Weight;
         public int Value;
+        /// <summary>图标 Sprite ID（由 ResourceManager 解析，与 <c>UIButtonComponent.ButtonSpriteId</c> 同一约定）</summary>
+        public string IconSpriteId;
         /// <summary>堆叠上限，=1 表示不可堆叠</summary>
         public int MaxStack = 1;
         /// <summary>当前堆叠数量（模板里通常为 0）</summary>
@@ -55,9 +56,6 @@ namespace EssSystem.EssManager.InventoryManager.Dao
 
         /// <summary>堆叠是否已空</summary>
         public bool IsEmpty => CurrentStack <= 0;
-
-        /// <summary>堆叠总权重</summary>
-        public float TotalWeight => Weight * CurrentStack;
 
         /// <summary>堆叠是否已满</summary>
         public bool IsFull => CurrentStack >= MaxStack;
@@ -86,8 +84,8 @@ namespace EssSystem.EssManager.InventoryManager.Dao
         public InventoryItem WithName(string name) { Name = name; return this; }
         public InventoryItem WithDescription(string desc) { Description = desc; return this; }
         public InventoryItem WithType(InventoryItemType type) { Type = type; return this; }
-        public InventoryItem WithWeight(float weight) { Weight = weight; return this; }
         public InventoryItem WithValue(int value) { Value = value; return this; }
+        public InventoryItem WithIcon(string spriteId) { IconSpriteId = spriteId; return this; }
         public InventoryItem WithMaxStack(int max) { MaxStack = Math.Max(1, max); return this; }
         public InventoryItem WithCurrentStack(int current) { CurrentStack = current; return this; }
 
@@ -162,8 +160,8 @@ namespace EssSystem.EssManager.InventoryManager.Dao
                 Name = Name,
                 Description = Description,
                 Type = Type,
-                Weight = Weight,
                 Value = Value,
+                IconSpriteId = IconSpriteId,
                 MaxStack = MaxStack,
                 CurrentStack = 0
             };

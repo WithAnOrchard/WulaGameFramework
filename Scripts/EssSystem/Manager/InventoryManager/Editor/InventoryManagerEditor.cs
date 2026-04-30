@@ -23,6 +23,18 @@ namespace EssSystem.EssManager.InventoryManager
             }
 
             EditorGUILayout.Space();
+
+            using (new EditorGUI.DisabledScope(!Application.isPlaying))
+            {
+                if (GUILayout.Button("添加随机物品到目标容器", GUILayout.Height(30)))
+                {
+                    inventoryManager.SendMessage("EditorAddRandomItem");
+                }
+            }
+            if (!Application.isPlaying)
+                EditorGUILayout.HelpBox("「添加随机物品」需 Play 模式（依赖 Service.Instance）", MessageType.Info);
+
+            EditorGUILayout.Space();
         }
     }
 }

@@ -11,8 +11,8 @@ namespace EssSystem.EssManager.InventoryManager
     /// <summary>
     /// 背包门面 — 挂到场景里的单例 MonoBehaviour
     /// <para>
-    /// 负责生命周期、注册默认模板、配置管理、UI 自动挂载。<br/>
-    /// 绝大多数业务逻辑放在 <see cref="InventoryService"/> 里，本类仅转发或包薄。
+    /// 负责生命周期、注册默认模板/配置、UI 打开/关闭/缓存。<br/>
+    /// 业务逻辑在 <see cref="InventoryService"/>；UI 构建/绑定在 <see cref="InventoryUIBuilder"/>。
     /// </para>
     /// </summary>
     [Manager(10)]
@@ -25,13 +25,29 @@ namespace EssSystem.EssManager.InventoryManager
         #region Inspector
 
         [Header("Default Templates (auto-registered)")]
-        [Tooltip("是否启动时注册几个调试用默认模板（Potion/Sword）")]
+        [Tooltip("是否启动时注册几个调试用默认模板（Sword/Apple）")]
         [SerializeField] private bool _registerDebugTemplates = true;
+
+        [Header("Editor Tools")]
+        [Tooltip("Inspector「添加随机物品」按钮的目标 Inventory ID")]
+        [SerializeField] private string _editorTargetInventoryId = "player";
 
         #endregion
 
         /// <summary>底层 Service（同等于 InventoryService.Instance，但 Inspector 里可见）</summary>
         public InventoryService Service => InventoryService.Instance;
+
+        /// <summary>已打开 UI 的 inventoryId → slot 子组件引用集合，用于响应 EVT_CHANGED 原地更新。</summary>
+        private readonly Dictionary<string, SlotUIRefs> _slotRefs = new Dictionary<string, SlotUIRefs>();
+
+        /// <summary>已打开 UI 的描述面板组件引用，点击 slot 时填充。</summary>
+        private readonly Dictionary<string, DescUIRefs> _descRefs = new Dictionary<string, DescUIRefs>();
+
+        /// <summary>
+        /// 已构建 UI 的根面板缓存 — 重新打开同一 inventory 时复用 GameObject，仅切换 <c>Visible</c>。
+        /// 关闭 UI 实质是 SetVisible(false) 而非销毁，详见 <see cref="CloseInventoryUI"/>。
+        /// </summary>
+        private readonly Dictionary<string, UIPanelComponent> _rootPanels = new Dictionary<string, UIPanelComponent>();
 
         #region Lifecycle
 
@@ -63,25 +79,32 @@ namespace EssSystem.EssManager.InventoryManager
 
         #region Defaults Registration
 
-        /// <summary>注册调试用默认物品模板（药水/铁剑）。</summary>
+        /// <summary>注册调试用默认物品模板。</summary>
         private void RegisterDefaultItemTemplates()
         {
-            Service.RegisterTemplate(new InventoryItem("Potion", "生命药水")
-                .WithType(InventoryItemType.Consumable).WithMaxStack(99).WithCurrentStack(1)
-                .WithWeight(0.5f).WithValue(10));
-
-            Service.RegisterTemplate(new InventoryItem("Sword", "铁剑")
+            RegisterTemplateIfMissing(new InventoryItem("Sword", "铁剑")
                 .WithType(InventoryItemType.Equipment).WithMaxStack(1).WithCurrentStack(1)
-                .WithWeight(2.0f).WithValue(50));
+                .WithIcon("Sword").WithValue(50));
 
-            Log("注册默认物品模板: Potion, Sword", Color.cyan);
+            RegisterTemplateIfMissing(new InventoryItem("Apple", "苹果")
+                .WithType(InventoryItemType.Consumable).WithMaxStack(99).WithCurrentStack(1)
+                .WithIcon("Apple").WithValue(10));
+
+            Log("注册默认物品模板完成（仅创建缺失项）", Color.cyan);
         }
 
-        /// <summary>注册默认容器配置（玩家背包 / 箱子）。</summary>
+        /// <summary>仅在模板不存在时注册，避免每次启动覆盖磁盘上用户修改过的模板。</summary>
+        private void RegisterTemplateIfMissing(InventoryItem template)
+        {
+            if (template == null || string.IsNullOrEmpty(template.Id)) return;
+            if (Service.GetTemplate(template.Id) != null) return;
+            Service.RegisterTemplate(template);
+        }
+
+        /// <summary>注册默认容器配置（玩家背包）。</summary>
         private void RegisterDefaultConfigs()
         {
             RegisterConfigIfMissing("PlayerBackPack", "玩家背包", BuildPlayerConfig);
-            RegisterConfigIfMissing("Chest", "箱子", BuildChestConfig);
         }
 
         private void RegisterConfigIfMissing(string id, string label, System.Func<string, string, InventoryConfig> builder)
@@ -101,34 +124,38 @@ namespace EssSystem.EssManager.InventoryManager
                 .WithSlotsPerPage(30)
                 .WithSlotConfig(new SlotConfig(80f, 80f, 6)
                     .WithSlotSpacing(12f, 12f)
-                    .WithStartOffset(100f, 460f))
+                    .WithStartOffset(110f, 465f)
+                    .WithSlotBackgroundId("Slot_1"))
                 .WithPanelConfig(new PanelConfig(680f, 560f)
                     .WithPanelPosition(960f, 540f)
                     .WithPanelScale(1f, 1f)
+                    .WithBackgroundId("背包背景")
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new ButtonConfig(640f, 520f, 36f, 36f)
+                .WithCloseButtonConfig(new ButtonConfig(640f, 520f, 80f, 80f)
                     .WithScale(1f, 1f).WithText("×")
+                    .WithSpriteId("Btn_Close")
                     .WithColor(new Color(1f, 0.3f, 0.3f, 1f))
-                    .WithVisible(true).WithInteractable(true));
+                    .WithVisible(true).WithInteractable(true))
+                .WithShowDescription(true)
+                .WithDescriptionPanelConfig(new DescriptionPanelConfig(300f, 465f)
+                    .WithOffset(-150f, 275f)
+                    .WithBackgroundId("背包背景")
+                    .WithTextPadding(40f, 40f)
+                    .WithFontSize(14)
+                    .WithTextColor(new Color(0.95f, 0.95f, 0.95f, 1f))
+                    .WithEmptyPlaceholder("（点击物品查看描述）"))
+                .WithShowTitle(true)
+                .WithTitleConfig(new TitleConfig(420f, 40f)
+                    .WithPosition(340f, 530f)        // 主面板顶部居中（680/2, 560-30）
+                    .WithFontSize(22)
+                    .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
+                    .WithAlignment(TextAnchor.MiddleCenter));
 
-        private static InventoryConfig BuildChestConfig(string id, string label) =>
-            new InventoryConfig(id, label)
-                .WithPageCount(2)
-                .WithSlotsPerPage(20)
-                .WithSlotConfig(new SlotConfig(60f, 60f, 5)
-                    .WithSlotSpacing(8f, 8f)
-                    .WithStartOffset(-170f, 120f))
-                .WithPanelConfig(new PanelConfig(500f, 400f)
-                    .WithPanelPosition(0f, 0f)
-                    .WithBackgroundColor(new Color(0.12f, 0.12f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new ButtonConfig(230f, 170f, 30f, 30f));
-
-        /// <summary>创建调试用默认 Inventory（玩家 / 箱子）。</summary>
+        /// <summary>创建调试用默认 Inventory（玩家）。</summary>
         private void CreateDefaultInventories()
         {
             Service.CreateInventory("player", "玩家背包", 30);
-            Service.CreateInventory("chest", "箱子", 20);
-            Log("创建默认 Inventory: player, chest", Color.cyan);
+            Log("创建默认 Inventory: player", Color.cyan);
         }
 
         #endregion
@@ -144,11 +171,27 @@ namespace EssSystem.EssManager.InventoryManager
             if (Service.GetInventory(inventoryId) == null)
                 return ResultCode.Fail($"Inventory不存在: {inventoryId}");
 
+            // ① 缓存复用：之前构建过且 GameObject 仍然存活 → 直接 SetVisible(true)
+            if (_rootPanels.TryGetValue(inventoryId, out var cached))
+            {
+                var entity = EssSystem.Core.EssManagers.UIManager.Entity.UIEntity.GetEntity(cached);
+                if (entity != null && entity.gameObject != null)
+                {
+                    cached.Visible = true;
+                    Log($"复用缓存的Inventory UI: {inventoryId}", Color.green);
+                    return ResultCode.Ok(inventoryId);
+                }
+                // 实体已销毁（外部触发 EVT_UNREGISTER 等）→ 清理缓存重建
+                _rootPanels.Remove(inventoryId);
+                _slotRefs.Remove(inventoryId);
+                _descRefs.Remove(inventoryId);
+            }
+
             var configId = data.Count >= 2 && data[1] is string s && !string.IsNullOrEmpty(s) ? s : inventoryId;
             var config = Service.GetConfig(configId);
             if (config == null) return ResultCode.Fail($"Inventory配置不存在: {configId}");
 
-            var panel = BuildPanelTree(inventoryId, config);
+            var (panel, slotRefs, descRefs) = InventoryUIBuilder.BuildPanelTree(inventoryId, config);
 
             // 通过事件调用 UIManager 注册实体（解耦）
             var result = EventProcessor.Instance.TriggerEventMethod(
@@ -160,23 +203,82 @@ namespace EssSystem.EssManager.InventoryManager
                 Log($"打开Inventory UI失败: {inventoryId}", Color.red);
                 return ResultCode.Fail($"打开Inventory UI失败: {inventoryId}");
             }
-            Log($"成功打开Inventory UI: {inventoryId}", Color.green);
+
+            _slotRefs[inventoryId] = slotRefs;
+            if (descRefs != null) _descRefs[inventoryId] = descRefs;
+            _rootPanels[inventoryId] = panel;
+
+            // UI 注册后挂上拖拽处理器（依赖 GameObject 已创建）
+            InventoryUIBuilder.AttachSlotDragHandlers(inventoryId, config.SlotsPerPage);
+
+            Log($"成功构建并打开Inventory UI: {inventoryId}", Color.green);
             return ResultCode.Ok(inventoryId);
         }
 
-        /// <summary>关闭指定 Inventory 的 UI。data: [inventoryId]</summary>
+        /// <summary>
+        /// 关闭指定 Inventory 的 UI — 仅隐藏不销毁，下次 Open 直接复用，避免重建开销。
+        /// 真正销毁请用 <see cref="DestroyInventoryUI"/> 或外部直接触发 EVT_UNREGISTER_ENTITY。
+        /// data: [inventoryId]
+        /// </summary>
         [Event(EVT_CLOSE_UI)]
         public List<object> CloseInventoryUI(List<object> data)
         {
             if (!TryGetId(data, 0, out var inventoryId, out var fail)) return fail;
 
-            // 通过事件调用 UIManager 注销实体（解耦）
+            if (_rootPanels.TryGetValue(inventoryId, out var panel))
+            {
+                panel.Visible = false;
+                Log($"已隐藏Inventory UI: {inventoryId}", Color.green);
+                return ResultCode.Ok(inventoryId);
+            }
+
+            // 缓存里没有 → 容错路径：尝试发 UNREGISTER（清理 UIManager 侧可能残留）
+            EventProcessor.Instance.TriggerEventMethod(
+                EssSystem.Core.EssManagers.UIManager.UIManager.EVT_UNREGISTER_ENTITY,
+                new List<object> { inventoryId });
+            Log($"关闭未缓存的Inventory UI: {inventoryId}", Color.yellow);
+            return ResultCode.Ok(inventoryId);
+        }
+
+        /// <summary>真正销毁 UI（GameObject 也释放）。data: [inventoryId]</summary>
+        public List<object> DestroyInventoryUI(List<object> data)
+        {
+            if (!TryGetId(data, 0, out var inventoryId, out var fail)) return fail;
+
             EventProcessor.Instance.TriggerEventMethod(
                 EssSystem.Core.EssManagers.UIManager.UIManager.EVT_UNREGISTER_ENTITY,
                 new List<object> { inventoryId });
 
-            Log($"成功关闭Inventory UI: {inventoryId}", Color.green);
+            _slotRefs.Remove(inventoryId);
+            _descRefs.Remove(inventoryId);
+            _rootPanels.Remove(inventoryId);
+
+            Log($"销毁Inventory UI: {inventoryId}", Color.green);
             return ResultCode.Ok(inventoryId);
+        }
+
+        /// <summary>
+        /// 监听 <see cref="InventoryService.EVT_CHANGED"/>，对已打开 UI 的容器原地刷新 slot 显示。
+        /// args: [inventoryId, op, itemId, amount]
+        /// </summary>
+        [EventListener(InventoryService.EVT_CHANGED)]
+        public List<object> OnInventoryChanged(string evt, List<object> args)
+        {
+            if (args == null || args.Count < 1) return null;
+            var invId = args[0] as string;
+            if (string.IsNullOrEmpty(invId)) return null;
+            if (!_slotRefs.TryGetValue(invId, out var refs)) return null;
+
+            var inv = Service?.GetInventory(invId);
+            if (inv == null) return null;
+
+            var slotCount = Mathf.Min(refs.Names.Length, refs.Stacks.Length);
+            for (var i = 0; i < slotCount; i++)
+            {
+                var item = inv.GetSlot(i)?.Item;
+                InventoryUIBuilder.ApplyItemToSlot(refs.Icons[i], refs.Names[i], refs.Stacks[i], item);
+            }
+            return null;
         }
 
         /// <summary>统一参数校验：从 data[index] 取非空字符串。</summary>
@@ -192,51 +294,6 @@ namespace EssSystem.EssManager.InventoryManager
             return true;
         }
 
-        /// <summary>根据配置构建完整 UIPanel 树（panel + slots + close button）。</summary>
-        private static UIPanelComponent BuildPanelTree(string inventoryId, InventoryConfig config)
-        {
-            var pc = config.PanelConfig;
-            var panel = new UIPanelComponent(inventoryId, $"{config.DisplayName} - {inventoryId}")
-                .SetPosition(pc.PanelPosition.x, pc.PanelPosition.y)
-                .SetSize(pc.PanelWidth, pc.PanelHeight)
-                .SetScale(pc.PanelScale.x, pc.PanelScale.y)
-                .SetBackgroundSpriteId(pc.BackgroundSpriteId)
-                .SetBackgroundColor(pc.BackgroundColor)
-                .SetVisible(true);
-
-            var sc = config.SlotConfig;
-            for (var i = 0; i < config.SlotsPerPage; i++)
-            {
-                var row = i / sc.SlotsPerRow;
-                var col = i % sc.SlotsPerRow;
-                var x = sc.StartOffsetX + col * (sc.SlotWidth + sc.SlotSpacingX);
-                var y = sc.StartOffsetY - row * (sc.SlotHeight + sc.SlotSpacingY);
-
-                panel.AddChild(new UIButtonComponent($"{inventoryId}_Slot_{i}", $"Slot_{i}")
-                    .SetPosition(x, y)
-                    .SetSize(sc.SlotWidth, sc.SlotHeight)
-                    .SetVisible(true)
-                    .SetButtonSpriteId(sc.SlotBackgroundSpriteId)
-                    .SetInteractable(true));
-            }
-
-            var cb = config.CloseButtonConfig;
-            var closeBtn = new UIButtonComponent($"{inventoryId}_CloseButton", "CloseButton", cb.ButtonText)
-                .SetPosition(cb.Position.x, cb.Position.y)
-                .SetSize(cb.Size.x, cb.Size.y)
-                .SetScale(cb.Scale.x, cb.Scale.y)
-                .SetVisible(cb.IsVisible)
-                .SetInteractable(cb.IsInteractable);
-
-            // 关闭按钮点击 → 通过事件触发 CloseInventoryUI（与外部主动调用走同一路径）
-            closeBtn.OnClick += _ => EventProcessor.Instance.TriggerEventMethod(
-                EVT_CLOSE_UI, new List<object> { inventoryId });
-
-            panel.AddChild(closeBtn);
-
-            return panel;
-        }
-
         #endregion
 
         #region Editor
@@ -247,6 +304,44 @@ namespace EssSystem.EssManager.InventoryManager
             Log("开始重新加载InventoryService数据", Color.yellow);
             Service.ReloadData();
             Log("InventoryService数据重新加载完成", Color.green);
+        }
+
+        /// <summary>
+        /// Inspector 工具：从已注册的物品模板中随机挑一个，加入 <see cref="_editorTargetInventoryId"/> 指向的容器。
+        /// 仅在 Play 模式下生效（依赖 Service 已初始化）。
+        /// </summary>
+        [ContextMenu("添加随机物品到目标容器")]
+        private void EditorAddRandomItem()
+        {
+            if (string.IsNullOrEmpty(_editorTargetInventoryId))
+            {
+                Log("[Editor] 目标 Inventory ID 为空", Color.red);
+                return;
+            }
+            if (Service == null)
+            {
+                Log("[Editor] Service 未初始化，请进入 Play 模式后再点", Color.red);
+                return;
+            }
+            if (Service.GetInventory(_editorTargetInventoryId) == null)
+            {
+                Log($"[Editor] 容器不存在: {_editorTargetInventoryId}", Color.red);
+                return;
+            }
+
+            var templates = new List<InventoryItem>(Service.GetAllTemplates());
+            if (templates.Count == 0)
+            {
+                Log("[Editor] 没有已注册的物品模板", Color.yellow);
+                return;
+            }
+
+            var picked = templates[UnityEngine.Random.Range(0, templates.Count)];
+            var instance = picked.Instantiate(1);
+            var result = Service.AddItem(_editorTargetInventoryId, instance, 1);
+
+            Log($"[Editor] 向 {_editorTargetInventoryId} 添加随机物品 {picked.Id}({picked.Name}): {result}",
+                result.Success ? Color.green : Color.red);
         }
 
         #endregion
