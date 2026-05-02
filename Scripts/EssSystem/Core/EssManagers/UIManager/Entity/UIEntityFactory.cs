@@ -65,8 +65,11 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
                     var textObject = new GameObject("Text");
                     textObject.transform.SetParent(gameObject.transform);
                     var textRect = textObject.AddComponent<RectTransform>();
-                    textRect.anchorMin = textRect.anchorMax = Vector2.zero;
-                    textRect.offsetMin = textRect.offsetMax = Vector2.zero;
+                    // 让子 Text 贴满按钮（stretch）—— 零尺寸 rect 会让 uGUI Text 渲染异常
+                    textRect.anchorMin = Vector2.zero;
+                    textRect.anchorMax = Vector2.one;
+                    textRect.offsetMin = Vector2.zero;
+                    textRect.offsetMax = Vector2.zero;
                     textRect.pivot = new Vector2(0.5f, 0.5f);
 
                     var text = textObject.AddComponent<Text>();

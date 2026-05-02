@@ -24,7 +24,6 @@ namespace EssSystem.Core.EssManagers.UIManager.Entity
 
             // 使用中心锚点 + 中心 pivot，使 Adjustable.ApplyToRectTransform 中的
             // sizeDelta / anchoredPosition 表达绝对宽高与位置（与 Panel/Button 一致）。
-            // 之前的 stretch 锚点会让 DAO 的 Size/Position 失效。
             var rectTransform = _text.GetComponent<RectTransform>();
             rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
             rectTransform.anchorMax = new Vector2(0.5f, 0.5f);

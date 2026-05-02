@@ -86,7 +86,33 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 已应用到：`UIManager` (4 个)、`InventoryManager` (2 个)、`Service<T>.EVT_INITIALIZED`、`InventoryService.EVT_*` (5 个)。新增模块**必须遵守**。
 
-### 5. Service 持久化
+### 5. UI 必须经 UIManager（**强制规则**）
+
+任何**运行时构造的 UI**——Canvas、Panel、Button、Text、布局等——**必须**通过 `UIManager` 提供的 DAO 树 + Event 注册流程，**禁止**业务模块自己 `new GameObject + AddComponent<Canvas/Image/Button/Text/...>`。
+
+**唯一允许的入口**：
+- 构建 `UIPanelComponent` / `UIButtonComponent` / `UITextComponent` 树（链式 `.SetPosition` / `.SetSize` / `.SetText` 等）
+- `EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY, new List<object>{ rootId, rootDao })`
+- 销毁/隐藏：`EVT_UNREGISTER_ENTITY` 真正销毁；改 `dao.Visible` 仅显隐保留缓存
+- 按钮交互：`btnDao.OnClick += handler;`（而不是 `btn.onClick.AddListener`）
+
+**禁止的反模式**：
+- `gameObject.AddComponent<Canvas>()` / `AddComponent<CanvasScaler>()` / 自建 EventSystem
+- `gameObject.AddComponent<VerticalLayoutGroup>()` / `HorizontalLayoutGroup`（UIManager 暂未支持，请用绝对坐标，未来扩展由 UIManager 统一加）
+- `gameObject.AddComponent<Text>()` 等 UI 组件直创 —— UI 文本统一由 UIManager 内部（`UIEntityFactory` / `UIButtonEntity` / `UITextEntity`）创建 uGUI `Text`，字体从 `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` 取
+- 直接 `using UnityEngine.UI;` 在业务 Manager / Game 层（除非你在 `UIManager/Entity/` 下扩展新 UIType）
+
+**文本清晰度（超采样方案）**：
+- 框架仍用 uGUI `Text`（LegacyRuntime.ttf），**未引入 TextMeshPro**
+- 需要"高 DPI 清晰文字"时，在业务层用**超采样**技巧：`dao.FontSize ×= 2`（例如 20→40）+ `dao.Size ×= 2`（保持视觉一致）+ `dao.SetScale(0.5f, 0.5f)`。等于字体以 2× 分辨率栅格化再缩小渲染，显著降低模糊感
+- 倍率建议用整数倍（2×/3×），避免非整数缩放与 Canvas pixelPerfect 冲突
+- 若将来需要真正矢量文字（任意缩放都清晰），可切换到 TextMeshPro，但这是架构级改动，需全面评估
+
+**例外**：纯非交互的 SpriteRenderer 渲染（如 Character 自身贴图）不属于 UI，正常用 `SpriteRenderer`。规则只覆盖 `Canvas` / uGUI 范畴。
+
+**参考实现**：`Scripts/EssSystem/Manager/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
+
+### 6. Service 持久化
 
 - 数据进 `SetData(category, key, value)` 即自动保存
 - 写自定义数据类必须 `[Serializable]`
