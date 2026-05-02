@@ -75,10 +75,16 @@ namespace EssSystem.Core.EssManagers.UIManager
             var canvas = canvasObject.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 0;
+            // 不开 pixelPerfect —— 业务层用 2× 超采样（FontSize×2 + Scale 0.5）实现高清文字，
+            // 强制像素对齐会和非整数 Scale 冲突，反而让超采样后的文本边缘出现毛刺
+            canvas.pixelPerfect = false;
 
             var canvasScaler = canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
             canvasScaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(1920, 1080);
+            // MatchWidthOrHeight + 0.5：宽高比偏移时按 50% 取平均，避免极端宽屏/窄屏 UI 被裁掉或溢出
+            canvasScaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            canvasScaler.matchWidthOrHeight = 0.5f;
 
             canvasObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 

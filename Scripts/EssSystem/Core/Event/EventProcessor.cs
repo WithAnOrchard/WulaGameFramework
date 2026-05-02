@@ -104,6 +104,17 @@ namespace EssSystem.Core.Event
         }
 
         /// <summary>
+        ///     是否存在指定事件的监听器（用于在广播 fire-and-forget 事件前避免触发 "没有监听器" 警告）。
+        /// </summary>
+        public bool HasListener(string eventName)
+        {
+            if (string.IsNullOrEmpty(eventName)) return false;
+            return _eventListeners != null
+                && _eventListeners.TryGetValue(eventName, out var list)
+                && list != null && list.Count > 0;
+        }
+
+        /// <summary>
         ///     移除事件监听器
         /// </summary>
         /// <param name="eventName">事件名称</param>
