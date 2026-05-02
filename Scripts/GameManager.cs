@@ -4,6 +4,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.EssManager.InventoryManager;
 using EssSystem.Core.EssManagers.UIManager;
+using EssSystem.EssManager.CharacterManager.Runtime.Preview;
 
 /// <summary>
 /// 游戏管理器 - 用于测试 EssSystem 框架
@@ -88,6 +89,12 @@ public class GameManager : AbstractGameManager
         {
             TogglePlayerInventory();
         }
+
+        // K 键 - 切换 Character 预览面板（打开/关闭）
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            ToggleCharacterPreview();
+        }
     }
 
     /// <summary>
@@ -119,6 +126,28 @@ public class GameManager : AbstractGameManager
             EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI,
                 new System.Collections.Generic.List<object> { "player", "PlayerBackPack" });
         }
+    }
+
+    // 懒创建的预览面板实例（首次按 K 时构建，之后 SetActive 切换）
+    private CharacterPreviewPanel _characterPreviewPanel;
+
+    /// <summary>
+    /// 切换 Character 预览面板（打开/关闭）—— 首次按 K 时懒创建。
+    /// </summary>
+    private void ToggleCharacterPreview()
+    {
+        if (_characterPreviewPanel == null)
+        {
+            var go = new GameObject("CharacterPreviewPanel");
+            go.transform.SetParent(transform, false);
+            _characterPreviewPanel = go.AddComponent<CharacterPreviewPanel>();
+            Debug.Log("[GameManager] 创建并打开 Character 预览面板 (K键)");
+            return;
+        }
+
+        var willOpen = !_characterPreviewPanel.gameObject.activeSelf;
+        _characterPreviewPanel.gameObject.SetActive(willOpen);
+        Debug.Log(willOpen ? "[GameManager] 打开 Character 预览面板 (K键)" : "[GameManager] 关闭 Character 预览面板 (K键)");
     }
 
 }
