@@ -1819,7 +1819,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: GUI_82
+      name: btn_left
       rect:
         serializedVersion: 2
         x: 65
@@ -1861,7 +1861,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: GUI_84
+      name: btn_right
       rect:
         serializedVersion: 2
         x: 129
@@ -2137,9 +2137,7 @@ TextureImporter:
       GUI_8: -824510171
       GUI_80: -842287420
       GUI_81: 879005329
-      GUI_82: 1312932814
       GUI_83: 138552038
-      GUI_84: 23660857
       GUI_85: -1712673412
       GUI_86: 2035160287
       GUI_87: -977623990
@@ -2151,6 +2149,8 @@ TextureImporter:
       GUI_92: -55159832
       Slot: 1915397753
       Slot_1: 1131304819
+      btn_left: 1312932814
+      btn_right: 23660857
       "\u63CF\u8FF0": -1428700077
       "\u80CC\u5305\u80CC\u666F": 654772332
   mipmapLimitGroupName: 
