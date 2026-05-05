@@ -7,8 +7,8 @@
 Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例 + 统一事件中心 + 零反射持久化**。
 
 代码全部在 `Assets/Scripts/` 下，分为：
-- `EssSystem/Core/` — 框架核心
-- `EssSystem/Manager/` — 业务 Manager（如 InventoryManager）
+- `EssSystem/Core/` — 框架核心 + 内置 Manager（`EssManagers/`：UIManager / ResourceManager / CharacterManager / EntityManager / MapManager / InventoryManager 等）
+- `EssSystem/Manager/` — 第三方/外置业务 Manager（目前仅 `DanmuManager`）
 - `GameManager.cs` — 项目入口（继承 `AbstractGameManager`）
 
 ## 开始之前必读
@@ -28,8 +28,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 资源加载 | `Scripts/EssSystem/Core/EssManagers/ResourceManager/Agent.md` |
 | UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/UIManager/Agent.md` |
 | 角色系统 | `Scripts/EssSystem/Core/EssManagers/CharacterManager/Agent.md` |
-| 背包系统 | `Scripts/EssSystem/Manager/InventoryManager/Agent.md` |
-| 2D 地图系统 | `Scripts/EssSystem/Manager/MapManager/Agent.md` |
+| 实体系统 | `Scripts/EssSystem/Core/EssManagers/EntityManager/Agent.md` |
+| 背包系统 | `Scripts/EssSystem/Core/EssManagers/InventoryManager/Agent.md` |
+| 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/MapManager/Agent.md` |
+| 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
 
 ## 关键约定（核心铁律）
 
@@ -41,10 +43,11 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `DataManager` | -20 | ⚠️ 监听 Service 初始化事件 |
 | `ResourceManager` | 0 | |
 | `UIManager` | 5 | |
-| `InventoryManager` | 10 | 业务模块 |
-| `CharacterManager` | 11 | 角色系统（Core/EssManagers 下） |
-| `MapManager` | 12 | 业务模块 |
-| 其它业务 Manager | 13+ | 新增默认起步 |
+| `InventoryManager` | 10 | Core/EssManagers 下 |
+| `CharacterManager` | 11 | Core/EssManagers 下 |
+| `MapManager` | 12 | Core/EssManagers 下 |
+| `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
+| 其它业务 Manager | 14+ | 新增默认起步 |
 
 ### 2. 通信路由
 
@@ -55,6 +58,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 ```
 
 不要在业务模块里直接 `using` 其他业务 Manager 的命名空间——通过事件解耦。
+
+**协议层只用 Unity 原生类型 + 字符串 ID**：跨模块事件参数避免暴露 `UIEntity` / `Character` / `Entity` 等模块私有类型，改用 `GameObject` / `Transform` / `string instanceId`。这样调用方无需 `using` 对方模块的 `Entity` / `Dao` 命名空间。
+
+例：`UIManager.EVT_GET_UI_GAMEOBJECT` 返回 `GameObject` 而非 `UIEntity`；`CharacterManager.EVT_CREATE_CHARACTER` 返回 `Transform` 而非 `Character`。
 
 ### 3. 文件组织
 
@@ -90,7 +97,7 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 **收益**：IDE 跳转可达 / 重命名安全 / AI 不会拼错事件名 / 全局可搜索。
 
-已应用到：`UIManager` (4 个)、`ResourceManager` / `ResourceService` (多)、`InventoryManager` (2 个)、`Service<T>.EVT_INITIALIZED`、`InventoryService.EVT_*` (5 个)、`CharacterService.EVT_FRAME_EVENT`。`MapManager` 当前不暴露 `EVT_*`（仅提供纯 C# API）；若将来需要跨模块调度，补 `[Event]` 时**必须**遵守此规则。新增模块**必须遵守**。
+已应用到：`UIManager` (7 个：注册/查询/注销/热重载 + Canvas/GameObject 查询 + DAO 属性广播)、`ResourceManager` / `ResourceService` (多)、`InventoryManager` (2 个) + `InventoryService` (5 个广播)、`Service<T>.EVT_INITIALIZED`、`CharacterManager` (7 个：创建/销毁/动作/坐标) + `CharacterService.EVT_FRAME_EVENT`、`EntityManager` (2 个：CreateEntity / DestroyEntity)、`DanmuService` (5 个广播)。`MapManager` 当前不暴露 `EVT_*`（仅提供纯 C# API）。新增模块**必须遵守**此规则；CI 由 `agent_lint.ps1 -Strict` 在 pre-commit 阶段强制执行。
 
 ### 5. UI 必须经 UIManager（**强制规则**）
 
@@ -116,7 +123,7 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 **例外**：纯非交互的 SpriteRenderer 渲染（如 Character 自身贴图）不属于 UI，正常用 `SpriteRenderer`。规则只覆盖 `Canvas` / uGUI 范畴。
 
-**参考实现**：`Scripts/EssSystem/Manager/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
+**参考实现**：`Scripts/EssSystem/Core/EssManagers/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
 
 ### 6. Service 持久化
 
@@ -137,6 +144,10 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | `ResolveTarget` | 调用时延迟解析，修复扫描期 Manager 未 Awake 问题 |
 | `UIService` 中 `ServiceXxx` 事件 | **已删除**（冗余 thin wrapper） |
 | `InventoryManager` | 改为通过 Event 调用 UIManager，完全解耦 |
+| 业务模块目录归位 | `InventoryManager` / `MapManager` / `EntityManager` 全部迁到 `Core/EssManagers/`；`Manager/` 仅留可选第三方模块（如 `DanmuManager`） |
+| 跨模块解耦完成 | `EntityManager` ↔ `CharacterManager`、`InventoryManager` / `CharacterPreviewPanel` / `GameManager` ↔ `UIManager` 全部走 EventProcessor + Unity 中立类型；UIComponent (DAO) 通过 `EVT_DAO_PROPERTY_CHANGED` 广播取代直接 `using UIManager.Entity` |
+| `UIEntity` 命名空间 | 从 `EssSystem.Core.UI.Entity.*` 收回到 `EssSystem.Core.EssManagers.UIManager.Entity.*`（属于 UIManager 的私有实现） |
+| `EventProcessor.TriggerEventMethod` | catch 块解 `TargetInvocationException` → 暴露真实 `InnerException`，不再吞 listener 抛出的业务异常 |
 
 ## 工具脚本
 
