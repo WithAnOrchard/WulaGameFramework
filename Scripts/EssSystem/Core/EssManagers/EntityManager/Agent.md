@@ -83,7 +83,7 @@ entity.Remove<IInvulnerable>();             // 限时无敌结束
 - `CharacterManager(11)` —— 创建显示用 Character
 - `MapManager(12)` —— （可选）若 Entity 绑定地图坐标 / 区块事件
 
-## 对外 Event API
+## Event API
 
 | Event 常量 | data 参数 | 返回（`ResultCode`） |
 |---|---|---|
