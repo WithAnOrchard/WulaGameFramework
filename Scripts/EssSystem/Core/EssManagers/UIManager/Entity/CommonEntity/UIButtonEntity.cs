@@ -1,5 +1,5 @@
-using EssSystem.Core;
-using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
+﻿using EssSystem.Core;
+using EssSystem.Core.UI.Dao.CommonComponents;
 using EssSystem.Core.Event;
 using UnityEngine;
 using UnityEngine.UI;

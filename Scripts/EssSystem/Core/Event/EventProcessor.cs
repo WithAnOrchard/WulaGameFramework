@@ -463,7 +463,11 @@ namespace EssSystem.Core.Event
                 }
                 catch (Exception ex)
                 {
-                    LogError($"调用Event方法 {eventInfo.MethodInfo.Name} 时出错: {ex.Message}");
+                    // MethodInfo.Invoke 会把真实异常包成 TargetInvocationException，只打 ex.Message 会丢掉根因。
+                    // 这里优先展开 InnerException，并附完整 ToString()（含堆栈）。
+                    var root = ex is System.Reflection.TargetInvocationException tie && tie.InnerException != null
+                        ? tie.InnerException : ex;
+                    LogError($"调用Event方法 {eventInfo.MethodInfo.Name} 时出错: {root.GetType().Name}: {root.Message}\n{root}");
                     return new List<object>();
                 }
             }

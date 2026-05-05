@@ -1,7 +1,6 @@
-using EssSystem.Core;
-using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
-using EssSystem.Core.EssManagers.UIManager.Entity;
-using EssSystem.Core.EssManagers.UIManager.Dao;
+﻿using EssSystem.Core;
+using EssSystem.Core.UI.Dao.CommonComponents;
+using EssSystem.Core.UI.Dao;
 using EssSystem.Core.EssManagers.UIManager.Entity.CommonEntity;
 using EssSystem.Core.Event;
 using UnityEngine;

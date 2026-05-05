@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.UIManager.Dao;
+using EssSystem.Core.UI.Dao;
 using EssSystem.Core;
 
 namespace EssSystem.Core.EssManagers.UIManager
@@ -14,10 +14,16 @@ namespace EssSystem.Core.EssManagers.UIManager
     public class UIManager : Manager<UIManager>
     {
         // ─── Event 名常量（供调用方使用，避免魔法字符串）
-        public const string EVT_REGISTER_ENTITY   = "RegisterUIEntity";
-        public const string EVT_GET_ENTITY        = "GetUIEntity";
-        public const string EVT_UNREGISTER_ENTITY = "UnregisterUIEntity";
-        public const string EVT_HOT_RELOAD        = "HotReloadUIConfigs";
+        public const string EVT_REGISTER_ENTITY      = "RegisterUIEntity";
+        public const string EVT_GET_ENTITY           = "GetUIEntity";
+        public const string EVT_UNREGISTER_ENTITY    = "UnregisterUIEntity";
+        public const string EVT_HOT_RELOAD           = "HotReloadUIConfigs";
+        /// <summary>获取 UI Canvas 根 Transform。data: 空。返回 Ok(Transform).</summary>
+        public const string EVT_GET_CANVAS_TRANSFORM = "GetUICanvasTransform";
+        /// <summary>按 daoId 查 UI GameObject。data: [id]。返回 Ok(GameObject) / Fail。</summary>
+        public const string EVT_GET_UI_GAMEOBJECT    = "GetUIGameObject";
+        /// <summary>UIComponent 属性变更广播。data: [daoId, propName, value]。UIService 内部转发给对应 UIEntity。</summary>
+        public const string EVT_DAO_PROPERTY_CHANGED = "UIDaoPropertyChanged";
 
         [Header("UI Canvas")]
         [SerializeField] private Canvas _uiCanvas;
@@ -138,6 +144,39 @@ namespace EssSystem.Core.EssManagers.UIManager
                 return ResultCode.Fail("参数无效");
 
             UIService.Instance.DestroyUIEntity(daoId);
+            return ResultCode.Ok();
+        }
+
+        /// <summary>返回 UI Canvas 根 Transform——供外部模块读取逻辑尺寸、父接临时元素等。</summary>
+        [Event(EVT_GET_CANVAS_TRANSFORM)]
+        public List<object> OnEventGetCanvasTransform(List<object> data)
+        {
+            var t = GetCanvasTransform();
+            return t != null ? ResultCode.Ok(t) : ResultCode.Fail("Canvas 未初始化");
+        }
+
+        /// <summary>按 daoId 返回其运行时 GameObject（Unity 原生类型，不泄露 UIEntity 类型）。</summary>
+        [Event(EVT_GET_UI_GAMEOBJECT)]
+        public List<object> OnEventGetUIGameObject(List<object> data)
+        {
+            var daoId = data != null && data.Count > 0 ? data[0] as string : null;
+            if (string.IsNullOrEmpty(daoId)) return ResultCode.Fail("参数无效");
+            var entity = UIService.Instance.GetUIEntity(daoId);
+            var go = entity != null ? entity.gameObject : null;
+            return go != null ? ResultCode.Ok(go) : ResultCode.Fail($"UI GameObject 不存在: {daoId}");
+        }
+
+        /// <summary>UIComponent 广播属性变更。转发给 UIService 查到的 UIEntity。</summary>
+        [Event(EVT_DAO_PROPERTY_CHANGED)]
+        public List<object> OnEventDaoPropertyChanged(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数无效");
+            var daoId    = data[0] as string;
+            var propName = data[1] as string;
+            var value    = data.Count > 2 ? data[2] : null;
+            if (string.IsNullOrEmpty(daoId)) return ResultCode.Fail("daoId 为空");
+            var entity = UIService.Instance.GetUIEntity(daoId);
+            entity?.OnDaoPropertyChanged(propName, value);
             return ResultCode.Ok();
         }
 

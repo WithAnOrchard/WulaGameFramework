@@ -1,12 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using EssSystem.Core.EssManagers.UIManager.Dao;
-using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
-using EssSystem.Core.EssManagers.UIManager.Entity;
+using EssSystem.Core.UI.Dao;
+using EssSystem.Core.UI.Dao.CommonComponents;
+using EssSystem.Core.Event;
 using UnityEngine;
+// 本文件为中立 DAO 层——不 <c>using</c> UIManager 模块。广播属性变更走 EVT_DAO_PROPERTY_CHANGED 事件。
 
-namespace EssSystem.Core.EssManagers.UIManager.Dao
+namespace EssSystem.Core.UI.Dao
 {
     /// <summary>
     ///     UI组件 - 所有UI元素的抽象基类
@@ -377,12 +378,14 @@ namespace EssSystem.Core.EssManagers.UIManager.Dao
         #region Property Change Notifications
 
         /// <summary>
-        ///     通知实体属性变更
+        ///     通知实体属性变更——走事件广播，UIManager 会查到对应 UIEntity 并调 OnDaoPropertyChanged。
         /// </summary>
         protected virtual void NotifyEntityPropertyChanged(string propertyName, object value)
         {
-            var entity = UIEntity.GetEntity(this);
-            entity?.OnDaoPropertyChanged(propertyName, value);
+            if (string.IsNullOrEmpty(Id) || !EventProcessor.HasInstance) return;
+            EventProcessor.Instance.TriggerEventMethod(
+                "UIDaoPropertyChanged",   // = UIManager.EVT_DAO_PROPERTY_CHANGED
+                new List<object> { Id, propertyName, value });
         }
 
         protected virtual void OnNameChanged(string newName)

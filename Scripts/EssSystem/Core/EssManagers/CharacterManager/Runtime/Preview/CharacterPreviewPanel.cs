@@ -1,15 +1,15 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.UIManager;
-using EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents;
-using EssSystem.Core.EssManagers.UIManager.Entity;
+using EssSystem.Core.UI.Dao.CommonComponents;
 using EssSystem.EssManager.CharacterManager.Dao;
+// 本文件不 <c>using</c> UIManager 模块——跨模块调用一律走 EventProcessor + 字符串协议。
 
 namespace EssSystem.EssManager.CharacterManager.Runtime.Preview
 {
     /// <summary>
-    /// Character 预览面板 —— 全部 UI 走 <see cref="UIManager"/> DAO 注册（遵循项目规则 5）。
+    /// Character 预览面板 —— 全部 UI 走 EventProcessor 事件注册（遵循项目规则1）。
     /// <para>顶部 3 行：Model / Action / Scale 选择器；左侧每个 Dynamic Part 一行，
     /// 中间是真实的 <see cref="CharacterView"/> GameObject。</para>
     /// <para>变体切换通过 <c>DefaultCharacterConfigs.MakeAnimatedPart</c> 重建 PartConfig
@@ -119,7 +119,7 @@ namespace EssSystem.EssManager.CharacterManager.Runtime.Preview
         {
             // 监听 Canvas 逻辑尺寸变化（窗口 resize / Game View 切分辨率）→ 重建 UI
             if (_root == null) return;
-            var canvasRT = UIManager.Instance != null ? UIManager.Instance.GetCanvasTransform() as RectTransform : null;
+            var canvasRT = QueryCanvasRectTransform();
             if (canvasRT == null) return;
             var size = canvasRT.rect.size;
             if (size.x <= 0f || size.y <= 0f) return;
@@ -144,10 +144,10 @@ namespace EssSystem.EssManager.CharacterManager.Runtime.Preview
         private void OnDestroy()
         {
             if (_isAppQuitting) return;
-            // 销毁 UI（走 UIManager 事件）
+            // 销毁 UI（走 UIManager 事件，仅用字符串协议）
             var ep = EventProcessor.Instance;
             if (ep != null)
-                ep.TriggerEventMethod(UIManager.EVT_UNREGISTER_ENTITY, new List<object> { RootId });
+                ep.TriggerEventMethod("UnregisterUIEntity", new List<object> { RootId });
 
             if (CharacterService.Instance != null)
                 CharacterService.Instance.DestroyCharacter(_previewInstanceId);
@@ -183,14 +183,17 @@ namespace EssSystem.EssManager.CharacterManager.Runtime.Preview
             // 1) 卸载旧 UI —— 必须同步销毁。Object.Destroy 延后到帧末，
             // 在同一帧立即 Register 新树会与旧的同名 GameObject 共存，连续点击会累积重复。
             // 改用 DestroyImmediate 拆掉旧 GameObject，UIEntity.OnDestroy 会自动从 UIService 缓存移除。
-            var oldEntity = UIEntity.GetEntityById(RootId);
-            if (oldEntity != null && oldEntity.gameObject != null)
-                Object.DestroyImmediate(oldEntity.gameObject);
+            // 走事件拿旧根 GameObject —— 不引用 UIEntity 类
+            var oldGoResult = ep.TriggerEventMethod(
+                "GetUIGameObject",   // = UIManager.EVT_GET_UI_GAMEOBJECT
+                new List<object> { RootId });
+            var oldGo = ResultCode.IsOk(oldGoResult) && oldGoResult.Count >= 2 ? oldGoResult[1] as GameObject : null;
+            if (oldGo != null) Object.DestroyImmediate(oldGo);
             _partTexts.Clear();
 
             // 2) 读取真实 Canvas 逻辑尺寸（ScaleWithScreenSize 下随屏幕 aspect 变化，
             //    固定用 1920×1080 会在非 16:9 或 Game 窗口尺寸不同时让顶栏/面板被挤出屏幕）
-            var canvasRT = UIManager.Instance != null ? UIManager.Instance.GetCanvasTransform() as RectTransform : null;
+            var canvasRT = QueryCanvasRectTransform();
             if (canvasRT != null)
             {
                 var rect = canvasRT.rect;
@@ -209,8 +212,17 @@ namespace EssSystem.EssManager.CharacterManager.Runtime.Preview
             BuildTopBar(_root);
             BuildPartsPanel(_root);
 
-            // 3) 注册到 UIManager
-            ep.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY, new List<object> { RootId, _root });
+            // 3) 注册到 UIManager（字符串协议）
+            ep.TriggerEventMethod("RegisterUIEntity", new List<object> { RootId, _root });
+        }
+
+        /// <summary>走 EVT_GET_CANVAS_TRANSFORM 获取 UI Canvas 根 RectTransform，不引用 UIManager 类。</summary>
+        private static RectTransform QueryCanvasRectTransform()
+        {
+            if (!EventProcessor.HasInstance) return null;
+            var r = EventProcessor.Instance.TriggerEventMethod("GetUICanvasTransform", null);
+            if (!ResultCode.IsOk(r) || r.Count < 2) return null;
+            return r[1] as RectTransform;
         }
 
         private void BuildTopBar(UIPanelComponent parent)

@@ -59,6 +59,24 @@
       UIManager.EVT_HOT_RELOAD, new List<object>());
   ```
 
+### `EVT_GET_CANVAS_TRANSFORM` — 获取 UI Canvas 根 Transform
+- **常量**: `UIManager.EVT_GET_CANVAS_TRANSFORM` = `"GetUICanvasTransform"`
+- **参数**: `[]`
+- **返回**: `Ok(Transform)` / `Fail("Canvas 未初始化")`
+- **用途**: 外部模块读取 Canvas 逻辑尺寸 / 临时 reparent 等，避免 `using UIManager`。
+
+### `EVT_GET_UI_GAMEOBJECT` — 按 daoId 查 UI GameObject
+- **常量**: `UIManager.EVT_GET_UI_GAMEOBJECT` = `"GetUIGameObject"`
+- **参数**: `[string daoId]`
+- **返回**: `Ok(GameObject)` / `Fail`
+- **用途**: 外部模块需要某 UI 元素的 GameObject（拖拽 handler、可见性判断等）；返回 Unity 原生 `GameObject`，不暴露 `UIEntity` 类型，调用方无需 `using UIManager.Entity`。
+
+### `EVT_DAO_PROPERTY_CHANGED` — UIComponent 属性变更广播
+- **常量**: `UIManager.EVT_DAO_PROPERTY_CHANGED` = `"UIDaoPropertyChanged"`
+- **参数**: `[string daoId, string propName, object value]`
+- **返回**: `Ok()` / `Fail("daoId 为空")`
+- **用途**: 中立 DAO 层 (`Core.UI.Dao.UIComponent.NotifyEntityPropertyChanged`) 不依赖 UIManager 类型；改通过事件广播，UIManager 内部转发给对应 `UIEntity.OnDaoPropertyChanged`。
+
 ## 调用方式
 
 ### 跨模块调用（推荐）

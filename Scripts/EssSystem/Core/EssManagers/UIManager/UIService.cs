@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.UIManager.Entity;
-using EssSystem.Core.EssManagers.UIManager.Dao;
+using EssSystem.Core.UI.Dao;
 
 namespace EssSystem.Core.EssManagers.UIManager
 {
@@ -162,7 +162,7 @@ namespace EssSystem.Core.EssManagers.UIManager
         /// </summary>
         private UIEntity CreateEntityRecursive(UIComponent component, Transform parent)
         {
-            var entity = Entity.UIEntityFactory.CreateEntity(component, parent);
+            var entity = UIEntityFactory.CreateEntity(component, parent);
             if (entity == null) return null;
 
             foreach (var childComponent in component.GetChildren())
