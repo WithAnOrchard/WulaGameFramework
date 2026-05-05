@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Util;
 using EssSystem.Core.Event;
@@ -13,13 +14,15 @@ namespace EssSystem.Core.EssManagers.ResourceManager
     /// </summary>
     public struct ResourceKey : IEquatable<ResourceKey>
     {
-        public readonly string FileName; // 文件名（不带扩展名）
+        public readonly string FileName;   // 文件名（不带扩展名）
         public readonly bool IsExternal;
+        public readonly string TypeTag;    // 资源类型标签（"Prefab"/"Sprite"/"RuleTile"/...），避免同名不同类碰撞
 
-        public ResourceKey(string path, bool isExternal)
+        public ResourceKey(string path, bool isExternal, string typeTag = null)
         {
             FileName = ExtractFileNameWithoutExtension(path);
             IsExternal = isExternal;
+            TypeTag = string.IsNullOrEmpty(typeTag) ? "" : typeTag;
         }
 
         private static string ExtractFileNameWithoutExtension(string path)
@@ -35,7 +38,9 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
         public bool Equals(ResourceKey other)
         {
-            return FileName == other.FileName && IsExternal == other.IsExternal;
+            return FileName == other.FileName
+                && IsExternal == other.IsExternal
+                && TypeTag == other.TypeTag;
         }
 
         public override bool Equals(object obj)
@@ -50,13 +55,15 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 int hash = 17;
                 hash = hash * 31 + (FileName?.GetHashCode() ?? 0);
                 hash = hash * 31 + IsExternal.GetHashCode();
+                hash = hash * 31 + (TypeTag?.GetHashCode() ?? 0);
                 return hash;
             }
         }
 
         public override string ToString()
         {
-            return IsExternal ? $"external:{FileName}" : $"unity:{FileName}";
+            var prefix = IsExternal ? "external" : "unity";
+            return string.IsNullOrEmpty(TypeTag) ? $"{prefix}:{FileName}" : $"{prefix}:{TypeTag}:{FileName}";
         }
     }
 
@@ -68,7 +75,8 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         Prefab,
         Sprite,
         AudioClip,
-        Texture
+        Texture,
+        RuleTile,
     }
 
     /// <summary>
@@ -161,12 +169,67 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// </summary>
         private void AutoLoadAllResources()
         {
-            // Unity没有LoadAllAsync方法，使用LoadAll同步获取资源列表，然后异步加载
+#if UNITY_EDITOR
+            // Editor 下用 AssetDatabase 兜底，按【真实文件名】索引而非 m_Name；
+            // 这样无论 Unity 的 m_Name 缓存是否落后于文件名（外部改名/移动后未刷新），
+            // 都能用文件名为 ID 找到资产。
+            UnityEditor.AssetDatabase.Refresh();
+            EditorIndexResources<GameObject>();
+            EditorIndexResources<Sprite>();
+            EditorIndexResources<AudioClip>();
+            EditorIndexResources<Texture2D>();
+            EditorIndexResources<RuleTile>();
+#endif
+
+            // Build / 也作为 Editor 第二道兜底：Resources.LoadAll 用 m_Name 作 key
             LoadAllResourcesAsync<GameObject>();
             LoadAllResourcesAsync<Sprite>();
             LoadAllResourcesAsync<AudioClip>();
             LoadAllResourcesAsync<Texture2D>();
+            LoadAllResourcesAsync<RuleTile>();
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// Editor 专用：用 AssetDatabase 找出所有 Resources 下的指定类型资产，
+        /// 按 <b>真实文件名</b>（不依赖 m_Name）写入缓存。仅在 Editor 编译。
+        /// </summary>
+        private void EditorIndexResources<T>() where T : UnityEngine.Object
+        {
+            var typeName = typeof(T).Name;
+            var guids = UnityEditor.AssetDatabase.FindAssets($"t:{typeName}");
+            Log($"[Editor] AssetDatabase.FindAssets t:{typeName} 命中 {guids?.Length ?? 0} 个 GUID");
+            if (guids == null) return;
+
+            var added = 0;
+            var inResources = 0;
+            foreach (var guid in guids)
+            {
+                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path)) continue;
+                // 仅处理 Resources/ 下的资产
+                if (path.IndexOf("/Resources/", System.StringComparison.Ordinal) < 0) continue;
+                inResources++;
+
+                var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<T>(path);
+                if (asset == null)
+                {
+                    Log($"[Editor] LoadAssetAtPath 返回 null: {path}", Color.yellow);
+                    continue;
+                }
+
+                var fileName = System.IO.Path.GetFileNameWithoutExtension(path);
+                var key = new ResourceKey(fileName, false, NormalizeTypeTag(typeName));
+                if (!_loadedResources.ContainsKey(key))
+                {
+                    _loadedResources[key] = asset;
+                    added++;
+                    Log($"[Editor] 索引 {typeName}: '{fileName}' ← {path}");
+                }
+            }
+            Log($"[Editor] {typeName} 在 Resources/ 下 {inResources} 个，新增缓存 {added} 条");
+        }
+#endif
 
         /// <summary>
         /// 异步加载指定类型的所有资源
@@ -182,7 +245,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                     if (resource != null)
                     {
                         // 使用资源名称作为路径的一部分
-                        var resourceKey = new ResourceKey($"Resources/{resource.name}", false);
+                        var resourceKey = new ResourceKey($"Resources/{resource.name}", false, NormalizeTypeTag(typeof(T).Name));
                         if (!_loadedResources.ContainsKey(resourceKey))
                         {
                             _loadedResources[resourceKey] = resource;
@@ -207,7 +270,17 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         }
 
         /// <summary>
-        /// 获取已加载的资源（同步）
+        /// 获取已加载的资源（同步）。
+        /// <para>
+        /// 缓存命中直接返回；cache miss 时对非外部资源 fallback 到 <see cref="Resources.Load{T}(string)"/>
+        /// 同步加载（按 path 走 Resources/ 实际目录），命中后写回缓存。
+        /// 这样：
+        /// <list type="bullet">
+        /// <item>预加载未跑完时调用方仍能拿到资源</item>
+        /// <item><c>Resources.LoadAll</c> 用 m_Name 当 key 而 m_Name 落后于文件名时也能找到</item>
+        /// <item>调用方传 <c>"Tiles/GrasslandsGround"</c> 这种带子目录的路径即可</item>
+        /// </list>
+        /// </para>
         /// </summary>
         [Event(EVT_GET_RESOURCE)]
         public List<object> Get(List<object> data)
@@ -216,14 +289,88 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             string typeStr = data[1] as string;
             bool isExternal = data.Count > 2 ? (bool)data[2] : false;
 
-            var key = new ResourceKey(path, isExternal);
+            var key = new ResourceKey(path, isExternal, NormalizeTypeTag(typeStr));
 
             if (_loadedResources.ContainsKey(key))
             {
                 return new List<object> { ResultCode.OK, _loadedResources[key] };
             }
 
+            // Fallback：非外部资源，按 path 直接 Resources.Load（同步）。
+            // 调用方按"文件名为 ID"约定传入裸文件名时，会依次尝试若干常见子目录，
+            // 命中即缓存（用同一 ResourceKey，命中后续再调用就走缓存）。
+            if (!isExternal && !string.IsNullOrEmpty(path))
+            {
+                foreach (var candidate in EnumerateLoadCandidates(path))
+                {
+                    UnityEngine.Object loaded = typeStr switch
+                    {
+                        "Prefab"    => Resources.Load<GameObject>(candidate),
+                        "Sprite"    => Resources.Load<Sprite>(candidate),
+                        "AudioClip" => Resources.Load<AudioClip>(candidate),
+                        "Texture"   => Resources.Load<Texture2D>(candidate),
+                        "RuleTile"  => Resources.Load<RuleTile>(candidate),
+                        _           => null,
+                    };
+                    if (loaded != null)
+                    {
+                        _loadedResources[key] = loaded;
+                        Log($"Fallback 同步加载: {candidate} ({typeStr})");
+                        return new List<object> { ResultCode.OK, loaded };
+                    }
+                }
+            }
+
             return new List<object> { "资源未加载" };
+        }
+
+        /// <summary>
+        /// 已知的 Resources 子目录候选前缀（按命中概率排序），用于 fallback 时
+        /// 把"文件名为 ID"映射到实际子目录文件。
+        /// </summary>
+        private static readonly string[] _resourceSubfolderHints =
+        {
+            "",                 // 根目录直接命中
+            "Tiles",
+            "Sprites",
+            "Sprites/Tiles",
+            "Sprites/UI",
+            "Sprites/Characters",
+            "Prefabs",
+            "Audio",
+        };
+
+        /// <summary>
+        /// 归一化资源类型标签 —— façade 字符串（"Prefab"/"Texture"）与
+        /// <c>typeof(T).Name</c>（"GameObject"/"Texture2D"）互通，保证 ResourceKey.TypeTag 一致。
+        /// </summary>
+        private static string NormalizeTypeTag(string typeStrOrTypeName)
+        {
+            if (string.IsNullOrEmpty(typeStrOrTypeName)) return "";
+            return typeStrOrTypeName switch
+            {
+                "Prefab"     => "Prefab",
+                "GameObject" => "Prefab",
+                "Texture"    => "Texture",
+                "Texture2D"  => "Texture",
+                _            => typeStrOrTypeName,   // "Sprite" / "AudioClip" / "RuleTile" / ... 原样
+            };
+        }
+
+        /// <summary>枚举给定 path 在常见子目录下的 Resources.Load 候选路径。</summary>
+        private static IEnumerable<string> EnumerateLoadCandidates(string path)
+        {
+            // 调用方已传 "Tiles/X" 这种带子目录路径时，原样优先尝试一次
+            yield return path;
+
+            // 已经含 '/'，说明调用方自带子目录，不再二次拼接，避免变成 "Tiles/Tiles/X"
+            if (path.Contains('/') || path.Contains('\\')) yield break;
+
+            foreach (var hint in _resourceSubfolderHints)
+            {
+                if (string.IsNullOrEmpty(hint)) continue;   // "" 等同于原 path，已 yield 过
+                yield return $"{hint}/{path}";
+            }
         }
 
         /// <summary>
@@ -249,6 +396,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             // 如果未提供ID，自动从路径中提取文件名（不带扩展名）
             if (string.IsNullOrEmpty(id))
             {
+                // 仅用于提取 FileName，不需 TypeTag
                 var key = new ResourceKey(path, isExternal);
                 id = key.FileName;
             }
@@ -275,7 +423,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 return new List<object> { "外部资源请使用 LoadExternalImageAsync" };
             }
 
-            var key = new ResourceKey(path, false);
+            var key = new ResourceKey(path, false, NormalizeTypeTag(typeStr));
 
             if (_loadedResources.ContainsKey(key))
             {
@@ -297,6 +445,9 @@ namespace EssSystem.Core.EssManagers.ResourceManager
                 case "Texture":
                     LoadAsync<Texture2D>(path, obj => { });
                     break;
+                case "RuleTile":
+                    LoadAsync<RuleTile>(path, obj => { });
+                    break;
                 default:
                     return new List<object> { "不支持的资源类型" };
             }
@@ -310,7 +461,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// </summary>
         private void LoadAsync<T>(string path, System.Action<T> callback) where T : UnityEngine.Object
         {
-            var key = new ResourceKey(path, false);
+            var key = new ResourceKey(path, false, NormalizeTypeTag(typeof(T).Name));
 
             if (_loadedResources.ContainsKey(key))
             {
@@ -337,7 +488,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         public List<object> LoadExternalImageAsync(List<object> data)
         {
             string filePath = data[0] as string;
-            var key = new ResourceKey(filePath, true);
+            var key = new ResourceKey(filePath, true, "Sprite");
 
             if (_loadedResources.ContainsKey(key))
             {
@@ -358,7 +509,7 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         /// </summary>
         private void LoadExternalImageAsync(string filePath, System.Action<Sprite> callback)
         {
-            var key = new ResourceKey(filePath, true);
+            var key = new ResourceKey(filePath, true, "Sprite");
 
             if (_loadedResources.ContainsKey(key))
             {
@@ -413,17 +564,30 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         {
             string path = data[0] as string;
             bool isExternal = data.Count > 1 ? (bool)data[1] : false;
+            // 可选第 3 参数指定类型（"Sprite"/"RuleTile"/...），不传则按 FileName 全清
+            string typeStr = data.Count > 2 ? data[2] as string : null;
 
-            var key = new ResourceKey(path, isExternal);
+            // 提取目标 FileName
+            var probe = new ResourceKey(path, isExternal);
+            var targetName = probe.FileName;
 
-            if (_loadedResources.ContainsKey(key))
+            // 收集匹配键（避免边遍历边删）
+            var toRemove = new List<ResourceKey>();
+            foreach (var k in _loadedResources.Keys)
             {
-                Resources.UnloadAsset(_loadedResources[key]);
-                _loadedResources.Remove(key);
-                return new List<object> { ResultCode.OK };
+                if (k.FileName != targetName || k.IsExternal != isExternal) continue;
+                if (!string.IsNullOrEmpty(typeStr) && k.TypeTag != NormalizeTypeTag(typeStr)) continue;
+                toRemove.Add(k);
             }
 
-            return new List<object> { "资源未加载" };
+            if (toRemove.Count == 0) return new List<object> { "资源未加载" };
+
+            foreach (var k in toRemove)
+            {
+                Resources.UnloadAsset(_loadedResources[k]);
+                _loadedResources.Remove(k);
+            }
+            return new List<object> { ResultCode.OK };
         }
 
         /// <summary>

@@ -24,8 +24,9 @@ namespace EssSystem.EssManager.CharacterManager.Dao
         public bool Loop = true;
 
         /// <summary>
-        /// 帧事件 —— 当动作播到指定 <c>frameIndex</c> 时，通过 <c>EventProcessor</c> 广播事件名
-        /// <c>"CharacterFrameEvent"</c>，参数 <c>[GameObject owner, string eventName, string actionName, int frameIndex]</c>。
+        /// 帧事件 —— 当动作播到指定 <c>frameIndex</c> 时，通过 <c>EventProcessor</c> 广播
+        /// <see cref="CharacterService.EVT_FRAME_EVENT"/>（<c>"CharacterFrameEvent"</c>），
+        /// 参数 <c>[GameObject owner, string eventName, string actionName, int frameIndex]</c>。
         /// 业务层（战斗伤害判定 / 音效 / 特效）监听该事件按 eventName 分发。
         /// </summary>
         public Dictionary<int, string> FrameEvents;

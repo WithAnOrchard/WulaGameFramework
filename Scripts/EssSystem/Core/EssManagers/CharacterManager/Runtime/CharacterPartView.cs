@@ -173,9 +173,9 @@ namespace EssSystem.EssManager.CharacterManager.Runtime
                 && !string.IsNullOrEmpty(evtName))
             {
                 var ep = EventProcessor.Instance;
-                if (ep != null && ep.HasListener("CharacterFrameEvent"))
+                if (ep != null && ep.HasListener(CharacterService.EVT_FRAME_EVENT))
                 {
-                    ep.TriggerEventMethod("CharacterFrameEvent",
+                    ep.TriggerEventMethod(CharacterService.EVT_FRAME_EVENT,
                         new List<object> { gameObject, evtName, _currentAction.ActionName, _frameIndex });
                 }
             }

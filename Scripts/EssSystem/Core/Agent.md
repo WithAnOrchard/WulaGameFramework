@@ -13,7 +13,8 @@ Core/
 │   ├── Manager/             ← Manager<T> / Service<T> 基类
 │   ├── DataManager/         ← 数据持久化
 │   ├── ResourceManager/     ← 资源加载/缓存
-│   └── UIManager/           ← UI 实体注册中心
+│   ├── UIManager/           ← UI 实体注册中心
+│   └── CharacterManager/    ← 角色配置 + 运行时实例 + 帧动画
 ├── Event/                   ← EventProcessor（统一事件中心）
 ├── Singleton/               ← SingletonNormal / SingletonMono
 └── Util/                    ← AssemblyUtils, MainThreadDispatcher, MiniJson, ResultCode
@@ -27,7 +28,9 @@ Core/
 | `DataManager` | -20 | Service 自动注册 + 应用退出时持久化 |
 | `ResourceManager` | 0 | 资源加载/缓存 |
 | `UIManager` | 5 | Canvas + UI 实体注册 |
-| 业务 Manager | 10+ | InventoryManager(10) 等 |
+| `InventoryManager` | 10 | 背包系统 |
+| `CharacterManager` | 11 | 角色系统（Config 持久化 + 运行时实例） |
+| 其他业务 Manager | 12+ | |
 
 ## 通信模式
 
@@ -66,3 +69,4 @@ Application.quitting → DataService 调用 SaveAllCategories() 保存
 - [DataManager 指南](EssManagers/DataManager/Agent.md)
 - [ResourceManager 指南](EssManagers/ResourceManager/Agent.md)
 - [UIManager 指南](EssManagers/UIManager/Agent.md)
+- [CharacterManager 指南](EssManagers/CharacterManager/Agent.md)

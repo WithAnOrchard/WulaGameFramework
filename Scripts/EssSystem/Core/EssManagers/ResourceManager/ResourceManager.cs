@@ -16,15 +16,21 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         public const string EVT_GET_SPRITE                = "GetSprite";
         public const string EVT_GET_AUDIO_CLIP            = "GetAudioClip";
         public const string EVT_GET_TEXTURE               = "GetTexture";
+        public const string EVT_GET_RULE_TILE             = "GetRuleTile";
         public const string EVT_GET_EXTERNAL_SPRITE       = "GetExternalSprite";
         public const string EVT_LOAD_PREFAB_ASYNC         = "LoadPrefabAsync";
         public const string EVT_LOAD_SPRITE_ASYNC         = "LoadSpriteAsync";
+        public const string EVT_LOAD_RULE_TILE_ASYNC      = "LoadRuleTileAsync";
         public const string EVT_LOAD_EXTERNAL_SPRITE_ASYNC = "LoadExternalSpriteAsync";
         public const string EVT_ADD_PRELOAD_CONFIG        = "AddPreloadConfig";
         public const string EVT_UNLOAD_RESOURCE           = "UnloadResource";
         public const string EVT_UNLOAD_ALL_RESOURCES      = "UnloadAllResources";
 
         private ResourceService _resourceService;
+
+        // 上次刷新 Inspector 时记录的资源数量 — 仅在数量变化（启动期预加载阶段）时刷新一次，
+        // 稳定后零分配；不再做每帧/节流刷新。
+        private int _lastInspectorResourceCount = -1;
 
         #region Inspector Debug Fields
 
@@ -53,7 +59,17 @@ namespace EssSystem.Core.EssManagers.ResourceManager
 
         protected override void Update()
         {
-            base.Update();
+            // 不再每帧/节流刷新 Inspector — 只在资源数量变化（启动期预加载阶段）时刷新一次，
+            // 稳定后零分配。仍保留日志开关同步（无分配，O(1)）。
+            SyncServiceLoggingSettings();
+
+            if (!_showServiceDataInInspector || _resourceService == null) return;
+
+            var count = _resourceService.GetLoadedResources().Count;
+            if (count == _lastInspectorResourceCount) return;
+
+            _lastInspectorResourceCount = count;
+            UpdateServiceInspectorInfo();
             UpdateDebugInfo();
         }
 
@@ -80,7 +96,9 @@ namespace EssSystem.Core.EssManagers.ResourceManager
             {
                 var loadedResources = _resourceService.GetLoadedResources();
                 _loadedResourceCount = loadedResources.Count;
-                _loadedResourcePaths = new string[loadedResources.Count];
+                // 只在容量变化时重建数组，避免每次都 new string[]。
+                if (_loadedResourcePaths == null || _loadedResourcePaths.Length != loadedResources.Count)
+                    _loadedResourcePaths = new string[loadedResources.Count];
                 int index = 0;
                 foreach (var kvp in loadedResources)
                 {
@@ -150,6 +168,19 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         }
 
         /// <summary>
+        /// 获取 RuleTile（同步、仅缓存）
+        /// </summary>
+        [Event(EVT_GET_RULE_TILE)]
+        public List<object> GetRuleTile(List<object> data)
+        {
+            string path = data[0] as string;
+            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "RuleTile", false });
+            if (ResultCode.IsOk(result) && result.Count >= 2)
+                return ResultCode.Ok(result[1]);
+            return ResultCode.Fail("获取失败");
+        }
+
+        /// <summary>
         /// 获取外部 Sprite
         /// </summary>
         [Event(EVT_GET_EXTERNAL_SPRITE)]
@@ -181,6 +212,17 @@ namespace EssSystem.Core.EssManagers.ResourceManager
         {
             string path = data[0] as string;
             var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_RESOURCE_ASYNC, new List<object> { path, "Sprite", false });
+            return result;
+        }
+
+        /// <summary>
+        /// 异步加载 RuleTile
+        /// </summary>
+        [Event(EVT_LOAD_RULE_TILE_ASYNC)]
+        public List<object> LoadRuleTileAsync(List<object> data)
+        {
+            string path = data[0] as string;
+            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_RESOURCE_ASYNC, new List<object> { path, "RuleTile", false });
             return result;
         }
 

@@ -1,4 +1,4 @@
-namespace EssSystem.Core.EssManagers.UIManager.Dao
+﻿namespace EssSystem.Core.UI.Dao
 {
     /// <summary>
     ///     UI组件类型枚举

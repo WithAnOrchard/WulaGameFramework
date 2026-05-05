@@ -1,8 +1,8 @@
-using System;
-using EssSystem.Core.EssManagers.UIManager.Dao;
+﻿using System;
+using EssSystem.Core.UI.Dao;
 using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
+namespace EssSystem.Core.UI.Dao.CommonComponents
 {
     /// <summary>
     ///     UI文本组件

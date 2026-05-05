@@ -39,7 +39,7 @@ CharacterManager/
 
 ## 内置默认配置
 
-启动时 `CharacterManager` 会自动注册两个示例 Model（若同 ConfigId 不存在）：
+启动时 `CharacterManager`（`_registerDebugTemplates=true` 时）会**强制覆盖注册**两个示例 Model（以代码为准，避免旧版本持久化数据遗留，例如早期 Static 部件）：
 
 | ConfigId | 说明 |
 |---|---|
@@ -61,7 +61,7 @@ CharacterManager/
 
 **使用前必须跑切片工具**：在 Project 视图中选中 `Resources/Sprites/Characters/PixArt/` 下的 PNG 或子文件夹，菜单 `Tools/Character/Slice Selected Sprite Sheets (8x6)` 会把选中的 PNG（文件夹则递归）按 8×6 网格切成 35 个子 Sprite，命名 `{sheetPrefix}_{Action}_{frameIndex}`（前缀由路径推导，如 `Headgear_Helmet_Close_1`）。未选中时会报警告并跳过（不回退全量处理以防误伤）。
 
-业务侧可用 **同 ConfigId + `RegisterConfig`** 覆盖默认，或关闭 `CharacterManager._registerDebugTemplates` 自己从零构建。
+业务侧若要保留自己的持久化配置：**关闭** `CharacterManager._registerDebugTemplates` 即可（否则每次启动都会被覆盖）；或在 Manager 初始化**之后**再调 `RegisterConfig` 以同 ConfigId 再次覆盖。
 
 ## 运行时预览面板
 
@@ -84,17 +84,34 @@ CharacterManager/
 | `CharacterService.CAT_CONFIGS` = `"Configs"` | `CharacterConfig` | ✅ |
 | `CharacterService.CAT_INSTANCES` = `"Characters"` | 运行时 `Character` | ❌（仅内存） |
 
-## Event API
+## C# API（业务层主入口）
 
-**本模块不暴露任何 EVT_ 常量。** 业务层直接调用 `CharacterService.Instance` 的 C# API 即可：
+业务层直接调用 `CharacterService.Instance` 即可，大部分功能无需经 `EventProcessor`：
 
 - 创建 / 销毁：`CharacterService.Instance.CreateCharacter(...)` / `DestroyCharacter(...)`
 - 配置：`RegisterConfig(...)` / `GetConfig(...)` / `GetAllConfigs()`
 - 动作控制：`PlayAction(...)` / `StopAction(...)`、或直接 `character.View.Play(...)` / `Stop(...)` / `PlayThenReturn(...)`
 
-**一个跨模块事件**：`"CharacterFrameEvent"`——动作某帧触发的广播（详见下文“动画事件 / 回弹”章节）。该事件是`EVT_*` 之外唯一的外部接口。
+## Event API
 
-后续若需要跨模块通过 `EventProcessor` 调度，再按需在 Service 上补 `[Event(EVT_XXX)]` 包装即可。
+`CharacterManager` 对外暴露下列 `[Event]` 入口（供其他模块通过 `EventProcessor.TriggerEventMethod` 调度，避免直接 `using CharacterManager`）：
+
+| 常量 | 值 | data 入参 | 返回 |
+|---|---|---|---|
+| `EVT_CREATE_CHARACTER` | `"CreateCharacter"` | `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` | `Ok(Transform root)` / `Fail` |
+| `EVT_DESTROY_CHARACTER` | `"DestroyCharacter"` | `[instanceId]` | `Ok(instanceId)` / `Fail` |
+| `EVT_PLAY_ACTION` | `"PlayCharacterAction"` | `[instanceId, actionName, partId?(string)]` | `Ok` / `Fail` |
+| `EVT_STOP_ACTION` | `"StopCharacterAction"` | `[instanceId, partId?(string)]` | `Ok` / `Fail` |
+| `EVT_SET_CHARACTER_SCALE` | `"SetCharacterScale"` | `[instanceId, Vector3 scale]` | `Ok` / `Fail` |
+| `EVT_SET_CHARACTER_POSITION` | `"SetCharacterPosition"` | `[instanceId, Vector3 worldPosition]` | `Ok` / `Fail` |
+| `EVT_MOVE_CHARACTER` | `"MoveCharacter"` | `[instanceId, Vector3 delta]` | `Ok` / `Fail` |
+
+### `EVT_FRAME_EVENT` — 角色动画帧事件（广播）
+- **常量**：`CharacterService.EVT_FRAME_EVENT` = `"CharacterFrameEvent"`
+- **触发源**：`CharacterPartView` 播到 `CharacterActionConfig.FrameEvents` 登记的帧时自动发出（先 `HasListener` 判空避免无用广播）。
+- **参数**：`[GameObject owner, string eventName, string actionName, int frameIndex]`
+- **订阅**：`[EventListener(CharacterService.EVT_FRAME_EVENT)]`
+- **示例**：见下文"动画事件 / 回弹"。
 
 ## 用法示例
 
@@ -174,10 +191,10 @@ var attack = new CharacterActionConfig("Attack")
     .WithFrameEvent(3, "HitSound");  // 第 3 帧触发 "HitSound"
 ```
 
-事件名：`"CharacterFrameEvent"`，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`。业务层按需监听：
+事件名：`CharacterService.EVT_FRAME_EVENT`（字符串值 `"CharacterFrameEvent"`），参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`。业务层按需监听：
 
 ```csharp
-[Event("CharacterFrameEvent")]
+[EventListener(CharacterService.EVT_FRAME_EVENT)]
 public List<object> OnCharacterFrameEvent(List<object> data) {
     var owner      = data[0] as GameObject;
     var evtName    = data[1] as string;
@@ -188,7 +205,7 @@ public List<object> OnCharacterFrameEvent(List<object> data) {
 }
 ```
 
-为避免没人监听时浪费，`CharacterPartView` 先 `EventProcessor.HasListener("CharacterFrameEvent")` 再广播。
+为避免没人监听时浪费，`CharacterPartView` 先 `EventProcessor.HasListener(CharacterService.EVT_FRAME_EVENT)` 再广播。
 
 ## 待补充 / TODO
 

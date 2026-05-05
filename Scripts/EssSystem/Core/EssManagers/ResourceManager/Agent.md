@@ -7,7 +7,7 @@
 ## ResourceType
 
 ```csharp
-public enum ResourceType { Prefab, Sprite, AudioClip, Texture }
+public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile }
 ```
 
 ## 通过 Event 调用（推荐）
@@ -41,19 +41,23 @@ EventProcessor.Instance.TriggerEventMethod(
 
 ## Event API（公开 façade — 优先用这层）
 
-### `EVT_GET_PREFAB` / `EVT_GET_SPRITE` / `EVT_GET_AUDIO_CLIP` / `EVT_GET_TEXTURE` — 同步获取已缓存资源
-- **常量**: `ResourceManager.EVT_GET_*` = `"GetPrefab"` / `"GetSprite"` / `"GetAudioClip"` / `"GetTexture"`
+### `EVT_GET_PREFAB` / `EVT_GET_SPRITE` / `EVT_GET_AUDIO_CLIP` / `EVT_GET_TEXTURE` / `EVT_GET_RULE_TILE` — 同步获取已缓存资源
+- **常量**: `ResourceManager.EVT_GET_*` = `"GetPrefab"` / `"GetSprite"` / `"GetAudioClip"` / `"GetTexture"` / `"GetRuleTile"`
 - **参数**: `[string path]`（相对 `Resources/`，不带扩展名）
 - **返回**: `ResultCode.Ok(asset)` / `ResultCode.Fail("获取失败")`
-- **副作用**: 仅命中缓存，**不会**触发加载。未加载时返回 Fail。
+- **副作用**: 先查缓存；**缓存未命中** + 非外部 → 自动 fallback 到同步 `Resources.Load<T>(path)`，并按 `_resourceSubfolderHints` 枚举常见子目录（`""`/`Tiles`/`Sprites`/`Sprites/Tiles`/`Sprites/UI`/`Sprites/Characters`/`Prefabs`/`Audio`）。命中即写回缓存；调用方可以直接传裸文件名如 `"GrasslandsGround"`。若 path 已含 `/` 或 `\`（调用方自带子目录），则只按原路径 `Resources.Load` 一次，不再叠加 hints。
+- **启动自动加载**: `ResourceService.AutoLoadAllResources` 启动时双通道预热：
+  1. **Editor** 模式：`AssetDatabase.FindAssets("t:<Type>")` 遍历所有 `Resources/` 下的资产，按**真实文件名**（`Path.GetFileNameWithoutExtension`）入缓存。解决 `m_Name` 落后于文件名（外部改名/移动未刷新）的问题。
+  2. **Build / 二级兜底**：`Resources.LoadAll<T>("")` 按 `m_Name` 作 key 入缓存。
+  覆盖类型：`GameObject` / `Sprite` / `AudioClip` / `Texture2D` / `RuleTile`。
 
 ### `EVT_GET_EXTERNAL_SPRITE` — 同步获取外部图片缓存
 - **常量**: `ResourceManager.EVT_GET_EXTERNAL_SPRITE` = `"GetExternalSprite"`
 - **参数**: `[string filePath]`（绝对路径）
 - **返回**: `ResultCode.Ok(sprite)` / `ResultCode.Fail("获取失败")`
 
-### `EVT_LOAD_PREFAB_ASYNC` / `EVT_LOAD_SPRITE_ASYNC` — 异步加载 Unity 资源
-- **常量**: `ResourceManager.EVT_LOAD_*_ASYNC` = `"LoadPrefabAsync"` / `"LoadSpriteAsync"`
+### `EVT_LOAD_PREFAB_ASYNC` / `EVT_LOAD_SPRITE_ASYNC` / `EVT_LOAD_RULE_TILE_ASYNC` — 异步加载 Unity 资源
+- **常量**: `ResourceManager.EVT_LOAD_*_ASYNC` = `"LoadPrefabAsync"` / `"LoadSpriteAsync"` / `"LoadRuleTileAsync"`
 - **参数**: `[string path]`
 - **返回**: 透传 `ResourceService.LoadAsync` 的返回（`["加载中"]` 或缓存命中时 `[ResultCode.OK, asset]`）
 - **副作用**: 触发 `Resources.LoadAsync`，完成后写入缓存
@@ -72,7 +76,8 @@ EventProcessor.Instance.TriggerEventMethod(
 
 ### `EVT_UNLOAD_RESOURCE` — 卸载单个
 - **常量**: `ResourceManager.EVT_UNLOAD_RESOURCE` = `"UnloadResource"`
-- **参数**: `[string path, bool isExternal=false]`
+- **参数**: `[string path, bool isExternal=false, string typeStr=null]`
+  - 第 3 参数 `typeStr` 可选，若传 `"Sprite"` 等则只卸载匹配 TypeTag 的缓存条目；不传则把相同 FileName + IsExternal 的所有 TypeTag 一并清除
 - **返回**: `[ResultCode.OK]` 或 `["资源未加载"]`
 
 ### `EVT_UNLOAD_ALL_RESOURCES` — 全量卸载
@@ -87,7 +92,7 @@ EventProcessor.Instance.TriggerEventMethod(
 | 常量 | 字符串 | 说明 |
 |---|---|---|
 | `ResourceService.EVT_DATA_LOADED` | `OnResourceDataLoaded` | DataManager 加载完成后通知 Service 跑预加载（由 `ResourceManager.Start()` 触发） |
-| `ResourceService.EVT_GET_RESOURCE` | `GetResource` | 同步获取（按 type 字符串区分） |
+| `ResourceService.EVT_GET_RESOURCE` | `GetResource` | 同步获取（参数 `[path, typeStr, isExternal?]`）；cache miss 时按 fallback 规则同步加载 |
 | `ResourceService.EVT_LOAD_RESOURCE_ASYNC` | `LoadResourceAsync` | 异步加载 Unity 资源 |
 | `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` | `LoadExternalImageAsync` | 异步加载外部图片 |
 | `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | 写预加载配置 |
@@ -107,10 +112,12 @@ EventProcessor.Instance.TriggerEventMethod(
 
 ## 缓存优化
 
-`ResourceKey` 结构体（`Path` + `IsExternal`）作为缓存键，避免字符串拼接。
-- 减少 GC
-- 提速字典查找
-- 类型安全
+`ResourceKey` 结构体作为缓存键，包含 3 个字段：
+- `FileName` — 路径中的文件名（不带扩展名，由 `Path.GetFileNameWithoutExtension` 归一）
+- `IsExternal` — 是否外部文件
+- `TypeTag` — 资源类型标签，由 `NormalizeTypeTag` 归一：`"Prefab"`↔`"GameObject"`、`"Texture"`↔`"Texture2D"`，其余（`Sprite`/`AudioClip`/`RuleTile`）原样
+
+用 `TypeTag` 做 key 一部分，可以避免同文件名不同类型（极少但可能发生）的缓存碰撞。`ToString()` 返回 `"unity:Sprite:GrasslandsGround"` 这样的字符串用于 Inspector 展示。
 
 ## 持久化
 
@@ -120,7 +127,8 @@ ResourceService/
 ├── Prefab.json
 ├── Sprite.json
 ├── AudioClip.json
-└── Texture.json
+├── Texture.json
+└── RuleTile.json
 ```
 
 ## 外部文件加载

@@ -1,6 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.UIManager.Dao
+namespace EssSystem.Core.UI.Dao
 {
     /// <summary>
     ///     UI adjustable base class - provides position, size, and scale properties

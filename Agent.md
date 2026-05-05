@@ -27,6 +27,9 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 数据持久化 | `Scripts/EssSystem/Core/EssManagers/DataManager/Agent.md` |
 | 资源加载 | `Scripts/EssSystem/Core/EssManagers/ResourceManager/Agent.md` |
 | UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/UIManager/Agent.md` |
+| 角色系统 | `Scripts/EssSystem/Core/EssManagers/CharacterManager/Agent.md` |
+| 背包系统 | `Scripts/EssSystem/Manager/InventoryManager/Agent.md` |
+| 2D 地图系统 | `Scripts/EssSystem/Manager/MapManager/Agent.md` |
 
 ## 关键约定（核心铁律）
 
@@ -38,7 +41,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `DataManager` | -20 | ⚠️ 监听 Service 初始化事件 |
 | `ResourceManager` | 0 | |
 | `UIManager` | 5 | |
-| 业务 Manager | 10+ | InventoryManager(10) |
+| `InventoryManager` | 10 | 业务模块 |
+| `CharacterManager` | 11 | 角色系统（Core/EssManagers 下） |
+| `MapManager` | 12 | 业务模块 |
+| 其它业务 Manager | 13+ | 新增默认起步 |
 
 ### 2. 通信路由
 
@@ -84,7 +90,7 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 **收益**：IDE 跳转可达 / 重命名安全 / AI 不会拼错事件名 / 全局可搜索。
 
-已应用到：`UIManager` (4 个)、`InventoryManager` (2 个)、`Service<T>.EVT_INITIALIZED`、`InventoryService.EVT_*` (5 个)。新增模块**必须遵守**。
+已应用到：`UIManager` (4 个)、`ResourceManager` / `ResourceService` (多)、`InventoryManager` (2 个)、`Service<T>.EVT_INITIALIZED`、`InventoryService.EVT_*` (5 个)、`CharacterService.EVT_FRAME_EVENT`。`MapManager` 当前不暴露 `EVT_*`（仅提供纯 C# API）；若将来需要跨模块调度，补 `[Event]` 时**必须**遵守此规则。新增模块**必须遵守**。
 
 ### 5. UI 必须经 UIManager（**强制规则**）
 
@@ -238,9 +244,11 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | `ResourceManager.EVT_GET_SPRITE` | `GetSprite` | Core/ResourceManager | 同步取 Sprite |
 | `ResourceManager.EVT_GET_AUDIO_CLIP` | `GetAudioClip` | Core/ResourceManager | 同步取 AudioClip |
 | `ResourceManager.EVT_GET_TEXTURE` | `GetTexture` | Core/ResourceManager | 同步取 Texture |
+| `ResourceManager.EVT_GET_RULE_TILE` | `GetRuleTile` | Core/ResourceManager | 同步取 RuleTile |
 | `ResourceManager.EVT_GET_EXTERNAL_SPRITE` | `GetExternalSprite` | Core/ResourceManager | 同步取外部图片缓存 |
 | `ResourceManager.EVT_LOAD_PREFAB_ASYNC` | `LoadPrefabAsync` | Core/ResourceManager | 异步加载 Prefab |
 | `ResourceManager.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/ResourceManager | 异步加载 Sprite |
+| `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` | `LoadRuleTileAsync` | Core/ResourceManager | 异步加载 RuleTile |
 | `ResourceManager.EVT_LOAD_EXTERNAL_SPRITE_ASYNC` | `LoadExternalSpriteAsync` | Core/ResourceManager | 异步加载外部图片 |
 | `ResourceManager.EVT_ADD_PRELOAD_CONFIG` | `AddPreloadConfig` | Core/ResourceManager | 添加预加载项（持久化） |
 | `ResourceManager.EVT_UNLOAD_RESOURCE` | `UnloadResource` | Core/ResourceManager | 卸载单个（与 Service 同名） |
@@ -252,6 +260,26 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | Core/ResourceManager | 写预加载配置（内部） |
 | `ResourceService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/ResourceManager | 外部图片加载成功**广播** |
 | `ResourceService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/ResourceManager | 外部图片加载失败**广播** |
+| `CharacterService.EVT_FRAME_EVENT` | `CharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
+| `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
+| `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |
+| `CharacterManager.EVT_PLAY_ACTION` | `PlayCharacterAction` | Core/CharacterManager | 播放动作；data: `[instanceId, actionName, partId?]` |
+| `CharacterManager.EVT_STOP_ACTION` | `StopCharacterAction` | Core/CharacterManager | 停止动作；data: `[instanceId, partId?]` |
+| `CharacterManager.EVT_SET_CHARACTER_SCALE` | `SetCharacterScale` | Core/CharacterManager | 设置根节点 localScale；data: `[instanceId, Vector3]` |
+| `CharacterManager.EVT_SET_CHARACTER_POSITION` | `SetCharacterPosition` | Core/CharacterManager | 设置世界坐标；data: `[instanceId, Vector3]` |
+| `CharacterManager.EVT_MOVE_CHARACTER` | `MoveCharacter` | Core/CharacterManager | 在当前位置上平移；data: `[instanceId, Vector3 delta]` |
+| `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Entity)` |
+| `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
+| `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
+| `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |
+| `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/UIManager | UIComponent 属性变更广播（`[daoId, propName, value]`，UIService 内转发给 UIEntity） |
+| `DanmuService.EVT_CONNECTED` | `OnDanmuConnected` | DanmuManager | B 站长连接握手成功**广播**，参数 `[long roomId]` |
+| `DanmuService.EVT_DISCONNECTED` | `OnDanmuDisconnected` | DanmuManager | B 站长连接断开**广播**，参数 `[Exception errorOrNull]` |
+| `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |
+| `DanmuService.EVT_GIFT` | `OnDanmuGift` | DanmuManager | 礼物**广播**，参数 `[string userName, string giftName, int giftCount, long userId]` |
+| `DanmuService.EVT_RAW` | `OnDanmuRaw` | DanmuManager | 全类型原始 `DanmakuModel`**广播**（含 SuperChat / 上船 / 进场等高级类型） |
+
+> ℹ️ **几乎无 Event 的模块**：`CharacterManager` / `MapManager` 当前以纯 C# API 为主（`CharacterService.Instance.XXX` / `MapService.Instance.XXX`）。`CharacterService.EVT_FRAME_EVENT` 是该家族目前唯一的跨模块广播；`MapManager` 目前不暴露 `EVT_*`。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 
 > ⚠️ **命名冲突警示**：`InventoryManager.EVT_OPEN_UI` 是**命令**（`"OpenInventoryUI"`），`InventoryService.EVT_OPEN_UI` 是**广播**（`"OnOpenInventoryUI"`）。命令由调用方主动触发；广播由 Service 在 UI 实际打开后发出，供其他模块监听。混用会找不到 handler。
 

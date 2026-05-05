@@ -2,7 +2,7 @@
 
 ## 概述
 
-`EssSystem.Core.EssManagers` 提供框架的 Manager 系统，包括基类与 4 个核心 Manager。
+`EssSystem.Core.EssManagers` 提供框架的 Manager 系统，包括基类与 5 个核心 Manager。
 
 ## 模块组成
 
@@ -12,6 +12,7 @@
 | `DataManager/` | 数据持久化 + Service 自动注册 | [DataManager 指南](DataManager/Agent.md) |
 | `ResourceManager/` | 资源加载/缓存（Prefab/Sprite/Audio/Texture） | [ResourceManager 指南](ResourceManager/Agent.md) |
 | `UIManager/` | UI 实体注册中心 + Canvas 管理 | [UIManager 指南](UIManager/Agent.md) |
+| `CharacterManager/` | 角色系统：Config 持久化 + 运行时实例 + 帧动画 + 预览面板 | [CharacterManager 指南](CharacterManager/Agent.md) |
 
 ## 核心规则
 
@@ -33,7 +34,9 @@
 | `DataManager` | -20 | 监听 Service 初始化事件 |
 | `ResourceManager` | 0 | |
 | `UIManager` | 5 | |
-| 业务 Manager | 10+ | InventoryManager(10) 等 |
+| `InventoryManager` | 10 | |
+| `CharacterManager` | 11 | 角色系统 |
+| 其他业务 Manager | 12+ | |
 
 数值越小越先 `Awake`（基于 Unity `DefaultExecutionOrder`）。
 
@@ -52,7 +55,7 @@
 ## 启动流程
 
 `AbstractGameManager.Awake` 自动：
-1. 确保 4 个基础 Manager 存在（EventProcessor / DataManager / ResourceManager / UIManager）
+1. 确保基础 Manager 存在（EventProcessor / DataManager / ResourceManager / UIManager 等；其余业务 Manager 需自行挂在场景上）
 2. 反射扫描所有 `Manager<T>` 子类组件
 3. 按 `[Manager]` 优先级排序
 4. 依次初始化

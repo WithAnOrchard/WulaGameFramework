@@ -35,6 +35,11 @@ namespace EssSystem.Core.EssManagers.Manager
         [Tooltip("是否启用 Service 日志打印")]
         [SerializeField] protected bool _serviceEnableLogging = true;
 
+        [Tooltip("Inspector 数据刷新间隔（秒）— Inspector 只供调试，过高频率会产生大量 GC。默认 0.25s。")]
+        [SerializeField] protected float _inspectorRefreshInterval = 0.25f;
+
+        private float _nextInspectorRefreshTime;
+
         protected override void Awake()
         {
             base.Awake();
@@ -43,8 +48,23 @@ namespace EssSystem.Core.EssManagers.Manager
 
         protected virtual void Update()
         {
-            if (_showServiceDataInInspector) UpdateServiceInspectorInfo();
+            // Inspector 同步节流 — 避免每帧 LINQ/new 分配（GC.Alloc 热点）。
+            if (_showServiceDataInInspector)
+            {
+                var now = Time.unscaledTime;
+                if (now >= _nextInspectorRefreshTime)
+                {
+                    _nextInspectorRefreshTime = now + Mathf.Max(0f, _inspectorRefreshInterval);
+                    UpdateServiceInspectorInfo();
+                }
+            }
             SyncServiceLoggingSettings();
+        }
+
+        /// <summary>子类可调用：判断当前帧是否到达 Inspector 刷新点（与 base.Update 节流共用一拍）。</summary>
+        protected bool ShouldRefreshInspectorThisFrame()
+        {
+            return _showServiceDataInInspector && Time.unscaledTime >= _nextInspectorRefreshTime - Mathf.Max(0f, _inspectorRefreshInterval);
         }
 
         /// <summary>子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。</summary>

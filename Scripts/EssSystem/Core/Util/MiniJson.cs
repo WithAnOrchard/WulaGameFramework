@@ -47,6 +47,13 @@ namespace EssSystem.Core.Util
             return parser.Parse();
         }
 
+        /// <summary>
+        /// 反序列化为 <see cref="JsonNode"/> 包装器，支持类 JToken 的链式访问：
+        /// <c>node["data"]["users"][0].Value&lt;string&gt;("name")</c>。
+        /// 缺失的 key / 越界 index 不抛异常，返回 <see cref="JsonNode.Missing"/>，配合 <c>ToString()</c> 返回 <c>""</c> / <c>ToObject&lt;T&gt;()</c> 返回 default。
+        /// </summary>
+        public static JsonNode Parse(string json) => new JsonNode(Deserialize(json));
+
         #endregion
 
         #region Writer
@@ -360,5 +367,110 @@ namespace EssSystem.Core.Util
         }
 
         #endregion
+    }
+
+    /// <summary>
+    /// MiniJson 的 <c>object</c> 解析结果包装器，模拟 Newtonsoft.JToken 的链式访问 API：
+    /// <list type="bullet">
+    /// <item>对象/数组索引：<c>node["key"]</c> / <c>node[0]</c> 缺失时返回 <see cref="Missing"/>（不抛异常）</item>
+    /// <item>标量转换：<c>ToObject&lt;int&gt;()</c> / <c>Value&lt;string&gt;("uname")</c>；失败返回 <c>default(T)</c></item>
+    /// <item><c>ToString()</c>：非 null 原值转字符串；null / missing 返回 <see cref="string.Empty"/>（不是 "null"）</item>
+    /// <item><c>ToList()</c>：把 JSON 数组展开为 <c>List&lt;JsonNode&gt;</c></item>
+    /// </list>
+    /// </summary>
+    public sealed class JsonNode
+    {
+        /// <summary>全局"缺失节点"哨兵，多次访问不抛异常。</summary>
+        public static readonly JsonNode Missing = new JsonNode(null, isMissing: true);
+
+        /// <summary>底层原始值（Dictionary / List / 原语 / null）。直接操作需要时读取。</summary>
+        public readonly object Raw;
+        private readonly bool _isMissing;
+
+        internal JsonNode(object raw, bool isMissing = false)
+        {
+            Raw = raw;
+            _isMissing = isMissing;
+        }
+
+        /// <summary>当前节点是否是"找不到 key / 越界"哨兵。</summary>
+        public bool IsMissing => _isMissing;
+
+        /// <summary>当前节点是否为 JSON null（包含缺失）。</summary>
+        public bool IsNull => Raw == null;
+
+        /// <summary>是否是非 null 的真实值。</summary>
+        public bool Exists => !_isMissing && Raw != null;
+
+        /// <summary>按 key 取子节点；不是 dict 或 key 不存在返回 <see cref="Missing"/>。</summary>
+        public JsonNode this[string key]
+        {
+            get
+            {
+                if (Raw is Dictionary<string, object> d && d.TryGetValue(key, out var v))
+                    return new JsonNode(v);
+                return Missing;
+            }
+        }
+
+        /// <summary>按 index 取子节点；不是 list 或越界返回 <see cref="Missing"/>。</summary>
+        public JsonNode this[int index]
+        {
+            get
+            {
+                if (Raw is List<object> l && index >= 0 && index < l.Count)
+                    return new JsonNode(l[index]);
+                return Missing;
+            }
+        }
+
+        /// <summary>原值转字符串；null / missing 返回 <see cref="string.Empty"/>。</summary>
+        public override string ToString() => Raw == null ? string.Empty : Raw.ToString();
+
+        /// <summary>
+        /// 把底层值转成 <typeparamref name="T"/>。支持 <c>int/long/short/uint/ulong/double/float/decimal/bool/string</c>
+        /// 以及枚举（按整数解析）；null / 转换失败返回 <c>default</c>。
+        /// </summary>
+        public T ToObject<T>()
+        {
+            if (Raw == null) return default;
+            var type = typeof(T);
+            try
+            {
+                if (type == typeof(string))  return (T)(object)Raw.ToString();
+                if (type == typeof(int))     return (T)(object)Convert.ToInt32(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(long))    return (T)(object)Convert.ToInt64(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(short))   return (T)(object)Convert.ToInt16(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(uint))    return (T)(object)Convert.ToUInt32(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(ulong))   return (T)(object)Convert.ToUInt64(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(double))  return (T)(object)Convert.ToDouble(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(float))   return (T)(object)Convert.ToSingle(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(decimal)) return (T)(object)Convert.ToDecimal(Raw, CultureInfo.InvariantCulture);
+                if (type == typeof(bool))    return (T)(object)Convert.ToBoolean(Raw, CultureInfo.InvariantCulture);
+                if (type.IsEnum)             return (T)Enum.ToObject(type, Convert.ToInt64(Raw, CultureInfo.InvariantCulture));
+                if (Raw is T t) return t;
+            }
+            catch
+            {
+                return default;
+            }
+            return default;
+        }
+
+        /// <summary>
+        /// 等价于 <c>this[key].ToObject&lt;T&gt;()</c>，模拟 Newtonsoft <c>JToken.Value&lt;T&gt;(string)</c>。
+        /// </summary>
+        public T Value<T>(string key) => this[key].ToObject<T>();
+
+        /// <summary>把数组节点展开为 <c>List&lt;JsonNode&gt;</c>；非数组返回空列表。</summary>
+        public List<JsonNode> ToList()
+        {
+            var result = new List<JsonNode>();
+            if (Raw is List<object> l)
+            {
+                for (var i = 0; i < l.Count; i++) result.Add(new JsonNode(l[i]));
+            }
+            return result;
+        }
     }
 }

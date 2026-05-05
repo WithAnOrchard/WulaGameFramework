@@ -1,7 +1,7 @@
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
+namespace EssSystem.Core.UI.Dao.CommonComponents
 {
     /// <summary>
     ///     UI面板组件 - 容器类UI组件

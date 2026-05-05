@@ -122,6 +122,105 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &398485726
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 398485727}
+  - component: {fileID: 398485728}
+  m_Layer: 0
+  m_Name: MapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &398485727
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 398485726}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1180268636}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &398485728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 398485726}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c3fc191c4ee159428c9e6ca673f1c62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showServiceDataInInspector: 1
+  _serviceInspectorInfo:
+    ServiceName: 
+    TotalCategories: 0
+    TotalDataCount: 0
+    Categories: []
+  _serviceEnableLogging: 1
+  _inspectorRefreshInterval: 0.25
+  _registerDebugTemplates: 1
+  _defaultConfig:
+    ConfigId: PerlinIsland
+    DisplayName: "Perlin \u6D77\u9646\u5730\u56FE"
+    ChunkSize: 16
+    Seed: 20240501
+    NoiseScale: 0.02
+    Octaves: 3
+    Persistence: 0.4
+    Lacunarity: 2
+    SeaLevel: 0.58
+    ContinentalnessScale: 0.0008
+    ContinentalnessWeight: 0.88
+    ErosionScale: 0.004
+    ErosionWeight: 0.55
+    RidgesScale: 0.006
+    RidgesWeight: 0.65
+    VerticalScale: 1
+    ClimateCoupledToTerrain: 0
+    ContinentScale: 0.0008
+    ContinentWeight: 0.75
+    ElevationScale: 0.01
+    ElevationOctaves: 4
+    ElevationPersistence: 0.5
+    ElevationLacunarity: 2
+    ElevationContinentLift: 0.5
+    BaseTemperature: 0.85
+    LatitudePeriod: 4000
+    LatitudeStrength: 0.7
+    ElevationLapseRate: 0.4
+    TemperatureNoiseScale: 0.005
+    TemperatureNoiseStrength: 0.1
+    BaseMoisture: 0.5
+    MoistureScale: 0.005
+    MoistureOctaves: 3
+    MoisturePersistence: 0.5
+    MoistureLacunarity: 2
+    OceanMoistureBoost: 0.4
+    ElevationDryness: 0.3
+    RiverEnabled: 1
+    RiverFlowThreshold: 45
+    RiverWidthPerFlowDecade: 1
+    RiverMeanderStrength: 0.45
+    RiverLakeChance: 0.015
+    RiverLakeRadius: 4
+    RiverPondEscapeRadius: 10
+  _renderRadius: 6
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -183,7 +282,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 20
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -265,9 +364,8 @@ MonoBehaviour:
     TotalDataCount: 0
     Categories: []
   _serviceEnableLogging: 0
+  _inspectorRefreshInterval: 0.25
   _registerDebugTemplates: 1
-  _editorTargetInstanceId: player
-  _editorTargetConfigId: Demo
 --- !u!1 &1180268634
 GameObject:
   m_ObjectHideFlags: 0
@@ -297,6 +395,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6089705d2f17abb4e8521fd3f44fc5bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _startupMapConfigId: PerlinIsland
+  _startupMapId: world1
+  _mapRenderRadius: 4
+  _mapChunksPerFrame: 2
+  _mapFollowTarget: {fileID: 0}
 --- !u!4 &1180268636
 Transform:
   m_ObjectHideFlags: 0
@@ -312,8 +415,134 @@ Transform:
   m_Children:
   - {fileID: 2003618053}
   - {fileID: 860531724}
+  - {fileID: 398485727}
+  - {fileID: 1441231042}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1441231041
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1441231042}
+  - component: {fileID: 1441231043}
+  m_Layer: 0
+  m_Name: EntityManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1441231042
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441231041}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1180268636}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1441231043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441231041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58a41b76e4b6b494cafc54b5fd0fc18b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showServiceDataInInspector: 1
+  _serviceInspectorInfo:
+    ServiceName: 
+    TotalCategories: 0
+    TotalDataCount: 0
+    Categories: []
+  _serviceEnableLogging: 1
+  _inspectorRefreshInterval: 0.25
+  _registerDebugTemplates: 1
+  _autoTick: 1
+--- !u!1 &1995281954
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1995281956}
+  - component: {fileID: 1995281955}
+  - component: {fileID: 1995281957}
+  m_Layer: 0
+  m_Name: TestPlayer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1995281955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995281954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08104f65e1790cc45b81a197d8cbdc80, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _speed: 15
+  _sprintMultiplier: 5
+  _autoFollowMainCamera: 1
+  _cameraFollowSmoothing: 0.15
+  _autoCreateSprite: 1
+  _placeholderColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  _enableSpawnTree: 1
+--- !u!4 &1995281956
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995281954}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 13.5209465, y: 5.4929867, z: -4.2922215}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1995281957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1995281954}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73e16a2f42879104da149870d24c6753, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _mapId: 
+  _toggleKey: 284
+  _visible: 1
+  _anchor: {x: 12, y: 12}
+  _fontSize: 13
+  _floorDivide: 1
 --- !u!1 &2003618052
 GameObject:
   m_ObjectHideFlags: 0
@@ -365,6 +594,7 @@ MonoBehaviour:
     TotalDataCount: 0
     Categories: []
   _serviceEnableLogging: 1
+  _inspectorRefreshInterval: 0.25
   _registerDebugTemplates: 1
   _editorTargetInventoryId: player
 --- !u!1660057539 &9223372036854775807
@@ -373,3 +603,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 519420032}
   - {fileID: 1180268636}
+  - {fileID: 1995281956}

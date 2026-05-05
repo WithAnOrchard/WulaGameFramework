@@ -1,6 +1,6 @@
-using System;
+﻿using System;
 
-namespace EssSystem.Core.EssManagers.UIManager.Dao.CommonComponents
+namespace EssSystem.Core.UI.Dao.CommonComponents
 {
     /// <summary>
     ///     UI按钮组件
