@@ -66,7 +66,7 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
             if (height < seaLevel)
             {
                 if (height < seaLevel - DepthDeep) return TopDownTileTypes.DeepOcean;
-                if (height < seaLevel - DepthShallow) return Dao.TileTypes.Ocean;
+                if (height < seaLevel - DepthShallow) return TileTypes.Ocean;
                 return TopDownTileTypes.ShallowOcean;
             }
 

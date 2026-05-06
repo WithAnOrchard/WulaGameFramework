@@ -9,7 +9,9 @@ namespace EssSystem.EssManager.MapManager.Persistence.Dao
     /// **不存地形**：地形由 <c>IMapGenerator.FillChunk</c> 确定性派生，存档只记录"玩家改过的内容"。
     /// </para>
     /// <para>
-    /// 文件路径：<c>{persistentDataPath}/MapData/{MapId}/Chunks/{ChunkX}_{ChunkY}.json</c>
+    /// 持久化时被聚合进 <see cref="RegionSaveData"/>，每个 region 文件存
+    /// <c>RegionSize²</c>（默认 10×10 = 100）个 chunk 的差量；路径：
+    /// <c>{persistentDataPath}/MapData/{MapId}/Chunks/r_{RegionX}_{RegionY}.json</c>
     /// </para>
     /// </summary>
     [Serializable]

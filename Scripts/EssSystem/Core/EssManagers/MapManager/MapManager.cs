@@ -100,6 +100,23 @@ namespace EssSystem.EssManager.MapManager
         /// <summary>当前选中的模板（由 <see cref="_templateId"/> 在 <see cref="Initialize"/> 时解析）。</summary>
         public IMapTemplate ActiveTemplate { get; private set; }
 
+        /// <summary>当前 TemplateId（Inspector 字段的运行时只读快照）。</summary>
+        public string TemplateId => _templateId;
+
+        /// <summary>
+        /// 在 <see cref="Initialize"/> 之前由更高优先级的业务 Manager（如 <c>AbstractGameManager</c>）
+        /// 用代码覆写本字段，省去手动改 Inspector。<see cref="Initialize"/> 已经跑过之后再调用本方法不会
+        /// 重新初始化模板，仅更新字段方便诊断。
+        /// </summary>
+        public void SetTemplateId(string templateId)
+        {
+            if (string.IsNullOrEmpty(templateId)) return;
+            if (_templateId == templateId) return;
+            _templateId = templateId;
+            if (ActiveTemplate != null)
+                LogWarning($"SetTemplateId('{templateId}') 在 Initialize 之后调用，仅更新字段；如需切换模板请重启场景。");
+        }
+
         /// <summary>底层 Service（同等于 MapService.Instance，但 Inspector 里可见）</summary>
         public MapService Service => MapService.Instance;
 

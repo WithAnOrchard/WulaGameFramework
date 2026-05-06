@@ -34,10 +34,13 @@ namespace EssSystem.EssManager.MapManager.Spawn
         // ─── 已破坏 spawn 集合（按 chunk 桶化） ──────────────────────────
         private readonly Dictionary<ChunkKey, HashSet<string>> _destroyedByChunk = new();
 
-        // ─── 已 spawn 实体（按 chunk 桶化，仅运行时） ────────────────────
+        // ─── 已 spawn 实体（按 chunk 桶化，仅运行时） ────────────────
         private readonly Dictionary<ChunkKey, List<string>> _runtimeByChunk = new();
 
-        // ─── 分帧 spawn 队列 ────────────────────────────────────────────
+        // ─── 待处理队列去重集（防多次 Decorate 重复入队同一 instanceId） ──────────
+        private readonly Dictionary<ChunkKey, HashSet<string>> _pendingByChunk = new();
+
+        // ─── 分帧 spawn 队列 ──────────────────────────────────
         private readonly Queue<SpawnRequest> _spawnQueue = new();
 
         /// <summary>每次 <see cref="TickSpawnQueue"/> 处理上限；MapManager.Update 默认每帧调一次。</summary>
@@ -224,11 +227,23 @@ namespace EssSystem.EssManager.MapManager.Spawn
         // ─────────────────────────────────────────────────────────────
         #region 运行时 spawn 索引
 
-        /// <summary>装饰器把命中的 spawn 请求入队；下个 Tick 由 MapManager 驱动消费。</summary>
+        /// <summary>装饰器把命中的 spawn 请求入队；下个 Tick 由 MapManager 驱动消费。
+        /// <para>双重去重：跳过已存活跳同 id 的实体，及已在队列中等待的 id。
+        /// 防同一 chunk 多次 Decorate / unload 未及时清理导致的 "已存在" 警告。</para></summary>
         public void EnqueueSpawn(string mapId, int cx, int cy, string entityConfigId,
                                  string instanceId, Vector3 worldPos, Transform parent)
         {
             if (string.IsNullOrEmpty(entityConfigId) || string.IsNullOrEmpty(instanceId)) return;
+            var key = new ChunkKey(mapId, cx, cy);
+
+            // 跳过已活着的 —— 避免对 EntityService 发重复 EVT_CREATE_ENTITY
+            if (_runtimeByChunk.TryGetValue(key, out var alive) && alive.Contains(instanceId)) return;
+
+            // 跳过已在队列中等待的
+            if (!_pendingByChunk.TryGetValue(key, out var pending))
+                _pendingByChunk[key] = pending = new HashSet<string>();
+            if (!pending.Add(instanceId)) return;
+
             _spawnQueue.Enqueue(new SpawnRequest
             {
                 MapId = mapId,
@@ -239,6 +254,13 @@ namespace EssSystem.EssManager.MapManager.Spawn
                 WorldPosition = worldPos,
                 Parent = parent
             });
+        }
+
+        /// <summary>从 pending 集合中移除（入队去重计数器）。</summary>
+        private void RemoveFromPending(in ChunkKey key, string instanceId)
+        {
+            if (_pendingByChunk.TryGetValue(key, out var set) && set.Remove(instanceId) && set.Count == 0)
+                _pendingByChunk.Remove(key);
         }
 
         /// <summary>
@@ -252,17 +274,26 @@ namespace EssSystem.EssManager.MapManager.Spawn
             while (budget > 0 && _spawnQueue.Count > 0)
             {
                 var req = _spawnQueue.Dequeue();
+                var key = new ChunkKey(req.MapId, req.ChunkX, req.ChunkY);
+                // 无论成败与否先从 pending 出队，避免后续 EnqueueSpawn 被误跳过
+                RemoveFromPending(in key, req.InstanceId);
+
                 if (isChunkLoaded != null && !isChunkLoaded(req.MapId, req.ChunkX, req.ChunkY))
                 {
                     continue; // chunk 已卸载，丢弃
                 }
+                // 可能在队列出队前已被别的路径创建（理论上不应发生）——检查运行中桶防重复调 Create
+                if (_runtimeByChunk.TryGetValue(key, out var existing) && existing.Contains(req.InstanceId))
+                {
+                    continue;
+                }
+
                 var data = new List<object> { req.EntityConfigId, req.InstanceId, req.Parent, req.WorldPosition };
                 try
                 {
                     var result = EventProcessor.Instance.TriggerEventMethod(EntityMgr.EVT_CREATE_ENTITY, data);
                     if (ResultCode.IsOk(result))
                     {
-                        var key = new ChunkKey(req.MapId, req.ChunkX, req.ChunkY);
                         if (!_runtimeByChunk.TryGetValue(key, out var list))
                             _runtimeByChunk[key] = list = new List<string>(8);
                         list.Add(req.InstanceId);
@@ -289,19 +320,23 @@ namespace EssSystem.EssManager.MapManager.Spawn
         public void DestroyChunkRuntimeEntities(string mapId, int cx, int cy)
         {
             var key = new ChunkKey(mapId, cx, cy);
-            if (!_runtimeByChunk.TryGetValue(key, out var list)) return;
-            for (var i = 0; i < list.Count; i++)
+            if (_runtimeByChunk.TryGetValue(key, out var list))
             {
-                try
+                for (var i = 0; i < list.Count; i++)
                 {
-                    EventProcessor.Instance.TriggerEventMethod(EntityMgr.EVT_DESTROY_ENTITY, new List<object> { list[i] });
+                    try
+                    {
+                        EventProcessor.Instance.TriggerEventMethod(EntityMgr.EVT_DESTROY_ENTITY, new List<object> { list[i] });
+                    }
+                    catch (Exception ex)
+                    {
+                        LogWarning($"DestroyChunkRuntimeEntities exception: {list[i]}: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    LogWarning($"DestroyChunkRuntimeEntities exception: {list[i]}: {ex.Message}");
-                }
+                _runtimeByChunk.Remove(key);
             }
-            _runtimeByChunk.Remove(key);
+            // 同时清掉尚未出队的 pending，下次进入同 chunk 可重新入队
+            _pendingByChunk.Remove(key);
         }
 
         public IReadOnlyList<string> GetRuntimeEntitiesInChunk(string mapId, int cx, int cy)

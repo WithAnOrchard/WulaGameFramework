@@ -1,8 +1,8 @@
 using EssSystem.EssManager.MapManager.Dao.Config;
-using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Config;
 using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
 using EssSystem.EssManager.MapManager.Spawn;
 using EssSystem.EssManager.MapManager.Spawn.Dao;
+using PerlinMapConfig = EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Config.PerlinMapConfig;
 
 namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom
 {

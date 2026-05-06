@@ -17,10 +17,11 @@ MapManager/
 ├── Agent.md                         本文档
 ├── Runtime/
 │   └── MapView.cs                   Tilemap 渲染 + 流式预加载（RenderRadius/PreloadRadius/KeepAliveRadius）
-├── Persistence/                     ★ 区块级存档底层（v2 新增）
-│   ├── MapPersistenceService.cs     路径管理 + 同步读 + 异步写（Task.Run）+ 原子 .tmp 重命名
+├── Persistence/                     ★ 区块级存档底层（v3：10×10 region 聚合）
+│   ├── MapPersistenceService.cs     路径管理 + region 缓存 + 异步/同步写（Task.Run）+ 原子 .tmp 重命名
 │   └── Dao/
-│       ├── ChunkSaveData.cs         单 chunk 差量存档（destroyed spawns + tile overrides + placed spawns）
+│       ├── ChunkSaveData.cs         单 chunk 差量（destroyed spawns + tile overrides + placed spawns）
+│       ├── RegionSaveData.cs        ★ 10×10 chunk 聚合为一个文件，减少小文件 IO
 │       ├── MapMetaSaveData.cs       Map 级元数据 + 配置 JSON 快照
 │       ├── TileOverride.cs          struct{ LocalX, LocalY, TypeId }
 │       └── PlacedSpawn.cs           v2 预留：玩家手动放置的实体（v1 写空 list）
@@ -192,18 +193,22 @@ if (ResultCode.IsOk(r)) {
 - **持久化**：`SetTileOverride` / `ClearTileOverride` / `SaveChunk` / `SaveAllDirtyChunks` / `SaveAllDirtyChunksAllMaps` / `DeleteMapData` / `GetMapDataPath` / `AutoSaveTick` / `FlushDirtyBudget`（详见下方"区块级持久化"）
 - **Spawn 已破坏标记**：`MarkSpawnDestroyed` / `UnmarkSpawnDestroyed` / `IsSpawnDestroyed` / `ClearDestroyedSpawnsInChunk`（详见下方"实体生成 (Spawn)"）
 
-## 区块级持久化（v2 新增）
+## 区块级持久化（v3：region 聚合）
 
-每张地图按 **chunk 一文件** 存储**差量数据**（不存地形 —— 地形由生成器确定性派生）。文件路径：
+每张地图按 **10×10 chunk** 联合存储**差量数据**（不存地形 —— 地形由生成器确定性派生）。比 v2 “一 chunk 一文件”大幅减少小文件 + inode 压力：
 
 ```
 {persistentDataPath}/MapData/{mapId}/
 ├── Meta.json                       MapMetaSaveData：MapId / ConfigId / ChunkSize / Seed / ConfigJsonSnapshot
 └── Chunks/
-    ├── 0_0.json                    ChunkSaveData：DestroyedSpawnIds + TileOverrides + PlacedSpawns
-    ├── 0_-1.json
+    ├── r_0_0.json                  RegionSaveData：Chunks[] 中含该 region 内需存的所有 ChunkSaveData
+    ├── r_0_-1.json
     └── ...
 ```
+
+区域坐标 `(rx, ry) = (floor(cx/10), floor(cy/10))`。`MapPersistenceService.REGION_SIZE = 10` 可调。
+运行期用 `_regionCache` 避免每次 chunk 读/写都重加载文件。LoadChunk 首次同步读盘加载所在 region，
+后续同 region 的 chunk 访问都走内存；SaveChunk 更新内存中的 region 后同步生成 JSON，异步原子写盘。
 
 ### 加载流程
 
