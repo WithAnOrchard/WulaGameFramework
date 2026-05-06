@@ -32,6 +32,7 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 背包系统 | `Scripts/EssSystem/Core/EssManagers/InventoryManager/Agent.md` |
 | 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/MapManager/Agent.md` |
 | 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
+| 昼夜求生 Demo | `Scripts/Demo/DayNight/Agent.md` |
 
 ## 关键约定（核心铁律）
 
@@ -48,6 +49,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `MapManager` | 12 | Core/EssManagers 下 |
 | `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
 | 其它业务 Manager | 14+ | 新增默认起步 |
+| `WaveSpawnManager`（Demo） | 20 | Demo/DayNight 下 |
+| `BaseDefenseManager`（Demo） | 21 | Demo/DayNight 下 |
+| `ConstructionManager`（Demo） | 22 | Demo/DayNight 下 |
+| `DayNightHudManager`（Demo） | 23 | Demo/DayNight 下，依赖 UIManager |
 
 ### 2. 通信路由
 
@@ -289,6 +294,17 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |
 | `DanmuService.EVT_GIFT` | `OnDanmuGift` | DanmuManager | 礼物**广播**，参数 `[string userName, string giftName, int giftCount, long userId]` |
 | `DanmuService.EVT_RAW` | `OnDanmuRaw` | DanmuManager | 全类型原始 `DanmakuModel`**广播**（含 SuperChat / 上船 / 进场等高级类型） |
+| `DayNightGameManager.EVT_PHASE_CHANGED` | `DayNightPhaseChanged` | Demo/DayNight | 昼夜阶段切换**广播**，参数 `[bool isNight, int round, bool isBossNight]` |
+| `WaveSpawnService.EVT_WAVE_STARTED` | `OnWaveStarted` | Demo/DayNight | 波次开始**广播**，参数 `[int round, int waveIndex, int totalEnemies]` |
+| `WaveSpawnService.EVT_WAVE_CLEARED` | `OnWaveCleared` | Demo/DayNight | 波次清完**广播**，参数 `[int round, int waveIndex]` |
+| `BaseDefenseManager.EVT_DAMAGE_BASE` | `DamageBase` | Demo/DayNight | 对据点造成伤害（命令），参数 `[int amount]` |
+| `BaseDefenseManager.EVT_RESET_BASE` | `ResetBase` | Demo/DayNight | 重置据点 HP（命令） |
+| `BaseDefenseService.EVT_HP_CHANGED` | `OnBaseHpChanged` | Demo/DayNight | 据点 HP 变更**广播**，参数 `[int currentHp, int maxHp, int delta]` |
+| `BaseDefenseService.EVT_DESTROYED` | `OnBaseDestroyed` | Demo/DayNight | 据点击毁**广播**，无参 |
+| `ConstructionManager.EVT_PLACE` | `PlaceConstruction` | Demo/DayNight | 放置工事（命令），参数 `[string typeId, Vector3 position, float rotation?]` → `Ok(string instanceId)` |
+| `ConstructionManager.EVT_REMOVE` | `RemoveConstruction` | Demo/DayNight | 移除工事（命令），参数 `[string instanceId]` |
+| `ConstructionService.EVT_PLACED` | `OnConstructionPlaced` | Demo/DayNight | 工事已放置**广播**，参数 `[string instanceId, string typeId, Vector3 position]` |
+| `ConstructionService.EVT_REMOVED` | `OnConstructionRemoved` | Demo/DayNight | 工事已移除**广播**，参数 `[string instanceId]` |
 
 > ℹ️ **几乎无 Event 的模块**：`CharacterManager` / `MapManager` 当前以纯 C# API 为主（`CharacterService.Instance.XXX` / `MapService.Instance.XXX`）。`CharacterService.EVT_FRAME_EVENT` 是该家族目前唯一的跨模块广播；`MapManager` 目前不暴露 `EVT_*`。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 
@@ -296,13 +312,65 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 > ⚠️ **façade vs Service 同名**：`ResourceManager.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` 与 `ResourceService.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` **字符串相同**，仅后者实际生效（字典覆盖）。调用方只需用 façade 常量。
 
-## 项目特定规则（占位，后续追加）
+## 项目特定规则
 
-> 此章节预留给项目特定约定，可在此追加：
->
-> - 命名规范（变量前缀、私有字段下划线等）
-> - 团队约定（PR 流程、commit message 风格）
-> - 性能基线（启动时间、扫描耗时）
-> - 已知坑点 / 临时 workaround
-> - 集成第三方库的注意事项
-> - ……
+> 此章节记录项目实战中踩出来的硬性约定，后续新模块务必遵守。
+
+### 1. `RuntimeInitializeOnLoadMethod` 阶段选择
+
+**注册到进程级静态字典/Registry**（如 `MapTemplateRegistry`）的代码 **绝对不能** 用 `RuntimeInitializeLoadType.SubsystemRegistration`。
+
+- **为什么**：`@d:\Desktop\WulaFrameGameWork\WulaGameFramework\Assets\Scripts\EssSystem\Core\Singleton\PlayModeResetGuard.cs:26` 也跑在该阶段，会清空已知静态注册表（`MapTemplateRegistry._templates` 等）；同阶段内多个 `RuntimeInitializeOnLoadMethod` 之间执行顺序 **未定义**，一旦清理后跑就抹掉你的注册。
+- **正确做法**：用 `RuntimeInitializeLoadType.BeforeSceneLoad`。它严格晚于 `SubsystemRegistration`（清完之后），又赶在所有 `Awake()` 之前。
+
+```csharp
+// ✓ 正确
+[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+private static void AutoRegister() {
+    if (!XxxRegistry.Contains(Id))
+        XxxRegistry.Register(new MyTemplate());
+}
+
+// ✗ 错误：会被 PlayModeResetGuard 抹掉
+[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+```
+
+新增一类静态注册表时，同步在 `PlayModeResetGuard.ResetStaticRegistries()` 里加入清理逻辑，并在本规则里登记。
+
+### 2. 运行时通过代码挂 Manager / Service 的时序
+
+业务 `AbstractGameManager` 子类（默认 order=0）若要在 **更高优先级 Manager 的 Awake 之前**改其 Inspector 字段（例：`MapManager.SetTemplateId`），必须遵守：
+
+```csharp
+// ✓ 正确：先 Inactive，AddComponent 不触发 Awake；改完字段再激活
+var holder = new GameObject(nameof(XxxManager));
+holder.SetActive(false);
+holder.transform.SetParent(transform);
+var mgr = holder.AddComponent<XxxManager>();
+mgr.SetSomeField(...);
+holder.SetActive(true);   // 此刻才同步触发 Awake/Initialize
+
+// ✗ 错误：AddComponent 立即同步触发 Awake，SetSomeField 来不及
+var mgr = new GameObject().AddComponent<XxxManager>();
+mgr.SetSomeField(...);
+```
+
+参考 `@d:\Desktop\WulaFrameGameWork\WulaGameFramework\Assets\Scripts\Demo\DayNight\DayNightGameManager.cs:113-134` 的实现。
+
+### 3. `[EventListener]` / `[Event]` 找不到 Target 时的行为
+
+`[EventListener]` 是**类型级别**注册（程序集扫描即注册），与运行时是否真的有该 MonoBehaviour 实例 **无关**。当广播 / 命令触发时若 `Target == null`：
+
+- 监听器路径：静默返回空列表（缺组件是合法状态）
+- 命令路径：`LogWarning` 提示命令被丢弃（命令通常预期有响应）
+
+参考 `@d:\Desktop\WulaFrameGameWork\WulaGameFramework\Assets\Scripts\EssSystem\Core\Event\EventProcessor.cs:417-468`。
+
+业务代码不需要 try/catch；遇到此警告说明业务侧有 Manager / Service 没在场景中挂载，按需 AddComponent 即可。
+
+### 4. 占位（后续追加）
+
+- 命名规范（变量前缀、私有字段下划线等）
+- 团队约定（PR 流程、commit message 风格）
+- 性能基线（启动时间、扫描耗时）
+- 集成第三方库的注意事项
