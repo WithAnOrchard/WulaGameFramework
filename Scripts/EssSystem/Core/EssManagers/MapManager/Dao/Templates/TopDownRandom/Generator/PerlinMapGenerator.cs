@@ -1,6 +1,8 @@
 using EssSystem.EssManager.MapManager.Dao;
 using EssSystem.EssManager.MapManager.Dao.Generator;
 using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Config;
+using EssSystem.EssManager.MapManager.Spawn;
+using EssSystem.EssManager.MapManager.Spawn.Dao;
 using UnityEngine;
 
 namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
@@ -10,8 +12,12 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
     /// <para>
     /// **确定性**：种子→随机偏移在构造时决定一次，之后纯函数式，对同一世界坐标永远返回同一结果。
     /// </para>
+    /// <para>
+    /// 同时实现 <see cref="IMapMetaProvider"/>：把 BiomeClassifier 输出（pre-river 群系）暴露给 spawn 装饰器，
+    /// 用于按"群系"过滤 spawn 规则。
+    /// </para>
     /// </summary>
-    public class PerlinMapGenerator : IMapGenerator
+    public class PerlinMapGenerator : IMapGenerator, IMapMetaProvider
     {
         private readonly PerlinMapConfig _cfg;
         private readonly float _seedOffsetX;
@@ -259,6 +265,29 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
             }
 
             return Mathf.Clamp01(moisture);
+        }
+
+        /// <summary>
+        /// <see cref="IMapMetaProvider"/> 实现：返回 BiomeClassifier 的 pre-river 群系输出 + 归一化数值。
+        /// <para>spawn 装饰器仅在规则带 <c>BiomeIds</c> 过滤时调用本方法（其余字段从 Tile 直接读以节省 fBm 重采样）。</para>
+        /// </summary>
+        public bool TryGetTileMeta(int worldX, int worldY, out TileMeta meta)
+        {
+            var h = SampleHeight(worldX, worldY);
+            var elevation = SampleElevation(worldX, worldY);
+            var temperature = SampleTemperature(worldX, worldY, elevation);
+            var moisture = SampleMoisture(worldX, worldY, h, elevation);
+            var continentalness = SampleContinentalness(worldX, worldY);
+            var biomeId = BiomeClassifier.Classify(h, _cfg.SeaLevel, elevation, temperature, moisture);
+            meta = new TileMeta
+            {
+                BiomeId = biomeId,
+                Elevation = elevation,
+                Temperature = temperature,
+                Moisture = moisture,
+                Continentalness = continentalness,
+            };
+            return true;
         }
 
         /// <summary>把归一化 [0,1] 浮点压到 byte。</summary>

@@ -5,6 +5,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.ResourceManager;
 using EssSystem.EssManager.MapManager.Dao;
+using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
 
 namespace EssSystem.EssManager.MapManager.Runtime
 {
@@ -62,6 +63,13 @@ namespace EssSystem.EssManager.MapManager.Runtime
                  "内存代价：保留的 Tilemap Cell 数 ≤ (2*keepAlive+1)² × ChunkSize²，请按显存上限权衡。")]
         [SerializeField, Min(0)] private int _keepAliveRadius = 100;
 
+        [Tooltip("预加载半径（Chebyshev，单位：区块）：在焦点 ±preloadRadius 内的区块会被提前 GetOrGenerateChunk —\n" +
+                 "触发持久化读盘（若有 chunk 文件）+ 跑装饰器 + 入队 spawn 实体，但**不渲染** Tilemap。\n" +
+                 "玩家走入 renderRadius 时只需画行条，不再卡顿在生成 / spawn 上。\n" +
+                 "约束：preloadRadius ≥ renderRadius；< renderRadius 会自动按 renderRadius 处理。\n" +
+                 "默认 = renderRadius + 2，行为温和；调大可让 spawn 更早就绪，但每多一圈 ~ (2r+1)² 次生成。")]
+        [SerializeField, Min(0)] private int _preloadRadius = 5; // = default _renderRadius(3) + 2
+
         [Tooltip("自动跟随的 Transform；非 null 时每帧用其 position 作为焦点。" +
                  "null 时使用手动 SetFocus* 设置的焦点（默认 (0,0,0))。")]
         [SerializeField] private Transform _followTarget;
@@ -84,8 +92,14 @@ namespace EssSystem.EssManager.MapManager.Runtime
         /// <summary>当前已渲染区块集合。</summary>
         private readonly HashSet<Vector2Int> _renderedChunks = new();
 
+        /// <summary>已预加载（仅 GetOrGenerateChunk 但不渲染 Tilemap）的区块集合，避免重复请求。</summary>
+        private readonly HashSet<Vector2Int> _preloadedChunks = new();
+
         /// <summary>待渲染区块队列（按到焦点的距离排序，近的先来）。</summary>
         private readonly Queue<Vector2Int> _renderQueue = new();
+
+        /// <summary>待预加载区块队列（[renderRadius+1, preloadRadius] 圈层；不参与 Tilemap 渲染）。</summary>
+        private readonly Queue<Vector2Int> _preloadQueue = new();
 
         /// <summary>当前正在分帧渲染的 Chunk；<c>null</c> 代表没有正在切片的块。</summary>
         private Vector2Int? _partialChunk;
@@ -147,6 +161,22 @@ namespace EssSystem.EssManager.MapManager.Runtime
         }
 
         /// <summary>
+        /// 预加载半径（≥ <see cref="RenderRadius"/>）。在 [renderRadius+1, preloadRadius] 范围内的 chunk
+        /// 会被提前 <c>Map.GetOrGenerateChunk</c>（触发持久化读盘 + 装饰器 + spawn 入队），但**不画 Tilemap**。
+        /// </summary>
+        public int PreloadRadius
+        {
+            get => _preloadRadius;
+            set
+            {
+                var v = Mathf.Max(0, value);
+                if (v == _preloadRadius) return;
+                _preloadRadius = v;
+                _streamingDirty = true;
+            }
+        }
+
+        /// <summary>
         /// 保活半径（Chebyshev 区块数）：已渲染区块在焦点 ±keepAlive 之内永不被卸载；
         /// 设为 0 等价于关闭保活，回退到「跟随 renderRadius 立刻卸载」旧行为。
         /// 运行时缩小会在下一帧重建时卸载超范围区块。
@@ -189,7 +219,9 @@ namespace EssSystem.EssManager.MapManager.Runtime
             _tilemap = tilemap;
             _ruleTileCache.Clear();
             _renderedChunks.Clear();
+            _preloadedChunks.Clear();
             _renderQueue.Clear();
+            _preloadQueue.Clear();
             _partialChunk = null;
             _partialRow = 0;
             _focusChunk = new Vector2Int(int.MinValue, int.MinValue);
@@ -311,8 +343,24 @@ namespace EssSystem.EssManager.MapManager.Runtime
                 if (_partialRow >= size)
                 {
                     _renderedChunks.Add(pc);
+                    _preloadedChunks.Remove(pc);   // 进入渲染态后从 preload 集合迁出
                     _partialChunk = null;
                     _partialRow = 0;
+                }
+            }
+
+            // ④ 预加载：渲染队列已空 + 无分片中 chunk → 每帧最多 preload 1 个
+            //    把生成 spike 与渲染分开，且严格限速避免一次铺开整圈。
+            if (_renderQueue.Count == 0 && _partialChunk == null && _preloadQueue.Count > 0)
+            {
+                while (_preloadQueue.Count > 0)
+                {
+                    var pre = _preloadQueue.Dequeue();
+                    if (_renderedChunks.Contains(pre) || _preloadedChunks.Contains(pre)) continue;
+                    // GetOrGenerateChunk 触发 PostFillHook(读盘) + 装饰器 + spawn 入队，但不画 Tilemap。
+                    _map.GetOrGenerateChunk(pre.x, pre.y);
+                    _preloadedChunks.Add(pre);
+                    break;
                 }
             }
         }
@@ -380,6 +428,49 @@ namespace EssSystem.EssManager.MapManager.Runtime
             _focusComparer.Center = center;
             newcomers.Sort(_focusComparer);
             for (var i = 0; i < newcomers.Count; i++) _renderQueue.Enqueue(newcomers[i]);
+
+            // (d) 预加载圈层 [renderRadius+1, preloadRadius]：仅 GetOrGenerateChunk + 装饰器 + spawn 入队，
+            //     不画 Tilemap。让玩家走到时只需画行条，不再卡顿在生成 / 大量 spawn 上。
+            var preload = Mathf.Max(_preloadRadius, radius);
+            if (preload > radius)
+            {
+                _preloadQueue.Clear();
+                var preloadList = _newcomersScratch;   // 复用 List
+                preloadList.Clear();
+                for (var dy = -preload; dy <= preload; dy++)
+                {
+                    for (var dx = -preload; dx <= preload; dx++)
+                    {
+                        var rdx = Mathf.Abs(dx);
+                        var rdy = Mathf.Abs(dy);
+                        // 已在 renderRadius 范围 → 走 _renderQueue，不重复入预加载
+                        if (rdx <= radius && rdy <= radius) continue;
+                        var c = new Vector2Int(center.x + dx, center.y + dy);
+                        if (_renderedChunks.Contains(c)) continue;
+                        if (_preloadedChunks.Contains(c)) continue;
+                        preloadList.Add(c);
+                    }
+                }
+                preloadList.Sort(_focusComparer);
+                for (var i = 0; i < preloadList.Count; i++) _preloadQueue.Enqueue(preloadList[i]);
+            }
+            else
+            {
+                _preloadQueue.Clear();
+            }
+
+            // (e) 清理 _preloadedChunks 中超出 keepAlive 的项（避免无限增长）
+            if (_preloadedChunks.Count > 0)
+            {
+                _toUnrenderScratch.Clear();
+                foreach (var c in _preloadedChunks)
+                {
+                    if (Mathf.Abs(c.x - center.x) > keep || Mathf.Abs(c.y - center.y) > keep)
+                        _toUnrenderScratch.Add(c);
+                }
+                for (var i = 0; i < _toUnrenderScratch.Count; i++)
+                    _preloadedChunks.Remove(_toUnrenderScratch[i]);
+            }
         }
 
         /// <summary>清空指定区块在 Tilemap 上的所有瓦片（不影响 Map 数据）。</summary>
@@ -492,21 +583,21 @@ namespace EssSystem.EssManager.MapManager.Runtime
 
         private static bool IsWaterTile(string typeId)
         {
-            return typeId == Dao.TileTypes.DeepOcean
+            return typeId == TopDownTileTypes.DeepOcean
                 || typeId == Dao.TileTypes.Ocean
-                || typeId == Dao.TileTypes.ShallowOcean
-                || typeId == Dao.TileTypes.River
-                || typeId == Dao.TileTypes.Lake;
+                || typeId == TopDownTileTypes.ShallowOcean
+                || typeId == TopDownTileTypes.River
+                || typeId == TopDownTileTypes.Lake;
         }
 
         private Color ResolveTileColor(Dao.Tile tile)
         {
             if (_debugColorMode != DebugColorMode.None) return ResolveDebugColor(tile);
-            if (tile.TypeId == Dao.TileTypes.DeepOcean
+            if (tile.TypeId == TopDownTileTypes.DeepOcean
                 || tile.TypeId == Dao.TileTypes.Ocean
-                || tile.TypeId == Dao.TileTypes.ShallowOcean
-                || tile.TypeId == Dao.TileTypes.River
-                || tile.TypeId == Dao.TileTypes.Lake) return new Color(0.82f, 0.96f, 1.00f);
+                || tile.TypeId == TopDownTileTypes.ShallowOcean
+                || tile.TypeId == TopDownTileTypes.River
+                || tile.TypeId == TopDownTileTypes.Lake) return new Color(0.82f, 0.96f, 1.00f);
             return Color.white;
         }
 
@@ -567,30 +658,30 @@ namespace EssSystem.EssManager.MapManager.Runtime
             switch (typeId)
             {
                 // 海洋 / 河流 / 湖泊：统一亮青蓝（与正常渲染色保持一致）
-                case Dao.TileTypes.DeepOcean:    return new Color(0.82f, 0.96f, 1.00f);
+                case TopDownTileTypes.DeepOcean:    return new Color(0.82f, 0.96f, 1.00f);
                 case Dao.TileTypes.Ocean:        return new Color(0.82f, 0.96f, 1.00f);
-                case Dao.TileTypes.ShallowOcean: return new Color(0.82f, 0.96f, 1.00f);
-                case Dao.TileTypes.River:        return new Color(0.82f, 0.96f, 1.00f);
-                case Dao.TileTypes.Lake:         return new Color(0.82f, 0.96f, 1.00f);
+                case TopDownTileTypes.ShallowOcean: return new Color(0.82f, 0.96f, 1.00f);
+                case TopDownTileTypes.River:        return new Color(0.82f, 0.96f, 1.00f);
+                case TopDownTileTypes.Lake:         return new Color(0.82f, 0.96f, 1.00f);
                 // 高度类
-                case Dao.TileTypes.Beach:        return new Color(0.95f, 0.88f, 0.60f);
-                case Dao.TileTypes.Hill:         return new Color(0.55f, 0.45f, 0.25f);
-                case Dao.TileTypes.Mountain:     return new Color(0.40f, 0.35f, 0.30f);
+                case TopDownTileTypes.Beach:        return new Color(0.95f, 0.88f, 0.60f);
+                case TopDownTileTypes.Hill:         return new Color(0.55f, 0.45f, 0.25f);
+                case TopDownTileTypes.Mountain:     return new Color(0.40f, 0.35f, 0.30f);
                 // 沙地基底 (≈0.95, 0.85, 0.6) × HDR 冷光 → LDR clamp 出近白冷色
                 // 绿/蓝通道故意 >1：乘沙地 (0.85/0.6) 后分别落到 ≈1.02/1.08，framebuffer 写入时 clamp 到 1
                 // 最终可见 RGB ≈ (0.95, 1.00, 1.00) → 明显的冰白
-                case Dao.TileTypes.SnowPeak:     return new Color(1.00f, 1.20f, 1.80f);
+                case TopDownTileTypes.SnowPeak:     return new Color(1.00f, 1.20f, 1.80f);
                 // 寒带
-                case Dao.TileTypes.Tundra:       return new Color(0.75f, 0.78f, 0.78f);
-                case Dao.TileTypes.Taiga:        return new Color(0.30f, 0.50f, 0.45f);
+                case TopDownTileTypes.Tundra:       return new Color(0.75f, 0.78f, 0.78f);
+                case TopDownTileTypes.Taiga:        return new Color(0.30f, 0.50f, 0.45f);
                 // 温带
-                case Dao.TileTypes.Grassland:    return new Color(0.55f, 0.80f, 0.35f);
-                case Dao.TileTypes.Forest:       return new Color(0.20f, 0.55f, 0.20f);
-                case Dao.TileTypes.Swamp:        return new Color(0.30f, 0.40f, 0.25f);
+                case TopDownTileTypes.Grassland:    return new Color(0.55f, 0.80f, 0.35f);
+                case TopDownTileTypes.Forest:       return new Color(0.20f, 0.55f, 0.20f);
+                case TopDownTileTypes.Swamp:        return new Color(0.30f, 0.40f, 0.25f);
                 // 热带
-                case Dao.TileTypes.Desert:       return new Color(0.95f, 0.80f, 0.40f);
-                case Dao.TileTypes.Savanna:      return new Color(0.80f, 0.70f, 0.30f);
-                case Dao.TileTypes.Rainforest:   return new Color(0.05f, 0.45f, 0.20f);
+                case TopDownTileTypes.Desert:       return new Color(0.95f, 0.80f, 0.40f);
+                case TopDownTileTypes.Savanna:      return new Color(0.80f, 0.70f, 0.30f);
+                case TopDownTileTypes.Rainforest:   return new Color(0.05f, 0.45f, 0.20f);
                 // 兼容旧 ID
                 case Dao.TileTypes.Land:         return new Color(0.55f, 0.80f, 0.35f);
                 default:                          return Color.magenta; // 兜底：未注册类型

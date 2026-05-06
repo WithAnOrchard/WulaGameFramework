@@ -15,37 +15,11 @@ namespace EssSystem.EssManager.MapManager.Dao
         /// <summary>未指定（占位）。</summary>
         public const string None = "";
 
-        /// <summary>海洋（保留兼容）。</summary>
+        /// <summary>海洋（兼容旧 ID；具体海洋分层由各模板自行定义）。</summary>
         public const string Ocean = "ocean";
 
-        /// <summary>陆地（保留兼容）。</summary>
+        /// <summary>陆地（兼容旧 ID）。</summary>
         public const string Land = "land";
-
-        // ─── 海洋分层（按海拔深度） ───────────────────────────────
-        public const string DeepOcean = "deep_ocean";
-        public const string ShallowOcean = "shallow_ocean";
-
-        /// <summary>河流（陆地上的流水线）。</summary>
-        public const string River = "river";
-
-        /// <summary>湖泊（陆地内静水体）。</summary>
-        public const string Lake = "lake";
-
-        // ─── 陆地：地形高度类 ────────────────────────────────────
-        public const string Beach = "beach";
-        public const string Hill = "hill";
-        public const string Mountain = "mountain";
-        public const string SnowPeak = "snow_peak";
-
-        // ─── 陆地：生物群系（低海拔由温度湿度决定） ───────────────
-        public const string Tundra = "tundra";
-        public const string Taiga = "taiga";
-        public const string Grassland = "grassland";
-        public const string Forest = "forest";
-        public const string Swamp = "swamp";
-        public const string Desert = "desert";
-        public const string Savanna = "savanna";
-        public const string Rainforest = "rainforest";
 
         // ─── 内置默认 RuleTile 资源 ID（按 ResourceManager 约定：文件名不带扩展名 / 子目录） ───
         /// <summary>默认海洋 RuleTile 资源 ID。</summary>
@@ -56,6 +30,13 @@ namespace EssSystem.EssManager.MapManager.Dao
 
         /// <summary>默认沙漠 RuleTile 资源 ID。</summary>
         public const string DefaultDesertRuleTile = "GrasslandSand";
+
+        // ─── 注意 ────────────────────────────────────────────────
+        // 模板（top-down / side-scroller / ...）专用群系/方块常量请放到各自模板的
+        // Dao 子目录下，例如：
+        //   Dao/Templates/TopDownRandom/Dao/TopDownTileTypes.cs   (Beach/Hill/Forest/...)
+        //   Dao/Templates/SideScrollerRandom/Dao/SideScrollerTileTypes.cs (Sky/Dirt/Stone/...)
+        // 这里不再把模板特有 ID 放到通用层，避免跨模板见到不属于自己的群系。
     }
 
     /// <summary>

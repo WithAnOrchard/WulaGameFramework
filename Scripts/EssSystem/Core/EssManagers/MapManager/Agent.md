@@ -12,32 +12,86 @@
 
 ```
 MapManager/
-├── MapManager.cs                    薄门面：默认注册 + 生命周期
-├── MapService.cs                    业务核心 + MapView 工厂（纯 C# API；按需再补 [Event] 包装）
+├── MapManager.cs                    薄门面：默认注册 + Update 驱动（spawn tick + auto-save tick）
+├── MapService.cs                    业务核心 + MapView 工厂 + 持久化集成 + 8 类 API
 ├── Agent.md                         本文档
 ├── Runtime/
-│   └── MapView.cs                   MonoBehaviour：Map → Grid + Tilemap 渲染（含 TypeId→RuleTile 缓存）
+│   └── MapView.cs                   Tilemap 渲染 + 流式预加载（RenderRadius/PreloadRadius/KeepAliveRadius）
+├── Persistence/                     ★ 区块级存档底层（v2 新增）
+│   ├── MapPersistenceService.cs     路径管理 + 同步读 + 异步写（Task.Run）+ 原子 .tmp 重命名
+│   └── Dao/
+│       ├── ChunkSaveData.cs         单 chunk 差量存档（destroyed spawns + tile overrides + placed spawns）
+│       ├── MapMetaSaveData.cs       Map 级元数据 + 配置 JSON 快照
+│       ├── TileOverride.cs          struct{ LocalX, LocalY, TypeId }
+│       └── PlacedSpawn.cs           v2 预留：玩家手动放置的实体（v1 写空 list）
+├── Spawn/                           ★ 实体生成子系统（v2 新增）
+│   ├── EntitySpawnService.cs        规则集持久化 + chunk 桶化 destroyed 集合 + 分帧 spawn 队列
+│   ├── EntitySpawnDecorator.cs      IChunkDecorator：评估规则、入队 spawn 请求
+│   ├── IMapMetaProvider.cs          可选接口：生成器暴露 (BiomeId, Elevation, Temp, Moist, Continentalness)
+│   └── Dao/
+│       ├── EntitySpawnRule.cs       单条规则（过滤器 + 密度 + cluster + Priority + MaxPerChunk）
+│       ├── EntitySpawnRuleSet.cs    一组规则；显式按 mapConfigId 绑定
+│       ├── FloatRange.cs            可选闭区间过滤器（HasValue/Min/Max）
+│       └── TileMeta.cs              TryGetTileMeta 出参
 └── Dao/
-    ├── Tile.cs                      单格（TypeId 字符串）
-    ├── Chunk.cs                     Size×Size 扁平数组容器 + 区块坐标
-    ├── Map.cs                       运行时实例：MapId/ConfigId/ChunkSize + 懒生成区块字典
-    ├── TileType.cs                  TypeId 常量 + 默认 RuleTile 常量 + TileTypeDef 元数据类
+    ├── Tile.cs                      单格（TypeId 字符串 + Elevation/Temp/Moist/RiverFlow byte 缓存）
+    ├── Chunk.cs                     ★ 增 IsDirty / OverrideTile / EnumerateOverrides / ApplyOverrides
+    ├── Map.cs                       ★ 增 PostFillHook / ChunkUnloading（pre-event）
+    ├── TileType.cs                  通用 TypeId（None/Ocean/Land + 默认 RuleTile 资源常量）+ TileTypeDef
     ├── Config/
-    │   ├── MapConfig.cs             抽象基类：ConfigId + DisplayName + ChunkSize + CreateGenerator()
-    │   └── PerlinMapConfig.cs       兼容旧 AQN 的薄包装，实际逻辑在 TopDownRandom
-    └── Generator/
-    │   ├── IMapGenerator.cs         通用策略接口：FillChunk(chunk)
-    │   └── IChunkDecorator.cs       装饰器接口：FillChunk 后的植物/生物/结构派生
+    │   ├── MapConfig.cs             抽象基类
+    │   └── PerlinMapConfig.cs       兼容旧 AQN 薄包装
+    ├── Generator/
+    │   ├── IMapGenerator.cs         通用策略接口：FillChunk + PrewarmAround
+    │   └── IChunkDecorator.cs       装饰器接口
     ├── Util/
     │   └── ChunkSeed.cs             (mapId, chunkCoord, tag) → 确定性子种子 / System.Random
-    └── Templates/
-        └── TopDownRandom/           2D 平面随机生成模板（MC-like 四参数 + Biome + River）
-            ├── Config/
-            │   └── PerlinMapConfig.cs
-            └── Generator/
-                ├── PerlinMapGenerator.cs
-                ├── BiomeClassifier.cs
-                └── RiverTracer.cs
+    └── Templates/                   ★ 模板策略层
+        ├── IMapTemplate.cs              模板策略接口 (TileTypes / DefaultConfig / SpawnRules)
+        ├── MapTemplateRegistry.cs       进程级模板注册表
+        ├── TopDownRandom/               俯视 2D 随机大世界
+        │   ├── TopDownRandomTemplate.cs     ★ IMapTemplate 实现
+        │   ├── Dao/TopDownTileTypes.cs      ★ 低到高：DeepOcean/Beach/Hill/.../Forest/Rainforest 常量
+        │   ├── Config/PerlinMapConfig.cs
+        │   └── Generator/
+        │       ├── PerlinMapGenerator.cs    同时实现 IMapMetaProvider
+        │       ├── BiomeClassifier.cs
+        │       └── RiverTracer.cs
+        └── SideScrollerRandom/          ★ 横版 2D 随机地图（骨架）
+            ├── SideScrollerRandomTemplate.cs
+            ├── Dao/SideScrollerTileTypes.cs Sky/Grass/Dirt/Stone/Bedrock/Sand/Snow/Water/Lava
+            ├── Config/SideScrollerMapConfig.cs   高度/振幅/频率/倍频
+            └── Generator/SideScrollerMapGenerator.cs  fBm 水平地表线 + 土/石/基岩分层
+```
+
+## 模板策略层（v3）
+
+所有**顶视 vs 横版**之类的风格差异都装进 `IMapTemplate` 实现，以避免 MapManager 本体写死某种群系名：
+
+```csharp
+public interface IMapTemplate {
+    string TemplateId { get; }                         // "top_down_random" / "side_scroller_random" / ...
+    string DisplayName { get; }
+    string DefaultConfigId { get; }                      // 默认 ConfigId
+    void RegisterDefaultTileTypes(MapService service);   // TileTypeDef 一量表
+    MapConfig CreateDefaultConfig();                     // 默认 Config 实例
+    void RegisterDefaultSpawnRules(EntitySpawnService); // 可选
+}
+```
+
+内置模板（启动时自动登记）：
+
+| TemplateId | 说明 | 默认 ConfigId |
+|---|---|---|
+| `top_down_random` | 俯视 2D 随机大世界（Perlin + 群系 + 河流 + 默认树 spawn） | `PerlinIsland` |
+| `side_scroller_random` | 横版 2D 随机地图（骨架） | `SideScrollerWorld` |
+
+业务侧添加自定义模板：
+
+```csharp
+// 在自身 Manager.Initialize 里（于 MapManager 之前起来，或后补也可，后补需手动 RegisterDefaultTileTypes）
+MapTemplateRegistry.Register(new MyCustomTemplate());
+// 然后在 MapManager Inspector 把 Template Id 填入 "my_custom" 即可
 ```
 
 ## 坐标系约定
@@ -49,13 +103,14 @@ MapManager/
 
 ## 内置默认配置
 
-`MapManager` 启动时自动注册（同 ConfigId 已存在则跳过；注册前经 `JsonUtility` 克隆解耦 Inspector）：
+`MapManager` 启动时按当前 Template 自动注册（同 ConfigId 已存在则跳过；top-down 模板优先使用 Inspector 的 `_defaultConfig`，其他走 `Template.CreateDefaultConfig()`）：
 
-| ConfigId | 类型 | 说明 |
-|---|---|---|
-| `"PerlinIsland"` | `TopDownRandom.PerlinMapConfig` | 16×16 区块，Seed=20240501，MC-like 四参数地形 + Biome + River |
+| TemplateId | 默认 ConfigId | 类型 | 说明 |
+|---|---|---|---|
+| `top_down_random` | `"PerlinIsland"` | `TopDownRandom.PerlinMapConfig` | 16×16 区块，MC-like 四参数地形 + Biome + River |
+| `side_scroller_random` | `"SideScrollerWorld"` | `SideScrollerRandom.SideScrollerMapConfig` | fBm 水平地表线 + 土/石/基岩分层（骨架） |
 
-**默认值技术预设：大块大陆 + 大片海洋**（`SeaLevel=0.58` / `ContinentalnessScale=0.0008` / `ContinentScale=0.0008` / `ContinentalnessWeight=0.88`），想再减少小岛、让大陆更连成片：继续同向调（seaLevel↑ / continent↓ / weight↑）即可。
+**top-down 预设：大块大陆 + 大片海洋**（`SeaLevel=0.58` / `ContinentalnessScale=0.0008` / `ContinentScale=0.0008` / `ContinentalnessWeight=0.88`）。
 
 业务侧可用同 ConfigId 覆盖默认，或关闭 `MapManager._registerDebugTemplates` 自行从零构建。
 
@@ -87,12 +142,19 @@ MapManager/
 
 ## 默认 TileType 映射
 
-`MapManager.RegisterDefaultTileTypes`（启动时**总是**调用，不受 `_registerDebugTemplates` 控制）：
+TileType 注册现在由**当前 Template** 在启动时代理（`IMapTemplate.RegisterDefaultTileTypes`）。通用部分仍由 `Dao.TileTypes` 提供：
 
-| TypeId | DisplayName | RuleTileResourceId | 对应资产 |
+| 通用 TypeId | DisplayName | RuleTileResourceId | 对应资产 |
 |---|---|---|---|
 | `TileTypes.Ocean` = `"ocean"` | 海洋 | `"GrasslandsWaterTiles"` | `Resources/Tiles/GrasslandsWaterTiles.asset` |
 | `TileTypes.Land` = `"land"` | 陆地 | `"GrasslandsGround"` | `Resources/Tiles/GrasslandsGround.asset` |
+
+模板专有群系 / 方块常量：
+
+- top-down：`TopDownTileTypes.{DeepOcean, ShallowOcean, River, Lake, Beach, Hill, Mountain, SnowPeak, Tundra, Taiga, Grassland, Forest, Swamp, Desert, Savanna, Rainforest}`（在 `Dao/Templates/TopDownRandom/Dao/`）
+- side-scroller：`SideScrollerTileTypes.{Sky, Grass, Dirt, Stone, Bedrock, Sand, Snow, Water, Lava}`（在 `Dao/Templates/SideScrollerRandom/Dao/`）
+
+**不要**把模板专有 ID 加到通用 `Dao.TileTypes`；跨模板股代会让代码迫使看到不属于自己的群系。
 
 渲染层据此把 `Tile.TypeId` 翻译为 RuleTile：
 
@@ -127,6 +189,149 @@ if (ResultCode.IsOk(r)) {
 - 视图：`CreateMapView(mapId, parent?)` / `GetMapView(id)` / `DestroyMapView(id)`
 - 装饰器：`RegisterDecorator(IChunkDecorator)` / `UnregisterDecorator(id)` / `GetDecorators()`
 - C# event（非 EVT_ 常量，直接订阅）：`ChunkGenerated` / `ChunkUnloaded` / `MapCreated` / `MapDestroyed`
+- **持久化**：`SetTileOverride` / `ClearTileOverride` / `SaveChunk` / `SaveAllDirtyChunks` / `SaveAllDirtyChunksAllMaps` / `DeleteMapData` / `GetMapDataPath` / `AutoSaveTick` / `FlushDirtyBudget`（详见下方"区块级持久化"）
+- **Spawn 已破坏标记**：`MarkSpawnDestroyed` / `UnmarkSpawnDestroyed` / `IsSpawnDestroyed` / `ClearDestroyedSpawnsInChunk`（详见下方"实体生成 (Spawn)"）
+
+## 区块级持久化（v2 新增）
+
+每张地图按 **chunk 一文件** 存储**差量数据**（不存地形 —— 地形由生成器确定性派生）。文件路径：
+
+```
+{persistentDataPath}/MapData/{mapId}/
+├── Meta.json                       MapMetaSaveData：MapId / ConfigId / ChunkSize / Seed / ConfigJsonSnapshot
+└── Chunks/
+    ├── 0_0.json                    ChunkSaveData：DestroyedSpawnIds + TileOverrides + PlacedSpawns
+    ├── 0_-1.json
+    └── ...
+```
+
+### 加载流程
+
+```
+Map.GetOrGenerateChunk(cx, cy):
+  ① IMapGenerator.FillChunk(chunk)           ← 永远确定性重跑
+  ② Map.PostFillHook(chunk)                  ← MapService 安装：
+       LoadChunk → ApplyOverrides → SeedDestroyed
+  ③ map._chunks[key] = chunk
+  ④ ChunkGenerated 事件 → MapService 跑 IChunkDecorator
+        EntitySpawnDecorator 内部 IsSpawnDestroyed 跳过被破坏项
+  ⑤ MapService.ChunkGenerated 对外广播
+```
+
+### 写盘流程
+
+| 时机 | 行为 |
+|---|---|
+| `MarkSpawnDestroyed` / `OverrideTile` / `ClearOverride` | 标 `chunk.IsDirty = true` |
+| 区块卸载（`Map.ChunkUnloading` pre-event） | dirty → 异步写盘 + 销毁 runtime 实体 |
+| 自动 flush（`MapManager.Update` 每帧 → `AutoSaveTick`） | 计时到 `AutoSaveIntervalSec`（默认 30s）→ 异步写最多 `AutoSaveMaxChunksPerTick`（默认 4）个 dirty chunk |
+| 应用退出（`OnApplicationQuit`） | **同步**写全部 dirty chunk（后台 Task 可能被进程杀死） |
+| 应用切后台（`OnApplicationFocus(false)`） | 异步写一次防数据丢失 |
+
+### 线程模型
+
+- **读盘**：主线程同步（小文件 + ChunksPerFrame 限速）
+- **写盘**：JSON 序列化在主线程，文件 IO 走 `Task.Run` 后台线程
+- **串行化**：所有写入持有 `_writeLock`，原子 `.tmp` 重命名（断电不会半截 JSON）
+
+### 配置变更兼容
+
+`Meta.ConfigJsonSnapshot` 在 `CreateMap` 时与当前 MapConfig 的 `JsonUtility.ToJson` 比对。**不一致仅 LogWarning**，已有 chunk 文件保留原内容；新 chunk 用最新配置生成（边界可能割裂，按用户决策接受）。
+
+### Tile Override
+
+```csharp
+// 玩家挖矿
+MapService.Instance.SetTileOverride(mapId, worldX, worldY, "stone");
+
+// 重置某格（视觉不立刻还原；区块下次重新加载时恢复生成器默认）
+MapService.Instance.ClearTileOverride(mapId, worldX, worldY);
+```
+
+`Tile.Elevation/Temperature/Moisture/RiverFlow` 不受影响 —— 仅替换 `TypeId`。
+
+## 实体生成 (Spawn) 子系统（v2 新增）
+
+### 规则驱动
+
+每个 `EntitySpawnRule` 描述：**过滤器 + 密度 + cluster + 调度** 四组参数。规则集（`EntitySpawnRuleSet`）显式绑定到 `MapConfigId`：
+
+```csharp
+EntitySpawnService.Instance.RegisterRuleSet("PerlinIsland",
+    new EntitySpawnRuleSet("default-flora")
+        .WithRule(new EntitySpawnRule("tree_oak", "env_tree_oak")
+            .WithTileTypes(TopDownTileTypes.Forest)
+            .WithMoistureRange(0.3f, 1.0f)
+            .WithDensity(0.06f)
+            .WithMaxPerChunk(12)
+            .WithRngTag("flora_tree"))
+        .WithRule(new EntitySpawnRule("grass_tuft", "env_grass")
+            .WithTileTypes(TopDownTileTypes.Grassland, TopDownTileTypes.Forest)
+            .WithDensity(0.18f)
+            .WithCluster(2, 4, 2)
+            .WithRngTag("flora_grass")));
+```
+
+业务侧需先在 `EntityService` 注册对应 `EntityConfig`（推荐 `EntityKind.Static` + `CharacterConfig` 单 Static Part 的轻量实体）。
+
+### 过滤器
+
+| 字段 | 说明 |
+|---|---|
+| `TileTypeIds` | post-river 的 `Tile.TypeId` 命中（最常用，如 `"land"` / `TopDownTileTypes.Forest`） |
+| `BiomeIds` | pre-river 群系（需 `IMapMetaProvider`，PerlinMapGenerator 已实现） |
+| `ElevationRange` / `TemperatureRange` / `MoistureRange` | 直接读 Tile 上的 byte 缓存，无需 fBm 重采样 |
+
+### 确定性
+
+所有 RNG 走 `ChunkSeed.Rng(mapId, cx, cy, rule.TileRngTag)`。同 (Seed, MapId, MapConfig, RuleSet) → spawn 位置/类型完全一致：
+- 规则按 `(Priority asc, RuleId asc)` 排序
+- 区块内格子按行主序 `(ly, lx)` 遍历
+- 密度掷骰**先消耗 RNG**，再过 filter（保证序列稳定）
+- cluster 候选按 `(dy, dx)` 字典序排序后再用 RNG 抽取
+
+### 复现 / 持久化
+
+InstanceId 由格子坐标稳定派生：
+- 主体：`spawn:{mapId}:{cx}:{cy}:{ruleId}:{lx}_{ly}`
+- cluster：`spawn:{mapId}:{cx}:{cy}:{ruleId}:{seedLx}_{seedLy}#{candLx}_{candLy}`
+
+```csharp
+// 砍树（业务层）：先标记，再销毁 GameObject
+MapService.Instance.MarkSpawnDestroyed(mapId, instanceId);
+EventProcessor.Instance.TriggerEventMethod(EntityManager.EVT_DESTROY_ENTITY,
+    new List<object> { instanceId });
+
+// 复活
+MapService.Instance.UnmarkSpawnDestroyed(mapId, instanceId);
+
+// 调试 / 重置生态
+MapService.Instance.ClearDestroyedSpawnsInChunk(mapId, cx, cy);
+```
+
+`MarkSpawnDestroyed` 内部解析 instanceId 推算 `(cx, cy)` → 写入 chunk 桶 → 标 chunk dirty。下次该区块加载时，装饰器查 `IsSpawnDestroyed` 命中即跳过 spawn → **不会复活**。
+
+### 性能护栏
+
+| 参数 | 默认 | 作用 |
+|---|---:|---|
+| `EntitySpawnRule.MaxPerChunk` | 16 | 单规则单区块上限 |
+| `EntitySpawnDecorator.GlobalMaxPerChunk` | 32 | 跨规则单区块总上限 |
+| `EntitySpawnService.EntitiesPerFrame` | 8 | spawn 队列每帧消费数（分帧防 spike） |
+| `MapManager._spawnEntitiesPerFrame` | 8 | 上述运行时同步源 |
+
+### 流式预加载（`MapView.PreloadRadius`）
+
+- `RenderRadius` (默认 4)：渲染 Tilemap 的圈层
+- `PreloadRadius` (默认 `RenderRadius + 2`)：仅 `GetOrGenerateChunk`（触发读盘 + 装饰器 + spawn 入队），不画 Tilemap
+- `KeepAliveRadius` (默认 100)：已生成 chunk 在此范围内不卸载
+
+玩家走入渲染圈层时，spawn 实体已在外圈预加载好 → **无生成卡顿**。预加载严格限速：每帧最多 1 个 chunk。
+
+### IChunkDecorator vs EntitySpawnDecorator
+
+- `EntitySpawnDecorator` 已自动注册（priority=300）。
+- 仍可写自定义 `IChunkDecorator` 处理 spawn 系统覆盖不到的需求（如村庄结构、跨 chunk 路径），通过 `MapService.RegisterDecorator` 注册即可。两条管线互不干扰。
 
 ## 生成管线钩子（植物 / 生物 / 结构 / 道具 …）
 
@@ -147,7 +352,7 @@ public class FloraDecorator : IChunkDecorator
         for (var lx = 0; lx < chunk.Size; lx++)
         {
             var t = chunk.GetTile(lx, ly);
-            if (t.TypeId != TileTypes.Forest) continue;
+            if (t.TypeId != TopDownTileTypes.Forest) continue;
             if (rng.NextDouble() > 0.08) continue;
             var wx = chunk.WorldOriginX + lx;
             var wy = chunk.WorldOriginY + ly;

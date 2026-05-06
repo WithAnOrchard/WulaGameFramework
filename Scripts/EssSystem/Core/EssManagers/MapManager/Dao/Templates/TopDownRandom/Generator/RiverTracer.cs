@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EssSystem.EssManager.MapManager.Dao;
 using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Config;
+using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
 using UnityEngine;
 
 namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
@@ -73,7 +74,7 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
 
                 var tile = chunk.GetTile(lx, ly);
                 if (IsOcean(tile.TypeId)) continue;
-                tile.TypeId = region.River[i] ? TileTypes.River : TileTypes.Lake;
+                tile.TypeId = region.River[i] ? TopDownTileTypes.River : TopDownTileTypes.Lake;
                 tile.RiverFlow = region.FlowByte[i];
             }
         }
@@ -242,7 +243,7 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
 
         private static bool IsOcean(string typeId)
         {
-            return typeId == TileTypes.DeepOcean || typeId == TileTypes.Ocean || typeId == TileTypes.ShallowOcean;
+            return typeId == TopDownTileTypes.DeepOcean || typeId == EssSystem.EssManager.MapManager.Dao.TileTypes.Ocean || typeId == TopDownTileTypes.ShallowOcean;
         }
 
         private static int FloorDiv(int a, int b)

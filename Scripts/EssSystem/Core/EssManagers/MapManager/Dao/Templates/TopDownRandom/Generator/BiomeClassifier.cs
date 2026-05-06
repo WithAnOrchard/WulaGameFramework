@@ -1,34 +1,43 @@
-using EssSystem.EssManager.MapManager.Dao;
+using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
 
 namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
 {
     /// <summary>
     /// Biome 分类器：按 (海陆 / 海拔 / 温度 / 湿度) 派生 Tile 的生物群系 TypeId。
     /// <para>
-    /// 决策树（陆地）：
+    /// 决策树（陆地，按现实地理比例调参）：
     /// <list type="number">
-    /// <item>elevation ≥ 0.85 OR temperature &lt; 0.15  → SnowPeak</item>
-    /// <item>elevation ≥ 0.70                           → Mountain</item>
-    /// <item>elevation ≥ 0.50                           → Hill</item>
+    /// <item>elevation ≥ 0.90 <b>且</b> temperature &lt; 0.45  → SnowPeak（仅高海拔且冷的山顶才积雪）</item>
+    /// <item>elevation ≥ 0.78                                → Mountain（陆地 ~10–15% 山地）</item>
+    /// <item>elevation ≥ 0.62                                → Hill（陆地 ~15–20% 丘陵）</item>
     /// <item><b>height &lt; SeaLevel + BeachHeightBand 且 elevation &lt; BeachElevationCap → Beach</b>（MC 风格的 surface-by-height-proximity）</item>
     /// <item>否则按 (T, M) Whittaker 分类（Tundra/Taiga/Grassland/Forest/Swamp/Desert/Savanna/Rainforest）</item>
     /// </list>
     /// </para>
     /// <para>
-    /// 海洋：按 h 与 SeaLevel 距离分 DeepOcean / Ocean / ShallowOcean 三层。
+    /// **极地低地**（temperature 很低 + elevation 中低）→ Tundra/Taiga，不再被 SnowPeak 强占；
+    /// 只有同时满足"高海拔 + 寒冷"才是雪峰，吻合阿尔卑斯/喜马拉雅雪线模型。
     /// </para>
     /// <para>
-    /// 注意：海滩判定用「最终高度 h 刚好在 SeaLevel 之上一薄层」—— 和 MC 1.18+ 的地表生成
-    /// 策略一致，可靠产生一圈海岸沙带。不再使用 continentalness 窗口，避免被独立噪声的统计盲区拖垮。
+    /// 海洋：按 h 与 SeaLevel 距离分 DeepOcean / Ocean / ShallowOcean 三层。
+    /// 海滩用「最终高度 h 刚好在 SeaLevel 之上一薄层」(MC 1.18+ surface-by-height-proximity)。
     /// </para>
     /// </summary>
     public static class BiomeClassifier
     {
         // —— 陆地高度阈值（集中在此便于调参） ————————————————————————
-        private const float SnowPeakElevation = 0.85f;
-        private const float SnowPeakTemperatureMax = 0.15f;
-        private const float MountainElevation = 0.70f;
-        private const float HillElevation = 0.50f;
+        // 假设 elevation 噪声近似 [0,1] 均匀分布：
+        //   Hill   [0.62, 0.78) ≈ 16%
+        //   Mountain [0.78, 0.90) ≈ 12%
+        //   SnowPeak [0.90, 1.0] ≈ 10% 候选，再 AND 温度条件，实际占比更低
+        //   其余 ~62% 由 Whittaker (T,M) 派生群系覆盖
+        private const float SnowPeakElevation = 0.90f;
+        /// <summary>SnowPeak 还需要 temperature &lt; 此值（雪线温度上限）。
+        /// 原值 0.15 仅在极地，结合高海拔几乎不可能 → 几乎没有 SnowPeak。
+        /// 0.45 大致对应高山雪线（亚热带高山也可有雪盖）。</summary>
+        private const float SnowPeakTemperatureMax = 0.45f;
+        private const float MountainElevation = 0.78f;
+        private const float HillElevation = 0.62f;
 
         private const float ColdMax = 0.30f;     // T < ColdMax 极地
         private const float TemperateMax = 0.60f; // ColdMax ≤ T < TemperateMax 温带
@@ -56,39 +65,41 @@ namespace EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Generator
             // ─── 海洋分层 ───
             if (height < seaLevel)
             {
-                if (height < seaLevel - DepthDeep) return TileTypes.DeepOcean;
-                if (height < seaLevel - DepthShallow) return TileTypes.Ocean;
-                return TileTypes.ShallowOcean;
+                if (height < seaLevel - DepthDeep) return TopDownTileTypes.DeepOcean;
+                if (height < seaLevel - DepthShallow) return Dao.TileTypes.Ocean;
+                return TopDownTileTypes.ShallowOcean;
             }
 
             // ─── 海岸薄层：height 紧贴 SeaLevel 之上 + 非海岸丘陵 → Beach ───
             // 放在 SnowPeak/Mountain/Hill 之前，海岸无论 elevation 噪声多高都会被沙覆盖（除非超 cap）。
             if (height - seaLevel < BeachHeightBand && elevation < BeachElevationCap)
             {
-                return TileTypes.Beach;
+                return TopDownTileTypes.Beach;
             }
 
             // ─── 陆地：高度优先级 ───
-            if (elevation >= SnowPeakElevation || temperature < SnowPeakTemperatureMax)
-                return TileTypes.SnowPeak;
-            if (elevation >= MountainElevation) return TileTypes.Mountain;
-            if (elevation >= HillElevation) return TileTypes.Hill;
+            // SnowPeak 必须同时满足"高海拔 + 寒冷"（AND），符合现实雪线模型。
+            // 极地低地走下方 (T,M) 路径 → Tundra；高山顶不冷也是 Mountain（如赤道高山多数无雪）。
+            if (elevation >= SnowPeakElevation && temperature < SnowPeakTemperatureMax)
+                return TopDownTileTypes.SnowPeak;
+            if (elevation >= MountainElevation) return TopDownTileTypes.Mountain;
+            if (elevation >= HillElevation) return TopDownTileTypes.Hill;
 
             // ─── 陆地：按 (T, M) Whittaker 派生 ───
             if (temperature < ColdMax)
             {
-                return moisture < 0.5f ? TileTypes.Tundra : TileTypes.Taiga;
+                return moisture < 0.5f ? TopDownTileTypes.Tundra : TopDownTileTypes.Taiga;
             }
             if (temperature < TemperateMax)
             {
-                if (moisture < 0.30f) return TileTypes.Grassland;
-                if (moisture < 0.70f) return TileTypes.Forest;
-                return TileTypes.Swamp;
+                if (moisture < 0.30f) return TopDownTileTypes.Grassland;
+                if (moisture < 0.70f) return TopDownTileTypes.Forest;
+                return TopDownTileTypes.Swamp;
             }
             // 热带
-            if (moisture < 0.30f) return TileTypes.Desert;
-            if (moisture < 0.60f) return TileTypes.Savanna;
-            return TileTypes.Rainforest;
+            if (moisture < 0.30f) return TopDownTileTypes.Desert;
+            if (moisture < 0.60f) return TopDownTileTypes.Savanna;
+            return TopDownTileTypes.Rainforest;
         }
     }
 }

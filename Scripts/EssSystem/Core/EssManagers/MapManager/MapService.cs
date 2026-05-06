@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.EssManager.MapManager.Dao;
 using EssSystem.EssManager.MapManager.Dao.Config;
 using EssSystem.EssManager.MapManager.Dao.Generator;
+using EssSystem.EssManager.MapManager.Persistence;
+using EssSystem.EssManager.MapManager.Persistence.Dao;
 using EssSystem.EssManager.MapManager.Runtime;
+using EssSystem.EssManager.MapManager.Spawn;
 
 namespace EssSystem.EssManager.MapManager
 {
@@ -29,6 +33,21 @@ namespace EssSystem.EssManager.MapManager
 
         /// <summary>运行时地图实例（不持久化）。MapId → <see cref="Map"/>。</summary>
         private readonly Dictionary<string, Map> _maps = new();
+
+        /// <summary>底层持久化（懒缓存），由 <see cref="Initialize"/> 设置。</summary>
+        private MapPersistenceService _persistence;
+
+        /// <summary>Spawn 子系统（懒缓存）。</summary>
+        private EntitySpawnService _spawnService;
+
+        /// <summary>自动 flush 计时器。</summary>
+        private float _autoSaveTimer;
+
+        /// <summary>自动写盘间隔（秒）。&lt;= 0 关闭。默认 30s。由 <c>MapManager.Update</c> 驱动 <see cref="AutoSaveTick"/>。</summary>
+        public float AutoSaveIntervalSec { get; set; } = 30f;
+
+        /// <summary>每次自动 flush 最多写盘的 chunk 数（防 IO 雪崩）。默认 4。</summary>
+        public int AutoSaveMaxChunksPerTick { get; set; } = 4;
 
         /// <summary>Tile 类型元数据注册表（不持久化）。TypeId → <see cref="TileTypeDef"/>。</summary>
         private readonly Dictionary<string, TileTypeDef> _tileTypes = new();
@@ -63,7 +82,17 @@ namespace EssSystem.EssManager.MapManager
         protected override void Initialize()
         {
             base.Initialize();
+            _persistence = MapPersistenceService.Instance;
+            _spawnService = EntitySpawnService.Instance;
+            // 让 EntitySpawnService 在改 destroyed 集合时反向标 chunk dirty（避免反向 using）
+            _spawnService.DirtyChunkLookup = OnSpawnServiceRequestChunkDirty;
             Log("MapService 初始化完成", Color.green);
+        }
+
+        private void OnSpawnServiceRequestChunkDirty(string mapId, int cx, int cy)
+        {
+            var chunk = GetMap(mapId)?.PeekChunk(cx, cy);
+            if (chunk != null) chunk.MarkDirty();
         }
 
         /// <summary>
@@ -138,13 +167,56 @@ namespace EssSystem.EssManager.MapManager
             }
 
             var map = new Map(mapId, configId, cfg.ChunkSize, cfg.CreateGenerator());
-            // 生成管线：FillChunk → 装饰器 → 对外广播 ChunkGenerated
+            // 生成管线：FillChunk → PostFillHook(读盘+应用差量) → 装饰器 → 对外广播 ChunkGenerated
+            map.PostFillHook = OnPostFillChunk;
             map.ChunkGenerated += OnMapChunkGenerated;
+            map.ChunkUnloading += OnMapChunkUnloading;
             map.ChunkUnloaded += OnMapChunkUnloaded;
             _maps[mapId] = map;
+
+            // 校验 / 写入 Meta（不一致仅警告，按用户决策保留旧 chunk 文件、新 chunk 用最新配置生成）
+            EnsureMapMeta(mapId, configId, cfg);
+
             Log($"创建地图实例: {mapId} (config={configId}, chunkSize={cfg.ChunkSize})", Color.cyan);
             MapCreated?.Invoke(map);
             return map;
+        }
+
+        /// <summary>读取已有 Meta，与当前配置 JSON 比对；不一致仅 LogWarning，统一更新落盘。</summary>
+        private void EnsureMapMeta(string mapId, string configId, MapConfig cfg)
+        {
+            if (_persistence == null) return;
+            var currentJson = JsonUtility.ToJson(cfg);
+            var existing = _persistence.LoadMeta(mapId);
+            if (existing != null && !string.IsNullOrEmpty(existing.ConfigJsonSnapshot)
+                && existing.ConfigJsonSnapshot != currentJson)
+            {
+                LogWarning($"地图 '{mapId}' 配置已变更（与 Meta 快照不一致）。已有 chunk 文件保留原内容；新 chunk 用最新配置生成（边界可能割裂）。");
+            }
+            var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var meta = existing ?? new MapMetaSaveData(mapId, configId, cfg.ChunkSize, ExtractSeed(cfg))
+            {
+                CreatedAtUnixMs = nowMs,
+            };
+            meta.MapId = mapId;
+            meta.ConfigId = configId;
+            meta.ChunkSize = cfg.ChunkSize;
+            meta.Seed = ExtractSeed(cfg);
+            meta.ConfigJsonSnapshot = currentJson;
+            _persistence.SaveMetaAsync(meta);
+        }
+
+        /// <summary>反射读取 MapConfig 派生类的 public <c>Seed</c> int 字段（PerlinMapConfig 等通用约定）；找不到返回 0。</summary>
+        private static int ExtractSeed(MapConfig cfg)
+        {
+            if (cfg == null) return 0;
+            var t = cfg.GetType();
+            var f = t.GetField("Seed", BindingFlags.Public | BindingFlags.Instance);
+            if (f != null && f.FieldType == typeof(int))
+            {
+                try { return (int)f.GetValue(cfg); } catch { /* ignore */ }
+            }
+            return 0;
         }
 
         /// <summary>Map 端事件 → 跑装饰器 → 向业务层广播最终态。</summary>
@@ -169,8 +241,45 @@ namespace EssSystem.EssManager.MapManager
             ChunkGenerated?.Invoke(map, chunk);
         }
 
+        /// <summary>区块刚 FillChunk 完成、装饰器跑之前：读盘 + 应用 TileOverride + 注入 destroyed 集合。</summary>
+        private void OnPostFillChunk(Map map, Chunk chunk)
+        {
+            if (_persistence == null) return;
+            try
+            {
+                var save = _persistence.LoadChunk(map.MapId, chunk.ChunkX, chunk.ChunkY);
+                if (save == null) return;
+                if (save.TileOverrides != null && save.TileOverrides.Count > 0)
+                    chunk.ApplyOverrides(save.TileOverrides);
+                if (save.DestroyedSpawnIds != null && save.DestroyedSpawnIds.Count > 0
+                    && _spawnService != null)
+                    _spawnService.SeedDestroyed(map.MapId, chunk.ChunkX, chunk.ChunkY, save.DestroyedSpawnIds);
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"OnPostFillChunk 失败 ({chunk.ChunkX},{chunk.ChunkY}): {ex.Message}");
+            }
+        }
+
+        /// <summary>区块即将卸载（仍可访问）：dirty 即写盘 + 销毁 runtime 实体。</summary>
+        private void OnMapChunkUnloading(Map map, Chunk chunk)
+        {
+            try
+            {
+                if (chunk.IsDirty) SaveChunkInternal(map.MapId, chunk, sync: false);
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"unload save 失败 ({chunk.ChunkX},{chunk.ChunkY}): {ex.Message}");
+            }
+            // 在 chunk 仍有效时清 spawn 实体（runtime 桶按 chunkkey 索引；这里做销毁 GameObject）
+            _spawnService?.DestroyChunkRuntimeEntities(map.MapId, chunk.ChunkX, chunk.ChunkY);
+        }
+
+        /// <summary>区块已被移出字典：丢 destroyed 桶 + 转发对外事件。</summary>
         private void OnMapChunkUnloaded(Map map, int cx, int cy)
         {
+            _spawnService?.DropChunkBuckets(map.MapId, cx, cy);
             ChunkUnloaded?.Invoke(map, cx, cy);
         }
 
@@ -186,8 +295,10 @@ namespace EssSystem.EssManager.MapManager
         {
             if (!_maps.TryGetValue(mapId, out var map)) return false;
             DestroyMapView(mapId);   // 关联视图先清，避免悬挂引用
-            map.UnloadAll();         // 会逐个区块触发 ChunkUnloaded，业务层可清 spawn 实体
+            map.UnloadAll();         // ChunkUnloading 会逐块触发存盘 + 实体清理；ChunkUnloaded 丢桶
+            map.PostFillHook = null;
             map.ChunkGenerated -= OnMapChunkGenerated;
+            map.ChunkUnloading -= OnMapChunkUnloading;
             map.ChunkUnloaded -= OnMapChunkUnloaded;
             _maps.Remove(mapId);
             Log($"销毁地图实例: {mapId}", Color.yellow);
@@ -333,6 +444,171 @@ namespace EssSystem.EssManager.MapManager
             _mapViews.Remove(mapId);
             Log($"销毁 MapView: {mapId}", Color.yellow);
             return true;
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region Tile Override（玩家修改地块）
+
+        /// <summary>
+        /// 玩家显式覆盖某 Tile 的 TypeId（仅改 <see cref="Dao.Tile.TypeId"/>，保留 Elevation/Temperature/Moisture/RiverFlow）。
+        /// <para>区块若未加载会先生成；写入会标 chunk dirty，由 AutoSave / Unload 触发写盘。</para>
+        /// </summary>
+        public bool SetTileOverride(string mapId, int worldX, int worldY, string typeId)
+        {
+            var map = GetMap(mapId);
+            if (map == null) return false;
+            var (cx, cy, lx, ly) = SplitWorldTile(worldX, worldY, map.ChunkSize);
+            var chunk = map.GetOrGenerateChunk(cx, cy);
+            chunk.OverrideTile(lx, ly, typeId);
+            return true;
+        }
+
+        /// <summary>
+        /// 取消某格的 override 记录（视觉上不立刻还原，区块下次重新加载时恢复生成器默认输出）。
+        /// </summary>
+        public bool ClearTileOverride(string mapId, int worldX, int worldY)
+        {
+            var map = GetMap(mapId);
+            if (map == null) return false;
+            var (cx, cy, lx, ly) = SplitWorldTile(worldX, worldY, map.ChunkSize);
+            var chunk = map.PeekChunk(cx, cy);
+            return chunk != null && chunk.ClearOverride(lx, ly);
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region Spawn Destroyed（已破坏 spawn 标记 — 转发到 EntitySpawnService）
+
+        /// <summary>标记某 spawn 实体已永久破坏（业务砍树/采花前调；区块重新加载不会复活）。</summary>
+        public bool MarkSpawnDestroyed(string mapId, string instanceId) =>
+            _spawnService != null && _spawnService.MarkDestroyed(mapId, instanceId);
+
+        /// <summary>移除"已破坏"标记，下次区块加载将恢复 spawn。</summary>
+        public bool UnmarkSpawnDestroyed(string mapId, string instanceId) =>
+            _spawnService != null && _spawnService.UnmarkDestroyed(mapId, instanceId);
+
+        /// <summary>查询某 spawn 实体是否已被永久破坏。</summary>
+        public bool IsSpawnDestroyed(string mapId, string instanceId) =>
+            _spawnService != null && _spawnService.IsDestroyed(mapId, instanceId);
+
+        /// <summary>清空指定区块所有"已破坏"记录（调试 / 重置生态用）。</summary>
+        public void ClearDestroyedSpawnsInChunk(string mapId, int cx, int cy) =>
+            _spawnService?.ClearDestroyedInChunk(mapId, cx, cy);
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region 持久化控制
+
+        /// <summary>强制写盘单个区块。chunk 未加载时无操作。</summary>
+        public void SaveChunk(string mapId, int cx, int cy, bool sync = false)
+        {
+            var chunk = GetMap(mapId)?.PeekChunk(cx, cy);
+            if (chunk == null) return;
+            SaveChunkInternal(mapId, chunk, sync);
+        }
+
+        /// <summary>把指定地图所有 dirty chunk 全部写盘。<paramref name="sync"/> = true 会阻塞主线程。</summary>
+        public int SaveAllDirtyChunks(string mapId, bool sync = false)
+        {
+            var map = GetMap(mapId);
+            if (map == null) return 0;
+            var written = 0;
+            foreach (var kv in map.LoadedChunks)
+            {
+                var chunk = kv.Value;
+                if (!chunk.IsDirty) continue;
+                SaveChunkInternal(mapId, chunk, sync);
+                written++;
+            }
+            return written;
+        }
+
+        /// <summary>遍历所有运行中地图，把所有 dirty chunk 写盘（应用退出兜底）。</summary>
+        public int SaveAllDirtyChunksAllMaps(bool sync = false)
+        {
+            var total = 0;
+            foreach (var map in _maps.Values)
+                total += SaveAllDirtyChunks(map.MapId, sync);
+            return total;
+        }
+
+        /// <summary>删除指定 MapId 的全部存档（Meta + Chunks）。运行中实例不变但下次进区块即"全新"。</summary>
+        public bool DeleteMapData(string mapId) =>
+            _persistence != null && _persistence.DeleteMapData(mapId);
+
+        /// <summary>取地图存档目录绝对路径（调试 / 备份用）。</summary>
+        public string GetMapDataPath(string mapId) =>
+            _persistence?.MapDir(mapId);
+
+        /// <summary>由 <c>MapManager.Update</c> 每帧调用：累加计时器，到点后异步 flush 一批 dirty chunk。</summary>
+        public void AutoSaveTick(float deltaTime)
+        {
+            if (AutoSaveIntervalSec <= 0f) return;
+            _autoSaveTimer += deltaTime;
+            if (_autoSaveTimer < AutoSaveIntervalSec) return;
+            _autoSaveTimer = 0f;
+            FlushDirtyBudget(AutoSaveMaxChunksPerTick);
+        }
+
+        /// <summary>遍历所有运行中地图，最多写盘 <paramref name="maxChunks"/> 个 dirty chunk；返回实际写入数。</summary>
+        public int FlushDirtyBudget(int maxChunks)
+        {
+            if (maxChunks <= 0) return 0;
+            var written = 0;
+            foreach (var map in _maps.Values)
+            {
+                if (written >= maxChunks) break;
+                foreach (var kv in map.LoadedChunks)
+                {
+                    if (written >= maxChunks) break;
+                    var chunk = kv.Value;
+                    if (!chunk.IsDirty) continue;
+                    SaveChunkInternal(map.MapId, chunk, sync: false);
+                    written++;
+                }
+            }
+            return written;
+        }
+
+        /// <summary>把 chunk 当前的 override + spawn destroyed 集合打包为 ChunkSaveData，按 sync 选择同/异步写盘。</summary>
+        private void SaveChunkInternal(string mapId, Chunk chunk, bool sync)
+        {
+            if (_persistence == null || chunk == null) return;
+            var save = new ChunkSaveData(mapId, chunk.ChunkX, chunk.ChunkY)
+            {
+                TileOverrides = chunk.EnumerateOverrides(),
+            };
+            var destroyed = _spawnService?.GetDestroyedIds(mapId, chunk.ChunkX, chunk.ChunkY);
+            if (destroyed != null && destroyed.Count > 0)
+            {
+                save.DestroyedSpawnIds = new List<string>(destroyed);
+            }
+            if (sync) _persistence.SaveChunkSync(save);
+            else _persistence.SaveChunkAsync(save);
+            chunk.ClearDirty();
+        }
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region 工具
+
+        private static (int cx, int cy, int lx, int ly) SplitWorldTile(int worldX, int worldY, int chunkSize)
+        {
+            var cx = FloorDiv(worldX, chunkSize);
+            var cy = FloorDiv(worldY, chunkSize);
+            return (cx, cy, worldX - cx * chunkSize, worldY - cy * chunkSize);
+        }
+
+        private static int FloorDiv(int a, int b)
+        {
+            var q = a / b;
+            if ((a % b) != 0 && ((a < 0) ^ (b < 0))) q--;
+            return q;
         }
 
         #endregion

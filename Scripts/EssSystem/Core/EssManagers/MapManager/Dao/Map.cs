@@ -38,6 +38,22 @@ namespace EssSystem.EssManager.MapManager.Dao
         /// <summary>区块被 <see cref="UnloadChunk"/> 或 <see cref="UnloadAll"/> 清除后触发。业务层据此 despawn 实体。</summary>
         public event Action<Map, int, int> ChunkUnloaded;
 
+        /// <summary>
+        /// **区块即将卸载前触发**（chunk 仍在 <see cref="LoadedChunks"/> 内，可访问完整数据）。
+        /// 主要供 <c>MapService</c> 在区块卸载前写盘（dirty chunk → ChunkSaveData）。
+        /// 业务层一般用 <see cref="ChunkUnloaded"/> 即可。
+        /// </summary>
+        public event Action<Map, Chunk> ChunkUnloading;
+
+        /// <summary>
+        /// **内部钩子**：在 <c>FillChunk</c> 之后、<see cref="ChunkGenerated"/> 触发之前调用。
+        /// <para>
+        /// 由 <c>MapService</c> 安装，用于在装饰器跑之前应用区块存档差量
+        /// （TileOverride / 已破坏 spawn 集合等）。业务模块**不要**直接使用本字段。
+        /// </para>
+        /// </summary>
+        public Action<Map, Chunk> PostFillHook { get; set; }
+
         public Map(string mapId, string configId, int chunkSize, IMapGenerator generator)
         {
             if (chunkSize <= 0) throw new ArgumentException("chunkSize must be > 0");
@@ -58,6 +74,9 @@ namespace EssSystem.EssManager.MapManager.Dao
 
             var chunk = new Chunk(chunkX, chunkY, ChunkSize);
             _generator?.FillChunk(chunk);
+            // 先让 MapService 加载存档差量（TileOverride / destroyed spawns），
+            // 后续装饰器（在 ChunkGenerated 监听者里执行）即可读到完整状态。
+            PostFillHook?.Invoke(this, chunk);
             _chunks[key] = chunk;
             ChunkGenerated?.Invoke(this, chunk);
             return chunk;
@@ -84,19 +103,27 @@ namespace EssSystem.EssManager.MapManager.Dao
         public bool UnloadChunk(int chunkX, int chunkY)
         {
             var key = ChunkKey(chunkX, chunkY);
-            if (!_chunks.Remove(key)) return false;
+            if (!_chunks.TryGetValue(key, out var chunk)) return false;
+            // 先 pre-event（chunk 仍在字典里，订阅者可访问完整数据写盘）
+            ChunkUnloading?.Invoke(this, chunk);
+            _chunks.Remove(key);
             ChunkUnloaded?.Invoke(this, chunkX, chunkY);
             return true;
         }
 
         /// <summary>
-        /// 清空全部已生成区块。每个被清除的区块都会依次触发 <see cref="ChunkUnloaded"/>，
-        /// 保证业务层可以逐块 despawn 而不必特判 DestroyMap 路径。
+        /// 清空全部已生成区块。每个被清除的区块都会依次触发 <see cref="ChunkUnloading"/>（前）+
+        /// <see cref="ChunkUnloaded"/>（后），保证业务层可以逐块 despawn 而不必特判 DestroyMap 路径。
         /// </summary>
         public void UnloadAll()
         {
             if (_chunks.Count == 0) return;
-            // 先拷贝 key 列表，避免迭代时修改字典。
+            // 先发 pre-unload，让订阅者读取/写盘
+            if (ChunkUnloading != null)
+            {
+                foreach (var kv in _chunks) ChunkUnloading.Invoke(this, kv.Value);
+            }
+            // 拷贝 key 列表后清空，再发 post-unload
             var keys = new List<long>(_chunks.Keys);
             _chunks.Clear();
             if (ChunkUnloaded == null) return;
