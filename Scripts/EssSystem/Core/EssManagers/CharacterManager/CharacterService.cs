@@ -25,6 +25,11 @@ namespace EssSystem.EssManager.CharacterManager
 
         #endregion
 
+        /// <summary>实例字典属于运行时态（持有 Unity View 引用），绝不持久化。
+        /// 否则下次 Play 加载会得到 View 已被 Unity 销毁的"僵尸 Character"，
+        /// 导致 <c>CreateCharacter</c> 命中重复并跳过 GameObject 重建。</summary>
+        protected override bool IsTransientCategory(string category) => category == CAT_INSTANCES;
+
         #region Event 名常量（供 [EventListener] 订阅）
 
         /// <summary>

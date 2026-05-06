@@ -416,6 +416,12 @@ namespace EssSystem.Core.Event
 
                 listenerInfo.Target = ResolveTarget(listenerInfo.MethodInfo, listenerInfo.Target);
 
+                // 实例方法但找不到 Target —— 通常意味着该 Manager / Service 类型存在于程序集中
+                // （所以扫描时注册了 listener），但当前场景没有挂相应组件。
+                // 静默跳过比抛 "Non-static method requires a target" 友好，且不会掩盖真正的事件 bug。
+                if (listenerInfo.Target == null && !listenerInfo.MethodInfo.IsStatic)
+                    return new List<object>();
+
                 var result = listenerInfo.Delegate != null
                     ? listenerInfo.Delegate(listenerInfo.Target, args)
                     : listenerInfo.MethodInfo.Invoke(listenerInfo.Target, args);

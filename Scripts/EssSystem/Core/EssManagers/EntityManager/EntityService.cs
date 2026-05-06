@@ -32,6 +32,11 @@ namespace EssSystem.EssManager.EntityManager
 
         #endregion
 
+        /// <summary>实例字典属于运行时态（持有 Unity Transform 引用），绝不持久化。
+        /// 否则下次 Play 加载会得到一份 <c>CharacterRoot</c> 已被 Unity 销毁但 C# 引用仍在的"僵尸 Entity"，
+        /// 导致 <see cref="CreateEntity"/> 命中重复并跳过 EVT_CREATE_CHARACTER → 没有 GameObject。</summary>
+        protected override bool IsTransientCategory(string category) => category == CAT_INSTANCES;
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -99,7 +104,10 @@ namespace EssSystem.EssManager.EntityManager
 
             if (HasData(CAT_INSTANCES, instanceId))
             {
-                LogWarning($"Entity 实例 {instanceId} 已存在，忽略重复创建");
+                // spawn: 前缀属于 MapManager 装饰器派生的确定性 id —— 多次入队是正常 idempotent 路径，
+                // 不应当作错误（已被 EntitySpawnService 上游去重，此处仅作兜底）。
+                if (!instanceId.StartsWith("spawn:", System.StringComparison.Ordinal))
+                    LogWarning($"Entity 实例 {instanceId} 已存在，忽略重复创建");
                 return GetEntity(instanceId);
             }
 

@@ -97,14 +97,12 @@ namespace EssSystem.Core.EssManagers.Manager
             if (!Directory.Exists(DataRootPath)) Directory.CreateDirectory(DataRootPath);
         }
 
-        /// <summary>触发 Service 初始化事件。</summary>
+        /// <summary>触发 Service 初始化事件。
+        /// <para>EventProcessor 不可用时静默跳过 —— 早期 Editor OnValidate / RuntimeInitializeOnLoad
+        /// 期可能在 EventProcessor 创建之前就触发 Service 单例，属正常时序，不打 warning。</para></summary>
         private void TriggerServiceInitializedEvent()
         {
-            if (!EventProcessor.HasInstance)
-            {
-                LogWarning($"EventProcessor 未初始化，跳过事件触发: {GetType().Name}");
-                return;
-            }
+            if (!EventProcessor.HasInstance) return;
             EventProcessor.Instance.TriggerEvent(EVT_INITIALIZED, new List<object> { this });
             Log($"触发Service初始化事件: {GetType().Name}", Color.yellow);
         }
@@ -254,11 +252,20 @@ namespace EssSystem.Core.EssManagers.Manager
             }
         }
 
-        /// <summary>保存全部分类 — IServicePersistence 接口实现，供 DataService 调用。</summary>
-        public void SaveAllCategories()
+        /// <summary>保存全部分类 — IServicePersistence 接口实现，供 DataService 调用。
+        /// <para>子类可重写 <see cref="IsTransientCategory"/> 来排除"仅运行时"分类（如 EntityService 的实例字典），
+        /// 避免它们被序列化到磁盘后污染下次 Play 启动状态。</para></summary>
+        public virtual void SaveAllCategories()
         {
-            foreach (var category in _dataStorage.Keys) SaveCategoryData(category);
+            foreach (var category in _dataStorage.Keys)
+            {
+                if (IsTransientCategory(category)) continue;
+                SaveCategoryData(category);
+            }
         }
+
+        /// <summary>子类返回 true 的分类不会被 <see cref="SaveAllCategories"/> 持久化。</summary>
+        protected virtual bool IsTransientCategory(string category) => false;
 
         #endregion
 
