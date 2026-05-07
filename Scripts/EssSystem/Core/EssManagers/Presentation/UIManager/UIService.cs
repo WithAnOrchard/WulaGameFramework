@@ -58,9 +58,14 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
             {
                 Log($"RegisterUIEntity 开始: {daoId}", Color.yellow);
 
-                // 将UIComponent存储到数据存储中（用于热重载）
-                SetData(UI_COMPONENTS_CATEGORY, daoId, component);
-                StoreComponentTreeRecursive(component);
+                // U3: BeginBatch 包整棵树注册 — N 个 UIComponent 的 SetData 累积到 dirty set，
+                //     退出 batch 时一次性 flush，N 次 fsync 收成 1 次。
+                using (BeginBatch())
+                {
+                    // U2: 删除独立 SetData(daoId, component)。daoId 一般等于 component.Id，
+                    //     StoreComponentTreeRecursive 内部会写一次，避免重复。
+                    StoreComponentTreeRecursive(component);
+                }
 
                 // 递归创建UIEntity（包括子组件）
                 var entity = CreateEntityRecursive(component, canvasTransform);

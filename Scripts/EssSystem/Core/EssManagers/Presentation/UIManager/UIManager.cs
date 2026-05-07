@@ -28,6 +28,13 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
         [Header("UI Canvas")]
         [SerializeField] private Canvas _uiCanvas;
 
+        // U4: Canvas 参考分辨率可配置化 默认 1920×1080
+        [Tooltip("CanvasScaler 参考分辨率 默认 1920×1080")]
+        [SerializeField] private Vector2 _referenceResolution = new Vector2(1920, 1080);
+
+        [Tooltip("CanvasScaler MatchWidthOrHeight 0=按宽 1=按高 0.5=折中")]
+        [SerializeField, Range(0f, 1f)] private float _matchWidthOrHeight = 0.5f;
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -87,10 +94,10 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
 
             var canvasScaler = canvasObject.AddComponent<UnityEngine.UI.CanvasScaler>();
             canvasScaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            canvasScaler.referenceResolution = new Vector2(1920, 1080);
-            // MatchWidthOrHeight + 0.5：宽高比偏移时按 50% 取平均，避免极端宽屏/窄屏 UI 被裁掉或溢出
+            // U4: 从 SerializeField 读，Inspector 可调。
+            canvasScaler.referenceResolution = _referenceResolution;
             canvasScaler.screenMatchMode = UnityEngine.UI.CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            canvasScaler.matchWidthOrHeight = 0.5f;
+            canvasScaler.matchWidthOrHeight = _matchWidthOrHeight;
 
             canvasObject.AddComponent<UnityEngine.UI.GraphicRaycaster>();
 
@@ -148,8 +155,9 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
         }
 
         /// <summary>返回 UI Canvas 根 Transform——供外部模块读取逻辑尺寸、父接临时元素等。</summary>
+        // U1: 遵项目规范 “[Event] 方法名动词开头”，去除 OnEvent 前缀。字符串不变。
         [Event(EVT_GET_CANVAS_TRANSFORM)]
-        public List<object> OnEventGetCanvasTransform(List<object> data)
+        public List<object> GetUICanvasTransform(List<object> data)
         {
             var t = GetCanvasTransform();
             return t != null ? ResultCode.Ok(t) : ResultCode.Fail("Canvas 未初始化");
@@ -157,7 +165,7 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
 
         /// <summary>按 daoId 返回其运行时 GameObject（Unity 原生类型，不泄露 UIEntity 类型）。</summary>
         [Event(EVT_GET_UI_GAMEOBJECT)]
-        public List<object> OnEventGetUIGameObject(List<object> data)
+        public List<object> GetUIGameObject(List<object> data)
         {
             var daoId = data != null && data.Count > 0 ? data[0] as string : null;
             if (string.IsNullOrEmpty(daoId)) return ResultCode.Fail("参数无效");
@@ -166,9 +174,10 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager
             return go != null ? ResultCode.Ok(go) : ResultCode.Fail($"UI GameObject 不存在: {daoId}");
         }
 
-        /// <summary>UIComponent 广播属性变更。转发给 UIService 查到的 UIEntity。</summary>
+        /// <summary>UIComponent 广播属性变更。转发给 UIService 查到的 UIEntity。
+        /// 这是广播响应 保留 On 前缀 符合项目 “[EventListener] On 开头” 规范。</summary>
         [Event(EVT_DAO_PROPERTY_CHANGED)]
-        public List<object> OnEventDaoPropertyChanged(List<object> data)
+        public List<object> OnDaoPropertyChanged(List<object> data)
         {
             if (data == null || data.Count < 2) return ResultCode.Fail("参数无效");
             var daoId    = data[0] as string;
