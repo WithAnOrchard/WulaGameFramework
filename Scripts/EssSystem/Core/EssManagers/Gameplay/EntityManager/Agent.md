@@ -87,32 +87,37 @@ entity.Remove<IInvulnerable>();             // 限时无敌结束
 
 | Event 常量 | data 参数 | 返回（`ResultCode`） |
 |---|---|---|
-| `EntityManager.EVT_CREATE_ENTITY` | `[configId, instanceId, parent:Transform?, worldPosition:Vector3?]` | `Ok(Entity)` / `Fail(msg)` |
+| `EntityManager.EVT_CREATE_ENTITY` | `[configId, instanceId, parent:Transform?, worldPosition:Vector3?]` | `Ok(Transform CharacterRoot)` / `Fail(msg)` |
 | `EntityManager.EVT_DESTROY_ENTITY` | `[instanceId]` | `Ok(instanceId)` / `Fail(msg)` |
+
+> **§2 协议解耦**：`EVT_CREATE_ENTITY` 返回 Unity 原生 `Transform`（CharacterRoot），不暴露模块私有 `Entity` 类型。业务侧需获得 `Entity` 逻辑实例（为挂能力/查询 HP 等）请用 `EntityService.Instance.GetEntity(instanceId)` —— 全局唯一入口。
+>
+> **§4.1 跨模块 bare-string**：调用方不 `using EntityManager` ，直接传字符串 `"CreateEntity"` / `"DestroyEntity"`。
 
 ### 调用示例
 
 ```csharp
-// 创建一个史莱姆
+// 创建一个史莱姆 §4.1 跨模块 bare-string
 var result = EventProcessor.Instance.TriggerEventMethod(
-    EntityManager.EVT_CREATE_ENTITY,
+    "CreateEntity",
     new List<object> {
         "Slime",                           // configId
         "slime_001",                       // instanceId
-        null,                              // parent
-        new Vector3(10, 0, 5),             // worldPosition
+        null,                              // parent (Transform?)
+        new Vector3(5, 5, 0),              // worldPosition (Vector3?)
     });
 
 if (ResultCode.IsOk(result))
 {
-    var slime = (Entity)result[1];
-    // 需要拿运行时状态时才直接访问 Entity（逻辑层）
-    slime.WorldPosition += new Vector3(1, 0, 0);
+    var charRoot = result[1] as Transform;   // E2：返 Unity 原生 Transform。静态 entity 可能为 null。
+    // 需要拿 Entity 运行时状态 走 EntityService。
+    var slime = EntityService.Instance.GetEntity("slime_001");
+    if (slime != null) slime.WorldPosition += new Vector3(1, 0, 0);
 }
 
 // 销毁
 EventProcessor.Instance.TriggerEventMethod(
-    EntityManager.EVT_DESTROY_ENTITY,
+    "DestroyEntity",
     new List<object> { "slime_001" });
 ```
 

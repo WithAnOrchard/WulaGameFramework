@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
+// §4.1 跨模块 EVT 走 bare-string；仅 using EntityManager.Dao 以获取 DefaultEntityConfigs
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 
 /// <summary>
@@ -81,9 +81,9 @@ public class TestPlayer : MonoBehaviour
     }
 
     /// <summary>
-    /// 在玩家当前位置生成一颗小树 Entity —— 通过事件中心调用 <see cref="EntityManager.EVT_CREATE_ENTITY"/>，
-    /// 不直接依赖 <c>EntityService</c>（框架规则：外部只能用 Event 调 Manager）。
-    /// 贴图由 EntityService 内部从 4 种里随机。
+    /// 在玩家当前位置生成一颗小树 Entity —— 通过事件中心调用
+    /// EntityManager.EVT_CREATE_ENTITY（§4.1 跨模块 bare-string 协议），
+    /// 不直接依赖 <c>EntityService</c>。贴图由 EntityService 内部从 4 种里随机。
     /// </summary>
     private void SpawnSmallTreeAtSelf()
     {
@@ -96,8 +96,9 @@ public class TestPlayer : MonoBehaviour
         // instanceId 带上本 GameObject 的 instanceID + 自增 + 短 GUID，
         // 避免同场景多个 TestPlayer / Hot Reload 下与已有 Entity 冲突。
         var id = $"player_tree_{GetInstanceID()}_{++_treeSpawnCounter}_{System.Guid.NewGuid().ToString("N").Substring(0, 6)}";
+        // §4.1 跨模块 bare-string：EntityManager.EVT_CREATE_ENTITY
         var result = EventProcessor.Instance.TriggerEventMethod(
-            EntityManager.EVT_CREATE_ENTITY,
+            "CreateEntity",
             new List<object>
             {
                 DefaultEntityConfigs.SmallTreeEntityId,
@@ -112,9 +113,10 @@ public class TestPlayer : MonoBehaviour
             return;
         }
 
-        var entity = result.Count >= 2 ? result[1] as EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Entity : null;
-        var viewPos = entity?.CharacterRoot != null ? entity.CharacterRoot.position.ToString() : "<no view>";
-        Debug.Log($"[TestPlayer] 小树已生成: id={id}, entityWorldPos={entity?.WorldPosition}, character.rootPos={viewPos}");
+        // E2 后：EVT_CREATE_ENTITY 返 Transform 不再是 Entity（协议解耦）
+        var charRoot = result.Count >= 2 ? result[1] as Transform : null;
+        var viewPos = charRoot != null ? charRoot.position.ToString() : "<no view>";
+        Debug.Log($"[TestPlayer] 小树已生成: id={id}, character.rootPos={viewPos}");
     }
 
     private void LateUpdate()

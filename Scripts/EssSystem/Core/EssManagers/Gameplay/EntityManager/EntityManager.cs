@@ -21,8 +21,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
     [Manager(13)]
     public class EntityManager : Manager<EntityManager>
     {
-        // ─── Event 名常量（供外部调用方使用，避免魔法字符串）
-        /// <summary>创建 Entity。data: [configId, instanceId, parent(Transform?), worldPosition(Vector3?)]. 返回 ResultCode.Ok(Entity) / Fail。</summary>
+        // ─── Event 名常量（定义方）—— 跨模块调用走 bare-string（§4.1 方案 B）
+        /// <summary>创建 Entity。data: [configId, instanceId, parent(Transform?), worldPosition(Vector3?)].
+        /// 返回 ResultCode.Ok(Transform CharacterRoot) / Fail。
+        /// E2: 返回 Unity 原生 Transform 而非模块私有 Entity 类型（§2 协议解耦）。</summary>
         public const string EVT_CREATE_ENTITY  = "CreateEntity";
         /// <summary>销毁 Entity。data: [instanceId]. 返回 ResultCode.Ok(instanceId) / Fail。</summary>
         public const string EVT_DESTROY_ENTITY = "DestroyEntity";
@@ -87,8 +89,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
         /// <para>data: <c>[configId:string, instanceId:string, parent:Transform?, worldPosition:Vector3?]</c>。
         /// 后两项可省略或传 <c>null</c>。</para>
         /// </summary>
+        // E1: 遵项目规范 “[Event] 动词开头”，去除 OnEvent 前缀。Service 上同名 typed helper 重载 OK。
         [Event(EVT_CREATE_ENTITY)]
-        public List<object> OnEventCreateEntity(List<object> data)
+        public List<object> CreateEntity(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
             if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [configId, instanceId, parent?, worldPosition?]");
@@ -102,16 +105,19 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             var worldPosition = data.Count > 3 && data[3] is Vector3 v ? (Vector3?)v : null;
 
             var entity = Service.CreateEntity(configId, instanceId, parent, worldPosition);
-            return entity != null
-                ? ResultCode.Ok(entity)
-                : ResultCode.Fail($"创建 Entity 失败: configId={configId}, instanceId={instanceId}");
+            if (entity == null)
+                return ResultCode.Fail($"创建 Entity 失败: configId={configId}, instanceId={instanceId}");
+            // E2: 返回 Unity 原生 Transform（与 CharacterManager.EVT_CREATE_CHARACTER 一致）不暴露 Entity 私有类型。
+            // 静态 entity 无 CharacterRoot 时也返 Ok（以 null 作负载，表示创建成功但无显示）。
+            return ResultCode.Ok(entity.CharacterRoot);
         }
 
         /// <summary>
         /// 销毁 Entity 的事件入口。data: <c>[instanceId:string]</c>。
         /// </summary>
+        // E1: 去除 OnEvent 前缀
         [Event(EVT_DESTROY_ENTITY)]
-        public List<object> OnEventDestroyEntity(List<object> data)
+        public List<object> DestroyEntity(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
             if (data == null || data.Count < 1) return ResultCode.Fail("参数无效：需要 [instanceId]");

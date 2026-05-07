@@ -166,10 +166,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
                     new List<object> { entity.CharacterInstanceId, config.SpawnOffset });
             }
 
-            // 仅内存（不走 SetData，避免写盘）
-            if (!_dataStorage.ContainsKey(CAT_INSTANCES))
-                _dataStorage[CAT_INSTANCES] = new Dictionary<string, object>();
-            _dataStorage[CAT_INSTANCES][instanceId] = entity;
+            // E3: CAT_INSTANCES 是 transient category，IsTransientCategory 返 true，
+            //     SetData 会进 _dataStorage 但 OnCategoryDataChanged 全程跳过写盘，安全。
+            SetData(CAT_INSTANCES, instanceId, entity);
 
             Log($"创建 Entity 实例: {instanceId} (config={configId})", Color.green);
             return entity;
@@ -244,8 +243,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             e.CharacterInstanceId = null;
             e.CharacterRoot       = null;
 
-            if (_dataStorage.TryGetValue(CAT_INSTANCES, out var dict))
-                dict.Remove(instanceId);
+            // E4: 通过 RemoveData 走标准路径，transient 自然跳过写盘。
+            RemoveData(CAT_INSTANCES, instanceId);
 
             Log($"销毁 Entity 实例: {instanceId}", Color.yellow);
             return true;

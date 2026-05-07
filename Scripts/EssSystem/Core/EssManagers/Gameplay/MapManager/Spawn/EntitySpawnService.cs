@@ -5,7 +5,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Spawn.Dao;
-using EntityMgr = EssSystem.Core.EssManagers.Gameplay.EntityManager.EntityManager;
+// §4.1 跨模块 EVT_X 走 bare-string 协议，不 using EntityManager
 
 namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Spawn
 {
@@ -291,7 +291,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Spawn
                 var data = new List<object> { req.EntityConfigId, req.InstanceId, req.Parent, req.WorldPosition };
                 try
                 {
-                    var result = EventProcessor.Instance.TriggerEventMethod(EntityMgr.EVT_CREATE_ENTITY, data);
+                    // §4.1 跨模块 bare-string：EntityManager.EVT_CREATE_ENTITY
+                    var result = EventProcessor.Instance.TriggerEventMethod("CreateEntity", data);
                     if (ResultCode.IsOk(result))
                     {
                         if (!_runtimeByChunk.TryGetValue(key, out var list))
@@ -326,7 +327,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Spawn
                 {
                     try
                     {
-                        EventProcessor.Instance.TriggerEventMethod(EntityMgr.EVT_DESTROY_ENTITY, new List<object> { list[i] });
+                        // §4.1 跨模块 bare-string：EntityManager.EVT_DESTROY_ENTITY
+                        EventProcessor.Instance.TriggerEventMethod("DestroyEntity", new List<object> { list[i] });
                     }
                     catch (Exception ex)
                     {
