@@ -61,12 +61,6 @@ namespace EssSystem.Core.EssManagers.Manager
             SyncServiceLoggingSettings();
         }
 
-        /// <summary>子类可调用：判断当前帧是否到达 Inspector 刷新点（与 base.Update 节流共用一拍）。</summary>
-        protected bool ShouldRefreshInspectorThisFrame()
-        {
-            return _showServiceDataInInspector && Time.unscaledTime >= _nextInspectorRefreshTime - Mathf.Max(0f, _inspectorRefreshInterval);
-        }
-
         /// <summary>子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。</summary>
         protected virtual void SyncServiceLoggingSettings() { }
 

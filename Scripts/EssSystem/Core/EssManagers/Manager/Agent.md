@@ -90,7 +90,38 @@ SaveAllCategories();                    // 持久化全部（IServicePersistence
 
 - 路径：`Application.persistentDataPath/ServiceData/{TypeName}/{Category}.json`
 - 格式：MiniJson（pretty）+ `AssemblyQualifiedName` 类型标注，支持嵌套对象还原
-- 写入时机：`SetData` / `RemoveData` 立即保存；`Application.quitting` 时 DataService 调 `SaveAllCategories` 兜底
+- 写入时机：`SetData` 立即保存；`RemoveData` 仅在真删时写盘；`Application.quitting` 时 DataService 调 `SaveAllCategories` 兜底
+- Value 编码：简单类型（string / 数字 / bool）直接存字面值；其它对象走 `JsonUtility.ToJson` 后以 JSON 字符串形式存。老存档（Dict 形式）仍能读取兼容。
+
+### 批量写盘：`BeginBatch()` / `FlushPendingWrites()`
+
+需要在一段代码里连续 `SetData` 大量 key 时，避免每次都写盘 → 用 `BeginBatch()` 包起来：
+
+```csharp
+using (MyService.Instance.BeginBatch())
+{
+    MyService.Instance.SetData("A", "k1", v1);
+    MyService.Instance.SetData("A", "k2", v2);
+    MyService.Instance.SetData("B", "k3", v3);
+}   // Dispose 时一次性 flush：A 写 1 次，B 写 1 次（而非 3 次）
+```
+
+支持嵌套（外层 Dispose 才真正 flush）。也可手动 `service.FlushPendingWrites()`。`Application.quitting` 时框架自动 flush。
+
+### 跨版本兼容：`[FormerName]`
+
+类型被搬迁 / 重命名后，旧存档里写入的 AQN 会指向不存在的类型，反序列化失败。给新类挂 `[FormerName]` 即可平滑迁移：
+
+```csharp
+using EssSystem.Core.Util;
+
+[FormerName("EssSystem.EssManager.MapManager.Dao.Config.PerlinMapConfig")]
+[FormerName("EssSystem.OldNamespace.PerlinMapConfig")]   // 多次重命名都列上
+[Serializable]
+public class PerlinMapConfig : MapConfig { ... }
+```
+
+`Service<T>.DeserializeValue` 通过 `LegacyTypeResolver.Resolve` 查表：先按当前 AQN，命中失败则截掉 `, AssemblyName` 后缀按 FullName 查 `[FormerName]` 注册表，最后兜底 `Type.GetType(fullName)`。注册表懒加载，扫描所有用户程序集。
 
 ### Inspector 信息
 

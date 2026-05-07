@@ -63,6 +63,13 @@ namespace EssSystem.Core.EssManagers.Manager
         /// <summary>数据存储根路径（默认 <c>{persistentDataPath}/ServiceData/{TypeName}</c>）。</summary>
         protected virtual string DataRootPath => Path.Combine(Application.persistentDataPath, "ServiceData", GetType().Name);
 
+        // M4: Inspector 脉冲 — 仅在数据变动后重建 InspectorInfo，避免每 0.25s LINQ + new 量产 GC。
+        [NonSerialized] private bool _inspectorDirty = true;
+
+        // M6: 批量写盘 — BeginBatch() 期间 SetData/RemoveData 仅标 dirty，Dispose 时一次性 flush。
+        private int _batchDepth = 0;
+        private readonly HashSet<string> _pendingDirtyCategories = new();
+
         #endregion
 
         #region Lifecycle
@@ -77,9 +84,49 @@ namespace EssSystem.Core.EssManagers.Manager
 
         public void Dispose()
         {
+            FlushPendingWrites();   // M6: 退出前 确保 batch 中未写盘的都落盘
             SaveLoggingSettings();
             SaveCategoryData("Settings");
             _dataStorage.Clear();
+        }
+
+        // ============================================================
+        // M6: 批量写盘 API
+        // ============================================================
+
+        /// <summary>进入批量写盘作用域。返回的 IDisposable Dispose 时 flush。支持嵌套。
+        /// <para>用法：<code>using (svc.BeginBatch()) { svc.SetData(...); svc.SetData(...); } // 一次性写盘</code></para></summary>
+        public IDisposable BeginBatch() => new BatchScope(this);
+
+        /// <summary>手动 flush 累积的 dirty categories（batch 期间或调过之后）。</summary>
+        public void FlushPendingWrites()
+        {
+            if (_pendingDirtyCategories.Count == 0) return;
+            foreach (var category in _pendingDirtyCategories) SaveCategoryData(category);
+            _pendingDirtyCategories.Clear();
+        }
+
+        /// <summary>SetData/RemoveData 后调。根据是否处于 batch 作用域路由到立即写盘或延后。</summary>
+        private void OnCategoryDataChanged(string category)
+        {
+            _inspectorDirty = true;
+            if (_batchDepth > 0)
+                _pendingDirtyCategories.Add(category);
+            else
+                SaveCategoryData(category);
+        }
+
+        private sealed class BatchScope : IDisposable
+        {
+            private Service<T> _svc;
+            public BatchScope(Service<T> svc) { _svc = svc; svc._batchDepth++; }
+            public void Dispose()
+            {
+                if (_svc == null) return;
+                _svc._batchDepth--;
+                if (_svc._batchDepth == 0) _svc.FlushPendingWrites();
+                _svc = null;
+            }
         }
 
         private void LoadLoggingSettings()
@@ -111,12 +158,12 @@ namespace EssSystem.Core.EssManagers.Manager
 
         #region Data Access
 
-        /// <summary>设置数据并立即保存该分类。</summary>
+        /// <summary>设置数据。默认立即写盘；batch 作用域内仅标 dirty，退出 batch 后一次性 flush。</summary>
         public void SetData(string category, string key, object value)
         {
             if (!_dataStorage.ContainsKey(category)) _dataStorage[category] = new Dictionary<string, object>();
             _dataStorage[category][key] = value;
-            SaveCategoryData(category);
+            OnCategoryDataChanged(category);
         }
 
         /// <summary>获取数据（泛型）。类型不匹配时试图转换，失败返回 default。</summary>
@@ -144,14 +191,15 @@ namespace EssSystem.Core.EssManagers.Manager
         public bool HasData(string category, string key) =>
             _dataStorage.TryGetValue(category, out var c) && c.ContainsKey(key);
 
-        /// <summary>移除数据，分类空后一并移除。</summary>
+        /// <summary>移除数据，分类空后一并移除。仅在真删时才写盘。</summary>
         public bool RemoveData(string category, string key)
         {
             if (!_dataStorage.TryGetValue(category, out var categoryData)) return false;
             var removed = categoryData.Remove(key);
+            if (!removed) return false;                                  // M2: 没真删就别写盘
             if (categoryData.Count == 0) _dataStorage.Remove(category);
-            SaveCategoryData(category);
-            return removed;
+            OnCategoryDataChanged(category);
+            return true;
         }
 
         /// <summary>获取分类下的所有键。</summary>
@@ -195,6 +243,7 @@ namespace EssSystem.Core.EssManagers.Manager
                 var value = dict.TryGetValue("Value", out var v) ? v : null;
                 _dataStorage[category][key] = DeserializeValue(type, value);
             }
+            _inspectorDirty = true;   // M4: 加载文件后下次 Inspector 重建
         }
 
         /// <summary>保存指定分类到磁盘；分类不存在则删除对应文件。</summary>
@@ -222,26 +271,34 @@ namespace EssSystem.Core.EssManagers.Manager
             File.WriteAllText(filePath, MiniJson.Serialize(wrapper, pretty: true));
         }
 
-        /// <summary>序列化值：复杂类型转为字典，简单类型原样返回。</summary>
+        /// <summary>序列化值：直接存 JsonUtility 产出的 JSON 字符串；string / 简单类型原样返回。
+        /// <para>M3: 不再走 MiniJson 把 JSON 反解成 Dict 中转，DeserializeValue 的 string 分支可直接还原。</para></summary>
         protected virtual object SerializeValue(object value)
         {
             if (value == null) return null;
-            var parsed = MiniJson.Deserialize(JsonUtility.ToJson(value)) as Dictionary<string, object>;
-            return parsed ?? value;
+            // 简单类型 / 字符串原样存，避免 JsonUtility 把 "abc" 包成 {"value":"abc"} 或对 int 抛异常
+            if (value is string || value.GetType().IsPrimitive || value is decimal) return value;
+            return JsonUtility.ToJson(value);
         }
 
-        /// <summary>反序列化值：根据 typeName 还原原始类型。</summary>
+        /// <summary>反序列化值：根据 typeName 还原原始类型。
+        /// <para>M1: 通过 <see cref="LegacyTypeResolver"/> 查表，类被重命名/搬迁也能命中（前提是新类挂 [FormerName]）。</para>
+        /// <para>支持两种 Value 形式：JSON 字符串（新版 SerializeValue 输出）/ Dictionary（兼容老存档）。</para></summary>
         protected virtual object DeserializeValue(string typeName, object value)
         {
             if (string.IsNullOrEmpty(typeName) || typeName == "null" || value == null) return null;
             try
             {
-                var type = Type.GetType(typeName);
-                if (type == null) return null;
+                var type = LegacyTypeResolver.Resolve(typeName);
+                if (type == null)
+                {
+                    LogWarning($"未找到类型: {typeName} —— 如曾搬迁/重命名，请在新类上加 [FormerName(\"{typeName.Split(',')[0].Trim()}\")]");
+                    return null;
+                }
                 return value switch
                 {
-                    Dictionary<string, object> dict => JsonUtility.FromJson(MiniJson.Serialize(dict, pretty: true), type),
                     string str => JsonUtility.FromJson(str, type),
+                    Dictionary<string, object> dict => JsonUtility.FromJson(MiniJson.Serialize(dict, pretty: true), type),
                     _ => null
                 };
             }
@@ -257,6 +314,7 @@ namespace EssSystem.Core.EssManagers.Manager
         /// 避免它们被序列化到磁盘后污染下次 Play 启动状态。</para></summary>
         public virtual void SaveAllCategories()
         {
+            _pendingDirtyCategories.Clear();   // M6: 全量保存会覆盖 batch dirty，清揉免得重复写
             foreach (var category in _dataStorage.Keys)
             {
                 if (IsTransientCategory(category)) continue;
@@ -271,26 +329,41 @@ namespace EssSystem.Core.EssManagers.Manager
 
         #region Inspector Info
 
-        /// <summary>重建 <see cref="InspectorInfo" /> 摘要 — 由关联 Manager 每帧调用。</summary>
+        /// <summary>重建 <see cref="InspectorInfo" /> 摘要 — 由关联 Manager 每帧调用。
+        /// <para>M4: 除非数据变动过（_inspectorDirty=true），否则直接返回，避免重复重建。</para></summary>
         public virtual void UpdateInspectorInfo()
         {
-            InspectorInfo = new ServiceDataInspectorInfo
+            if (!_inspectorDirty && InspectorInfo != null) return;
+
+            InspectorInfo ??= new ServiceDataInspectorInfo();
+            InspectorInfo.ServiceName = GetType().Name;
+            InspectorInfo.TotalCategories = _dataStorage.Count;
+
+            var cats = InspectorInfo.Categories;
+            cats.Clear();
+            var totalData = 0;
+            foreach (var kvp in _dataStorage)
             {
-                ServiceName = GetType().Name,
-                TotalCategories = _dataStorage.Count,
-                TotalDataCount = _dataStorage.Values.Sum(d => d.Count),
-                Categories = _dataStorage.Select(kvp => new ServiceDataInspectorInfo.CategoryInfo
+                var dataItems = new List<ServiceDataInspectorInfo.DataInfo>(kvp.Value.Count);
+                foreach (var d in kvp.Value)
                 {
-                    CategoryName = kvp.Key,
-                    DataCount = kvp.Value.Count,
-                    DataItems = kvp.Value.Select(d => new ServiceDataInspectorInfo.DataInfo
+                    dataItems.Add(new ServiceDataInspectorInfo.DataInfo
                     {
                         Key = d.Key,
                         TypeName = d.Value?.GetType().Name ?? "null",
                         ValueSummary = TruncateForInspector(d.Value?.ToString())
-                    }).ToList()
-                }).ToList()
-            };
+                    });
+                }
+                cats.Add(new ServiceDataInspectorInfo.CategoryInfo
+                {
+                    CategoryName = kvp.Key,
+                    DataCount = kvp.Value.Count,
+                    DataItems = dataItems
+                });
+                totalData += kvp.Value.Count;
+            }
+            InspectorInfo.TotalDataCount = totalData;
+            _inspectorDirty = false;
         }
 
         private static string TruncateForInspector(string s)
