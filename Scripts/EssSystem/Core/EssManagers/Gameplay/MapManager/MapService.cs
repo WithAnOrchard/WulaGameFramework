@@ -100,12 +100,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager
         /// </summary>
         public void ReloadData()
         {
-            if (_dataStorage.ContainsKey(CAT_CONFIGS))
-            {
-                _dataStorage[CAT_CONFIGS].Clear();
-            }
+            // 只清空配置数据，保留运行时地图实例
+            if (_dataStorage.TryGetValue(CAT_CONFIGS, out var cfg)) cfg.Clear();
 
             LoadData();
+            // M2: 直接 mutate _dataStorage 了，手动标 Inspector dirty（与 Inventory/CharacterService 一致）。
+            MarkInspectorDirty();
 
             Log("MapService 配置热重载完成", Color.green);
         }

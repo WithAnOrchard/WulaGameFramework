@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.Foundation.ResourceManager;
+// §4.1 跨模块 EVT 走 bare-string 协议，不 using ResourceManager
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Templates.TopDownRandom.Dao;
 
@@ -764,8 +764,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Runtime
                 return null;
             }
 
+            // §4.1 跨模块 bare-string：ResourceManager.EVT_GET_RULE_TILE
             var result = EventProcessor.Instance.TriggerEventMethod(
-                ResourceManager.EVT_GET_RULE_TILE,
+                "GetRuleTile",
                 new List<object> { def.RuleTileResourceId });
 
             TileBase tile = null;

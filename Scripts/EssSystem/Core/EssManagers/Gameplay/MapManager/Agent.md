@@ -200,8 +200,9 @@ TileType 注册现在由**当前 Template** 在启动时代理（`IMapTemplate.R
 
 ```csharp
 var def = MapService.Instance.GetTileType(tile.TypeId);
+// §4.1 跨模块 bare-string：ResourceManager.EVT_GET_RULE_TILE
 var r = EventProcessor.Instance.TriggerEventMethod(
-    ResourceManager.EVT_GET_RULE_TILE,
+    "GetRuleTile",
     new List<object> { def.RuleTileResourceId });
 if (ResultCode.IsOk(r)) {
     var ruleTile = r[1] as UnityEngine.Tilemaps.RuleTile;
@@ -343,7 +344,8 @@ InstanceId 由格子坐标稳定派生：
 ```csharp
 // 砍树（业务层）：先标记，再销毁 GameObject
 MapService.Instance.MarkSpawnDestroyed(mapId, instanceId);
-EventProcessor.Instance.TriggerEventMethod(EntityManager.EVT_DESTROY_ENTITY,
+// §4.1 跨模块 bare-string：EntityManager.EVT_DESTROY_ENTITY
+EventProcessor.Instance.TriggerEventMethod("DestroyEntity",
     new List<object> { instanceId });
 
 // 复活
