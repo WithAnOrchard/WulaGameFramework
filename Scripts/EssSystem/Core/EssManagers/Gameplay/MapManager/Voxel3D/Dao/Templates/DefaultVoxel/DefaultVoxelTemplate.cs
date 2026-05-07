@@ -32,7 +32,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao.Templates.D
 
         public void RegisterDefaultDecorators(Voxel3DMapService service)
         {
-            // 默认无装饰器；后续接入树木 / 怪物 spawn 时在这里 service.RegisterDecorator(...)
+            // 默认无装饰器；后续接入树木 / 怪物 spawn 时在这里调 service.RegisterDecorator(...)
         }
     }
 }

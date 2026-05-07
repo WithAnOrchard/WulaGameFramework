@@ -35,7 +35,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn
             var sets = service.GetRuleSets(map.ConfigId);
             if (sets == null || sets.Count == 0) return;
 
-            // 鏀堕泦 + 鎺掑簭鎵€鏈夎鍒欙紙璺ㄥ涓?RuleSet锛?            var rules = new List<VoxelEntitySpawnRule>();
+            // 鏀堕泦 + 鎺掑簭鎵€鏈夎鍒欙紙璺ㄥ涓?RuleSet锛?
+            var rules = new List<VoxelEntitySpawnRule>();
             foreach (var set in sets)
             {
                 if (set?.Rules == null) continue;
@@ -94,12 +95,14 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn
                             spawnedTotal++;
                         }
 
-                        // 鈥斺€?Cluster 鈥斺€?                        if (rule.ClusterMax > 1 && rule.ClusterRadius > 0)
+                        // 鈥斺€?Cluster 鈥斺€?
+                        if (rule.ClusterMax > 1 && rule.ClusterRadius > 0)
                         {
                             var clusterCount = rng.Next(
                                 Mathf.Max(1, rule.ClusterMin),
                                 Mathf.Max(1, rule.ClusterMax) + 1);
-                            var remaining = clusterCount - 1;   // 鍚富浣?                            if (remaining <= 0) continue;
+                            var remaining = clusterCount - 1;   // 鍚富浣?
+                            if (remaining <= 0) continue;
 
                             var candidates = BuildClusterCandidates(lx, lz, rule.ClusterRadius, size);
                             ShuffleDeterministic(candidates, rng);
@@ -143,7 +146,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn
             var side = chunk.SideBlocks[idx];
             var height = chunk.Heights[idx];
 
-            // TopBlock 闄愬畾锛堟渶甯哥敤锛?            if (rule.TopBlockIds != null && rule.TopBlockIds.Length > 0)
+            // TopBlock 闄愬畾锛堟渶甯哥敤锛?
+            if (rule.TopBlockIds != null && rule.TopBlockIds.Length > 0)
             {
                 var matched = false;
                 for (var i = 0; i < rule.TopBlockIds.Length; i++)
@@ -190,7 +194,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn
             var height = chunk.Heights[idx];
             var wx = chunk.WorldMinX + lx;
             var wz = chunk.WorldMinZ + lz;
-            // column 椤堕潰鍦?y=height锛岀帺瀹?瀹炰綋绔欏湪 height+1 涓€鏍?            var pos = new Vector3(wx + 0.5f, height + 1f, wz + 0.5f);
+            // column top is at y=height; entity stands one block above
+            var pos = new Vector3(wx + 0.5f, height + 1f, wz + 0.5f);
             service.EnqueueSpawn(map.MapId, chunk.ChunkX, chunk.ChunkZ,
                                  rule.EntityConfigId, instanceId, pos, parent: null);
         }

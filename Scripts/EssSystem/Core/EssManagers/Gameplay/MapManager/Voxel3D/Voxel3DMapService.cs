@@ -203,7 +203,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D
             _persistence.SaveMetaAsync(meta);
         }
 
-        /// <summary>反射读取 VoxelMapConfig 派生类的 public <c>Seed</c> int 字段；找不到返回 0。</summary>
+        /// <summary>反射读取 VoxelMapConfig 派生类的 public Seed int 字段；找不到返回 0。</summary>
         private static int ExtractSeed(VoxelMapConfig cfg)
         {
             if (cfg == null) return 0;
