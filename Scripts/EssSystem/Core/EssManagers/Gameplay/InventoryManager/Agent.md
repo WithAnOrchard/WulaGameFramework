@@ -157,6 +157,27 @@ InventoryManager/
 | 期望响应 | 返回成功/失败结果 | 无（订阅者按需响应） |
 | 接入方式 | `TriggerEventMethod(...)` | `[EventListener("OnOpenInventoryUI")]` |
 
+## 批量操作（BeginBatch）
+
+`AddItem` / `RemoveItem` / `MoveItem` 每次内部都会 `SetData(CAT_INVENTORIES, ...)` 触发同步写盘。**连续多次操作时**强烈建议用 `Service<T>.BeginBatch()` 包起来，把 N 次 fsync 合并成 1 次：
+
+```csharp
+using (InventoryService.Instance.BeginBatch())
+{
+    InventoryService.Instance.AddItem("player", apple, 5);
+    InventoryService.Instance.AddItem("player", sword, 1);
+    InventoryService.Instance.AddItem("player", potion, 3);
+    InventoryService.Instance.MoveItem("player", 0, 5);
+}   // Dispose 时一次性 flush 所有 dirty categories
+```
+
+典型场景：
+- NPC 一次性给一袋物品（n 个 AddItem）
+- 战斗结算掉落（batch add）
+- 存档迁移 / 测试 fixture（程序化构造大背包）
+
+`BeginBatch` 支持嵌套；`Application.quitting` 时 DataService 兜底 flush。详见 `EssManagers/Manager/Agent.md` 的「批量写盘」章节。
+
 ## Slot 信息显示
 
 `BuildPanelTree` 为每个 slot 生成三层 UI：

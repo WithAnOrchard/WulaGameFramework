@@ -66,6 +66,10 @@ namespace EssSystem.Core.EssManagers.Manager
         // M4: Inspector 脉冲 — 仅在数据变动后重建 InspectorInfo，避免每 0.25s LINQ + new 量产 GC。
         [NonSerialized] private bool _inspectorDirty = true;
 
+        /// <summary>I4: 子类直接 mutate _dataStorage（如 ReloadData / Clear）后调用，让下次 Inspector 重建。
+        /// SetData/RemoveData 内部已自动标 dirty，只在绕过这两个 API 时才需手动调。</summary>
+        protected void MarkInspectorDirty() => _inspectorDirty = true;
+
         // M6: 批量写盘 — BeginBatch() 期间 SetData/RemoveData 仅标 dirty，Dispose 时一次性 flush。
         private int _batchDepth = 0;
         private readonly HashSet<string> _pendingDirtyCategories = new();

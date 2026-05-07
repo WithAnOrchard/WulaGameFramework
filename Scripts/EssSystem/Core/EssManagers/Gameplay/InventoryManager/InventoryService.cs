@@ -53,16 +53,15 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// </summary>
         public void ReloadData()
         {
-            // 只清空配置数据，保留Inventory数据
-            if (_dataStorage.ContainsKey(CAT_CONFIGS))
-            {
-                _dataStorage[CAT_CONFIGS].Clear();
-            }
+            // 只清空配置数据，保留 Inventory 数据
+            if (_dataStorage.TryGetValue(CAT_CONFIGS, out var cfg)) cfg.Clear();
 
             // 重新加载数据
             LoadData();
+            // I4: 直接 mutate _dataStorage 了，手动标 Inspector dirty。
+            MarkInspectorDirty();
 
-            Log("InventoryService配置热重载完成", Color.green);
+            Log("InventoryService 配置热重载完成", Color.green);
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -311,8 +310,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
         /// <summary>事件: 创建容器</summary>
         /// <param name="args">[id, name, maxSlots]</param>
+        // I2: 遵项目规范 “[Event] 动词开头”，去除 OnEvent 前缀。字符串不变。
         [Event(EVT_CREATE)]
-        public List<object> OnEventCreate(List<object> args)
+        public List<object> Create(List<object> args)
         {
             try
             {
@@ -330,7 +330,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// <summary>事件: 删除容器</summary>
         /// <param name="args">[id]</param>
         [Event(EVT_DELETE)]
-        public List<object> OnEventDelete(List<object> args)
+        public List<object> Delete(List<object> args)
         {
             try
             {
@@ -345,7 +345,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// <summary>事件: 向容器添加物品</summary>
         /// <param name="args">[inventoryId, itemIdOrItem, amount]</param>
         [Event(EVT_ADD)]
-        public List<object> OnEventAdd(List<object> args)
+        public List<object> Add(List<object> args)
         {
             try
             {
@@ -368,7 +368,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// <summary>事件: 从容器移除物品</summary>
         /// <param name="args">[inventoryId, itemId, amount]</param>
         [Event(EVT_REMOVE)]
-        public List<object> OnEventRemove(List<object> args)
+        public List<object> Remove(List<object> args)
         {
             try
             {
@@ -385,7 +385,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// <summary>事件: 移动物品</summary>
         /// <param name="args">[inventoryId, fromSlot, toSlot, amount]</param>
         [Event(EVT_MOVE)]
-        public List<object> OnEventMove(List<object> args)
+        public List<object> Move(List<object> args)
         {
             try
             {
@@ -403,7 +403,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// <summary>事件: 查询容器</summary>
         /// <param name="args">[inventoryId]</param>
         [Event(EVT_QUERY)]
-        public List<object> OnEventQuery(List<object> args)
+        public List<object> Query(List<object> args)
         {
             try
             {
