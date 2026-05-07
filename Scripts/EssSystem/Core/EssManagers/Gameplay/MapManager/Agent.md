@@ -8,101 +8,252 @@
 - **模板层**：每种地形玩法实现一对 `XxxMapConfig` + `XxxMapGenerator`，互不耦合
 - **持久化**：`MapConfig` 派生类走 `_dataStorage`（多态由 AQN 还原），运行时 `Map` 实例仅内存
 
-## 3D Voxel（v4 新增，独立子系统）
+## 3D Voxel（v5：完整 Manager/Service 框架）
 
-`Voxel3D/` 目录是**与 2D Tile 系统并行**的 MC 风 3D 体素地图，目标"流式 + 极简 + 高性能"。
-当前定位：**heightmap-only**（无地下、无破坏），纯色顶点着色，1 chunk = 1 GameObject + 1 Mesh。
+`Voxel3D/` 目录是**与 2D Tile 系统并行**的 MC 风 3D 体素地图，**架构完全对齐 2D**：
+`Voxel3DMapManager`（`[Manager(13)]`）+ `Voxel3DMapService` + `VoxelMap`/`VoxelChunk` Dao + `IVoxelMapTemplate` 模板层 + `IVoxelChunkDecorator` 装饰器。
+当前定位：**heightmap-only**（无地下、无破坏），1 chunk = 1 GameObject + 1 Mesh，atlas 贴图采样。
 
 ```
 MapManager/Voxel3D/
+├── Voxel3DMapManager.cs        [Manager(13)] 门面：模板/默认 Config/默认 BlockType 注册
+├── Voxel3DMapService.cs        Service：Config CRUD + BlockType palette + Map 实例 + MapView 工厂 + 装饰器 + 生成管线
 ├── Dao/
-│   ├── VoxelBlockType.cs       方块定义（Id + 顶面/侧面 Color32 + Solid）
-│   ├── VoxelBlockTypes.cs      内置常量 + DefaultPalette（Air/Grass/Dirt/Stone/Sand/Snow/Water）
-│   ├── VoxelMapConfig.cs       Perlin / SeaLevel / SnowLine / Octaves
-│   └── VoxelChunk.cs           Heights + TopBlocks + SideBlocks 三个 byte[]
+│   ├── VoxelBlockType.cs       方块定义（Id + 顶/侧 Color32 + atlas slot）
+│   ├── VoxelBlockTypes.cs      内置常量 + DefaultPalette + VoxelAtlasSlots
+│   ├── VoxelMapConfig.cs       ConfigId + Perlin / SeaLevel / SnowLine + CreateGenerator()
+│   ├── VoxelChunk.cs           Heights + TopBlocks + SideBlocks 三个 byte[]
+│   ├── VoxelMap.cs             运行时实例：GetOrGenerateChunk / PeekChunk / UnloadChunk + 事件
+│   └── Templates/
+│       ├── IVoxelMapTemplate.cs        模板策略接口
+│       ├── VoxelMapTemplateRegistry.cs 进程级注册表
+│       └── DefaultVoxel/
+│           └── DefaultVoxelTemplate.cs "default_voxel_3d" 内置模板
 ├── Generator/
-│   ├── VoxelHeightmapGenerator.cs  fBm Perlin → heightmap，按高度选 TopBlock
-│   └── VoxelChunkMesher.cs         heightmap + 4 邻居 → Mesh（顶面 + face-culled 侧面 + 列内合并）
+│   ├── IVoxelMapGenerator.cs       生成策略接口
+│   ├── IVoxelChunkDecorator.cs     装饰器接口
+│   ├── VoxelHeightmapGenerator.cs  fBm Perlin → heightmap
+│   └── VoxelChunkMesher.cs         heightmap + 4 邻居 → Mesh + per-vertex UV
 └── Runtime/
-    ├── Voxel3DMapView.cs       MonoBehaviour：跟随 FollowTarget，两阶段流式（数据+1环 / Mesh）
-    ├── VoxelMaterialFactory.cs 运行时建默认 Material（用下方 shader）
-    └── VoxelVertexColor.shader Wula/VoxelVertexColor —— 顶点色 + 简单方向光
+    ├── Voxel3DMapView.cs       MonoBehaviour：脏标记+双队列流式渲染 + Bind(VoxelMap)
+    ├── VoxelTextureAtlas.cs    运行时拼 64×32 贴图集（8 slot × 16²）
+    ├── VoxelTextured.shader    Wula/VoxelTextured —— atlas 采样 × 顶点色 × 方向光
+    ├── VoxelMaterialFactory.cs 运行时建默认 Material（优先 VoxelTextured）
+    └── VoxelVertexColor.shader Wula/VoxelVertexColor —— fallback 顶点色 shader
 ```
 
-**用法**：
+**用法（与 2D MapManager 同构）**：
 
 ```csharp
-var go = new GameObject("VoxelWorld");
-var view = go.AddComponent<Voxel3DMapView>();
-view.Config.Seed = 42;
-view.RenderRadius = 6;
-view.FollowTarget = playerTransform;     // 自动跟随；无玩家可按本节点位置算焦点
+// ① Voxel3DMapManager 启动时已自动注册 default_voxel_3d 模板 + Config
+//    （AbstractGameManager 子节点扫描；DayNight3DGameManager 用 EnsureSubManager 兜底添加）
 
-// 把玩家落地：
-var y = view.SampleHeight(0, 0);
-playerTransform.position = new Vector3(0, y + 2, 0);
+// ② 创建 Map 数据实例 + MapView 渲染
+var map = Voxel3DMapService.Instance.CreateMap("voxel_world", "default_voxel_3d");
+var view = Voxel3DMapService.Instance.CreateMapView("voxel_world", parentTransform);
+
+// ③ 配置流式参数
+view.RenderRadius = 6;
+view.KeepAliveRadius = 8;
+view.PreloadExtraRadius = 1;
+view.FollowTarget = playerTransform;
+
+// 把玩家落地（推荐用 FindNearestLandSpawn 避免水底）：
+var land = view.FindNearestLandSpawn(0, 0);
+view.Warmup(new Vector3(land.x, 0, land.z), radius: 2);   // 同步预生成 mesh + collider
+playerTransform.position = new Vector3(land.x + 0.5f, land.y + 0.05f, land.z + 0.5f);
 ```
 
-**性能**：每 chunk 单 Mesh + 单 Material，跨 chunk SRP Batcher 自动合批；侧面只在邻居更矮时渲染、列内 quad 一次性出（不按格切）。视野半径 6 时 ~169 个 GO，桌面端无压力。
+**流式调度**（与 2D MapView 同构）：
+- 焦点变化 / 半径变化 → `_streamingDirty=true`
+- `RebuildStreamingState`：算 desired chunks、卸载越 KeepAlive 的（走 `VoxelMap.UnloadChunk` → 触发事件链 → View 销毁 GO）、按 Chebyshev 距离重排数据/网格队列
+- 每帧消费 `DataPerFrame` 个数据生成 + `MeshPerFrame` 个 Mesh 烘焙
+- 数据队列覆盖 `RenderRadius + 1 + PreloadExtraRadius` 圈，Mesh 队列只覆盖 `RenderRadius` 圈
+
+**性能**：每 chunk 单 Mesh + 单 Material（共享 atlas Texture），跨 chunk SRP Batcher 合批；侧面 per-voxel unit quad（per-tile 贴图正确，不串色）；半径 6 时 ~169 个 GO。
+
+**业务侧扩展**：
+- 自定义模板：`VoxelMapTemplateRegistry.Register(new MyVoxelTemplate())`，Inspector 切 TemplateId
+- 自定义 Config：派生 `VoxelMapConfig` 并 override `CreateGenerator()` 返回自家生成器
+- 装饰器（树/怪物 spawn）：`Voxel3DMapService.Instance.RegisterDecorator(new MyDecorator())`，与 2D `IChunkDecorator` 同样的 `(Id, Priority, Decorate)` 协议
+
+**Phase 4 全部完成**：chunk 持久化（见下"3D 体素持久化"）+ spawn 子系统（见下"3D 体素 Spawn"）均已接入，与 2D 架构完全对齐。
+
+### 3D 体素持久化（Phase 4a）
+
+与 2D `MapPersistenceService` 平行的独立 IO 层。**不存地形**（生成器确定性派生），只存 column 差量。
+
+```
+{persistentDataPath}/VoxelMapData/{MapId}/
+├── Meta.json                       VoxelMapMetaSaveData：MapId / ConfigId / ChunkSize / Seed / ConfigJsonSnapshot
+└── Chunks/
+    └── r_{rx}_{rz}.json            VoxelRegionSaveData：10×10 chunk 聚合
+                                       Chunks[] → VoxelChunkSaveData → ColumnOverrides[]
+```
+
+**ColumnOverride** 结构：`{ LocalX, LocalZ, TopBlock, SideBlock, Height }` —— 一次记录玩家改过的 column 三值。
+
+**业务 API**（在 `Voxel3DMapService` 上）：
+
+```csharp
+// 玩家把 (10, 0, 5) 处的 column 改为 stone（顶+侧）+ 高度 25
+Voxel3DMapService.Instance.SetVoxelColumnOverride(
+    "voxel_world", wx: 10, wz: 5,
+    topBlock: VoxelBlockTypes.Stone,
+    sideBlock: VoxelBlockTypes.Stone,
+    height: 25);
+
+// 重置某列（视觉不立刻还原 —— 下次卸载 + 重新加载才恢复生成器默认）
+Voxel3DMapService.Instance.ClearVoxelColumnOverride("voxel_world", 10, 5);
+
+// 立即写盘（dirty 才写）
+Voxel3DMapService.Instance.SaveChunk("voxel_world", cx: 0, cz: 0);
+
+// 清存档重开
+Voxel3DMapService.Instance.DeleteMapData("voxel_world");
+```
+
+**写盘时机**：
+
+| 时机 | 行为 |
+|---|---|
+| `OverrideColumn` / `ClearOverride` | 标 `chunk.IsDirty=true` |
+| 区块卸载（`VoxelMap.ChunkUnloading` pre-event） | dirty → 异步写盘 |
+| 自动 flush（`Voxel3DMapManager.Update` → `AutoSaveTick`） | 计时到 `AutoSaveIntervalSec`（默认 30s）→ 异步写最多 `AutoSaveMaxChunksPerTick`（默认 4）个 dirty chunk |
+| 应用退出（`OnApplicationQuit`） | **同步**写全部 dirty chunk |
+| 应用切后台（`OnApplicationFocus(false)`） | 异步 flush 一次防数据丢失 |
+
+**线程模型**：JSON 序列化在主线程（小开销），文件 IO 走 `Task.Run` 后台线程；`_writeLock` 串行化；`.tmp` 原子重命名。
+
+**Config 漂移**：`Meta.ConfigJsonSnapshot` 在 `CreateMap` 时与当前 `JsonUtility.ToJson` 比对。不一致仅 LogWarning，已有 chunk 文件保留原内容；新 chunk 用最新 Seed 生成。
+
+### 3D 体素 Spawn（Phase 4b）
+
+与 2D `EntitySpawnService` 平行的独立 spawn 子系统。**不与 2D 共享队列/destroyed 桶**，避免 mapId 冲突 + IsChunkLoaded 路由复杂化。
+
+```
+Voxel3D/Spawn/
+├── VoxelEntitySpawnService.cs       Service：rule 注册 / destroyed 桶 / runtime 桶 / 分帧队列
+├── VoxelEntitySpawnDecorator.cs     IVoxelChunkDecorator (priority=300，由 Voxel3DMapManager 自动注册)
+└── Dao/
+    ├── VoxelEntitySpawnRule.cs       TopBlockIds + SideBlockIds + HeightRange + 密度/cluster/spacing
+    ├── VoxelEntitySpawnRuleSet.cs    一组规则；显式按 ConfigId 绑定
+    └── IntRange.cs                   可选闭区间过滤器（高度等整数）
+```
+
+**用法**（玩家在草地上随机种树）：
+
+```csharp
+// 在业务 Manager.Initialize 里注册
+VoxelEntitySpawnService.Instance.RegisterRuleSet(
+    DefaultVoxelTemplate.Id,
+    new VoxelEntitySpawnRuleSet("default-flora")
+        .WithRule(new VoxelEntitySpawnRule("tree_oak", "env_tree_oak")
+            .WithTopBlocks(VoxelBlockTypes.Grass)
+            .WithHeightRange(13, 50)            // 海平面以上、雪线以下
+            .WithDensity(0.04f)
+            .WithMaxPerChunk(8)
+            .WithMinSpacing(2)
+            .WithRngTag("flora_tree")));
+```
+
+**spawn 落地点**：`(wx + 0.5, height + 1, wz + 0.5)` —— 站在 column 顶面之上一格。
+**确定性**：与 2D 同构。所有 RNG 走 `ChunkSeed.Rng(mapId, cx, cz, rule.TileRngTag)`，规则按 (Priority asc, RuleId asc) 排序，区块内 (lz, lx) 行主序遍历。
+
+**已破坏 spawn 持久化**（玩家砍树）：
+
+```csharp
+// 业务层砍树流程：先标记，再销毁 GameObject
+Voxel3DMapService.Instance.MarkSpawnDestroyed(mapId, instanceId);
+EventProcessor.Instance.TriggerEventMethod("DestroyEntity", new List<object> { instanceId });
+```
+
+`MarkSpawnDestroyed` 内部反向标 chunk dirty（`DirtyChunkLookup` 钩子），下次 unload / AutoSaveTick 时随 chunk 写盘到 `VoxelChunkSaveData.DestroyedSpawnIds`。重新加载时 `OnPostFillChunk` 调 `SeedDestroyed` 注入桶；装饰器查 `IsDestroyedInChunk` 命中即跳过。
+
+**性能护栏**（Inspector 可调）：
+
+| 参数 | 默认 | 作用 |
+|---|---:|---|
+| `VoxelEntitySpawnRule.MaxPerChunk` | 16 | 单规则单区块上限 |
+| `VoxelEntitySpawnDecorator.GlobalMaxPerChunk` | 32 | 跨规则单区块总上限 |
+| `Voxel3DMapManager._spawnEntitiesPerFrame` | 8 | spawn 队列每帧消费数 |
+
+**InstanceId 格式**：
+- 主体：`vspawn:{mapId}:{cx}:{cz}:{ruleId}:{lx}_{lz}`
+- cluster：`vspawn:{mapId}:{cx}:{cz}:{ruleId}:{seedLx}_{seedLz}#{candLx}_{candLz}`
+
+前缀 `vspawn:` 与 2D 的 `spawn:` 区分，便于离线工具一眼分辨。
 
 详见各源文件顶部 XML doc。
 
 ## 文件结构
 
+**v4 重构**：MapManager 内分为 `Common/` `TopDown2D/` `Voxel3D/` 三块，命名空间同步：
+- 2D 内容：`EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.*`
+- 3D 内容：`EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.*`
+- 共享工具：`EssSystem.Core.EssManagers.Gameplay.MapManager.Common.*`
+
 ```
 MapManager/
-├── MapManager.cs                    薄门面：默认注册 + Update 驱动（spawn tick + auto-save tick）
-├── MapService.cs                    业务核心 + MapView 工厂 + 持久化集成 + 8 类 API
 ├── Agent.md                         本文档
-├── Runtime/
-│   └── MapView.cs                   Tilemap 渲染 + 流式预加载（RenderRadius/PreloadRadius/KeepAliveRadius）
-├── Persistence/                     ★ 区块级存档底层（v3：10×10 region 聚合）
-│   ├── MapPersistenceService.cs     路径管理 + region 缓存 + 异步/同步写（Task.Run）+ 原子 .tmp 重命名
+│
+├── Common/                          ★ 2D / 3D 共享工具
+│   └── Util/
+│       └── ChunkSeed.cs             (mapId, chunkCoord, tag) → 确定性子种子 / System.Random
+│
+├── TopDown2D/                       俯视 2D Tilemap 子系统（原 MapManager 全部）
+│   ├── MapManager.cs                薄门面：默认注册 + Update 驱动（spawn tick + auto-save tick）
+│   ├── MapService.cs                业务核心 + MapView 工厂 + 持久化集成 + 8 类 API
+│   ├── Runtime/
+│   │   └── MapView.cs               Tilemap 渲染 + 流式预加载
+│   ├── Persistence/                 区块级存档底层（10×10 region 聚合）
+│   │   ├── MapPersistenceService.cs path 管理 + region 缓存 + 异步/同步写
+│   │   └── Dao/                     ChunkSaveData / RegionSaveData / MapMetaSaveData / TileOverride / PlacedSpawn
+│   ├── Spawn/                       实体生成子系统
+│   │   ├── EntitySpawnService.cs    规则集 + destroyed 桶 + 分帧 spawn 队列
+│   │   ├── EntitySpawnDecorator.cs  IChunkDecorator
+│   │   ├── IMapMetaProvider.cs      可选 (BiomeId / Elevation / Temp / Moist) 元数据
+│   │   └── Dao/                     EntitySpawnRule / RuleSet / FloatRange / TileMeta
+│   ├── Editor/
+│   │   └── MapManagerEditor.cs      Inspector 自定义
 │   └── Dao/
-│       ├── ChunkSaveData.cs         单 chunk 差量（destroyed spawns + tile overrides + placed spawns）
-│       ├── RegionSaveData.cs        ★ 10×10 chunk 聚合为一个文件，减少小文件 IO
-│       ├── MapMetaSaveData.cs       Map 级元数据 + 配置 JSON 快照
-│       ├── TileOverride.cs          struct{ LocalX, LocalY, TypeId }
-│       └── PlacedSpawn.cs           v2 预留：玩家手动放置的实体（v1 写空 list）
-├── Spawn/                           ★ 实体生成子系统（v2 新增）
-│   ├── EntitySpawnService.cs        规则集持久化 + chunk 桶化 destroyed 集合 + 分帧 spawn 队列
-│   ├── EntitySpawnDecorator.cs      IChunkDecorator：评估规则、入队 spawn 请求
-│   ├── IMapMetaProvider.cs          可选接口：生成器暴露 (BiomeId, Elevation, Temp, Moist, Continentalness)
-│   └── Dao/
-│       ├── EntitySpawnRule.cs       单条规则（过滤器 + 密度 + cluster + Priority + MaxPerChunk）
-│       ├── EntitySpawnRuleSet.cs    一组规则；显式按 mapConfigId 绑定
-│       ├── FloatRange.cs            可选闭区间过滤器（HasValue/Min/Max）
-│       └── TileMeta.cs              TryGetTileMeta 出参
-└── Dao/
-    ├── Tile.cs                      单格（TypeId 字符串 + Elevation/Temp/Moist/RiverFlow byte 缓存）
-    ├── Chunk.cs                     ★ 增 IsDirty / OverrideTile / EnumerateOverrides / ApplyOverrides
-    ├── Map.cs                       ★ 增 PostFillHook / ChunkUnloading（pre-event）
-    ├── TileType.cs                  通用 TypeId（None/Ocean/Land + 默认 RuleTile 资源常量）+ TileTypeDef
-    ├── Config/
-    │   ├── MapConfig.cs             抽象基类
-    │   └── PerlinMapConfig.cs       兼容旧 AQN 薄包装
+│       ├── Tile.cs / Chunk.cs / Map.cs / TileType.cs
+│       ├── Config/                  MapConfig (抽象) + PerlinMapConfig (旧 AQN 兼容)
+│       ├── Generator/               IMapGenerator + IChunkDecorator 接口
+│       └── Templates/               模板策略层（IMapTemplate + Registry）
+│           ├── TopDownRandom/       俯视随机大世界（Perlin + 群系 + 河流）
+│           └── SideScrollerRandom/  横版骨架（fBm 水平地表 + 土/石/基岩分层）
+│
+└── Voxel3D/                         ★ 体素 3D 子系统（与 TopDown2D 平行）
+    ├── Voxel3DMapManager.cs         薄门面（[Manager(13)]）
+    ├── Voxel3DMapService.cs         业务核心 + MapView 工厂 + 持久化 + spawn 集成
+    ├── Runtime/
+    │   ├── Voxel3DMapView.cs        chunk GO 池 + 单 mesh 渲染 + 流式
+    │   ├── VoxelMaterialFactory.cs  共享 Material + atlas
+    │   └── VoxelTextureAtlas.cs     6×6 atlas
     ├── Generator/
-    │   ├── IMapGenerator.cs         通用策略接口：FillChunk + PrewarmAround
-    │   └── IChunkDecorator.cs       装饰器接口
-    ├── Util/
-    │   └── ChunkSeed.cs             (mapId, chunkCoord, tag) → 确定性子种子 / System.Random
-    └── Templates/                   ★ 模板策略层
-        ├── IMapTemplate.cs              模板策略接口 (TileTypes / DefaultConfig / SpawnRules)
-        ├── MapTemplateRegistry.cs       进程级模板注册表
-        ├── TopDownRandom/               俯视 2D 随机大世界
-        │   ├── TopDownRandomTemplate.cs     ★ IMapTemplate 实现
-        │   ├── Dao/TopDownTileTypes.cs      ★ 低到高：DeepOcean/Beach/Hill/.../Forest/Rainforest 常量
-        │   ├── Config/PerlinMapConfig.cs
-        │   └── Generator/
-        │       ├── PerlinMapGenerator.cs    同时实现 IMapMetaProvider
-        │       ├── BiomeClassifier.cs
-        │       └── RiverTracer.cs
-        └── SideScrollerRandom/          ★ 横版 2D 随机地图（骨架）
-            ├── SideScrollerRandomTemplate.cs
-            ├── Dao/SideScrollerTileTypes.cs Sky/Grass/Dirt/Stone/Bedrock/Sand/Snow/Water/Lava
-            ├── Config/SideScrollerMapConfig.cs   高度/振幅/频率/倍频
-            └── Generator/SideScrollerMapGenerator.cs  fBm 水平地表线 + 土/石/基岩分层
+    │   ├── IVoxelMapGenerator.cs / IVoxelChunkDecorator.cs
+    │   ├── VoxelHeightmapGenerator.cs   Perlin 多倍频 height field
+    │   └── VoxelChunkMesher.cs           greedy + per-voxel side quads
+    ├── Persistence/
+    │   ├── VoxelMapPersistenceService.cs region 聚合（不存地形，只存 column 差量）
+    │   └── Dao/                     VoxelChunkSaveData / VoxelRegionSaveData / VoxelMapMetaSaveData / VoxelColumnOverride
+    ├── Spawn/
+    │   ├── VoxelEntitySpawnService.cs    独立队列/destroyed/runtime 桶
+    │   ├── VoxelEntitySpawnDecorator.cs  IVoxelChunkDecorator
+    │   └── Dao/                     VoxelEntitySpawnRule / RuleSet / IntRange
+    └── Dao/
+        ├── VoxelMap.cs / VoxelChunk.cs       3D 数据结构 + IsDirty + OverrideColumn
+        ├── VoxelMapConfig.cs                  ChunkSize/Seed/SeaLevel/SnowLine 等
+        ├── VoxelBlockType.cs / VoxelBlockTypes.cs   palette + 7 默认方块常量
+        └── Templates/
+            ├── IVoxelMapTemplate.cs / VoxelMapTemplateRegistry.cs
+            └── DefaultVoxel/DefaultVoxelTemplate.cs  默认模板
 ```
+
+**注意事项**：
+- C# 类名 `MapManager` 与命名空间末段 `MapManager.TopDown2D` 不冲突（class `MapManager` ∈ ns `MapManager.TopDown2D`），仅 FQN 看起来递归
+- 现有 `{persistentDataPath}/ServiceData/*.json` 里的 AQN 仍指向旧命名空间（如 `MapManager.Dao.Templates.TopDownRandom.Config.PerlinMapConfig`），**重构后无法反序列化**。开发期建议直接清理 `{persistentDataPath}/ServiceData/MapService/` 与 `MapData/` 目录重新生成；生产环境需要在 `LegacyTypeResolver` 加 FormerName 映射
 
 ## 模板策略层（v3）
 

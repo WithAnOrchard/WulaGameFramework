@@ -7,7 +7,7 @@ using Demo.DayNight.WaveSpawn;
 using Demo.DayNight.BaseDefense;
 using Demo.DayNight.Construction;
 using Demo.DayNight.Hud;
-using EssSystem.Core.EssManagers.Gameplay.MapManager;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
 
 namespace Demo.DayNight.EditorTools
 {

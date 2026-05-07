@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.Gameplay.MapManager;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;

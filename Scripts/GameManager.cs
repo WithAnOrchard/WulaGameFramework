@@ -3,7 +3,7 @@ using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
-using EssSystem.Core.EssManagers.Gameplay.MapManager;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
 using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using EssSystem.Core.EssManagers.Presentation.UIManager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime.Preview;

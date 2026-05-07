@@ -1,6 +1,6 @@
 using System;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Config;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Generator;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Config;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Generator;
 using Demo.DayNight.Map.Generator;
 
 namespace Demo.DayNight.Map.Config
