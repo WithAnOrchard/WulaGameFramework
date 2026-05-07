@@ -27,3 +27,7 @@
 *.VC.db
 .vs/
 .idea/
+
+# Local-only assets (excluded from VCS)
+Resources/DayNight3D/waitforselect/
+Resources/DayNight3D/waitforselect.meta
