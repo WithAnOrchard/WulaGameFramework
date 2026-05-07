@@ -210,7 +210,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn
                     list.Add((lx, lz));
                 }
             }
-            return list;   // 宸叉寜 (dz, dx) 瀛楀吀搴忕敓鎴?        }
+            return list; // BuildClusterCandidates: candidates already in (dz, dx) lexicographic order
+        }
 
         private static void ShuffleDeterministic<T>(IList<T> list, System.Random rng)
         {
