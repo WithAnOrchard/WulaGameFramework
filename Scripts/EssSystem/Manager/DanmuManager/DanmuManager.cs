@@ -28,8 +28,10 @@ namespace BiliBiliDanmu
         #region Inspector
 
         [Header("BiliBili Open Live")]
-        [Tooltip("主播身份码（B 站直播姬「开放平台」面板获取）。空字符串 = 不自动连接。")]
-        [SerializeField] private string _identityCode = "E63TXTNA49OG5";
+        [Tooltip("主播身份码（B 站直播姬「开放平台」面板获取）。空字符串 = 不自动连接。\n" +
+                 "⚠️ 安全：身份码等同密码，请只在本地 Inspector 填写，**不要 commit 到公开仓库**。\n" +
+                 "本字段默认空，由你本地填值后 Asset 即可保留；推荐把 .meta 加入 .gitignore 或用 ScriptableObject 外挂。")]
+        [SerializeField] private string _identityCode = string.Empty;
 
         [Tooltip("第三方应用 AppId（B 站开发者后台获取）。")]
         [SerializeField] private long _appId = 1651388990835L;

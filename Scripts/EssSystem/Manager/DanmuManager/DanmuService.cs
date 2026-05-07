@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using BiliBiliDanmu.Dao;
 using BiliBiliDanmu.Net;
@@ -77,9 +78,12 @@ namespace BiliBiliDanmu
                     return false;
                 }
 
-                _httpClient.Timeout = TimeSpan.FromSeconds(Mathf.Max(1f, httpTimeoutSeconds));
+                // D3: 不再改 _httpClient.Timeout 全局（thread-unsafe 且一旦发过请求后修改会抛异常）。
+                // 改为给本次调用独立的 CancellationTokenSource，每个 HTTP 请求退出 timeout 独立。
+                var timeoutMs = (int)(Mathf.Max(1f, httpTimeoutSeconds) * 1000f);
+                using var cts = new CancellationTokenSource(timeoutMs);
 
-                var info = await GetRoomInfoByCode(identityCode, appId, signEndpoint, startEndpoint);
+                var info = await GetRoomInfoByCode(identityCode, appId, signEndpoint, startEndpoint, cts.Token);
                 if (info == null)
                 {
                     LogWarning("ConnectAsync: 获取房间信息失败");
@@ -192,7 +196,7 @@ namespace BiliBiliDanmu
         /// 两步：签名代理 → biliapi <c>/v2/app/start</c>。JSON 全部走 <see cref="MiniJson"/>。
         /// </summary>
         private async Task<RoomInfo> GetRoomInfoByCode(string code, long appId,
-            string signEndpoint, string startEndpoint)
+            string signEndpoint, string startEndpoint, CancellationToken ct)
         {
             try
             {
@@ -205,9 +209,9 @@ namespace BiliBiliDanmu
                     { "app_id", appId },
                 });
 
-                // ① 拿签名头
+                // ① 拿签名头 · D3：传入 ct 在 timeout 时取消
                 var signResp = await _httpClient.PostAsync(signEndpoint,
-                    new StringContent(paramJson, Encoding.UTF8, "application/json"));
+                    new StringContent(paramJson, Encoding.UTF8, "application/json"), ct);
                 if (!signResp.IsSuccessStatusCode)
                 {
                     LogWarning("签名服务器离线");
@@ -229,7 +233,8 @@ namespace BiliBiliDanmu
                     req.Headers.Add(kv.Key, kv.Value?.ToString() ?? string.Empty);
                 req.Headers.Add("Accept", "application/json");
 
-                var resp = await _httpClient.SendAsync(req);
+                // D3: 传入 ct
+                var resp = await _httpClient.SendAsync(req, ct);
                 if (!resp.IsSuccessStatusCode)
                 {
                     LogWarning("B 站直播中心离线");
