@@ -6,7 +6,7 @@ using UnityEngine;
 namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
 {
     /// <summary>
-    /// 资源管理器 - 符合架构规范
+    /// 资源管理器 façade —— 仅做参数转发到 ResourceService，零业务逻辑。
     /// </summary>
     [Manager(0)]
     public class ResourceManager : Manager<ResourceManager>
@@ -28,6 +28,8 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         public const string EVT_LOAD_RULE_TILE_ASYNC      = "LoadRuleTileAsync";
         public const string EVT_LOAD_EXTERNAL_SPRITE_ASYNC = "LoadExternalSpriteAsync";
         public const string EVT_ADD_PRELOAD_CONFIG        = "AddPreloadConfig";
+        // R2: 与 ResourceService.EVT_UNLOAD_RESOURCE/EVT_UNLOAD_ALL_RESOURCES 同名 — 走 Service 上的实现，
+        // 这里只保留常量作公开 API；façade 上原本的 [Event] 方法是 dead code 已删除。
         public const string EVT_UNLOAD_RESOURCE           = "UnloadResource";
         public const string EVT_UNLOAD_ALL_RESOURCES      = "UnloadAllResources";
 
@@ -40,11 +42,8 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         #region Inspector Debug Fields
 
         [Header("Debug Information")]
-        [SerializeField]
-        private int _loadedResourceCount = 0;
-
-        [SerializeField]
-        private string[] _loadedResourcePaths = new string[0];
+        [SerializeField] private int _loadedResourceCount = 0;
+        [SerializeField] private string[] _loadedResourcePaths = System.Array.Empty<string>();
 
         #endregion
 
@@ -52,13 +51,7 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         {
             base.Initialize();
             _resourceService = ResourceService.Instance;
-
-            // 从Service加载日志设置
-            if (_resourceService != null)
-            {
-                _serviceEnableLogging = _resourceService.EnableLogging;
-            }
-
+            if (_resourceService != null) _serviceEnableLogging = _resourceService.EnableLogging;
             Log("ResourceManager 初始化完成", Color.green);
         }
 
@@ -80,37 +73,29 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
 
         protected override void UpdateServiceInspectorInfo()
         {
-            if (_resourceService != null)
-            {
-                _resourceService.UpdateInspectorInfo();
-                _serviceInspectorInfo = _resourceService.InspectorInfo;
-            }
+            if (_resourceService == null) return;
+            _resourceService.UpdateInspectorInfo();
+            _serviceInspectorInfo = _resourceService.InspectorInfo;
         }
 
         protected override void SyncServiceLoggingSettings()
         {
-            if (_resourceService != null)
-            {
-                _resourceService.EnableLogging = _serviceEnableLogging;
-            }
+            if (_resourceService != null) _resourceService.EnableLogging = _serviceEnableLogging;
         }
 
         private void UpdateDebugInfo()
         {
-            if (_resourceService != null)
+            if (_resourceService == null) return;
+            var loadedResources = _resourceService.GetLoadedResources();
+            _loadedResourceCount = loadedResources.Count;
+            // 只在容量变化时重建数组，避免每次都 new string[]。
+            if (_loadedResourcePaths == null || _loadedResourcePaths.Length != loadedResources.Count)
+                _loadedResourcePaths = new string[loadedResources.Count];
+            int index = 0;
+            foreach (var kvp in loadedResources)
             {
-                var loadedResources = _resourceService.GetLoadedResources();
-                _loadedResourceCount = loadedResources.Count;
-                // 只在容量变化时重建数组，避免每次都 new string[]。
-                if (_loadedResourcePaths == null || _loadedResourcePaths.Length != loadedResources.Count)
-                    _loadedResourcePaths = new string[loadedResources.Count];
-                int index = 0;
-                foreach (var kvp in loadedResources)
-                {
-                    var resourceId = _resourceService.GetResourceId(kvp.Key);
-                    _loadedResourcePaths[index] = $"{resourceId} ({kvp.Value?.GetType().Name})";
-                    index++;
-                }
+                var resourceId = _resourceService.GetResourceId(kvp.Key);
+                _loadedResourcePaths[index++] = $"{resourceId} ({kvp.Value?.GetType().Name})";
             }
         }
 
@@ -120,183 +105,73 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
             EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_DATA_LOADED, new List<object>());
         }
 
-        /// <summary>
-        /// 获取 Prefab
-        /// </summary>
-        [Event(EVT_GET_PREFAB)]
-        public List<object> GetPrefab(List<object> data)
+        // ============================================================
+        // R1: façade 转发 helpers — 把 6 个 sync getter / 4 个 async loader 收成单行
+        // ============================================================
+
+        /// <summary>同步取资源：转发到 ResourceService.EVT_GET_RESOURCE，命中返 Ok(资源)，未命中返 Fail。</summary>
+        private List<object> GetSync(List<object> data, string typeStr)
         {
             string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "Prefab", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
+            var result = EventProcessor.Instance.TriggerEventMethod(
+                ResourceService.EVT_GET_RESOURCE,
+                new List<object> { path, typeStr, false });
+            if (ResultCode.IsOk(result) && result.Count >= 2) return ResultCode.Ok(result[1]);
             return ResultCode.Fail("获取失败");
         }
 
-        /// <summary>
-        /// 获取 Sprite
-        /// </summary>
-        [Event(EVT_GET_SPRITE)]
-        public List<object> GetSprite(List<object> data)
+        /// <summary>异步加载：转发到 ResourceService.EVT_LOAD_RESOURCE_ASYNC，原样返回 Service 结果。</summary>
+        private List<object> LoadAsyncFwd(List<object> data, string typeStr)
         {
             string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "Sprite", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
+            return EventProcessor.Instance.TriggerEventMethod(
+                ResourceService.EVT_LOAD_RESOURCE_ASYNC,
+                new List<object> { path, typeStr, false });
         }
 
-        /// <summary>
-        /// 获取 AudioClip
-        /// </summary>
-        [Event(EVT_GET_AUDIO_CLIP)]
-        public List<object> GetAudioClip(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "AudioClip", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
-        }
+        // ===== Sync getters =====
+        [Event(EVT_GET_PREFAB)]         public List<object> GetPrefab(List<object> d)        => GetSync(d, "Prefab");
+        [Event(EVT_GET_SPRITE)]         public List<object> GetSprite(List<object> d)        => GetSync(d, "Sprite");
+        [Event(EVT_GET_AUDIO_CLIP)]     public List<object> GetAudioClip(List<object> d)     => GetSync(d, "AudioClip");
+        [Event(EVT_GET_TEXTURE)]        public List<object> GetTexture(List<object> d)       => GetSync(d, "Texture");
+        [Event(EVT_GET_RULE_TILE)]      public List<object> GetRuleTile(List<object> d)      => GetSync(d, "RuleTile");
+        [Event(EVT_GET_ANIMATION_CLIP)] public List<object> GetAnimationClip(List<object> d) => GetSync(d, "AnimationClip");
 
-        /// <summary>
-        /// 获取 Texture
-        /// </summary>
-        [Event(EVT_GET_TEXTURE)]
-        public List<object> GetTexture(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "Texture", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
-        }
-
-        /// <summary>
-        /// 获取 RuleTile（同步、仅缓存）
-        /// </summary>
-        [Event(EVT_GET_RULE_TILE)]
-        public List<object> GetRuleTile(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "RuleTile", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
-        }
-
-        /// <summary>
-        /// 获取 AnimationClip。data: [string clipName]。同步会查缓存、cache miss 时 fallback 到 <c>Resources.Load&lt;AnimationClip&gt;</c>。
-        /// FBX 内部的 AnimationClip 子资产在启动时会被按 <c>clip.name</c> 自动索引。
-        /// </summary>
-        [Event(EVT_GET_ANIMATION_CLIP)]
-        public List<object> GetAnimationClip(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { path, "AnimationClip", false });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
-        }
-
-        /// <summary>
-        /// 获取外部 Sprite
-        /// </summary>
+        /// <summary>外部 Sprite 走 isExternal=true 路径（与 GetSync 不同的第三参数）。</summary>
         [Event(EVT_GET_EXTERNAL_SPRITE)]
         public List<object> GetExternalSprite(List<object> data)
         {
             string filePath = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_GET_RESOURCE, new List<object> { filePath, "Sprite", true });
-            if (ResultCode.IsOk(result) && result.Count >= 2)
-                return ResultCode.Ok(result[1]);
+            var result = EventProcessor.Instance.TriggerEventMethod(
+                ResourceService.EVT_GET_RESOURCE,
+                new List<object> { filePath, "Sprite", true });
+            if (ResultCode.IsOk(result) && result.Count >= 2) return ResultCode.Ok(result[1]);
             return ResultCode.Fail("获取失败");
         }
 
-        /// <summary>
-        /// 异步加载 Prefab
-        /// </summary>
-        [Event(EVT_LOAD_PREFAB_ASYNC)]
-        public List<object> LoadPrefabAsync(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_RESOURCE_ASYNC, new List<object> { path, "Prefab", false });
-            return result;
-        }
+        // ===== Async loaders =====
+        [Event(EVT_LOAD_PREFAB_ASYNC)]    public List<object> LoadPrefabAsync(List<object> d)    => LoadAsyncFwd(d, "Prefab");
+        [Event(EVT_LOAD_SPRITE_ASYNC)]    public List<object> LoadSpriteAsync(List<object> d)    => LoadAsyncFwd(d, "Sprite");
+        [Event(EVT_LOAD_RULE_TILE_ASYNC)] public List<object> LoadRuleTileAsync(List<object> d)  => LoadAsyncFwd(d, "RuleTile");
 
-        /// <summary>
-        /// 异步加载 Sprite
-        /// </summary>
-        [Event(EVT_LOAD_SPRITE_ASYNC)]
-        public List<object> LoadSpriteAsync(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_RESOURCE_ASYNC, new List<object> { path, "Sprite", false });
-            return result;
-        }
-
-        /// <summary>
-        /// 异步加载 RuleTile
-        /// </summary>
-        [Event(EVT_LOAD_RULE_TILE_ASYNC)]
-        public List<object> LoadRuleTileAsync(List<object> data)
-        {
-            string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_RESOURCE_ASYNC, new List<object> { path, "RuleTile", false });
-            return result;
-        }
-
-        /// <summary>
-        /// 异步加载外部 Sprite
-        /// </summary>
+        /// <summary>外部图片异步加载走 EVT_LOAD_EXTERNAL_IMAGE_ASYNC。</summary>
         [Event(EVT_LOAD_EXTERNAL_SPRITE_ASYNC)]
         public List<object> LoadExternalSpriteAsync(List<object> data)
         {
             string filePath = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC, new List<object> { filePath });
-            return result;
+            return EventProcessor.Instance.TriggerEventMethod(
+                ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC,
+                new List<object> { filePath });
         }
 
-        /// <summary>
-        /// 添加预加载配置
-        /// </summary>
+        /// <summary>添加预加载配置 — 转发到 ResourceService.EVT_ADD_RESOURCE_CONFIG。</summary>
         [Event(EVT_ADD_PRELOAD_CONFIG)]
         public List<object> AddPreloadConfig(List<object> data)
         {
-            string id = data[0] as string;
-            string path = data[1] as string;
-            ResourceType type = (ResourceType)data[2];
-            bool isExternal = data.Count > 3 ? (bool)data[3] : false;
-
-            var result = EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_ADD_RESOURCE_CONFIG, 
-                new List<object> { id, path, type, isExternal });
-            return result;
+            return EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_ADD_RESOURCE_CONFIG, data);
         }
 
-        /// <summary>
-        /// 卸载资源
-        /// </summary>
-        // NOTE: 与 ResourceService.Unload 同名（_eventMethods 字典 key 冲突，扫描期后注册者覆盖前者）。
-        // 该 façade 在当前实现下实际上 dead-code，保留以便统一公开 API；常量与 Service 共用 EVT_UNLOAD_RESOURCE 字符串值。
-        [Event(EVT_UNLOAD_RESOURCE)]
-        public List<object> UnloadResource(List<object> data)
-        {
-            string path = data[0] as string;
-            bool isExternal = data.Count > 1 ? (bool)data[1] : false;
-
-            var result = EventProcessor.Instance.TriggerEventMethod(EVT_UNLOAD_RESOURCE, 
-                new List<object> { path, isExternal });
-            return result;
-        }
-
-        /// <summary>
-        /// 卸载所有资源
-        /// </summary>
-        // NOTE: 与 ResourceService.UnloadAll 同名（同上注释）。
-        [Event(EVT_UNLOAD_ALL_RESOURCES)]
-        public List<object> UnloadAllResources(List<object> data)
-        {
-            var result = EventProcessor.Instance.TriggerEventMethod(EVT_UNLOAD_ALL_RESOURCES, new List<object>());
-            return result;
-        }
+        // R2: 原 EVT_UNLOAD_RESOURCE / EVT_UNLOAD_ALL_RESOURCES 的 [Event] 方法已删除（dead code，
+        // 字符串 key 与 ResourceService 同名，扫描期被 Service 覆盖永不被调用）。常量保留作公开 API。
     }
 }

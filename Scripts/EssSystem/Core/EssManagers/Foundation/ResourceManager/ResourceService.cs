@@ -148,10 +148,12 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         [Event(EVT_DATA_LOADED)]
         public List<object> OnDataLoaded(List<object> data)
         {
-            if (_dataLoaded) return new List<object> { "已加载" };
+            // R5: 统一走 ResultCode。以前返 ["已加载"] 不是合法 ResultCode，调用方会误认失败；
+            // 改返 Ok(true) 表示已加载，Ok() 表示本次刚加载完。
+            if (_dataLoaded) return ResultCode.Ok(true);
             _dataLoaded = true;
             LoadAndPreloadResources();
-            return new List<object> { ResultCode.OK };
+            return ResultCode.Ok();
         }
 
         /// <summary>
@@ -390,9 +392,10 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
 
             var key = new ResourceKey(path, isExternal, NormalizeTypeTag(typeStr));
 
-            if (_loadedResources.ContainsKey(key))
+            // R4: TryGetValue 一次查找代替 ContainsKey + indexer 双查找。
+            if (_loadedResources.TryGetValue(key, out var cached))
             {
-                return new List<object> { ResultCode.OK, _loadedResources[key] };
+                return ResultCode.Ok(cached);
             }
 
             // Fallback：非外部资源，按 path 直接 Resources.Load（同步）。
@@ -416,12 +419,12 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
                     {
                         _loadedResources[key] = loaded;
                         Log($"Fallback 同步加载: {candidate} ({typeStr})");
-                        return new List<object> { ResultCode.OK, loaded };
+                        return ResultCode.Ok(loaded);   // R5
                     }
                 }
             }
 
-            return new List<object> { "资源未加载" };
+            return ResultCode.Fail("资源未加载");   // R5
         }
 
         /// <summary>
@@ -507,7 +510,7 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
             var config = new ResourceConfigItem { id = id, path = path, isExternal = isExternal, type = type };
             SetData(category, id, config);
 
-            return new List<object> { ResultCode.OK };
+            return ResultCode.Ok();   // R5
         }
 
         /// <summary>
@@ -520,45 +523,27 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
             string typeStr = data[1] as string;
             bool isExternal = data.Count > 2 ? (bool)data[2] : false;
 
-            if (isExternal)
-            {
-                return new List<object> { "外部资源请使用 LoadExternalImageAsync" };
-            }
+            if (isExternal) return ResultCode.Fail("外部资源请使用 LoadExternalImageAsync");   // R5
 
             var key = new ResourceKey(path, false, NormalizeTypeTag(typeStr));
 
-            if (_loadedResources.ContainsKey(key))
-            {
-                return new List<object> { ResultCode.OK, _loadedResources[key] };
-            }
+            // R4: TryGetValue 一次查。
+            if (_loadedResources.TryGetValue(key, out var cached)) return ResultCode.Ok(cached);   // R5
 
             // 根据类型加载
             switch (typeStr)
             {
-                case "Prefab":
-                    LoadAsync<GameObject>(path, obj => { });
-                    break;
-                case "Sprite":
-                    LoadAsync<Sprite>(path, obj => { });
-                    break;
-                case "AudioClip":
-                    LoadAsync<AudioClip>(path, obj => { });
-                    break;
-                case "Texture":
-                    LoadAsync<Texture2D>(path, obj => { });
-                    break;
-                case "RuleTile":
-                    LoadAsync<RuleTile>(path, obj => { });
-                    break;
-                case "AnimationClip":
-                    LoadAsync<AnimationClip>(path, obj => { });
-                    break;
-                default:
-                    return new List<object> { "不支持的资源类型" };
+                case "Prefab":        LoadAsync<GameObject>(path, _ => { }); break;
+                case "Sprite":        LoadAsync<Sprite>(path, _ => { }); break;
+                case "AudioClip":     LoadAsync<AudioClip>(path, _ => { }); break;
+                case "Texture":       LoadAsync<Texture2D>(path, _ => { }); break;
+                case "RuleTile":      LoadAsync<RuleTile>(path, _ => { }); break;
+                case "AnimationClip": LoadAsync<AnimationClip>(path, _ => { }); break;
+                default: return ResultCode.Fail("不支持的资源类型");   // R5
             }
 
-            // 异步加载，返回加载中状态
-            return new List<object> { "加载中" };
+            // 异步加载，返回“加载中”的 sentinel。调用方 IsOk 为 false，result[1] 为 提示文本。
+            return ResultCode.Fail("加载中");   // R5：严格说不是失败，但走 Fail 格式调用方能一致处理
         }
 
         /// <summary>
@@ -749,9 +734,10 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         {
             var key = new ResourceKey(path, false, NormalizeTypeTag(typeof(T).Name));
 
-            if (_loadedResources.ContainsKey(key))
+            // R4: TryGetValue 一次查。
+            if (_loadedResources.TryGetValue(key, out var cached))
             {
-                callback?.Invoke(_loadedResources[key] as T);
+                callback?.Invoke(cached as T);
                 return;
             }
 
@@ -776,18 +762,13 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
             string filePath = data[0] as string;
             var key = new ResourceKey(filePath, true, "Sprite");
 
-            if (_loadedResources.ContainsKey(key))
-            {
-                return new List<object> { ResultCode.OK, _loadedResources[key] };
-            }
+            // R4: TryGetValue 一次查。
+            if (_loadedResources.TryGetValue(key, out var cached)) return ResultCode.Ok(cached);   // R5
 
-            if (!System.IO.File.Exists(filePath))
-            {
-                return new List<object> { "文件不存在" };
-            }
+            if (!System.IO.File.Exists(filePath)) return ResultCode.Fail("文件不存在");   // R5
 
             LoadExternalImageAsync(filePath, null);
-            return new List<object> { "加载中" };
+            return ResultCode.Fail("加载中");   // R5：同上 sentinel
         }
 
         /// <summary>
@@ -797,9 +778,10 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         {
             var key = new ResourceKey(filePath, true, "Sprite");
 
-            if (_loadedResources.ContainsKey(key))
+            // R4: TryGetValue 一次查。
+            if (_loadedResources.TryGetValue(key, out var cached))
             {
-                callback?.Invoke(_loadedResources[key] as Sprite);
+                callback?.Invoke(cached as Sprite);
                 return;
             }
 
@@ -866,14 +848,14 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
                 toRemove.Add(k);
             }
 
-            if (toRemove.Count == 0) return new List<object> { "资源未加载" };
+            if (toRemove.Count == 0) return ResultCode.Fail("资源未加载");   // R5
 
             foreach (var k in toRemove)
             {
                 Resources.UnloadAsset(_loadedResources[k]);
                 _loadedResources.Remove(k);
             }
-            return new List<object> { ResultCode.OK };
+            return ResultCode.Ok();   // R5
         }
 
         /// <summary>
@@ -887,7 +869,7 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
                 Resources.UnloadAsset(resource);
             }
             _loadedResources.Clear();
-            return new List<object> { ResultCode.OK };
+            return ResultCode.Ok();   // R5
         }
 
         /// <summary>
