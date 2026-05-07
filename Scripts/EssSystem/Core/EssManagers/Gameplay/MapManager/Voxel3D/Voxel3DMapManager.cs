@@ -119,11 +119,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D
         private bool IsChunkLoadedFor(string mapId, int cx, int cz) =>
             Service?.GetMap(mapId)?.PeekChunk(cx, cz) != null;
 
-        protected virtual void OnApplicationQuit()
+        protected override void OnApplicationQuit()
         {
             // 同步 flush 全部 dirty chunk —— 后台 Task.Run 此刻可能被进程杀死，必须同步
             try { Service?.SaveAllDirtyChunksAllMaps(sync: true); }
             catch { /* swallow */ }
+            base.OnApplicationQuit();
         }
 
         private void OnApplicationFocus(bool hasFocus)

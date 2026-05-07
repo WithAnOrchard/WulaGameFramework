@@ -46,5 +46,35 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
 
         /// <summary>总 slot 数（VoxelTextureAtlas 用来分配 SlotPaths / _slotUVs 长度）。</summary>
         public const int Count = 8;
+
+        /// <summary>把 BlockId 映射到顶面 atlas slot；未识别返回 Stone 兜底。</summary>
+        public static int SlotForTop(byte blockId)
+        {
+            switch (blockId)
+            {
+                case VoxelBlockTypes.Grass: return GrassTop;
+                case VoxelBlockTypes.Dirt:  return Dirt;
+                case VoxelBlockTypes.Stone: return Stone;
+                case VoxelBlockTypes.Sand:  return Sand;
+                case VoxelBlockTypes.Snow:  return Snow;
+                case VoxelBlockTypes.Water: return WaterStill;
+                default: return Stone;
+            }
+        }
+
+        /// <summary>把 BlockId 映射到侧面 atlas slot；草侧用 grass_side 贴图，其它与顶面一致。</summary>
+        public static int SlotForSide(byte blockId)
+        {
+            switch (blockId)
+            {
+                case VoxelBlockTypes.Grass: return GrassSide;
+                case VoxelBlockTypes.Dirt:  return Dirt;
+                case VoxelBlockTypes.Stone: return Stone;
+                case VoxelBlockTypes.Sand:  return Sand;
+                case VoxelBlockTypes.Snow:  return Snow;
+                case VoxelBlockTypes.Water: return WaterStill;
+                default: return Stone;
+            }
+        }
     }
 }

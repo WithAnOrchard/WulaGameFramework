@@ -22,10 +22,11 @@ namespace Demo.DayNight3D.Player
     [RequireComponent(typeof(CharacterAnimatorBinder))]
     public class DayNight3DPlayer : MonoBehaviour
     {
-        [Header("Actions（Inspector 提供 idle/walk/run 名；Binder 会做关键词 fallback 解析）")]
+        [Header("Actions（Inspector 提供 idle/walk/run/jump 名；Binder 会做关键词 fallback 解析）")]
         [SerializeField] private string _idleAction = "Idle";
         [SerializeField] private string _walkAction = "Walk";
         [SerializeField] private string _runAction  = "Run";
+        [SerializeField] private string _jumpAction = "Jump";
 
         [Header("Input")]
         [SerializeField] private KeyCode _jumpKey = KeyCode.Space;
@@ -44,6 +45,7 @@ namespace Demo.DayNight3D.Player
         private string _resolvedIdle;
         private string _resolvedWalk;
         private string _resolvedRun;
+        private string _resolvedJump;
 
         #endregion
 
@@ -91,12 +93,13 @@ namespace Demo.DayNight3D.Player
             _binder.Spawn();
             _binder.SetModelVisible(!_cam.IsFirstPerson);
 
-            // 3) 解析动作名（idle/walk/run keyword fallback）
+            // 3) 解析动作名（idle/walk/run/jump keyword fallback）
             _resolvedIdle = _binder.ResolveAction(_idleAction, "idle", "stand", "wait");
             _resolvedWalk = _binder.ResolveAction(_walkAction, "walk", "move") ?? _resolvedIdle;
             _resolvedRun  = _binder.ResolveAction(_runAction,  "run",  "sprint") ?? _resolvedWalk;
+            _resolvedJump = _binder.ResolveAction(_jumpAction, "jump", "fall", "air");
 
-            Debug.Log($"[DayNight3DPlayer] Actions resolved → Idle='{_resolvedIdle}', Walk='{_resolvedWalk}', Run='{_resolvedRun}'");
+            Debug.Log($"[DayNight3DPlayer] Actions resolved → Idle='{_resolvedIdle}', Walk='{_resolvedWalk}', Run='{_resolvedRun}', Jump='{_resolvedJump}'");
             if (string.IsNullOrEmpty(_resolvedIdle))
                 Debug.LogWarning($"[DayNight3DPlayer] Config '{_binder.ConfigId}' 无可用动作");
             else
@@ -137,9 +140,10 @@ namespace Demo.DayNight3D.Player
                 transform.rotation = Quaternion.Euler(0f, newYaw, 0f);
             }
 
-            // 3) 动画状态切换
+            // 3) 动画状态切换（优先级：Jump > Run > Walk > Idle）
             string desired;
-            if (!_ctrl.IsMoving)            desired = _resolvedIdle;
+            if (!_ctrl.IsGrounded && !string.IsNullOrEmpty(_resolvedJump)) desired = _resolvedJump;
+            else if (!_ctrl.IsMoving)            desired = _resolvedIdle;
             else if (_ctrl.SprintInput && !string.IsNullOrEmpty(_resolvedRun)) desired = _resolvedRun;
             else                            desired = _resolvedWalk;
 

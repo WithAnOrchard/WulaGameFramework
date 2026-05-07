@@ -42,6 +42,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
         [Tooltip("FirstPerson 时锁定 + 隐藏鼠标光标。")]
         [SerializeField] private bool _lockCursorInFirstPerson = true;
 
+        [Tooltip("ThirdPerson 时也锁定鼠标光标（让相机始终跟鼠标转）。Esc 由 Unity 自动暂时释放。")]
+        [SerializeField] private bool _lockCursorInThirdPerson = true;
+
         [Header("Mouse")]
         [SerializeField, Min(0f)] private float _mouseSensitivity = 2f;
 
@@ -97,8 +100,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
 
         private void ApplyModeSideEffects()
         {
-            // 鼠标锁
-            if (IsFirstPerson && _lockCursorInFirstPerson)
+            // 鼠标锁：FP / TP 各自一个开关，默认两者都锁，让相机始终跟鼠标
+            var shouldLock = IsFirstPerson ? _lockCursorInFirstPerson : _lockCursorInThirdPerson;
+            if (shouldLock)
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible   = false;
@@ -117,15 +121,11 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
             if (_enableModeToggleKey && Input.GetKeyDown(KeyCode.V))
                 Mode = IsFirstPerson ? CameraMode.ThirdPerson : CameraMode.FirstPerson;
 
-            // 鼠标 → yaw / pitch
-            // FirstPerson 总是吃鼠标；ThirdPerson 仅按住右键时
-            var mouseActive = IsFirstPerson || Input.GetMouseButton(1);
-            if (mouseActive)
-            {
-                _yaw   += Input.GetAxis("Mouse X") * _mouseSensitivity;
-                _pitch -= Input.GetAxis("Mouse Y") * _mouseSensitivity;
-                _pitch  = Mathf.Clamp(_pitch, IsFirstPerson ? -89f : -30f, IsFirstPerson ? 89f : 70f);
-            }
+            // 鼠标 → yaw / pitch；FP 与 TP 都始终跟随鼠标（不需按右键）。
+            // 鼠标想离开窗口时按 Esc，Unity 会自动把 CursorLockMode.Locked 释放为 None。
+            _yaw   += Input.GetAxis("Mouse X") * _mouseSensitivity;
+            _pitch -= Input.GetAxis("Mouse Y") * _mouseSensitivity;
+            _pitch  = Mathf.Clamp(_pitch, IsFirstPerson ? -89f : -30f, IsFirstPerson ? 89f : 70f);
         }
 
         private void LateUpdate()

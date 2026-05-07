@@ -355,6 +355,21 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
                 _playing       = false;
                 RaiseActionComplete(_currentAction.ActionName);
             }
+            // 循环动作末尾兜底重放：FBX 导入 loopTime=false 时 Animator 会卡在最后一帧，
+            // 这里强制 Play(0f) 重头开始，让 Walk / Run / Idle 等无视 FBX 导入设置正确循环。
+            else if (_currentAction.Loop && nt >= 1f && !Animator.IsInTransition(layer))
+            {
+                var stateName = _currentAction.ResolveAnimatorState();
+                if (!string.IsNullOrEmpty(stateName))
+                {
+                    var hash = Animator.StringToHash(stateName);
+                    if (Animator.HasState(layer, hash))
+                    {
+                        Animator.Play(hash, layer, 0f);
+                        _lastNormalizedTime = 0f;
+                    }
+                }
+            }
         }
 
         #endregion
