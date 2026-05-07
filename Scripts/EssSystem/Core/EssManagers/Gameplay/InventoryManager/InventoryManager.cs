@@ -5,7 +5,7 @@ using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
-using UIMgr = EssSystem.Core.EssManagers.Presentation.UIManager.UIManager;   // I1: 避免魔法字符串 走常量
+// §4.1 跨模块调用走 bare-string 协议，不 using UIManager 获得运行时零跨模块依赖
 
 namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 {
@@ -175,9 +175,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             // ① 缓存复用：之前构建过且 GameObject 仍然存活 → 直接 SetVisible(true)
             if (_rootPanels.TryGetValue(inventoryId, out var cached))
             {
-                // I1: 走事件拿 GameObject —— 用常量不引用 UIManager.Entity 类
+                // §4.1 跨模块 bare-string 调用 UIManager.EVT_GET_UI_GAMEOBJECT
                 var goResult = EventProcessor.Instance.TriggerEventMethod(
-                    UIMgr.EVT_GET_UI_GAMEOBJECT,
+                    "GetUIGameObject",
                     new List<object> { cached.Id });
                 var go = ResultCode.IsOk(goResult) && goResult.Count >= 2 ? goResult[1] as GameObject : null;
                 if (go != null)
@@ -198,9 +198,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
             var (panel, slotRefs, descRefs) = InventoryUIBuilder.BuildPanelTree(inventoryId, config);
 
-            // I1: 通过事件调用 UIManager 注册实体（解耦）——用常量不引用 UIManager.Entity 类
+            // §4.1 跨模块 bare-string 调用 UIManager.EVT_REGISTER_ENTITY
             var result = EventProcessor.Instance.TriggerEventMethod(
-                UIMgr.EVT_REGISTER_ENTITY,
+                "RegisterUIEntity",
                 new List<object> { inventoryId, panel });
 
             if (!ResultCode.IsOk(result))
@@ -237,9 +237,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 return ResultCode.Ok(inventoryId);
             }
 
-            // I1: 缓存里没有 → 容错路径 发 UNREGISTER 清理 UIManager 侧可能残留
+            // §4.1 跨模块 bare-string：UIManager.EVT_UNREGISTER_ENTITY
             EventProcessor.Instance.TriggerEventMethod(
-                UIMgr.EVT_UNREGISTER_ENTITY,
+                "UnregisterUIEntity",
                 new List<object> { inventoryId });
             Log($"关闭未缓存的Inventory UI: {inventoryId}", Color.yellow);
             return ResultCode.Ok(inventoryId);
@@ -250,9 +250,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         {
             if (!TryGetId(data, 0, out var inventoryId, out var fail)) return fail;
 
-            // I1: 用常量
+            // §4.1 跨模块 bare-string：UIManager.EVT_UNREGISTER_ENTITY
             EventProcessor.Instance.TriggerEventMethod(
-                UIMgr.EVT_UNREGISTER_ENTITY,
+                "UnregisterUIEntity",
                 new List<object> { inventoryId });
 
             _slotRefs.Remove(inventoryId);

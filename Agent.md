@@ -82,27 +82,50 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 
 ### 4.1 事件名常量化（**强制规则**）
 
-每个 `[Event]` 必须在所属类暴露 `public const string EVT_XXX = "...";`，且 `[Event(EVT_XXX)]` 必须引用常量。**禁止**在 `[Event("...")]` 或调用方写魔法字符串。
+事件名遵循"**定义方常量、消费方字符串**"的非对称规则。这同时满足两个目标：发布者重命名安全、消费者跨模块零 `using` 编译耦合。
 
-**定义方**：
+**① 定义方（事件发布者：Manager / Service 自己）**——必须用常量
+
 ```csharp
 public class UIManager : Manager<UIManager>
 {
     public const string EVT_GET_ENTITY = "GetUIEntity";
 
-    [Event(EVT_GET_ENTITY)]
+    [Event(EVT_GET_ENTITY)]                        // ✅ 必须引用常量
     public List<object> GetUIEntity(List<object> data) { ... }
 }
 ```
 
-**调用方**：
+`[Event("GetUIEntity")]` 直接写字符串会被 `agent_lint.ps1 [1]` 拒绝。
+
+**② 消费方（监听方 / 调用方）**——走字符串协议
+
 ```csharp
-EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
+// ✅ 跨模块监听：直接 bare-string，不 using 发布者
+[EventListener("OnResourcesLoaded")]
+public List<object> OnResourcesLoaded(List<object> data) { ... }
+
+// ✅ 跨模块调用：直接 bare-string
+EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 ```
 
-**收益**：IDE 跳转可达 / 重命名安全 / AI 不会拼错事件名 / 全局可搜索。
+**禁止**调用方仅为读取 `EVT_X` 常量而 `using` 其它业务 Manager 的命名空间——这等同于运行时引用，破坏了 Event 系统的解耦初衷。
 
-已应用到：`UIManager` (7 个：注册/查询/注销/热重载 + Canvas/GameObject 查询 + DAO 属性广播)、`ResourceManager` / `ResourceService` (多)、`InventoryManager` (2 个) + `InventoryService` (5 个广播)、`Service<T>.EVT_INITIALIZED`、`CharacterManager` (7 个：创建/销毁/动作/坐标) + `CharacterService.EVT_FRAME_EVENT`、`EntityManager` (2 个：CreateEntity / DestroyEntity)、`DanmuService` (5 个广播)。`MapManager` 当前不暴露 `EVT_*`（仅提供纯 C# API）。新增模块**必须遵守**此规则；CI 由 `agent_lint.ps1 -Strict` 在 pre-commit 阶段强制执行。
+**校验**：`agent_lint.ps1 [6]` 扫描所有 `[EventListener("...")]` / `TriggerEventMethod("...")` / `TriggerEvent("...")` / `HasListener("...")` 的 bare-string，cross-ref 全工程已声明的 `EVT_XXX` value 池——未在任何类中作为常量声明的字符串视为打错事件名/无中生有的接口，立即报错。
+
+**例外**：同模块内（同 Manager + 自己的 Service + 自己的 Dao/Editor）调用可继续使用 `EVT_X` 常量——本来就在同一 `using` 范围内，无额外编译耦合代价，重命名安全更划算。
+
+**收益对比**：
+
+| 路径 | 重命名安全 | 跨模块 using | IDE 跳转 |
+|---|:---:|:---:|:---:|
+| 定义方 const | ✓ | — | ✓ |
+| 同模块消费 const | ✓ | 不需要 | ✓ |
+| **跨模块消费 bare-string** | ✗（靠 lint 拦） | **0** | 靠根 Agent.md 索引 |
+
+跨模块消费失去 IDE 跳转的代价由两点弥补：(a) lint [6] 必拦事件名拼写错误，(b) 根 `Agent.md` 维护事件速查表作为权威索引。
+
+**已应用范围**：`UIManager` / `ResourceManager` / `InventoryManager` / `CharacterManager` / `EntityManager` / `DanmuService` / `Service<T>.EVT_INITIALIZED` / `CharacterService.EVT_FRAME_EVENT`。共 60 个 `EVT_XXX` 常量，全部在根 `Agent.md` 全局索引登记。`MapManager` 当前仅提供纯 C# API。新增模块**必须遵守**此规则；CI 由 `agent_lint.ps1 -Strict` 在 pre-commit 阶段强制执行。
 
 ### 5. UI 必须经 UIManager（**强制规则**）
 
@@ -110,8 +133,8 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 **唯一允许的入口**：
 - 构建 `UIPanelComponent` / `UIButtonComponent` / `UITextComponent` 树（链式 `.SetPosition` / `.SetSize` / `.SetText` 等）
-- `EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY, new List<object>{ rootId, rootDao })`
-- 销毁/隐藏：`EVT_UNREGISTER_ENTITY` 真正销毁；改 `dao.Visible` 仅显隐保留缓存
+- `EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity", new List<object>{ rootId, rootDao })` （消费方走 bare-string，参 §4.1）
+- 销毁/隐藏：`"UnregisterUIEntity"` 真正销毁；改 `dao.Visible` 仅显隐保留缓存
 - 按钮交互：`btnDao.OnClick += handler;`（而不是 `btn.onClick.AddListener`）
 
 **禁止的反模式**：

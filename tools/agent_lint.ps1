@@ -34,6 +34,15 @@ function Add-Err  ([string]$m) { [void]$errors.Add($m) }
 function Add-Warn ([string]$m) { [void]$warnings.Add($m) }
 function RelPath  ([string]$abs) { $abs.Substring($projectRoot.Length + 1) -replace '\\', '/' }
 
+# CRITICAL: explicit UTF-8 read. PowerShell 5.1 'Get-Content -Raw' defaults to
+# system codepage (CP936/GBK on zh-CN Windows), which mangles UTF-8 multi-byte
+# sequences in Chinese comments. The mangled bytes can swallow real newlines,
+# causing '//[^\r\n]*' regex to eat subsequent code lines and silently drop
+# const declarations. Always read source as UTF-8.
+function Read-Utf8 ([string]$path) {
+    return [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+}
+
 # ----------------------------------------------------------------------
 # [1] Bare-string [Event(...)] / [EventListener(...)]
 # ----------------------------------------------------------------------
@@ -61,7 +70,7 @@ function Resolve-ClassAt ([string]$src, [int]$idx) {
 # Definition side: [Event("...")] must use const. [EventListener("...")] is
 # allowed (consumer side, validated in step [6] against the known EVT pool).
 foreach ($f in $cs) {
-    $stripped = Remove-CSharpComments (Get-Content $f.FullName -Raw)
+    $stripped = Remove-CSharpComments (Read-Utf8 $f.FullName)
     # Negative lookahead so 'EventListener' doesn't match 'Event'
     $bare = [regex]::Matches($stripped, '\[Event(?!Listener)\("([^"]+)"')
     foreach ($m in $bare) {
@@ -77,7 +86,7 @@ $constMap   = @{}    # FQN "Class.EVT_NAME" -> @{ Name; Value; File; Class; IsAl
 $valueToFqn = @{}    # value -> ArrayList of FQN (collision detection)
 
 foreach ($f in $cs) {
-    $stripped = Remove-CSharpComments (Get-Content $f.FullName -Raw)
+    $stripped = Remove-CSharpComments (Read-Utf8 $f.FullName)
 
     # literal: public const string EVT_XXX = "value";
     foreach ($m in [regex]::Matches($stripped, 'public\s+const\s+string\s+(EVT_\w+)\s*=\s*"([^"]+)"\s*;')) {
@@ -138,7 +147,7 @@ foreach ($fqn in $constMap.Keys) {
         Add-Err "  [ERR] $fqn :: module missing Agent.md (expected $(RelPath $moduleDir)/Agent.md)"
         continue
     }
-    $modContent = Get-Content $moduleAgent -Raw
+    $modContent = Read-Utf8 $moduleAgent
     if ($modContent -notmatch [regex]::Escape($info.Name)) {
         Add-Err "  [ERR] $fqn :: $(RelPath $moduleAgent) does not mention constant name $($info.Name)"
     }
@@ -150,7 +159,7 @@ foreach ($fqn in $constMap.Keys) {
 Write-Host '[4/6] Checking module Agent.md has ## Event API section...'
 $moduleDirs = @{}
 foreach ($f in $cs) {
-    $content = Get-Content $f.FullName -Raw
+    $content = Read-Utf8 $f.FullName
     if ($content -match '\[Event\(' -or $content -match '\[EventListener\(') {
         $d = Split-Path -Parent $f.FullName
         $moduleDirs[$d] = $true
@@ -162,7 +171,7 @@ foreach ($d in $moduleDirs.Keys) {
         Add-Err "  [ERR] $(RelPath $d) :: contains [Event] but no Agent.md"
         continue
     }
-    $aContent = Get-Content $a -Raw
+    $aContent = Read-Utf8 $a
     if ($aContent -notmatch '(?m)^##\s+Event API') {
         Add-Warn "  [WARN] $(RelPath $a) :: missing '## Event API' section"
     }
@@ -175,7 +184,7 @@ Write-Host '[5/6] Checking Assets/Agent.md global Event index...'
 if (-not (Test-Path $rootAgent)) {
     Add-Err '  [ERR] Assets/Agent.md not found'
 } else {
-    $rootContent = Get-Content $rootAgent -Raw
+    $rootContent = Read-Utf8 $rootAgent
     foreach ($fqn in $constMap.Keys) {
         $info = $constMap[$fqn]
         if ($info.IsAlias) { continue }
@@ -209,7 +218,7 @@ $consumerPatterns = @(
 )
 
 foreach ($f in $cs) {
-    $stripped = Remove-CSharpComments (Get-Content $f.FullName -Raw)
+    $stripped = Remove-CSharpComments (Read-Utf8 $f.FullName)
     foreach ($pat in $consumerPatterns) {
         foreach ($m in [regex]::Matches($stripped, $pat)) {
             $val = $m.Groups[1].Value

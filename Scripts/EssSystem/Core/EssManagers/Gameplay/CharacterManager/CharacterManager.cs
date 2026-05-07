@@ -4,7 +4,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
-using EssSystem.Core.EssManagers.Foundation.ResourceManager;   // C3: 简化 [EventListener] 全限定名
+// §4.1 跨模块 [EventListener] 走 bare-string；不 using ResourceManager
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
 {
@@ -73,8 +73,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         /// <summary>
         /// 监听 ResourceManager 的资源加载完成广播 —— 此时 <c>_modelClipNames</c> 已就绪，扫描走 O(1) 缓存。
         /// </summary>
-        // C3: using 后不再全限定名
-        [EventListener(ResourceManager.EVT_RESOURCES_LOADED)]
+        // §4.1 跨模块 bare-string 监听 ResourceManager.EVT_RESOURCES_LOADED
+        [EventListener("OnResourcesLoaded")]
         public List<object> OnResourcesLoaded(List<object> data)
         {
             if (_autoRegisterAllFBX)

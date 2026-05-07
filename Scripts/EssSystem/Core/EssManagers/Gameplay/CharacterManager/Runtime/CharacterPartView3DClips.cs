@@ -5,7 +5,7 @@ using UnityEngine.Playables;
 using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
-using EssSystem.Core.EssManagers.Foundation.ResourceManager;   // C4: 走 façade，避免魔法字符串
+// §4.1 跨模块走 bare-string 协议，不 using ResourceManager
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 {
@@ -85,9 +85,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
             if (string.IsNullOrEmpty(Config?.PrefabPath)) return;
             try
             {
-                // C4: façade 调用 ResourceManager.GetModelClips。
+                // §4.1 跨模块 bare-string：ResourceManager.EVT_GET_MODEL_CLIPS
                 var r = EventProcessor.Instance.TriggerEventMethod(
-                    ResourceManager.EVT_GET_MODEL_CLIPS,
+                    "GetModelClips",
                     new List<object> { Config.PrefabPath });
                 if (r != null && r.Count >= 2 && ResultCode.IsOk(r) && r[1] is List<AnimationClip> clips)
                 {
@@ -191,9 +191,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
         {
             try
             {
-                // C4: façade 调用 ResourceManager.GetPrefab。
+                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_PREFAB
                 var result = EventProcessor.Instance.TriggerEventMethod(
-                    ResourceManager.EVT_GET_PREFAB,
+                    "GetPrefab",
                     new List<object> { prefabId });
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                     return result[1] as GameObject;
@@ -209,9 +209,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
         {
             try
             {
-                // C4: façade 调用 ResourceManager.GetAnimationClip。
+                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_ANIMATION_CLIP
                 var result = EventProcessor.Instance.TriggerEventMethod(
-                    ResourceManager.EVT_GET_ANIMATION_CLIP,
+                    "GetAnimationClip",
                     new List<object> { clipName });
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                     return result[1] as AnimationClip;
