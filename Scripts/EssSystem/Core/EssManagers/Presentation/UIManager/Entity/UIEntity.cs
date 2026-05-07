@@ -252,31 +252,10 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Entity
             return UIService.Instance.GetUIEntity(daoId);
         }
 
-        /// <summary>
-        ///     通过DataManager事件获取Entity（用于外部系统调用）
-        /// </summary>
-        public static UIEntity GetEntityByIdViaEvent(string daoId)
-        {
-            try
-            {
-                var eventProcessor = EventProcessor.Instance;
-                var result = eventProcessor.TriggerEvent("GetServiceDataById", new List<object>
-                {
-                    "UIService",
-                    "UIEntities",
-                    daoId
-                });
-
-                if (ResultCode.IsOk(result) && result.Count >= 2) return result[1] as UIEntity;
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"通过Event获取UIEntity失败: {ex.Message}");
-                return null;
-            }
-        }
+        // [REMOVED] GetEntityByIdViaEvent -- caught by agent_lint [6]:
+        //   referenced non-existent event "GetServiceDataById" (DataManager
+        //   never declared this [Event]) and had zero callers project-wide.
+        //   For external lookup use GetEntityById or UIService.Instance directly.
 
         /// <summary>
         ///     DaoGameObject

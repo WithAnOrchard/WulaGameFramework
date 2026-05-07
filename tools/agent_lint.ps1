@@ -3,12 +3,15 @@
 #
 # Extends check_event_docs.ps1 to cover full Agent.md rules:
 #
-#   [1] Bare-string [Event("...")] / [EventListener("...")]
+#   [1] Bare-string [Event("...")] in definition side -- forbidden
 #   [2] Collect EVT_XXX const definitions (literal + alias)
 #   [3] Each EVT must be referenced in its module's Agent.md
 #   [4] Each module folder containing [Event] must have Agent.md with
 #       a "## Event API" section
 #   [5] Assets/Agent.md global Event index must list every public EVT
+#   [6] Consumer-side bare-strings ([EventListener] / TriggerEventMethod /
+#       TriggerEvent / HasListener) must reference a known EVT value
+#       (per design rule §4.1: 跨模块调用走字符串协议)
 #
 # Usage:
 #   .\tools\agent_lint.ps1                # report only
@@ -34,7 +37,7 @@ function RelPath  ([string]$abs) { $abs.Substring($projectRoot.Length + 1) -repl
 # ----------------------------------------------------------------------
 # [1] Bare-string [Event(...)] / [EventListener(...)]
 # ----------------------------------------------------------------------
-Write-Host '[1/5] Scanning for bare-string [Event] / [EventListener]...'
+Write-Host '[1/6] Scanning for bare-string [Event(...)] (definition side)...'
 $cs = Get-ChildItem $scriptsRoot -Recurse -Filter '*.cs' |
         Where-Object { $_.FullName -notmatch '\\obj\\|\\bin\\' }
 
@@ -55,18 +58,21 @@ function Resolve-ClassAt ([string]$src, [int]$idx) {
     return $cm[$cm.Count - 1].Groups[1].Value
 }
 
+# Definition side: [Event("...")] must use const. [EventListener("...")] is
+# allowed (consumer side, validated in step [6] against the known EVT pool).
 foreach ($f in $cs) {
     $stripped = Remove-CSharpComments (Get-Content $f.FullName -Raw)
-    $bare = [regex]::Matches($stripped, '\[Event(?:Listener)?\("([^"]+)"')
+    # Negative lookahead so 'EventListener' doesn't match 'Event'
+    $bare = [regex]::Matches($stripped, '\[Event(?!Listener)\("([^"]+)"')
     foreach ($m in $bare) {
-        Add-Err "  [ERR] $(RelPath $f.FullName) :: bare string $($m.Value)"
+        Add-Err "  [ERR] $(RelPath $f.FullName) :: bare-string [Event(""$($m.Groups[1].Value)"")] (definition must use const)"
     }
 }
 
 # ----------------------------------------------------------------------
 # [2] Collect EVT_XXX constants (literal + alias)
 # ----------------------------------------------------------------------
-Write-Host '[2/5] Collecting EVT_XXX constants...'
+Write-Host '[2/6] Collecting EVT_XXX constants...'
 $constMap   = @{}    # FQN "Class.EVT_NAME" -> @{ Name; Value; File; Class; IsAlias }
 $valueToFqn = @{}    # value -> ArrayList of FQN (collision detection)
 
@@ -121,7 +127,7 @@ foreach ($val in $valueToFqn.Keys) {
 # ----------------------------------------------------------------------
 # [3] Each EVT referenced in its module's Agent.md
 # ----------------------------------------------------------------------
-Write-Host '[3/5] Checking each EVT is mentioned in module Agent.md...'
+Write-Host '[3/6] Checking each EVT is mentioned in module Agent.md...'
 foreach ($fqn in $constMap.Keys) {
     $info = $constMap[$fqn]
     if ($info.IsAlias) { continue }
@@ -141,7 +147,7 @@ foreach ($fqn in $constMap.Keys) {
 # ----------------------------------------------------------------------
 # [4] Each module containing [Event] must have Agent.md with ## Event API
 # ----------------------------------------------------------------------
-Write-Host '[4/5] Checking module Agent.md has ## Event API section...'
+Write-Host '[4/6] Checking module Agent.md has ## Event API section...'
 $moduleDirs = @{}
 foreach ($f in $cs) {
     $content = Get-Content $f.FullName -Raw
@@ -165,7 +171,7 @@ foreach ($d in $moduleDirs.Keys) {
 # ----------------------------------------------------------------------
 # [5] Assets/Agent.md global Event index coverage
 # ----------------------------------------------------------------------
-Write-Host '[5/5] Checking Assets/Agent.md global Event index...'
+Write-Host '[5/6] Checking Assets/Agent.md global Event index...'
 if (-not (Test-Path $rootAgent)) {
     Add-Err '  [ERR] Assets/Agent.md not found'
 } else {
@@ -177,6 +183,39 @@ if (-not (Test-Path $rootAgent)) {
         $pattern = [regex]::Escape($info.Class) + '(?:<[^>]+>)?\.' + [regex]::Escape($info.Name)
         if ($rootContent -notmatch $pattern) {
             Add-Warn "  [WARN] Assets/Agent.md global index missing: $fqn (= '$($info.Value)')"
+        }
+    }
+}
+
+# ----------------------------------------------------------------------
+# [6] Consumer-side bare-strings cross-ref against known EVT values
+# ----------------------------------------------------------------------
+# Per rule §4.1: cross-module callers/listeners must use bare strings
+# (no `using` of foreign modules just to read EVT_X constants). The string
+# must, however, correspond to a real EVT_XXX value declared somewhere -- this
+# catches typos and stale event names without requiring `using` decoupling.
+Write-Host '[6/6] Cross-ref consumer-side bare-strings against known EVT values...'
+
+# Build value -> FQN-list map already exists ($valueToFqn). Build a fast lookup.
+$knownValues = @{}
+foreach ($val in $valueToFqn.Keys) { $knownValues[$val] = $true }
+
+# Patterns to scan (all consumer-side bare-string usages).
+$consumerPatterns = @(
+    '\[EventListener\("([^"]+)"',
+    'TriggerEventMethod\(\s*"([^"]+)"',
+    'TriggerEvent\(\s*"([^"]+)"',
+    'HasListener\(\s*"([^"]+)"'
+)
+
+foreach ($f in $cs) {
+    $stripped = Remove-CSharpComments (Get-Content $f.FullName -Raw)
+    foreach ($pat in $consumerPatterns) {
+        foreach ($m in [regex]::Matches($stripped, $pat)) {
+            $val = $m.Groups[1].Value
+            if (-not $knownValues.ContainsKey($val)) {
+                Add-Err "  [ERR] $(RelPath $f.FullName) :: bare-string `"$val`" does not match any EVT_XXX const value"
+            }
         }
     }
 }
