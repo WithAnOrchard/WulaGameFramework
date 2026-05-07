@@ -58,7 +58,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         private VoxelHeightmapGenerator _generator;
         private VoxelBlockType[] _palette;
 
-        // chunk 数据缓存：(cx, cz) → VoxelChunk
+        /// <summary>由 <see cref="Bind"/> 注入的数据源（来自 Voxel3DMapService）。null 时退化为 Inspector 直跑。</summary>
+        private VoxelMap _boundMap;
+
+        // chunk 数据缓存：(cx, cz) → VoxelChunk（unbound 模式下 View 自己持有；bound 模式下镜像 _boundMap.LoadedChunks）
         private readonly Dictionary<(int, int), VoxelChunk> _chunkData = new Dictionary<(int, int), VoxelChunk>(256);
         // 已渲染 GO：(cx, cz) → GO
         private readonly Dictionary<(int, int), GameObject> _chunkGO = new Dictionary<(int, int), GameObject>(256);
@@ -66,6 +69,51 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         private int _focusCX, _focusCZ;
         private bool _focusValid;
         private Transform _chunksRoot;
+
+        #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region Service Integration
+
+        /// <summary>**Service 入口** —— 把视图绑到一个由 Voxel3DMapService 管理的 <see cref="VoxelMap"/>。
+        /// 绑定后所有 chunk 生成 / 卸载都走 map（触发 PostFillHook + ChunkGenerated + ChunkUnloading 事件链）。</summary>
+        public void Bind(VoxelMap map)
+        {
+            if (_boundMap == map) return;
+            ClearAllChunks();
+            _boundMap = map;
+            // ChunkSize 以 map 为准（避免 Inspector Config.ChunkSize 与 map.ChunkSize 漂移导致烘 mesh 错位）
+            if (map != null) Config.ChunkSize = map.ChunkSize;
+        }
+
+        /// <summary>解绑并清空所有缓存与 GO（Service 销毁视图时调）。</summary>
+        public void Unbind()
+        {
+            ClearAllChunks();
+            _boundMap = null;
+        }
+
+        /// <summary>有效 ChunkSize（bound 时跟随 map，否则按 Inspector）。</summary>
+        private int EffectiveChunkSize => _boundMap != null ? _boundMap.ChunkSize : Config.ChunkSize;
+
+        /// <summary>统一 chunk 生成入口：bound 时走 map（自动跑 PostFillHook + 装饰器），否则用本地生成器。</summary>
+        private VoxelChunk GenerateOrGet(int cx, int cz)
+        {
+            if (_boundMap != null) return _boundMap.GetOrGenerateChunk(cx, cz);
+            return _generator.Generate(cx, cz);
+        }
+
+        /// <summary>统一卸载入口：bound 时走 map（触发 ChunkUnloading → Service 写盘）；本地缓存与 GO 由调用方处理。</summary>
+        private void UnloadChunkBacking(int cx, int cz)
+        {
+            _boundMap?.UnloadChunk(cx, cz);
+        }
+
+        private int SampleWorldHeight(int wx, int wz)
+        {
+            if (_boundMap != null) return _boundMap.SampleHeight(wx, wz);
+            return _generator.SampleHeight(wx, wz);
+        }
 
         #endregion
 
@@ -96,7 +144,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         private void UpdateFocus()
         {
             var p = FollowTarget != null ? FollowTarget.position : transform.position;
-            var size = Config.ChunkSize;
+            var size = EffectiveChunkSize;
             var cx = Mathf.FloorToInt(p.x / size);
             var cz = Mathf.FloorToInt(p.z / size);
             if (!_focusValid || cx != _focusCX || cz != _focusCZ)
@@ -119,7 +167,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
                 if (Mathf.Abs(dx) + Mathf.Abs(dz) > radius * 2) continue; // 粗略圆形
                 var key = (_focusCX + dx, _focusCZ + dz);
                 if (_chunkData.ContainsKey(key)) continue;
-                _chunkData[key] = _generator.Generate(key.Item1, key.Item2);
+                _chunkData[key] = GenerateOrGet(key.Item1, key.Item2);
                 budget--;
             }
         }
@@ -204,6 +252,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
                 }
                 _chunkGO.Remove(k);
                 _chunkData.Remove(k);
+                UnloadChunkBacking(k.Item1, k.Item2);
             }
         }
 
@@ -219,7 +268,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         public int SampleHeight(int wx, int wz)
         {
             EnsureInitialized();
-            var rawH = _generator.SampleHeight(wx, wz);
+            var rawH = SampleWorldHeight(wx, wz);
             return rawH <= Config.SeaLevel ? Config.SeaLevel : rawH;
         }
 
@@ -240,7 +289,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
                     if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dz)) != d) continue; // 仅走当前环
                     var wx = originX + dx;
                     var wz = originZ + dz;
-                    var rawH = _generator.SampleHeight(wx, wz);
+                    var rawH = SampleWorldHeight(wx, wz);
                     if (rawH > sea) return new Vector3Int(wx, rawH, wz);
                 }
             }
@@ -255,7 +304,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         public void Warmup(Vector3 worldPos, int radius = 2)
         {
             EnsureInitialized();
-            var size = Config.ChunkSize;
+            var size = EffectiveChunkSize;
             var cx = Mathf.FloorToInt(worldPos.x / size);
             var cz = Mathf.FloorToInt(worldPos.z / size);
 
@@ -265,7 +314,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
             {
                 var key = (cx + dx, cz + dz);
                 if (!_chunkData.ContainsKey(key))
-                    _chunkData[key] = _generator.Generate(key.Item1, key.Item2);
+                    _chunkData[key] = GenerateOrGet(key.Item1, key.Item2);
             }
 
             // 2) Mesh 烘焙
@@ -285,8 +334,15 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
             _focusCX = cx; _focusCZ = cz; _focusValid = true;
         }
 
-        /// <summary>清空所有缓存（换 Config 时调）。</summary>
+        /// <summary>清空所有缓存（换 Config 时调）。重建本地 generator，不影响绑定的 VoxelMap。</summary>
         public void Reset()
+        {
+            ClearAllChunks();
+            _generator = new VoxelHeightmapGenerator(Config);
+        }
+
+        /// <summary>仅清空 GO 与本地数据缓存；不重建 generator，也不解绑 _boundMap。</summary>
+        private void ClearAllChunks()
         {
             foreach (var kv in _chunkGO)
             {
@@ -298,7 +354,6 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
             _chunkGO.Clear();
             _chunkData.Clear();
             _focusValid = false;
-            _generator = new VoxelHeightmapGenerator(Config);
         }
 
         #endregion
