@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Singleton;
@@ -71,6 +72,9 @@ namespace EssSystem.Core.Event
         /// </summary>
         private Dictionary<string, List<EventDelegate>> _eventListeners;
 
+        // C-E6: 共享空参数 List，避免每次 invoke 都 new。只读、不允许外部修改。
+        private static readonly List<object> _emptyData = new();
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -96,10 +100,13 @@ namespace EssSystem.Core.Event
         /// <param name="listener">监听器方法</param>
         public void AddListener(string eventName, EventDelegate listener)
         {
-            if (!_eventListeners.ContainsKey(eventName))
-                _eventListeners[eventName] = new List<EventDelegate>();
-
-            _eventListeners[eventName].Add(listener);
+            // C-E3: TryGetValue 一次查找代替 ContainsKey + indexer 双查找。
+            if (!_eventListeners.TryGetValue(eventName, out var list))
+            {
+                list = new List<EventDelegate>();
+                _eventListeners[eventName] = list;
+            }
+            list.Add(listener);
             Log($"为事件 {eventName} 添加了监听器", Color.blue);
         }
 
@@ -121,11 +128,12 @@ namespace EssSystem.Core.Event
         /// <param name="listener">监听器方法</param>
         public void RemoveListener(string eventName, EventDelegate listener)
         {
-            if (_eventListeners.ContainsKey(eventName))
-            {
-                _eventListeners[eventName].Remove(listener);
-                Log($"为事件 {eventName} 移除了监听器", Color.blue);
-            }
+            // C-E3: TryGetValue 取代 ContainsKey + indexer。
+            if (!_eventListeners.TryGetValue(eventName, out var list)) return;
+            list.Remove(listener);
+            // A-E12: 列表空后从字典里拿掉，避免后续 TriggerEvent 走空拷贝。
+            if (list.Count == 0) _eventListeners.Remove(eventName);
+            Log($"为事件 {eventName} 移除了监听器", Color.blue);
         }
 
         /// <summary>
@@ -139,45 +147,55 @@ namespace EssSystem.Core.Event
             if (string.IsNullOrEmpty(eventName))
             {
                 LogError("事件名称不能为空或null");
-                return new List<object>();
+                return _emptyData;   // 重用只读空表，免一次 alloc
             }
 
-            if (!_eventListeners.ContainsKey(eventName))
+            // C-E3 + D-E4: TryGetValue 一次查找；没监听器不再 LogWarning——
+            // 广播 fire-and-forget 没人订阅是合法状态。调用方可用 HasListener 显式检查。
+            if (!_eventListeners.TryGetValue(eventName, out var registeredListeners) || registeredListeners.Count == 0)
             {
-                LogWarning($"事件 {eventName} 没有监听器");
-                return new List<object>();
+                Log($"事件 {eventName} 没有监听器（静默跳过）", Color.gray);
+                return _emptyData;
             }
 
             Log($"触发事件: {eventName}", Color.magenta);
 
-            var listeners = _eventListeners[eventName].ToList();
-            var results = new List<object>();
-            List<object> tempData = data;
+            // A-E1: 从 ListPool 租用拷贝 代替每次 ToList。
+            var listenersSnapshot = ListPool<EventDelegate>.Rent();
+            listenersSnapshot.AddRange(registeredListeners);
 
-            // 如果 data 为 null，从对象池租用临时 List
-            if (tempData == null)
+            var tempData = data ?? EventDataPool.Rent();
+            // A-E2: results 延迟创建——只有某个 listener 返回非空才 new。
+            List<object> results = null;
+
+            try
             {
-                tempData = EventDataPool.Rent();
+                for (int i = 0; i < listenersSnapshot.Count; i++)
+                {
+                    var listener = listenersSnapshot[i];
+                    if (listener == null) continue;
+                    try
+                    {
+                        var result = listener.Invoke(eventName, tempData);
+                        if (result != null && result.Count > 0)
+                        {
+                            results ??= new List<object>(result.Count);
+                            results.AddRange(result);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"事件监听器中发生错误: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                ListPool<EventDelegate>.Return(listenersSnapshot);
+                if (data == null) EventDataPool.Return(tempData);
             }
 
-            foreach (var listener in listeners)
-                try
-                {
-                    var result = listener?.Invoke(eventName, tempData);
-                    if (result != null) results.AddRange(result);
-                }
-                catch (Exception ex)
-                {
-                    LogError($"事件监听器中发生错误: {ex.Message}");
-                }
-
-            // 返回租用的临时 List
-            if (data == null && tempData != null)
-            {
-                EventDataPool.Return(tempData);
-            }
-
-            return results;
+            return results ?? _emptyData;
         }
 
         #endregion
@@ -255,7 +273,8 @@ namespace EssSystem.Core.Event
                         MethodInfo = method,
                         Attribute = attr,
                         Target = method.IsStatic ? null : GetOrCreateInstance(type),
-                        Delegate = CreateDelegate(method)
+                        Delegate = CreateDelegate(method),
+                        Parameters = method.GetParameters()   // C-E5
                     };
 
                     Log($"发现Event方法: {type.Name}.{method.Name} -> {eventName}", Color.yellow);
@@ -286,7 +305,8 @@ namespace EssSystem.Core.Event
                         MethodInfo = method,
                         Attribute = attr,
                         Target = method.IsStatic ? null : GetOrCreateInstance(type),
-                        Delegate = CreateDelegate(method)
+                        Delegate = CreateDelegate(method),
+                        Parameters = method.GetParameters()   // C-E5
                     });
 
                     Log($"发现EventListener方法: {type.Name}.{method.Name} -> {attr.EventName}", Color.yellow);
@@ -403,37 +423,38 @@ namespace EssSystem.Core.Event
         {
             try
             {
-                var parameters = listenerInfo.MethodInfo.GetParameters();
-                var args = new object[parameters.Length];
-
-                for (var i = 0; i < parameters.Length; i++)
-                    if (parameters[i].ParameterType == typeof(string))
-                        args[i] = eventName;
-                    else if (parameters[i].ParameterType == typeof(List<object>))
-                        args[i] = data ?? new List<object>();
-                    else
-                        args[i] = null;
-
                 listenerInfo.Target = ResolveTarget(listenerInfo.MethodInfo, listenerInfo.Target);
 
                 // 实例方法但找不到 Target —— 通常意味着该 Manager / Service 类型存在于程序集中
-                // （所以扫描时注册了 listener），但当前场景没有挂相应组件。
-                // 静默跳过比抛 "Non-static method requires a target" 友好，且不会掩盖真正的事件 bug。
+                // （所以扫描时注册了 listener），但当前场景没有挂相应组件。静默跳过。
                 if (listenerInfo.Target == null && !listenerInfo.MethodInfo.IsStatic)
-                    return new List<object>();
+                    return null;   // C-E6: 返回 null 让 TriggerEvent 跳过拼接
+
+                // C-E5 + C-E6: 参数数组仅在 slow 路径才 new；data 为 null 时复用共享空表。
+                var dataNonNull = data ?? _emptyData;
+                var parameters = listenerInfo.Parameters;
+                var args = new object[parameters.Length];
+                for (var i = 0; i < parameters.Length; i++)
+                {
+                    var pt = parameters[i].ParameterType;
+                    if (pt == typeof(string)) args[i] = eventName;
+                    else if (pt == typeof(List<object>)) args[i] = dataNonNull;
+                    else args[i] = null;
+                }
 
                 var result = listenerInfo.Delegate != null
                     ? listenerInfo.Delegate(listenerInfo.Target, args)
                     : listenerInfo.MethodInfo.Invoke(listenerInfo.Target, args);
 
+                // 保持原语义：List<object> 直接返；其它包一层；null 返 null 跳过拼接。
+                if (result == null) return null;
                 if (result is List<object> resultList) return resultList;
-
                 return new List<object> { result };
             }
             catch (Exception ex)
             {
                 LogError($"调用EventListener方法 {listenerInfo.MethodInfo.Name} 时出错: {ex.Message}");
-                return new List<object>();
+                return null;
             }
         }
 
@@ -442,54 +463,79 @@ namespace EssSystem.Core.Event
         /// </summary>
         public List<object> TriggerEventMethod(string eventName, List<object> data = null)
         {
-            if (_eventMethods.ContainsKey(eventName))
+            // C-E3: TryGetValue 一次查找。
+            if (!_eventMethods.TryGetValue(eventName, out var eventInfo))
             {
-                var eventInfo = _eventMethods[eventName];
-
-                try
-                {
-                    var parameters = eventInfo.MethodInfo.GetParameters();
-                    var args = new object[parameters.Length];
-
-                    for (var i = 0; i < parameters.Length; i++)
-                        if (parameters[i].ParameterType == typeof(List<object>))
-                            args[i] = data ?? new List<object>();
-                        else
-                            args[i] = null;
-
-                    eventInfo.Target = ResolveTarget(eventInfo.MethodInfo, eventInfo.Target);
-
-                    var result = eventInfo.Delegate != null
-                        ? eventInfo.Delegate(eventInfo.Target, args)
-                        : eventInfo.MethodInfo.Invoke(eventInfo.Target, args);
-
-                    if (result is List<object> resultList) return resultList;
-
-                    return new List<object> { result };
-                }
-                catch (Exception ex)
-                {
-                    // MethodInfo.Invoke 会把真实异常包成 TargetInvocationException，只打 ex.Message 会丢掉根因。
-                    // 这里优先展开 InnerException，并附完整 ToString()（含堆栈）。
-                    var root = ex is System.Reflection.TargetInvocationException tie && tie.InnerException != null
-                        ? tie.InnerException : ex;
-                    LogError($"调用Event方法 {eventInfo.MethodInfo.Name} 时出错: {root.GetType().Name}: {root.Message}\n{root}");
-                    return new List<object>();
-                }
+                LogWarning($"未找到Event方法: {eventName}");
+                return _emptyData;
             }
 
-            LogWarning($"未找到Event方法: {eventName}");
-            return new List<object>();
+            try
+            {
+                eventInfo.Target = ResolveTarget(eventInfo.MethodInfo, eventInfo.Target);
+
+                // C-E5 + C-E6: 参数数组仅在 slow 路径才 new；data 为 null 时复用共享空表。
+                var dataNonNull = data ?? _emptyData;
+                var parameters = eventInfo.Parameters;
+                var args = new object[parameters.Length];
+                for (var i = 0; i < parameters.Length; i++)
+                {
+                    args[i] = parameters[i].ParameterType == typeof(List<object>) ? dataNonNull : null;
+                }
+
+                var result = eventInfo.Delegate != null
+                    ? eventInfo.Delegate(eventInfo.Target, args)
+                    : eventInfo.MethodInfo.Invoke(eventInfo.Target, args);
+
+                if (result == null) return _emptyData;
+                if (result is List<object> resultList) return resultList;
+                return new List<object> { result };
+            }
+            catch (Exception ex)
+            {
+                // MethodInfo.Invoke 会把真实异常包成 TargetInvocationException，只打 ex.Message 会丢掉根因。
+                // 这里优先展开 InnerException，并附完整 ToString()（含堆栈）。
+                var root = ex is System.Reflection.TargetInvocationException tie && tie.InnerException != null
+                    ? tie.InnerException : ex;
+                LogError($"调用Event方法 {eventInfo.MethodInfo.Name} 时出错: {root.GetType().Name}: {root.Message}\n{root}");
+                return _emptyData;
+            }
         }
 
         /// <summary>
-        ///     创建方法委托（性能优化）
+        ///     创建方法委托 — B-E8 优化：优先走 Expression.Compile 生成强类型 IL（比 MethodInfo.Invoke 快约 5-10x），
+        ///     失败时冷静兑底反射。IL2CPP / AOT 环境 Expression.Compile 会抛，会被 try/catch 捕获后走兑底。
         /// </summary>
-        private Func<object, object[], object> CreateDelegate(MethodInfo method)
+        private static Func<object, object[], object> CreateDelegate(MethodInfo method)
         {
-            // 由于方法签名不匹配（Event 方法通常是 List<object> 参数，而委托是 object[]），
-            // 直接使用 Delegate.CreateDelegate 会失败。这里保留反射调用作为降级方案。
-            return (target, args) => method.Invoke(target, args);
+            try
+            {
+                var targetParam = Expression.Parameter(typeof(object), "target");
+                var argsParam = Expression.Parameter(typeof(object[]), "args");
+                var ps = method.GetParameters();
+                var callArgs = new Expression[ps.Length];
+                for (int i = 0; i < ps.Length; i++)
+                {
+                    var idx = Expression.ArrayIndex(argsParam, Expression.Constant(i));
+                    callArgs[i] = Expression.Convert(idx, ps[i].ParameterType);
+                }
+                Expression call = method.IsStatic
+                    ? Expression.Call(method, callArgs)
+                    : Expression.Call(Expression.Convert(targetParam, method.DeclaringType), method, callArgs);
+
+                Expression body = method.ReturnType == typeof(void)
+                    ? Expression.Block(call, Expression.Constant(null, typeof(object)))
+                    : (method.ReturnType.IsValueType
+                        ? (Expression)Expression.Convert(call, typeof(object))
+                        : call);
+
+                return Expression.Lambda<Func<object, object[], object>>(body, targetParam, argsParam).Compile();
+            }
+            catch (Exception)
+            {
+                // AOT / IL2CPP 下 Expression.Compile 不可用，兑底反射。
+                return (target, args) => method.Invoke(target, args);
+            }
         }
 
         /// <summary>
@@ -517,6 +563,7 @@ namespace EssSystem.Core.Event
             public EventAttribute Attribute { get; set; }
             public object Target { get; set; }
             public Func<object, object[], object> Delegate { get; set; }
+            public ParameterInfo[] Parameters { get; set; }   // C-E5: 扫描期缓存参数信息，免每次 invoke 都 GetParameters()。
         }
 
         /// <summary>
@@ -528,6 +575,7 @@ namespace EssSystem.Core.Event
             public EventListenerAttribute Attribute { get; set; }
             public object Target { get; set; }
             public Func<object, object[], object> Delegate { get; set; }
+            public ParameterInfo[] Parameters { get; set; }   // C-E5: 扫描期缓存参数信息。
         }
     }
 }
