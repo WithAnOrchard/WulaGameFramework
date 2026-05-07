@@ -1,15 +1,23 @@
 using System;
 using UnityEngine;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator;
 
 namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
 {
     /// <summary>
     /// 3D 体素地图配置（heightmap-only，无地下、无破坏）。
+    /// <para>派生类可 override <see cref="CreateGenerator"/> 切到自家生成器（如 BiomeVoxelConfig）。</para>
     /// </summary>
     [Serializable]
     public class VoxelMapConfig
     {
         [Header("Identity")]
+        [Tooltip("配置唯一 ID（与模板 DefaultConfigId 对齐；持久化按此 key 去重）。")]
+        public string ConfigId = "default_voxel_3d";
+
+        [Tooltip("Inspector / 日志显示用的友好名字。")]
+        public string DisplayName = "Default Voxel 3D";
+
         [Tooltip("世界种子；改这一个值就生新世界。")]
         public int Seed = 20240501;
 
@@ -45,5 +53,25 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
 
         [Tooltip("雪线高度（高于此值用 Snow 顶面）。")]
         [Range(20, 200)] public int SnowLine = 60;
+
+        // ──────────────────────────────────────────────────────────────
+        // 构造与工厂
+        // ──────────────────────────────────────────────────────────────
+
+        /// <summary>无参构造 —— 保留 Inspector / Unity 反序列化默认值。</summary>
+        public VoxelMapConfig() { }
+
+        /// <summary>便利构造 —— 业务侧 / 模板按 (ConfigId, DisplayName) 直建。</summary>
+        public VoxelMapConfig(string configId, string displayName)
+        {
+            ConfigId    = configId;
+            DisplayName = displayName;
+        }
+
+        /// <summary>
+        /// **生成器工厂** —— 派生 Config 时 override 切自家生成器（如 BiomeVoxelGenerator）。
+        /// 默认返回 fBm Perlin heightmap 生成器。
+        /// </summary>
+        public virtual IVoxelMapGenerator CreateGenerator() => new VoxelHeightmapGenerator(this);
     }
 }

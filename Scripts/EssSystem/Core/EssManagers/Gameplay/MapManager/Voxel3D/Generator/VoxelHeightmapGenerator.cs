@@ -7,7 +7,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator
     /// 把 (chunkX, chunkZ) → <see cref="VoxelChunk"/>：fBm Perlin 出高度场，再按高度→方块映射。
     /// 纯无状态 + 纯函数；同 (Seed, ChunkCoord) 永远同结果。
     /// </summary>
-    public class VoxelHeightmapGenerator
+    public class VoxelHeightmapGenerator : IVoxelMapGenerator
     {
         private readonly VoxelMapConfig _cfg;
         // Octave 偏移，避免不同 octave 用同坐标采样 Perlin 出现镜像伪影
