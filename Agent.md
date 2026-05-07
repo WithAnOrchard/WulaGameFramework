@@ -303,7 +303,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ResourceManager.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/ResourceManager | 取 FBX/Model 内全部 AnimationClip（别名 → `ResourceService.EVT_GET_MODEL_CLIPS`） |
 | `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
 | `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/ResourceManager | 资源全部预加载/索引完成后**广播** |
-| `CharacterService.EVT_FRAME_EVENT` | `CharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
+| `CharacterService.EVT_FRAME_EVENT` | `OnCharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
 | `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
 | `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |
 | `CharacterManager.EVT_PLAY_ACTION` | `PlayCharacterAction` | Core/CharacterManager | 播放动作；data: `[instanceId, actionName, partId?]` |
@@ -311,7 +311,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `CharacterManager.EVT_SET_CHARACTER_SCALE` | `SetCharacterScale` | Core/CharacterManager | 设置根节点 localScale；data: `[instanceId, Vector3]` |
 | `CharacterManager.EVT_SET_CHARACTER_POSITION` | `SetCharacterPosition` | Core/CharacterManager | 设置世界坐标；data: `[instanceId, Vector3]` |
 | `CharacterManager.EVT_MOVE_CHARACTER` | `MoveCharacter` | Core/CharacterManager | 在当前位置上平移；data: `[instanceId, Vector3 delta]` |
-| `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Entity)` |
+| `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Transform CharacterRoot)`（E2 后协议解耦不返 Entity） |
 | `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
 | `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
 | `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |

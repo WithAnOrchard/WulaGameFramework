@@ -38,7 +38,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         /// <para>参数：<c>[GameObject owner, string eventName, string actionName, int frameIndex]</c></para>
         /// <para>用 <c>[EventListener(CharacterService.EVT_FRAME_EVENT)]</c> 订阅。</para>
         /// </summary>
-        public const string EVT_FRAME_EVENT = "CharacterFrameEvent";
+        public const string EVT_FRAME_EVENT = "OnCharacterFrameEvent";   // §4: 广播事件 On 前缀
 
         #endregion
 

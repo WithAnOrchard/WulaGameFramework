@@ -115,7 +115,7 @@ CharacterManager/
 | `EVT_MOVE_CHARACTER` | `"MoveCharacter"` | `[instanceId, Vector3 delta]` | `Ok` / `Fail` |
 
 ### `EVT_FRAME_EVENT` — 角色动画帧事件（广播）
-- **常量**：`CharacterService.EVT_FRAME_EVENT` = `"CharacterFrameEvent"`
+- **常量**：`CharacterService.EVT_FRAME_EVENT` = `"OnCharacterFrameEvent"`
 - **触发源**：`CharacterPartView` 播到 `CharacterActionConfig.FrameEvents` 登记的帧时自动发出（先 `HasListener` 判空避免无用广播）。
 - **参数**：`[GameObject owner, string eventName, string actionName, int frameIndex]`
 - **订阅**：`[EventListener(CharacterService.EVT_FRAME_EVENT)]`
@@ -199,7 +199,7 @@ var attack = new CharacterActionConfig("Attack")
     .WithFrameEvent(3, "HitSound");  // 第 3 帧触发 "HitSound"
 ```
 
-事件名：`CharacterService.EVT_FRAME_EVENT`（字符串值 `"CharacterFrameEvent"`），参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`。业务层按需监听：
+事件名：`CharacterService.EVT_FRAME_EVENT`（字符串值 `"OnCharacterFrameEvent"`），参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`。业务层按需监听：
 
 ```csharp
 [EventListener(CharacterService.EVT_FRAME_EVENT)]

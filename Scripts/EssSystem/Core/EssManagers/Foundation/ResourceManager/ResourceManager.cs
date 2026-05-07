@@ -18,10 +18,10 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         public const string EVT_GET_TEXTURE               = "GetTexture";
         public const string EVT_GET_RULE_TILE             = "GetRuleTile";
         public const string EVT_GET_ANIMATION_CLIP        = "GetAnimationClip";
-        public const string EVT_GET_MODEL_CLIPS           = ResourceService.EVT_GET_MODEL_CLIPS;
-        public const string EVT_GET_ALL_MODEL_PATHS       = ResourceService.EVT_GET_ALL_MODEL_PATHS;
-        /// <summary>资源全部预加载/索引完成后一次性广播。订阅：<c>[EventListener(ResourceManager.EVT_RESOURCES_LOADED)]</c></summary>
-        public const string EVT_RESOURCES_LOADED          = ResourceService.EVT_RESOURCES_LOADED;
+        // §4.1 下跨模块调用走 bare-string，原 3 个 façade alias 已删除：
+        //   EVT_GET_MODEL_CLIPS / EVT_GET_ALL_MODEL_PATHS / EVT_RESOURCES_LOADED
+        // 调用侧直接传字符串（"GetModelClips" / "GetAllModelPaths" / "OnResourcesLoaded"）
+        // 以 ResourceService.EVT_X 为定义方唯一权威。
         public const string EVT_GET_EXTERNAL_SPRITE       = "GetExternalSprite";
         public const string EVT_LOAD_PREFAB_ASYNC         = "LoadPrefabAsync";
         public const string EVT_LOAD_SPRITE_ASYNC         = "LoadSpriteAsync";

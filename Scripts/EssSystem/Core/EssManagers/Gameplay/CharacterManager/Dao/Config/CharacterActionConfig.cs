@@ -25,7 +25,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
 
         /// <summary>
         /// 帧事件 —— 当动作播到指定 <c>frameIndex</c> 时，通过 <c>EventProcessor</c> 广播
-        /// <see cref="CharacterService.EVT_FRAME_EVENT"/>（<c>"CharacterFrameEvent"</c>），
+        /// <see cref="CharacterService.EVT_FRAME_EVENT"/>（<c>"OnCharacterFrameEvent"</c>），
         /// 参数 <c>[GameObject owner, string eventName, string actionName, int frameIndex]</c>。
         /// 业务层（战斗伤害判定 / 音效 / 特效）监听该事件按 eventName 分发。
         /// <para><b>仅 2D Sprite 模式生效</b>；Prefab3D 请使用 <see cref="NormalizedTimeEvents"/>。</para>

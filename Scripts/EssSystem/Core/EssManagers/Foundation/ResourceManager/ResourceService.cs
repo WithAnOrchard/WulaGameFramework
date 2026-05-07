@@ -115,9 +115,8 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         // 外部图片加载广播事件（广播 / 订阅用）
         public const string EVT_EXTERNAL_IMAGE_LOADED      = "OnExternalImageLoaded";
         public const string EVT_EXTERNAL_IMAGE_LOAD_FAILED = "OnExternalImageLoadFailed";
-        // 以下两个与 ResourceManager façade 同名（同一个字符串 key）。
-        public const string EVT_UNLOAD_RESOURCE           = ResourceManager.EVT_UNLOAD_RESOURCE;
-        public const string EVT_UNLOAD_ALL_RESOURCES      = ResourceManager.EVT_UNLOAD_ALL_RESOURCES;
+        // §4.1: 原 Service alias EVT_UNLOAD_RESOURCE / EVT_UNLOAD_ALL_RESOURCES 已删除。
+        // [Event] 注解直接引用同模块 ResourceManager.EVT_X 常量（同模块 const ref OK）。
 
         private Dictionary<ResourceKey, UnityEngine.Object> _loadedResources = new Dictionary<ResourceKey, UnityEngine.Object>();
         private bool _dataLoaded = false;
@@ -827,7 +826,8 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         /// <summary>
         /// 卸载资源
         /// </summary>
-        [Event(EVT_UNLOAD_RESOURCE)]
+        // §4.1: 同模块引用 ResourceManager 常量以避免 alias 重复定义。
+        [Event(ResourceManager.EVT_UNLOAD_RESOURCE)]
         public List<object> Unload(List<object> data)
         {
             string path = data[0] as string;
@@ -861,7 +861,8 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
         /// <summary>
         /// 卸载所有资源
         /// </summary>
-        [Event(EVT_UNLOAD_ALL_RESOURCES)]
+        // §4.1: 同模块引用 ResourceManager 常量。
+        [Event(ResourceManager.EVT_UNLOAD_ALL_RESOURCES)]
         public List<object> UnloadAll(List<object> data)
         {
             foreach (var resource in _loadedResources.Values)

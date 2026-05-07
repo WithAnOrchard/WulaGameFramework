@@ -36,12 +36,12 @@ EventProcessor.Instance.TriggerEventMethod(
     ResourceManager.EVT_ADD_PRELOAD_CONFIG,
     new List<object> { "player", "Prefabs/Player", ResourceType.Prefab, false });
 
-// 卸载
+// 卸载 · §4.1 跨模块 bare-string
 EventProcessor.Instance.TriggerEventMethod(
-    ResourceManager.EVT_UNLOAD_RESOURCE,
+    "UnloadResource",
     new List<object> { "Prefabs/Player", false });
 EventProcessor.Instance.TriggerEventMethod(
-    ResourceManager.EVT_UNLOAD_ALL_RESOURCES, new List<object>());
+    "UnloadAllResources", new List<object>());
 ```
 
 ## Event API（公开 façade — 优先用这层）
@@ -63,23 +63,23 @@ EventProcessor.Instance.TriggerEventMethod(
 - **副作用**: 启动时已把 `Resources/` 下所有 `AnimationClip`（包括 FBX 子资产）按 `clip.name` 入缓存。Editor 路径还会用 `AssetDatabase.LoadAllAssetsAtPath` 兜底解析 sub-assets。
 
 ### `EVT_GET_MODEL_CLIPS` — 取出 FBX 内含的所有 AnimationClip 列表
-- **常量**: `ResourceManager.EVT_GET_MODEL_CLIPS` = `"GetModelClips"`
+- **常量**: `ResourceService.EVT_GET_MODEL_CLIPS` = `"GetModelClips"`（§4.1 跨模块调用走 bare-string `"GetModelClips"`）
 - **参数**: `[string modelPath]`（Resources 相对路径或裸文件名）
 - **返回**: `ResultCode.Ok(List<AnimationClip>)`
 - **实现**: 优先查 `_modelClipNames`（O(1) — Editor 启动 + Build manifest 双路填充）→ 反取全局 AnimationClip 缓存。Editor 兜底走 `AssetDatabase.LoadAllAssetsAtPath`。
 - **Build 兼容**: 依赖 `Resources/CharacterFBXManifest.json`（由 `Tools/Character/Rebuild FBX Manifest` 或 Build 预处理 `FBXManifestBuilder` 生成）。
 
 ### `EVT_GET_ALL_MODEL_PATHS` — 枚举所有已索引的 FBX 路径
-- **常量**: `ResourceManager.EVT_GET_ALL_MODEL_PATHS` = `"GetAllModelPaths"`
+- **常量**: `ResourceService.EVT_GET_ALL_MODEL_PATHS` = `"GetAllModelPaths"`（§4.1 跨模块调用走 bare-string `"GetAllModelPaths"`）
 - **参数**: `[]`
 - **返回**: `ResultCode.Ok(List<string>)` — Resources 相对路径，不含扩展名（如 `"Models/Characters3D/zombie"`）。
 - **用途**: `CharacterConfigFactory.RegisterAllFBXInResources` 的批量扫描入口，**Editor / Build 都可用**。
 
 ### `EVT_RESOURCES_LOADED` — 广播：资源全部预加载/索引完成
-- **常量**: `ResourceManager.EVT_RESOURCES_LOADED` = `"OnResourcesLoaded"`
+- **常量**: `ResourceService.EVT_RESOURCES_LOADED` = `"OnResourcesLoaded"`
 - **参数**: `[]`
 - **触发**: `ResourceService.LoadAndPreloadResources` 末尾一次性广播（`TriggerEvent` 走监听器分发）。
-- **订阅**: `[EventListener(ResourceManager.EVT_RESOURCES_LOADED)]`
+- **订阅**: `[EventListener("OnResourcesLoaded")]`（§4.1 跨模块 bare-string）
 - **典型用途**: `CharacterManager` 监听后再扫 FBX 注册（确保 `_modelClipNames` 已就绪）。
 
 ### `EVT_GET_EXTERNAL_SPRITE` — 同步获取外部图片缓存
@@ -106,13 +106,13 @@ EventProcessor.Instance.TriggerEventMethod(
 - **副作用**: 写入 `ResourceService/{type}.json`，**下次启动**自动预加载
 
 ### `EVT_UNLOAD_RESOURCE` — 卸载单个
-- **常量**: `ResourceManager.EVT_UNLOAD_RESOURCE` = `"UnloadResource"`
+- **常量**: `ResourceManager.EVT_UNLOAD_RESOURCE` = `"UnloadResource"`（§4.1 跨模块调用走 bare-string `"UnloadResource"`）
 - **参数**: `[string path, bool isExternal=false, string typeStr=null]`
   - 第 3 参数 `typeStr` 可选，若传 `"Sprite"` 等则只卸载匹配 TypeTag 的缓存条目；不传则把相同 FileName + IsExternal 的所有 TypeTag 一并清除
 - **返回**: `[ResultCode.OK]` 或 `["资源未加载"]`
 
 ### `EVT_UNLOAD_ALL_RESOURCES` — 全量卸载
-- **常量**: `ResourceManager.EVT_UNLOAD_ALL_RESOURCES` = `"UnloadAllResources"`
+- **常量**: `ResourceManager.EVT_UNLOAD_ALL_RESOURCES` = `"UnloadAllResources"`（§4.1 跨模块调用走 bare-string `"UnloadAllResources"`）
 - **参数**: `[]`
 - **返回**: `[ResultCode.OK]`
 
