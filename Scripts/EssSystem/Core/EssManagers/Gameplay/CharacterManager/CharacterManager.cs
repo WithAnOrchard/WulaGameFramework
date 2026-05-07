@@ -4,6 +4,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;   // C3: 简化 [EventListener] 全限定名
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
 {
@@ -72,7 +73,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         /// <summary>
         /// 监听 ResourceManager 的资源加载完成广播 —— 此时 <c>_modelClipNames</c> 已就绪，扫描走 O(1) 缓存。
         /// </summary>
-        [EventListener(EssSystem.Core.EssManagers.Foundation.ResourceManager.ResourceManager.EVT_RESOURCES_LOADED)]
+        // C3: using 后不再全限定名
+        [EventListener(ResourceManager.EVT_RESOURCES_LOADED)]
         public List<object> OnResourcesLoaded(List<object> data)
         {
             if (_autoRegisterAllFBX)
@@ -98,8 +100,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
 
         #region Event Methods
 
+        // C1: 遵项目规范 “[Event] 动词开头”，去除 OnEvent 前缀。Service 上同名 typed helper 重载 OK。字符串不变。
         [Event(EVT_CREATE_CHARACTER)]
-        public List<object> OnEventCreateCharacter(List<object> data)
+        public List<object> CreateCharacter(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var configId,   out var fail0)) return fail0;
@@ -114,7 +117,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_DESTROY_CHARACTER)]
-        public List<object> OnEventDestroyCharacter(List<object> data)
+        public List<object> DestroyCharacter(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
@@ -123,7 +126,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_PLAY_ACTION)]
-        public List<object> OnEventPlayAction(List<object> data)
+        public List<object> PlayAction(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
@@ -135,7 +138,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_STOP_ACTION)]
-        public List<object> OnEventStopAction(List<object> data)
+        public List<object> StopAction(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
@@ -145,7 +148,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_SET_CHARACTER_SCALE)]
-        public List<object> OnEventSetScale(List<object> data)
+        public List<object> SetScale(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
@@ -155,7 +158,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_SET_CHARACTER_POSITION)]
-        public List<object> OnEventSetPosition(List<object> data)
+        public List<object> SetPosition(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
@@ -165,7 +168,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         }
 
         [Event(EVT_MOVE_CHARACTER)]
-        public List<object> OnEventMove(List<object> data)
+        public List<object> Move(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
             if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;

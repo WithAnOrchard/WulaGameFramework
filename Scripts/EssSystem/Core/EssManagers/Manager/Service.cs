@@ -110,10 +110,12 @@ namespace EssSystem.Core.EssManagers.Manager
             _pendingDirtyCategories.Clear();
         }
 
-        /// <summary>SetData/RemoveData 后调。根据是否处于 batch 作用域路由到立即写盘或延后。</summary>
+        /// <summary>SetData/RemoveData 后调。根据是否处于 batch 作用域路由到立即写盘或延后。
+        /// <para>C2: transient category 跳过写盘路径 仅标 inspector dirty —— 让子类可以放心用 SetData 写运行时只读数据（如 GameObject 引用）不会意外被序列化。</para></summary>
         private void OnCategoryDataChanged(string category)
         {
             _inspectorDirty = true;
+            if (IsTransientCategory(category)) return;   // C2
             if (_batchDepth > 0)
                 _pendingDirtyCategories.Add(category);
             else
@@ -250,9 +252,11 @@ namespace EssSystem.Core.EssManagers.Manager
             _inspectorDirty = true;   // M4: 加载文件后下次 Inspector 重建
         }
 
-        /// <summary>保存指定分类到磁盘；分类不存在则删除对应文件。</summary>
+        /// <summary>保存指定分类到磁盘；分类不存在则删除对应文件。
+        /// <para>C2: transient category 静默跳过写盘（防御子类直接调用该方法）。</para></summary>
         protected virtual void SaveCategoryData(string category)
         {
+            if (IsTransientCategory(category)) return;   // C2
             EnsureDataDirectory();
             var filePath = Path.Combine(DataRootPath, $"{category}.json");
 

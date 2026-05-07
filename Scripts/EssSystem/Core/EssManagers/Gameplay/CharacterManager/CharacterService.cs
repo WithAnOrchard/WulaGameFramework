@@ -131,10 +131,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
             foreach (var kv in view.Parts)
                 character.Parts[kv.Key] = kv.Value;
 
-            // 仅内存（不调 SetData，避免触发存盘）
-            if (!_dataStorage.ContainsKey(CAT_INSTANCES))
-                _dataStorage[CAT_INSTANCES] = new Dictionary<string, object>();
-            _dataStorage[CAT_INSTANCES][instanceId] = character;
+            // C2: CAT_INSTANCES 是 transient category，IsTransientCategory 返 true，
+            //     SetData 会进 _dataStorage 但 OnCategoryDataChanged 全程跳过写盘，安全。
+            SetData(CAT_INSTANCES, instanceId, character);
 
             Log($"创建角色实例: {instanceId} (config={configId})", Color.green);
             return character;
@@ -149,8 +148,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
             if (c.View != null && c.View.gameObject != null)
                 Object.Destroy(c.View.gameObject);
 
-            if (_dataStorage.TryGetValue(CAT_INSTANCES, out var dict))
-                dict.Remove(instanceId);
+            // C2: 通过 RemoveData 走标准路径，transient 自然跳过写盘。
+            RemoveData(CAT_INSTANCES, instanceId);
 
             Log($"销毁角色实例: {instanceId}", Color.yellow);
             return true;
