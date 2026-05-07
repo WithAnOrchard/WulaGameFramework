@@ -1,6 +1,6 @@
 # WulaGameFramework
 
-一个基于 **Unity + C#** 的轻量级游戏开发框架，主打 **特性驱动的事件系统**、**Manager/Service 双层单例** 和 **零反射数据持久化**。
+一个基于 **Unity + C#** 的轻量级游戏框架，主打 **特性驱动的事件系统**、**Manager/Service 双层单例**、**零反射数据持久化** 和 **跨模块字符串协议解耦**。
 
 > 源码仓库：<https://github.com/WithAnOrchard/WulaGameFramework>
 
@@ -8,34 +8,55 @@
 
 ## ✨ 核心特性
 
-- 🧩 **泛型单例** — `SingletonNormal<T>`（普通类，懒加载线程安全）/ `SingletonMono<T>`（MonoBehaviour，自动 GO + DontDestroyOnLoad）
-- 🎯 **统一事件中心** — `EventProcessor` 提供事件总线 + `[Event]`/`[EventListener]` 自动注册（启动时反射扫描）
+- 🧩 **泛型单例** — `SingletonNormal<T>`（纯 C# 懒加载线程安全）/ `SingletonMono<T>`（MonoBehaviour，自动 GO + DontDestroyOnLoad）
+- 🎯 **统一事件中心** — `EventProcessor` 提供事件总线 + `[Event]`/`[EventListener]` 反射自动注册；`EVT_XXX` 常量协议 + `agent_lint` 校验
 - 📦 **零反射持久化** — `Service<T>` 实现 `IServicePersistence`，DataService 通过接口直接调用，按 `{TypeName}/{Category}.json` 分文件存
-- 🎨 **DAO / Entity / Service 三层 UI** — 纯数据 `UIComponent` + Unity 端 `UIEntity` + 工厂 `UIEntityFactory`
-- 🎒 **背包系统** — 物品模板、多容器、堆叠/权重、配置驱动
-- 🖼️ **资源管理** — Prefab/Sprite/AudioClip/Texture 异步加载 + 缓存（`ResourceKey` 结构体键，零字符串拼接）
-- 🧮 **优先级 Manager** — `[Manager(N)]` 控制 Awake 顺序（基于 Unity `DefaultExecutionOrder`）
+- 🎨 **DAO / Entity / Service 三层 UI** — 可序列化 `UIComponent` Dao + Unity `UIEntity` + `UIEntityFactory`，业务模块禁止自建 Canvas/uGUI
+- 🧙 **角色系统** — `CharacterManager` 模板化角色，多部件 + 帧事件广播（`EVT_FRAME_EVENT`）
+- 🧱 **实体系统** — `EntityManager` 组合 Character + 行为，跨模块只暴露 `Transform` / `string instanceId`
+- 🗺️ **2D 地图系统** — `MapManager` 基于模板（TopDownRandom 等），Perlin 高度 + 生物群系 + 河流流量累积
+- 🎒 **背包系统** — 物品模板、多容器、堆叠/权重/拆堆，配置驱动 UI，全程通过 Event 调 UIManager
+- 🖼️ **资源管理** — Prefab / Sprite / AudioClip / Texture / RuleTile / AnimationClip 异步加载 + 缓存（`ResourceKey` 结构体键，零字符串拼接）
+- 🧮 **优先级 Manager** — `[Manager(N)]` 声明式 Awake 顺序（基于 Unity `DefaultExecutionOrder`）
+- 📺 **可选业务模块** — `DanmuManager` 接入 B 站直播长连接，DayNight Demo 演示昼夜阶段 / 波次 / 据点 / 建造
 
 ---
 
 ## 📁 目录结构
 
 ```text
-Assets/Scripts/
-├── EssSystem/
-│   ├── Core/                                    # 核心层
-│   │   ├── AbstractGameManager.cs               # 启动入口：自动发现并初始化所有 Manager
-│   │   ├── EssManagers/
-│   │   │   ├── Manager/                         # Manager<T> / Service<T> 基类
-│   │   │   ├── DataManager/                     # 数据持久化 + Service 自动注册
-│   │   │   ├── ResourceManager/                 # 资源加载/缓存
-│   │   │   └── UIManager/                       # UI 实体注册中心 (Dao/Entity/Editor)
-│   │   ├── Event/                               # EventProcessor + [Event]/[EventListener]
-│   │   ├── Singleton/                           # SingletonNormal / SingletonMono
-│   │   └── Util/                                # AssemblyUtils, MainThreadDispatcher, MiniJson, ResultCode
-│   └── Manager/
-│       └── InventoryManager/                    # 业务示例：背包系统
-└── GameManager.cs                               # 游戏入口示例（继承 AbstractGameManager）
+Assets/
+├── Scripts/
+│   ├── EssSystem/
+│   │   ├── Core/
+│   │   │   ├── AbstractGameManager.cs           # 启动入口：自动发现并初始化所有 Manager
+│   │   │   ├── Singleton/                       # SingletonNormal / SingletonMono / PlayModeResetGuard
+│   │   │   ├── Event/                           # EventProcessor + [Event]/[EventListener]
+│   │   │   ├── Util/                            # AssemblyUtils / MainThreadDispatcher / MiniJson / ResultCode
+│   │   │   └── EssManagers/
+│   │   │       ├── Manager/                     # Manager<T> / Service<T> 基类 + IServicePersistence
+│   │   │       ├── Foundation/
+│   │   │       │   ├── DataManager/             # 数据持久化 + Service 自动注册
+│   │   │       │   └── ResourceManager/         # 资源加载/缓存
+│   │   │       ├── Presentation/
+│   │   │       │   └── UIManager/               # UI Dao/Entity/Service
+│   │   │       └── Gameplay/
+│   │   │           ├── CharacterManager/        # 角色 + 部件 + 帧事件
+│   │   │           ├── EntityManager/           # 实体 (Character + 行为)
+│   │   │           ├── MapManager/              # 2D 地图（Dao/Templates/TopDownRandom 等）
+│   │   │           └── InventoryManager/        # 背包系统
+│   │   └── Manager/
+│   │       └── DanmuManager/                    # 可选第三方业务：B 站直播弹幕
+│   ├── Demo/
+│   │   ├── DayNight/                            # 昼夜求生 Demo（WaveSpawn / BaseDefense / Construction / DayNightHud）
+│   │   └── DayNight3D/                          # 3D 占位 Demo
+│   ├── GameManager.cs                           # 游戏入口示例（继承 AbstractGameManager）
+│   └── TestPlayer.cs
+├── Resources/                                   # 运行时资源（Sprites / Tiles / DayNight3D...）
+├── tools/                                       # PowerShell 工具脚本（lint/compile_check/new-module/install-hooks）
+├── Agent.md                                     # 项目顶层 Agent 指南（必读）
+├── Anti-Patterns.md                             # 反模式黑名单（写代码前必读）
+└── README.md                                    # 本文件
 ```
 
 ---
@@ -48,9 +69,12 @@ Assets/Scripts/
 └────────────────────────────────────────────────────┘
               ▲
 ┌────────────────────────────────────────────────────┐
-│ 框架 Manager:  EventProcessor(-30)                 │
-│              → DataManager(-20)                    │
-│              → ResourceManager(0) → UIManager(5)   │
+│ 框架 Manager:                                      │
+│   EventProcessor(-30) → DataManager(-20)           │
+│   → ResourceManager(0) → UIManager(5)              │
+│ Gameplay Manager:                                  │
+│   InventoryManager(10) → CharacterManager(11)      │
+│   → MapManager(12) → EntityManager(13)             │
 └────────────────────────────────────────────────────┘
               ▲
 ┌────────────────────────────────────────────────────┐
@@ -83,7 +107,7 @@ Assets/Scripts/
 ### 1. 环境要求
 
 - **Unity 2022.3 LTS** 或更高（C# 9 features：record、`new()` target-typed 等）
-- **TextMeshPro**（`UIEntity` 直接 `using TMPro`）
+- **uGUI**（`Text` / `Button` / `Image`）—— 不依赖 TextMeshPro。需要高 DPI 文字时用超采样（`FontSize×2 + Size×2 + SetScale(0.5,0.5)`），详见 `Agent.md`
 
 ### 2. 集成方式
 
@@ -117,8 +141,9 @@ using EssSystem.Core.EssManagers.Manager;
 public class ScoreService : Service<ScoreService>
 {
     public const string CAT = "Stats";
+    public const string EVT_ADD = "AddScore";   // ✅ 定义方必须用常量
 
-    [Event("AddScore")]
+    [Event(EVT_ADD)]
     public List<object> OnAddScore(List<object> args)
     {
         var cur = GetData<int>(CAT, "score");
@@ -127,11 +152,13 @@ public class ScoreService : Service<ScoreService>
     }
 }
 
-// 2) 任意地方触发事件
+// 2) 跨模块调用：消费方走 bare-string，避免 using 耦合
 EventProcessor.Instance.TriggerEventMethod("AddScore", new List<object> { 10 });
 ```
 
 应用退出时 `ScoreService` 数据自动写入 `{persistentDataPath}/ServiceData/ScoreService/Stats.json`。
+
+> 💡 用 `tools/new-module.ps1 -Name Quest -Priority 15` 一键生成符合规范的业务 Manager 脚手架（含 `Manager.cs` / `Service.cs` / `Dao/` / `Agent.md`）。
 
 ---
 
@@ -139,11 +166,12 @@ EventProcessor.Instance.TriggerEventMethod("AddScore", new List<object> { 10 });
 
 ### Event 系统
 
-- `[Event("xxx")]` — 单点 RPC 调用，通过 `TriggerEventMethod` 直接调
+- `[Event(EVT_XXX)]` — 单点 RPC 调用，通过 `TriggerEventMethod` 触发
 - `[EventListener("xxx", Priority = N)]` — 广播订阅（多监听者按优先级）
 - `EventProcessor` 启动时反射扫描所有用户程序集（`AssemblyUtils.IsSystemAssembly` 跳过引擎/系统）
 - 返回值：`ResultCode.Ok(data?)` / `ResultCode.Fail(msg)` / `ResultCode.IsOk(result)`
 - 延迟 Target 解析（`ResolveTarget`）：扫描期低优先级 Manager 未 Awake 时不报错
+- **事件名常量化（强制规则）**：定义方 `[Event(EVT_X)]` 必须引用常量；跨模块消费方走 bare-string，避免 `using` 业务模块。`agent_lint.ps1` 在 pre-commit 强制执行
 
 ### DataManager / Service<T>
 
@@ -184,15 +212,47 @@ EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
 - 配置驱动 UI（`InventoryConfig` + `PanelConfig` + `SlotConfig` + `ButtonConfig`）
 - **完全通过 Event 调用 UIManager**，零直接依赖
 
+### Character / Entity 系统
+
+- `CharacterManager`（`[Manager(11)]`）：模板化角色 + 多部件 + 动画帧事件广播 (`CharacterService.EVT_FRAME_EVENT`)
+- `EntityManager`（`[Manager(13)]`）：组合 `Character` + 行为脚本，跨模块协议只暴露 `Transform` 和 `string instanceId`，不泄露内部 `Character` / `Entity` 类型
+- 创建：`EVT_CREATE_CHARACTER` / `EVT_CREATE_ENTITY`，返回 `Transform`
+
+### Map 系统
+
+`MapManager`（`[Manager(12)]`）：
+
+- 模板化生成（`Dao/Templates/TopDownRandom` 等），运行时通过 `MapTemplateRegistry` 注册
+- 公共抽象：`Map` / `Chunk` / `Tile` / `TileType` / `MapConfig` / `IMapGenerator`（`Dao/`）
+- 当前模板：Perlin 高度 + 生物群系分类 + 区域级河流流量累积（D8 + 池塘逃逸 + 海岸出口）
+- 目前以纯 C# API（`MapService.Instance.XXX`）为主，无跨模块 Event
+
+### Danmu 系统（可选）
+
+`DanmuManager` —— 接入 B 站直播长连接，广播弹幕 / 礼物 / 原始 `DanmakuModel`：
+
+- `EVT_CONNECTED` / `EVT_DISCONNECTED` / `EVT_DANMAKU` / `EVT_GIFT` / `EVT_RAW`
+- 业务监听走标准 `[EventListener("OnDanmuComment")]`，无需依赖此模块
+
+### DayNight Demo
+
+`Demo/DayNight/` 演示完整业务集成：
+
+- `DayNightGameManager`：昼夜阶段切换广播
+- `WaveSpawnManager`（20）/ `BaseDefenseManager`（21）/ `ConstructionManager`（22）/ `DayNightHudManager`（23）
+- 全部模块通过 Event 解耦，零跨模块 `using`
+
 ### 资源管理
 
 | Event | 用途 |
 |---|---|
-| `GetSprite/GetPrefab/GetAudioClip/GetTexture` | 同步获取（命中缓存） |
-| `LoadXXXAsync` | 异步加载（返回 `["加载中"]` 或 `["成功", asset]`） |
-| `GetExternalSprite` / `LoadExternalSpriteAsync` | 加载外部图片文件 |
+| `GetSprite` / `GetPrefab` / `GetAudioClip` / `GetTexture` / `GetRuleTile` | 同步获取（命中缓存） |
+| `GetAnimationClip` / `GetModelClips` / `GetAllModelPaths` | 取 FBX/Model 内动画 |
+| `LoadPrefabAsync` / `LoadSpriteAsync` / `LoadRuleTileAsync` | 异步加载（`ResultCode.Ok(asset)`） |
+| `GetExternalSprite` / `LoadExternalSpriteAsync` | 加载外部图片文件（含 `OnExternalImageLoaded` 广播） |
 | `AddPreloadConfig` | 添加预加载项（持久化保存，下次启动自动加载） |
 | `UnloadResource` / `UnloadAllResources` | 卸载 |
+| `OnResourcesLoaded` | 资源全部预加载/索引完成**广播** |
 
 `ResourceKey` 结构体作为缓存键，避免字符串拼接产生 GC。
 
@@ -202,10 +262,14 @@ EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
 
 每个核心子目录都有 `Agent.md` 说明，深入用法请直接查阅：
 
-- [Core 总览](Scripts/EssSystem/Core/Agent.md)
-- [Singleton](Scripts/EssSystem/Core/Singleton/Agent.md)
-- [Event](Scripts/EssSystem/Core/Event/Agent.md)
-- [EssManagers](Scripts/EssSystem/Core/EssManagers/Agent.md) → [Manager 基类](Scripts/EssSystem/Core/EssManagers/Manager/Agent.md) / [DataManager](Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md) / [UIManager](Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md)
+- 项目顶层：[Agent.md](Agent.md)（**必读，含全局 Event 索引**）/ [Anti-Patterns.md](Anti-Patterns.md)
+- Core：[Core 总览](Scripts/EssSystem/Core/Agent.md) / [Singleton](Scripts/EssSystem/Core/Singleton/Agent.md) / [Event](Scripts/EssSystem/Core/Event/Agent.md)
+- EssManagers：[总览](Scripts/EssSystem/Core/EssManagers/Agent.md) / [Manager 基类](Scripts/EssSystem/Core/EssManagers/Manager/Agent.md)
+- Foundation：[DataManager](Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md)
+- Presentation：[UIManager](Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md)
+- Gameplay：[CharacterManager](Scripts/EssSystem/Core/EssManagers/Gameplay/CharacterManager/Agent.md) / [EntityManager](Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md) / [MapManager](Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md) / [InventoryManager](Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md)
+- 第三方业务：[DanmuManager](Scripts/EssSystem/Manager/DanmuManager/Agent.md)
+- Demo：[DayNight](Scripts/Demo/DayNight/Agent.md)
 
 ---
 
@@ -216,19 +280,34 @@ EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
 3. **优先级 Manager** — `[Manager(N)]` 等价 `[DefaultExecutionOrder]`，声明式依赖顺序
 4. **延迟 Target 解析** — 扫描期低优先级 Manager 未就绪时调用时再解析，避免初始化竞争
 5. **DAO 可序列化 / Entity 不可序列化** — UI 布局可持久化，Unity 实体运行时重建
-6. **解耦但不教条** — 内部强类型直调（性能/类型安全），跨模块走 Event（解耦），合理混用
+6. **跨模块协议中立类型** — 事件参数只用 `GameObject` / `Transform` / `string id`，避免泄露 `UIEntity` / `Character` / `Entity` 等模块私有类型
+7. **事件名非对称协议** — 定义方常量（重命名安全）+ 消费方字符串（零 using 耦合），由 `agent_lint` 兜底
+8. **解耦但不教条** — 同模块内强类型直调（性能/类型安全），跨模块走 Event（解耦），合理混用
 
 ---
 
-## 🧪 独立编译检查
+## 🧪 工具脚本
 
-`tools/compile_check.ps1` 用 Roslyn 命令行做语法+符号校验，**不需要打开 Unity**：
+所有脚本位于 `tools/`，PowerShell 可直接调用：
+
+| 脚本 | 用途 |
+|---|---|
+| `compile_check.ps1` | Roslyn 命令行语法+符号校验，无需 Unity；输出 `.build/WulaGameFramework.dll` + `compile.log` |
+| `agent_lint.ps1` | Event/Agent.md 一致性校验（`-Strict` 模式 CI / pre-commit 用），扫描 `[Event]` 裸字符串、`EVT_XXX` 常量声明、模块 Agent.md 覆盖率 |
+| `new-module.ps1` | 业务 Manager 脚手架生成器：`-Name Quest -Priority 15` 一键产生 `Manager.cs` / `Service.cs` / `Dao/` / `Agent.md`，全部按规范预填 |
+| `install-hooks.ps1` | 一次性安装 git pre-commit hook（提交前自动跑 `agent_lint -Strict`，破坏规则即拒绝 commit） |
+| `test_minijson.ps1` | MiniJson round-trip 回归测试 |
 
 ```powershell
+# 编译检查
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\compile_check.ps1
-```
 
-输出 `.build/WulaGameFramework.dll`，编译日志在 `.build/compile.log`。
+# Event/Agent.md 校验（建议提交前手动跑一次）
+.\tools\agent_lint.ps1 -Strict
+
+# 创建新业务 Manager
+.\tools\new-module.ps1 -Name Quest -Priority 15
+```
 
 ---
 

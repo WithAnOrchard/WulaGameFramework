@@ -21,15 +21,22 @@ public List<object> Open(...) { ... }
 ```
 **理由**：根 `Agent.md` §4.1 强制规则，违反即丢失 IDE 跳转 / 重命名安全 / 全局可搜索。
 
-### A2. ❌ 调用方写魔法字符串
+### A2. ❌ 跨模块调用为读常量而 `using` 其他业务模块
+事件名遵循**非对称协议**（`Agent.md` §4.1）：定义方常量、消费方字符串。
+
 ```csharp
-// ❌
+// ❌ 跨模块仅为读 EVT_X 常量而 using 其他业务 Manager ——等同于运行时引用，破坏 Event 解耦
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
+EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI, data);
+
+// ✅ 跨模块消费方：直接 bare-string
 EventProcessor.Instance.TriggerEventMethod("OpenInventoryUI", data);
 
-// ✅
-EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI, data);
+// ✅ 同模块（本就在 using 范围内）：继续用常量
+EventProcessor.Instance.TriggerEventMethod(EVT_OPEN_UI, data);
 ```
-**理由**：同上。常量找不到时**不要猜**，先去对应模块的 `Agent.md` 的 `## Event API` 节查；查不到再 grep `[Event(EVT_`。
+
+**理由**：`agent_lint.ps1 [6]` 扫描所有 bare-string、cross-ref 全工程 `EVT_XXX` 常量池——拼错会打不过 lint。查 Event 不要猜：先看根 `Agent.md` 的【全局 Event 索引】表，再跳转到模块 `Agent.md` 的 `## Event API` 节。
 
 ### A3. ❌ Service 里存 `GameObject` / `MonoBehaviour` / `Transform`
 ```csharp
@@ -63,9 +70,21 @@ using EssSystem.Manager.QuestManager;
 QuestManager.Instance.AcceptQuest(...);
 
 // ✅
-EventProcessor.Instance.TriggerEventMethod(QuestManager.EVT_ACCEPT, data);
+EventProcessor.Instance.TriggerEventMethod("AcceptQuest", data);
 ```
 **理由**：跨模块解耦的核心契约。直 `using` 会让模块图变成网状，重构地狱。**例外**：业务 Manager 调框架 Manager（`UIManager` / `ResourceManager`）走事件即可，但**同模块**的 Manager → Service 必须直调（性能 + 类型安全）。
+
+### A7. ❌ 跨模块 Event 参数 / 返回值泄露模块私有类型
+```csharp
+// ❌ 返回 UIEntity —— 调用方被迫 using UIManager.Entity 命名空间
+[Event(EVT_GET_ENTITY)]
+public List<object> GetUIEntity(List<object> data) => ResultCode.Ok(_entity);  // UIEntity
+
+// ✅ 只返 Unity 中立类型
+[Event(EVT_GET_UI_GAMEOBJECT)]
+public List<object> GetUIGameObject(List<object> data) => ResultCode.Ok(_entity.gameObject);
+```
+**理由**：跨模块协议只能用 `GameObject` / `Transform` / `Vector3` / `string id` 等 Unity 中立类型。泄露 `UIEntity` / `Character` / `Entity` / `UIComponent` 子类等模块私有类型 = 购者必须 `using` 发布者，与 A6 同质。参考：`UIManager.EVT_GET_UI_GAMEOBJECT` 返 `GameObject`；`CharacterManager.EVT_CREATE_CHARACTER` 返 `Transform`。
 
 ---
 
@@ -148,7 +167,57 @@ Manager/QuestManager/
 
 ### B8. ❌ UI Entity 类放业务模块
 所有继承 `UIEntity` 的 MonoBehaviour **只能** 放在 `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Entity/`。业务模块只产 DAO（`UIComponent` 子类）。
-**理由**：业务模块不依赖 UGUI/TMP，方便独立测试。
+**理由**：业务模块不依赖 uGUI，方便独立测试。
+
+### B9. ❌ 业务代码自建 Canvas / uGUI 组件
+```csharp
+// ❌ 绕过 UIManager 自建界面
+var go = new GameObject("MyPanel");
+go.AddComponent<Canvas>();
+go.AddComponent<Image>();
+go.AddComponent<Button>();
+
+// ✅ 走 UIManager DAO 树
+var panel = new UIPanelComponent("my_panel", "面板")
+    .SetPosition(960, 540).SetSize(400, 300);
+panel.AddChild(new UIButtonComponent("btn_ok", "确定"));
+EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
+    new List<object> { panel.Id, panel });
+```
+**理由**：`Agent.md` §5 强制规则。运行时 UI 必须走 `UIManager` DAO 树。禁止 `AddComponent<Canvas/Image/Button/Text/CanvasScaler/VerticalLayoutGroup/...>`，禁止在业务层 `using UnityEngine.UI`。按钮交互用 `btnDao.OnClick += handler`，不是 `btn.onClick.AddListener`。**例外**：纯非交互 `SpriteRenderer`（如 Character 贴图）不属于 UI。参考实现：`InventoryUIBuilder.cs`。
+
+### B10. ❌ 需高 DPI 文字就引入 TextMeshPro
+框架仅用 uGUI `Text` (LegacyRuntime.ttf)，**未引入 TMP**。需要清晰文字时用**超采样**：`dao.FontSize ×= 2; dao.Size ×= 2; dao.SetScale(0.5f, 0.5f);`。倍率用整数（2×/3×），避免与 Canvas pixelPerfect 冲突。要真正矢量文字是架构级改动，禁止业务单方面加依赖。
+
+### B11. ❌ 静态注册表用 `RuntimeInitializeLoadType.SubsystemRegistration`
+```csharp
+// ❌ PlayModeResetGuard 也在这阶段跑，顺序未定义 → 你的注册可能被抹掉
+[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+private static void AutoRegister() { MyRegistry.Register(new Template()); }
+
+// ✅
+[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+private static void AutoRegister() {
+    if (!MyRegistry.Contains(Id)) MyRegistry.Register(new Template());
+}
+```
+**理由**：`Agent.md` 【项目特定规则 §1】。`PlayModeResetGuard` 也跑在 `SubsystemRegistration`，会清空已知静态注册表；同阶段多个 `RuntimeInitializeOnLoadMethod` 顺序未定义。用 `BeforeSceneLoad`（严格晚于清理，早于所有 Awake）。新增静态注册表同步在 `PlayModeResetGuard.ResetStaticRegistries()` 添加清理。
+
+### B12. ❌ `AddComponent<XxxManager>()` 后立即改 Inspector 字段
+```csharp
+// ❌ AddComponent 同步触发 Awake，SetTemplateId 来不及
+var mgr = new GameObject().AddComponent<MapManager>();
+mgr.SetTemplateId("forest");   // Awake 已跑完，迟了
+
+// ✅ 先 Inactive，AddComponent 不触发 Awake
+var holder = new GameObject(nameof(MapManager));
+holder.SetActive(false);
+holder.transform.SetParent(transform);
+var mgr = holder.AddComponent<MapManager>();
+mgr.SetTemplateId("forest");
+holder.SetActive(true);   // 此刻才同步触发 Awake/Initialize
+```
+**理由**：`Agent.md` 【项目特定规则 §2】。参考 `Demo/DayNight/DayNightGameManager.cs`。
 
 ---
 
@@ -202,21 +271,31 @@ public void Foo()
 | `Manager<T>` 加空 `FixedUpdate`/`LateUpdate`/`OnEnable`/`OnDisable`/`OnApplicationFocus`/`OnApplicationPause`/`Cleanup` 占位 | 已删除，子类需要直接声明 |
 | `UIService` 内部 `ServiceXxx` 事件 thin wrapper | 已删除 |
 | `DataService` 用反射保存 Service | 改用 `IServicePersistence` 接口，**零反射** |
-| `UIService` 用反射拿 Canvas | 改用 `UIManager.GetCanvasTransform()` |
+| `UIService` 用反射拿 Canvas | 改用 `UIManager.EVT_GET_CANVAS_TRANSFORM` 事件 |
 | `InventoryManager` 直接 `using UIManager` | 已改为通过 Event 调，完全解耦 |
 | `ResultCode.cs` 在 `Core/` 根目录 | 已移到 `Core/Util/`（namespace 仍 `EssSystem.Core`） |
+| `EssManagers/` 平铺业务 Manager（极早期布局） | 已按 `Foundation/` `Presentation/` `Gameplay/` 分组；InventoryManager / CharacterManager / EntityManager / MapManager 为 `Gameplay/`子级 |
+| 业务 Manager 放在 `EssSystem/Manager/` | 仅限可选第三方模块（如 `DanmuManager`）；框架原生业务全部迁入 `Core/EssManagers/Gameplay/` |
+| `UIEntity` 命名空间为 `EssSystem.Core.UI.Entity.*` | 已收回 `EssSystem.Core.EssManagers.UIManager.Entity.*`（UIManager 私有实现） |
+| `EventProcessor.TriggerEventMethod` 吞后续异常 | 已解 `TargetInvocationException` 暴露真实 `InnerException`，不要加 try/catch 遮盖 |
+| 在 `Manager/` 下手写业务脚手架 | 用 `tools/new-module.ps1 -Name Xxx -Priority N`，自动遵守常量化/目录结构/Agent.md 模板 |
+| 提交前不跑 `agent_lint` | `tools/install-hooks.ps1` 一次性安装 pre-commit hook，自动 `agent_lint -Strict` |
 
 ---
 
 ## 自查清单（提交前 30 秒）
 
-- [ ] 我有没有在 `[Event(...)]` 或 `TriggerEventMethod(...)` 写字符串字面量？（A1/A2）
-- [ ] 我新增/改了 `[Event]` 吗？对应模块的 `Agent.md` 的 `## Event API` 改了吗？根 `Agent.md` 索引改了吗？（A5）
-- [ ] 业务 Manager 之间有 `using` 吗？（A6）
+- [ ] `[Event(...)]` 定义方用了 `EVT_XXX` 常量吗？（A1）
+- [ ] 跨模块 `TriggerEventMethod` / `[EventListener]` 走了 bare-string 而不是 `using` 其他业务模块拿常量吗？（A2）
+- [ ] 我新增/改了 `[Event]` 吗？对应模块 `Agent.md` 的 `## Event API` + 根 `Agent.md` 【全局 Event 索引】改了吗？（A5）
+- [ ] 业务 Manager 之间有 `using` 吗？事件返回值有泄露 `UIEntity` / `Character` / `Entity` 吗？（A6/A7）
 - [ ] Service 里有 `GameObject` / `MonoBehaviour` 字段吗？（A3）
 - [ ] DAO 类加 `[Serializable]` 了吗？（A4）
 - [ ] 覆盖 `Manager<T>` 生命周期方法时用了 `protected override` + `base.Xxx()` 吗？（B2）
 - [ ] 资源加载走 `ResourceManager.EVT_*` 还是 `Resources.Load`？（B4）
 - [ ] 新事件标了"命令"还是"广播"吗？（B5）
+- [ ] UI 走了 `UIManager` DAO 树，没有自建 Canvas / `using UnityEngine.UI` 吗？（B9）
+- [ ] 静态注册表用了 `BeforeSceneLoad` 而不是 `SubsystemRegistration` 吗？（B11）
+- [ ] 跑了 `tools\agent_lint.ps1 -Strict` 吗（或 pre-commit hook 已安装）？
 
 不全 ✅ 不要提交。
