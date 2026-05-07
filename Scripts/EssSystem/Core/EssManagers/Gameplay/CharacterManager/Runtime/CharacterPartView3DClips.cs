@@ -5,6 +5,7 @@ using UnityEngine.Playables;
 using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;   // C4: 走 façade，避免魔法字符串
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 {
@@ -84,7 +85,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
             if (string.IsNullOrEmpty(Config?.PrefabPath)) return;
             try
             {
-                var r = EventProcessor.Instance.TriggerEventMethod("GetModelClips",
+                // C4: façade 调用 ResourceManager.GetModelClips。
+                var r = EventProcessor.Instance.TriggerEventMethod(
+                    ResourceManager.EVT_GET_MODEL_CLIPS,
                     new List<object> { Config.PrefabPath });
                 if (r != null && r.Count >= 2 && ResultCode.IsOk(r) && r[1] is List<AnimationClip> clips)
                 {
@@ -188,8 +191,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
         {
             try
             {
-                var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
-                    new List<object> { prefabId, "Prefab", false });
+                // C4: façade 调用 ResourceManager.GetPrefab。
+                var result = EventProcessor.Instance.TriggerEventMethod(
+                    ResourceManager.EVT_GET_PREFAB,
+                    new List<object> { prefabId });
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                     return result[1] as GameObject;
             }
@@ -204,8 +209,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
         {
             try
             {
-                var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
-                    new List<object> { clipName, "AnimationClip", false });
+                // C4: façade 调用 ResourceManager.GetAnimationClip。
+                var result = EventProcessor.Instance.TriggerEventMethod(
+                    ResourceManager.EVT_GET_ANIMATION_CLIP,
+                    new List<object> { clipName });
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                     return result[1] as AnimationClip;
             }

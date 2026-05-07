@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;   // C4: 走 façade，避免魔法字符串
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 {
@@ -177,8 +178,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 
             try
             {
-                var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
-                    new List<object> { spriteId, "Sprite", false });
+                // C4: façade 调用 只传 spriteId；ResourceManager.GetSprite 内部加 type tag 转发 EVT_GET_RESOURCE。
+                var result = EventProcessor.Instance.TriggerEventMethod(
+                    ResourceManager.EVT_GET_SPRITE,
+                    new List<object> { spriteId });
 
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                 {

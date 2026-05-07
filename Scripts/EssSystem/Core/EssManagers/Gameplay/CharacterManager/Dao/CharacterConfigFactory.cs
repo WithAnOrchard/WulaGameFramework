@@ -1,3 +1,6 @@
+// C4: 加 using 简化全限定名常量引用
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;
+
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
 {
     /// <summary>
@@ -176,8 +179,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
 #if UNITY_EDITOR
             try
             {
+                // C4: 简化常量引用
                 var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
-                    EssSystem.Core.EssManagers.Foundation.ResourceManager.ResourceManager.EVT_GET_MODEL_CLIPS,
+                    ResourceManager.EVT_GET_MODEL_CLIPS,
                     new System.Collections.Generic.List<object> { fbxPath });
                 if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2 &&
                     r[1] is System.Collections.Generic.List<UnityEngine.AnimationClip> clips)
@@ -226,8 +230,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
             System.Collections.Generic.List<string> allPaths = null;
             try
             {
+                // C4: 简化常量引用
                 var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
-                    EssSystem.Core.EssManagers.Foundation.ResourceManager.ResourceManager.EVT_GET_ALL_MODEL_PATHS,
+                    ResourceManager.EVT_GET_ALL_MODEL_PATHS,
                     new System.Collections.Generic.List<object>());
                 if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2)
                     allPaths = r[1] as System.Collections.Generic.List<string>;
@@ -260,8 +265,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
                 string defaultAction = null;
                 try
                 {
+                    // C4: 简化常量引用
                     var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
-                        EssSystem.Core.EssManagers.Foundation.ResourceManager.ResourceManager.EVT_GET_MODEL_CLIPS,
+                        ResourceManager.EVT_GET_MODEL_CLIPS,
                         new System.Collections.Generic.List<object> { relNorm });
                     if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2 &&
                         r[1] is System.Collections.Generic.List<UnityEngine.AnimationClip> clips && clips.Count > 0)
