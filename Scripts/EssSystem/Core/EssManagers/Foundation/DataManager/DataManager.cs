@@ -15,14 +15,9 @@ namespace EssSystem.Core.EssManagers.Foundation.DataManager
         #region Inspector Debug Fields
 
         [Header("Debug Information")]
-        [SerializeField]
-        private int _serviceCount = 0;
-
-        [SerializeField]
-        private string[] _serviceNames = new string[0];
-
-        [SerializeField, Tooltip("数据文件夹路径")]
-        private string _dataFolderPath = "";
+        [SerializeField] private int _serviceCount = 0;
+        [SerializeField] private string[] _serviceNames = System.Array.Empty<string>();
+        [SerializeField, Tooltip("数据文件夹路径")] private string _dataFolderPath = "";
 
         #endregion
 
@@ -30,31 +25,26 @@ namespace EssSystem.Core.EssManagers.Foundation.DataManager
         {
             base.Initialize();
             _dataService = DataService.Instance;
+            // D2: 路径终生不变，一次性赋值不要每帧拼。
+            _dataFolderPath = System.IO.Path.Combine(Application.persistentDataPath, "ServiceData");
             Log("DataManager 初始化完成", Color.green);
         }
 
-        protected override void Update()
+        // D1: 删除自家 Update，调试信息同步走基类 0.25s 节流钩子。
+        protected override void UpdateServiceInspectorInfo()
         {
-            base.Update();
-            UpdateDebugInfo();
-        }
+            base.UpdateServiceInspectorInfo();
+            if (_dataService == null) return;
+            var serviceInstances = _dataService.GetServiceInstances();
+            if (serviceInstances == null) return;
 
-        private void UpdateDebugInfo()
-        {
-            if (_dataService != null)
-            {
-                var serviceInstances = _dataService.GetServiceInstances();
-                if (serviceInstances != null)
-                {
-                    _serviceCount = serviceInstances.Count;
-                    _serviceNames = new string[serviceInstances.Count];
-                    for (int i = 0; i < serviceInstances.Count; i++)
-                    {
-                        _serviceNames[i] = serviceInstances[i]?.GetType().Name ?? "Unknown";
-                    }
-                    _dataFolderPath = Application.persistentDataPath + "/ServiceData";
-                }
-            }
+            var count = serviceInstances.Count;
+            _serviceCount = count;
+            // 仅在长度变化时重建，平时复用数组
+            if (_serviceNames == null || _serviceNames.Length != count)
+                _serviceNames = new string[count];
+            for (int i = 0; i < count; i++)
+                _serviceNames[i] = serviceInstances[i]?.GetType().Name ?? "Unknown";
         }
     }
 }

@@ -44,15 +44,13 @@ namespace EssSystem.Core.EssManagers.Foundation.DataManager
             _serviceInstances = new List<IServicePersistence>();
 
             // 注册 Service 初始化事件监听器（必须在base.Initialize()之前注册）
+            // 不预注册自己，让后面 base.Initialize() 触发的 EVT_INITIALIZED 走同一条路径加入 — D3 避免 "Service 已存在" 噪音警告。
             if (EventProcessor.HasInstance)
             {
                 EventProcessor.Instance.AddListener(EVT_INITIALIZED, OnServiceInitialized);
             }
 
-            // DataService 自己注册自己
-            _serviceInstances.Add(this);
-
-            // 调用基类初始化（会触发OnServiceInitialized事件）
+            // 调用基类初始化（会触发 EVT_INITIALIZED 事件，本机监听器会把 this 加入 _serviceInstances）
             base.Initialize();
 
             Log("数据服务初始化完成", Color.green);
@@ -95,12 +93,9 @@ namespace EssSystem.Core.EssManagers.Foundation.DataManager
                     _serviceInstances.Add(service);
                     Log($"Service 初始化并注册: {serviceTypeName}", Color.blue);
                 }
-                else
-                {
-                    LogWarning($"Service 已存在，跳过注册: {serviceTypeName}");
-                }
+                // D3: 不再警告重复注册——重启 Editor PlayMode 或偶发事件重发均不是错误，静默幂等即可。
             }
-            return new List<object>();
+            return null;   // D4: EventProcessor 的 TriggerEvent 在 result == null 时跳过 AddRange，免一次 alloc。
         }
 
         /// <summary>
