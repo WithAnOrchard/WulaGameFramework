@@ -24,13 +24,13 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 事件系统 | `Scripts/EssSystem/Core/Event/Agent.md` |
 | Manager 系统总览 | `Scripts/EssSystem/Core/EssManagers/Agent.md` |
 | Manager / Service 基类 | `Scripts/EssSystem/Core/EssManagers/Manager/Agent.md` |
-| 数据持久化 | `Scripts/EssSystem/Core/EssManagers/DataManager/Agent.md` |
-| 资源加载 | `Scripts/EssSystem/Core/EssManagers/ResourceManager/Agent.md` |
-| UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/UIManager/Agent.md` |
-| 角色系统 | `Scripts/EssSystem/Core/EssManagers/CharacterManager/Agent.md` |
-| 实体系统 | `Scripts/EssSystem/Core/EssManagers/EntityManager/Agent.md` |
-| 背包系统 | `Scripts/EssSystem/Core/EssManagers/InventoryManager/Agent.md` |
-| 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/MapManager/Agent.md` |
+| 数据持久化 | `Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md` |
+| 资源加载 | `Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md` |
+| UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md` |
+| 角色系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/CharacterManager/Agent.md` |
+| 实体系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md` |
+| 背包系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md` |
+| 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md` |
 | 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
 | 昼夜求生 Demo | `Scripts/Demo/DayNight/Agent.md` |
 
@@ -71,7 +71,7 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 ### 3. 文件组织
 
 - 数据类（DAO）放 `Dao/` 文件夹
-- UI 表现层（Entity）**只能**放在 `EssSystem/Core/EssManagers/UIManager/Entity/`
+- UI 表现层（Entity）**只能**放在 `EssSystem/Core/EssManagers/Presentation/UIManager/Entity/`
 - 业务模块只产 `Dao` + `Service` + `Manager`
 
 ### 4. 命名/返回值
@@ -128,7 +128,7 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 
 **例外**：纯非交互的 SpriteRenderer 渲染（如 Character 自身贴图）不属于 UI，正常用 `SpriteRenderer`。规则只覆盖 `Canvas` / uGUI 范畴。
 
-**参考实现**：`Scripts/EssSystem/Core/EssManagers/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
+**参考实现**：`Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
 
 ### 6. Service 持久化
 
@@ -197,7 +197,7 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | 调用某模块的 Event | 该模块的 `Agent.md` 的 `## Event API` 章节 |
 | 修改 Manager / Service 基类 | `EssManagers/Manager/Agent.md` |
 | 修改 Event 系统 | `Event/Agent.md` |
-| 修改持久化 | `EssManagers/DataManager/Agent.md` |
+| 修改持久化 | `EssManagers/Foundation/DataManager/Agent.md` |
 
 读不到 Event 的参数/返回值定义时，**不要猜**——先用 `grep_search` 在源码里找 `[Event(EVT_XXX)]` 看签名，或要求作者补 Agent.md。
 
@@ -276,6 +276,10 @@ EventProcessor.Instance.TriggerEventMethod(UIManager.EVT_GET_ENTITY, data);
 | `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | Core/ResourceManager | 写预加载配置（内部） |
 | `ResourceService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/ResourceManager | 外部图片加载成功**广播** |
 | `ResourceService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/ResourceManager | 外部图片加载失败**广播** |
+| `ResourceManager.EVT_GET_ANIMATION_CLIP` | `GetAnimationClip` | Core/ResourceManager | 同步取 AnimationClip（按 clip 名，含 FBX 子资产） |
+| `ResourceManager.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/ResourceManager | 取 FBX/Model 内全部 AnimationClip（别名 → `ResourceService.EVT_GET_MODEL_CLIPS`） |
+| `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
+| `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/ResourceManager | 资源全部预加载/索引完成后**广播** |
 | `CharacterService.EVT_FRAME_EVENT` | `CharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
 | `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
 | `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |

@@ -3,7 +3,7 @@ using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Event;
-using EssSystem.Core.UI.Dao.CommonComponents;
+using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
 using Demo.DayNight.BaseDefense;
 using Demo.DayNight.WaveSpawn;
 

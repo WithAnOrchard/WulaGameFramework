@@ -1,6 +1,6 @@
 using UnityEngine;
-using EssSystem.EssManager.CharacterManager.Runtime;
-using EssSystem.EssManager.EntityManager.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 
 namespace Demo.DayNight3D.Player
 {

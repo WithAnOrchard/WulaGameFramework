@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.EssManager.EntityManager;
-using EssSystem.EssManager.EntityManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 
 /// <summary>
 /// 测试用玩家：WASD / 方向键移动；可选鼠标滚轮缩放跟随相机。
@@ -112,7 +112,7 @@ public class TestPlayer : MonoBehaviour
             return;
         }
 
-        var entity = result.Count >= 2 ? result[1] as EssSystem.EssManager.EntityManager.Dao.Entity : null;
+        var entity = result.Count >= 2 ? result[1] as EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Entity : null;
         var viewPos = entity?.CharacterRoot != null ? entity.CharacterRoot.position.ToString() : "<no view>";
         Debug.Log($"[TestPlayer] 小树已生成: id={id}, entityWorldPos={entity?.WorldPosition}, character.rootPos={viewPos}");
     }

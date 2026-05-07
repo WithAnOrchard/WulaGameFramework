@@ -6,13 +6,35 @@
 
 ## 模块组成
 
+按职能分为三组（`Foundation` / `Presentation` / `Gameplay`），加上基础架构 `Manager/`。
+
+### 基础架构
+
 | 子模块 | 内容 | 文档 |
 |---|---|---|
 | `Manager/` | `Manager<T>` / `Service<T>` 基类、`ManagerAttribute` | [Manager 指南](Manager/Agent.md) |
-| `DataManager/` | 数据持久化 + Service 自动注册 | [DataManager 指南](DataManager/Agent.md) |
-| `ResourceManager/` | 资源加载/缓存（Prefab/Sprite/Audio/Texture） | [ResourceManager 指南](ResourceManager/Agent.md) |
-| `UIManager/` | UI 实体注册中心 + Canvas 管理 | [UIManager 指南](UIManager/Agent.md) |
-| `CharacterManager/` | 角色系统：Config 持久化 + 运行时实例 + 帧动画 + 预览面板 | [CharacterManager 指南](CharacterManager/Agent.md) |
+
+### `Foundation/` — 框架基础服务（优先级 -20 ~ 0）
+
+| 子模块 | 优先级 | 内容 | 文档 |
+|---|---:|---|---|
+| `Foundation/DataManager/` | -20 | 数据持久化 + Service 自动注册 | [DataManager 指南](Foundation/DataManager/Agent.md) |
+| `Foundation/ResourceManager/` | 0 | 资源加载/缓存（Prefab/Sprite/Audio/Texture） | [ResourceManager 指南](Foundation/ResourceManager/Agent.md) |
+
+### `Presentation/` — 表现层（5）
+
+| 子模块 | 优先级 | 内容 | 文档 |
+|---|---:|---|---|
+| `Presentation/UIManager/` | 5 | UI 实体注册中心 + Canvas 管理 | [UIManager 指南](Presentation/UIManager/Agent.md) |
+
+### `Gameplay/` — 游戏业务（10+）
+
+| 子模块 | 优先级 | 内容 | 文档 |
+|---|---:|---|---|
+| `Gameplay/InventoryManager/` | 10 | 背包系统 | [InventoryManager 指南](Gameplay/InventoryManager/Agent.md) |
+| `Gameplay/CharacterManager/` | 11 | 角色系统：Config 持久化 + 运行时实例 + 帧动画 + 预览面板 | [CharacterManager 指南](Gameplay/CharacterManager/Agent.md) |
+| `Gameplay/MapManager/` | 12 | 2D/3D 地图系统：分块生成 + 持久化 + 流式加载 | [MapManager 指南](Gameplay/MapManager/Agent.md) |
+| `Gameplay/EntityManager/` | 13 | 实体系统：Config + 运行时实例（依赖 CharacterManager + MapManager） | [EntityManager 指南](Gameplay/EntityManager/Agent.md) |
 
 ## 核心规则
 

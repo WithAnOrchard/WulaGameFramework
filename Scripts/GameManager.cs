@@ -1,12 +1,12 @@
-﻿using System.Linq;
+using System.Linq;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.EssManager.InventoryManager;
-using EssSystem.EssManager.MapManager;
-using EssSystem.Core.EssManagers.ResourceManager;
-using EssSystem.Core.EssManagers.UIManager;
-using EssSystem.EssManager.CharacterManager.Runtime.Preview;
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
+using EssSystem.Core.EssManagers.Gameplay.MapManager;
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;
+using EssSystem.Core.EssManagers.Presentation.UIManager;
+using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime.Preview;
 
 /// <summary>
 /// 游戏管理器 - 用于测试 EssSystem 框架

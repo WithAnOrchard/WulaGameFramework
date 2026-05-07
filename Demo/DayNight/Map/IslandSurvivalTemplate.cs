@@ -1,10 +1,10 @@
 using UnityEngine;
-using EssSystem.EssManager.MapManager;
-using EssSystem.EssManager.MapManager.Dao;
-using EssSystem.EssManager.MapManager.Dao.Config;
-using EssSystem.EssManager.MapManager.Dao.Templates;
-using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
-using EssSystem.EssManager.MapManager.Spawn;
+using EssSystem.Core.EssManagers.Gameplay.MapManager;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Config;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Templates;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Templates.TopDownRandom.Dao;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Spawn;
 using Demo.DayNight.Map.Config;
 
 namespace Demo.DayNight.Map

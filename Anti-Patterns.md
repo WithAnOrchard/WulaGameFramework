@@ -147,7 +147,7 @@ Manager/QuestManager/
 **理由**：根 `Agent.md` §3 文件组织规则。
 
 ### B8. ❌ UI Entity 类放业务模块
-所有继承 `UIEntity` 的 MonoBehaviour **只能** 放在 `Scripts/EssSystem/Core/EssManagers/UIManager/Entity/`。业务模块只产 DAO（`UIComponent` 子类）。
+所有继承 `UIEntity` 的 MonoBehaviour **只能** 放在 `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Entity/`。业务模块只产 DAO（`UIComponent` 子类）。
 **理由**：业务模块不依赖 UGUI/TMP，方便独立测试。
 
 ---

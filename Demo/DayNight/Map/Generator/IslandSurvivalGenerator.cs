@@ -1,7 +1,7 @@
 using UnityEngine;
-using EssSystem.EssManager.MapManager.Dao;
-using EssSystem.EssManager.MapManager.Dao.Generator;
-using EssSystem.EssManager.MapManager.Dao.Templates.TopDownRandom.Dao;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Generator;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Dao.Templates.TopDownRandom.Dao;
 using Demo.DayNight.Map.Config;
 
 namespace Demo.DayNight.Map.Generator

@@ -205,7 +205,7 @@ EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
 - [Core 总览](Scripts/EssSystem/Core/Agent.md)
 - [Singleton](Scripts/EssSystem/Core/Singleton/Agent.md)
 - [Event](Scripts/EssSystem/Core/Event/Agent.md)
-- [EssManagers](Scripts/EssSystem/Core/EssManagers/Agent.md) → [Manager 基类](Scripts/EssSystem/Core/EssManagers/Manager/Agent.md) / [DataManager](Scripts/EssSystem/Core/EssManagers/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/EssManagers/ResourceManager/Agent.md) / [UIManager](Scripts/EssSystem/Core/EssManagers/UIManager/Agent.md)
+- [EssManagers](Scripts/EssSystem/Core/EssManagers/Agent.md) → [Manager 基类](Scripts/EssSystem/Core/EssManagers/Manager/Agent.md) / [DataManager](Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md) / [UIManager](Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md)
 
 ---
 

@@ -8,16 +8,22 @@
 
 ```
 Core/
-├── AbstractGameManager.cs   ← 启动入口，自动发现并按优先级初始化 Manager
+├── AbstractGameManager.cs       ← 启动入口，自动发现并按优先级初始化 Manager
 ├── EssManagers/
-│   ├── Manager/             ← Manager<T> / Service<T> 基类
-│   ├── DataManager/         ← 数据持久化
-│   ├── ResourceManager/     ← 资源加载/缓存
-│   ├── UIManager/           ← UI 实体注册中心
-│   └── CharacterManager/    ← 角色配置 + 运行时实例 + 帧动画
-├── Event/                   ← EventProcessor（统一事件中心）
-├── Singleton/               ← SingletonNormal / SingletonMono
-└── Util/                    ← AssemblyUtils, MainThreadDispatcher, MiniJson, ResultCode
+│   ├── Manager/                 ← Manager<T> / Service<T> 基类（基础架构）
+│   ├── Foundation/              ← 框架基础服务（优先级 -20 ~ 0）
+│   │   ├── DataManager/         ← 数据持久化（-20）
+│   │   └── ResourceManager/     ← 资源加载/缓存（0）
+│   ├── Presentation/            ← 表现层（5）
+│   │   └── UIManager/           ← UI 实体注册中心
+│   └── Gameplay/                ← 游戏业务（10+）
+│       ├── InventoryManager/    ← 背包系统（10）
+│       ├── CharacterManager/    ← 角色系统（11）
+│       ├── MapManager/          ← 地图系统（12）
+│       └── EntityManager/       ← 实体系统（13）
+├── Event/                       ← EventProcessor（统一事件中心，-30）
+├── Singleton/                   ← SingletonNormal / SingletonMono
+└── Util/                        ← AssemblyUtils, MainThreadDispatcher, MiniJson, ResultCode
 ```
 
 ## 初始化优先级（数值越小越先 Awake）
@@ -66,7 +72,10 @@ Application.quitting → DataService 调用 SaveAllCategories() 保存
 - [Event 指南](Event/Agent.md)
 - [EssManagers 指南](EssManagers/Agent.md)
 - [Manager/Service 基类指南](EssManagers/Manager/Agent.md)
-- [DataManager 指南](EssManagers/DataManager/Agent.md)
-- [ResourceManager 指南](EssManagers/ResourceManager/Agent.md)
-- [UIManager 指南](EssManagers/UIManager/Agent.md)
-- [CharacterManager 指南](EssManagers/CharacterManager/Agent.md)
+- [DataManager 指南](EssManagers/Foundation/DataManager/Agent.md)
+- [ResourceManager 指南](EssManagers/Foundation/ResourceManager/Agent.md)
+- [UIManager 指南](EssManagers/Presentation/UIManager/Agent.md)
+- [InventoryManager 指南](EssManagers/Gameplay/InventoryManager/Agent.md)
+- [CharacterManager 指南](EssManagers/Gameplay/CharacterManager/Agent.md)
+- [MapManager 指南](EssManagers/Gameplay/MapManager/Agent.md)
+- [EntityManager 指南](EssManagers/Gameplay/EntityManager/Agent.md)

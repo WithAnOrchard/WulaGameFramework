@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.EssManager.CharacterManager;
-using EssSystem.Core.EssManagers.ResourceManager;
+using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
+using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using Demo.DayNight3D.Player;
-using EssSystem.EssManager.MapManager.Voxel3D.Dao;
-using EssSystem.EssManager.MapManager.Voxel3D.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
 
 namespace Demo.DayNight3D
 {
