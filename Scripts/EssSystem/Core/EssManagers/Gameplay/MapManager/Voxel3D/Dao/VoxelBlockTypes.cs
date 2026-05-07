@@ -28,4 +28,23 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
             new VoxelBlockType(Water, "Water", new Color32( 60,110,200,200), new Color32( 60,110,200,200), solid: false),
         };
     }
+
+    /// <summary>
+    /// Atlas 槽位索引（与 <see cref="Runtime.VoxelTextureAtlas"/> 的 SlotPaths 一一对应）。
+    /// <para>当前 4×2 = 8 slot 布局；新增贴图时同步扩 Cols/Rows + SlotPaths + 这里的常量。</para>
+    /// </summary>
+    public static class VoxelAtlasSlots
+    {
+        public const int GrassTop        = 0;
+        public const int GrassSide       = 1;
+        public const int GrassSideSnowed = 2;
+        public const int Dirt            = 3;
+        public const int Stone           = 4;
+        public const int Sand            = 5;
+        public const int Snow            = 6;
+        public const int WaterStill      = 7;
+
+        /// <summary>总 slot 数（VoxelTextureAtlas 用来分配 SlotPaths / _slotUVs 长度）。</summary>
+        public const int Count = 8;
+    }
 }
