@@ -1,0 +1,38 @@
+{
+    "entries": [
+        {
+            "path": "DayNight3D/Player/herobrine",
+            "clips": [
+                "axe_throw",
+                "backflip",
+                "block",
+                "crossbow_straight",
+                "crossbow_up",
+                "death",
+                "eat",
+                "falcon_punch",
+                "fishing_rod",
+                "frontflip",
+                "idle",
+                "inair_backward",
+                "inair_crossbow",
+                "inair_forward",
+                "inair_kick",
+                "jump",
+                "kick",
+                "land",
+                "powerup",
+                "punch_down",
+                "roll",
+                "run",
+                "stun",
+                "stun_hit",
+                "swipeup",
+                "sword1",
+                "sword2",
+                "vault",
+                "walk"
+            ]
+        }
+    ]
+}

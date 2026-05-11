@@ -61,10 +61,13 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
                 // 按整 Character 的 RenderMode 分派 PartView 组件
                 CharacterPartView view = config.RenderMode switch
                 {
-                    CharacterRenderMode.Prefab3DClips => go.AddComponent<CharacterPartView3DClips>(),
-                    CharacterRenderMode.Prefab3D      => go.AddComponent<CharacterPartView3D>(),
-                    _                                 => go.AddComponent<CharacterPartView2D>(),
+                    CharacterRenderMode.Prefab3DClips    => go.AddComponent<CharacterPartView3DClips>(),
+                    CharacterRenderMode.Prefab3D         => go.AddComponent<CharacterPartView3D>(),
+                    CharacterRenderMode.Sprite2DAnimator => go.AddComponent<CharacterPartView2DAnimator>(),
+                    _                                    => go.AddComponent<CharacterPartView2D>(),
                 };
+                // Sprite2DAnimator 需要 OwnerConfigId 才能定位 controller 资产，必须在 Setup 前注入
+                if (view is CharacterPartView2DAnimator anim) anim.OwnerConfigId = ConfigId;
                 view.Setup(partCfg);
 
                 _parts[partCfg.PartId] = view;

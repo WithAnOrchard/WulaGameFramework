@@ -252,25 +252,33 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 : InventoryResult.Ok(removed);
         }
 
-        /// <summary>在两个槽位之间移动物品（amount=-1 表示全部）</summary>
-        public InventoryResult MoveItem(string inventoryId, int fromIdx, int toIdx, int amount = -1)
-        {
-            var inv = GetInventory(inventoryId);
-            if (inv == null) return InventoryResult.Fail("容器不存在");
+        /// <summary>同容器槽位间移动物品（amount=-1 表示全部）—— 转发到跨容器版本。</summary>
+        public InventoryResult MoveItem(string inventoryId, int fromIdx, int toIdx, int amount = -1) =>
+            MoveItem(inventoryId, fromIdx, inventoryId, toIdx, amount);
 
-            var from = inv.GetSlot(fromIdx);
-            var to   = inv.GetSlot(toIdx);
+        /// <summary>
+        /// 跨容器（或同容器）槽位间移动物品（amount=-1 表示全部）。
+        /// <para>支持 3 种行为：空槽搬运 / 同 itemId 堆叠 / 异 item 交换。</para>
+        /// </summary>
+        public InventoryResult MoveItem(string fromInventoryId, int fromIdx, string toInventoryId, int toIdx, int amount = -1)
+        {
+            var fromInv = GetInventory(fromInventoryId);
+            var toInv   = GetInventory(toInventoryId);
+            if (fromInv == null || toInv == null) return InventoryResult.Fail("容器不存在");
+
+            var from = fromInv.GetSlot(fromIdx);
+            var to   = toInv.GetSlot(toIdx);
             if (from == null || to == null) return InventoryResult.Fail("槽位索引越界");
             if (from.IsEmpty) return InventoryResult.Fail("源槽为空");
             if (from.Locked || to.Locked) return InventoryResult.Fail("槽位被锁定");
-            if (fromIdx == toIdx) return InventoryResult.Ok(0);
+            if (ReferenceEquals(from, to)) return InventoryResult.Ok(0);
 
             int moveAmount = (amount < 0 || amount >= from.Item.CurrentStack)
                 ? from.Item.CurrentStack : amount;
 
             if (to.IsEmpty)
             {
-                // 空槽：整堆移动 or 拆堆
+                // 空槽：整堆搬运 or 拆堆
                 if (moveAmount >= from.Item.CurrentStack)
                 {
                     to.Item = from.Item;
@@ -290,14 +298,20 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             }
             else
             {
-                // 交换
+                // 交换（跨容器也合法）
                 (from.Item, to.Item) = (to.Item, from.Item);
             }
 
-            inv.Touch();
-            SetData(CAT_INVENTORIES, inventoryId, inv);
+            fromInv.Touch();
+            SetData(CAT_INVENTORIES, fromInventoryId, fromInv);
+            BroadcastChanged(fromInventoryId, "move", null, moveAmount);
 
-            BroadcastChanged(inventoryId, "move", null, moveAmount);
+            if (fromInventoryId != toInventoryId)
+            {
+                toInv.Touch();
+                SetData(CAT_INVENTORIES, toInventoryId, toInv);
+                BroadcastChanged(toInventoryId, "move", null, moveAmount);
+            }
 
             return InventoryResult.Ok(moveAmount);
         }
@@ -382,19 +396,40 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }
 
-        /// <summary>事件: 移动物品</summary>
-        /// <param name="args">[inventoryId, fromSlot, toSlot, amount]</param>
+        /// <summary>事件: 移动物品。支持 2 种签名（按 args[2] 类型区分）：</summary>
+        /// <param name="args">
+        /// <list type="bullet">
+        /// <item>同容器：<c>[inventoryId(string), fromSlot(int), toSlot(int), amount(int?)]</c></item>
+        /// <item>跨容器：<c>[fromInventoryId(string), fromSlot(int), toInventoryId(string), toSlot(int), amount(int?)]</c></item>
+        /// </list>
+        /// </param>
         [Event(EVT_MOVE)]
         public List<object> Move(List<object> args)
         {
             try
             {
                 if (args == null || args.Count < 3) return ResultCode.Fail("参数不足");
-                var result = MoveItem(
-                    args[0]?.ToString(),
-                    Convert.ToInt32(args[1]),
-                    Convert.ToInt32(args[2]),
-                    args.Count >= 4 ? Convert.ToInt32(args[3]) : -1);
+
+                InventoryResult result;
+                // 跨容器形：args[2] 是 string（toInventoryId）
+                if (args.Count >= 4 && args[2] is string toInv && !string.IsNullOrEmpty(toInv))
+                {
+                    result = MoveItem(
+                        args[0]?.ToString(),
+                        Convert.ToInt32(args[1]),
+                        toInv,
+                        Convert.ToInt32(args[3]),
+                        args.Count >= 5 ? Convert.ToInt32(args[4]) : -1);
+                }
+                else
+                {
+                    // 同容器形：args[2] 是 int（toSlot）
+                    result = MoveItem(
+                        args[0]?.ToString(),
+                        Convert.ToInt32(args[1]),
+                        Convert.ToInt32(args[2]),
+                        args.Count >= 4 ? Convert.ToInt32(args[3]) : -1);
+                }
                 return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
             }
             catch (Exception ex) { return ResultCode.Fail(ex.Message); }

@@ -421,6 +421,17 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
                         return ResultCode.Ok(loaded);   // R5
                     }
                 }
+
+                if (typeStr == "Sprite")
+                {
+                    var sprite = LoadSpriteByName(path);
+                    if (sprite != null)
+                    {
+                        _loadedResources[key] = sprite;
+                        Log($"Fallback 同步加载 Sprite 子图: {sprite.name}");
+                        return ResultCode.Ok(sprite);
+                    }
+                }
             }
 
             return ResultCode.Fail("资源未加载");   // R5
@@ -475,6 +486,25 @@ namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
                 if (string.IsNullOrEmpty(hint)) continue;   // "" 等同于原 path，已 yield 过
                 yield return $"{hint}/{path}";
             }
+        }
+
+        private static Sprite LoadSpriteByName(string path)
+        {
+            var fileName = System.IO.Path.GetFileName(path);
+            var spriteName = System.IO.Path.GetFileNameWithoutExtension(fileName);
+            if (string.IsNullOrEmpty(spriteName)) spriteName = path;
+
+            foreach (var hint in _resourceSubfolderHints)
+            {
+                var sprites = Resources.LoadAll<Sprite>(hint);
+                if (sprites == null) continue;
+                foreach (var sprite in sprites)
+                {
+                    if (sprite != null && sprite.name == spriteName) return sprite;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

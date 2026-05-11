@@ -20,8 +20,23 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
     public class InventoryManager : Manager<InventoryManager>
     {
         // ─── Event 名常量（供调用方使用）
-        public const string EVT_OPEN_UI  = "OpenInventoryUI";
-        public const string EVT_CLOSE_UI = "CloseInventoryUI";
+        public const string EVT_OPEN_UI    = "OpenInventoryUI";
+        public const string EVT_CLOSE_UI   = "CloseInventoryUI";
+        public const string EVT_REGISTER_ITEM = "InventoryRegisterItem";
+        public const string EVT_REGISTER_PICKABLE_ITEM = "InventoryRegisterPickableItem";
+        public const string EVT_SPAWN_PICKABLE_ITEM = "InventorySpawnPickableItem";
+        public const string EVT_ADD_ITEM = "InventoryAddItem";
+        /// <summary>快捷栏使用事件：玩家按下 1~9 时广播。args: [string inventoryId, int slotIndex, InventoryItem item|null]</summary>
+        public const string EVT_HOTBAR_USE = "InventoryHotbarUse";
+
+        // ─── 默认容器 ID（代码侧默认创建的 3 个）
+        public const string ID_PLAYER       = "player";
+        public const string ID_HOTBAR       = "hotbar";
+        public const string ID_EQUIPMENT    = "equipment";
+        // ─── 默认 ConfigId
+        private const string CFG_PLAYER     = "PlayerBackPack";
+        private const string CFG_HOTBAR     = "Hotbar";
+        private const string CFG_EQUIPMENT  = "PlayerEquipment";
 
         #region Inspector
 
@@ -50,6 +65,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         /// </summary>
         private readonly Dictionary<string, UIPanelComponent> _rootPanels = new Dictionary<string, UIPanelComponent>();
 
+        private readonly Dictionary<string, PickableItemDefinition> _pickableDefinitions = new Dictionary<string, PickableItemDefinition>();
+
         #region Lifecycle
 
         protected override void Initialize()
@@ -62,6 +79,32 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             CreateDefaultInventories();
 
             Log("InventoryManager 初始化完成", Color.green);
+        }
+
+        /// <summary>Awake 之后所有 Manager / EventProcessor 都注册完了，在 Start 里安全自动打开 Hotbar。</summary>
+        private void Start()
+        {
+            // 启动后自动打开 Hotbar——快捷栏一直可见
+            var result = OpenInventoryUI(new List<object> { ID_HOTBAR, CFG_HOTBAR });
+            if (!ResultCode.IsOk(result))
+                Log($"自动打开 Hotbar 失败: {(result != null && result.Count > 1 ? result[1] : "(unknown)")}", Color.red);
+        }
+
+        /// <summary>
+        /// 监听 1~9 按键 + 调用 base Update（Inspector 同步 / logging sync）。
+        /// </summary>
+        protected override void Update()
+        {
+            base.Update();
+            if (Service == null) return;
+            for (var i = 0; i < 9; i++)
+            {
+                if (!Input.GetKeyDown(KeyCode.Alpha1 + i)) continue;
+                var inv  = Service.GetInventory(ID_HOTBAR);
+                var item = inv?.GetSlot(i)?.Item;
+                EventProcessor.Instance.TriggerEvent(EVT_HOTBAR_USE,
+                    new List<object> { ID_HOTBAR, i, item });
+            }
         }
 
         protected override void UpdateServiceInspectorInfo()
@@ -102,10 +145,14 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             Service.RegisterTemplate(template);
         }
 
-        /// <summary>注册默认容器配置（玩家背包）。</summary>
+        /// <summary>注册默认容器配置（玩家背包 / 快捷栏 / 装备栏）。
+        /// <para>仅当持久化中不存在时注册；已有持久化数据时尊重用户/存档侧配置，不覆盖。</para>
+        /// </summary>
         private void RegisterDefaultConfigs()
         {
-            RegisterConfigIfMissing("PlayerBackPack", "玩家背包", BuildPlayerConfig);
+            RegisterConfigIfMissing(CFG_PLAYER,    "玩家背包", BuildPlayerConfig);
+            RegisterConfigIfMissing(CFG_HOTBAR,    "快捷栏",   BuildHotbarConfig);
+            RegisterConfigIfMissing(CFG_EQUIPMENT, "装备栏",   BuildEquipmentConfig);
         }
 
         private void RegisterConfigIfMissing(string id, string label, System.Func<string, string, InventoryConfig> builder)
@@ -128,7 +175,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                     .WithStartOffset(110f, 465f)
                     .WithSlotBackgroundId("Slot_1"))
                 .WithPanelConfig(new PanelConfig(680f, 560f)
-                    .WithPanelPosition(960f, 540f)
+                    // 主面板向右偏移 150：补偿左侧伸出的 300 宽描述子面板，
+                    // 让 (主面板 + 描述子面板) 组合 bounding-box 在 1920×1080 参考分辨率下水平居中
+                    .WithPanelPosition(1110f, 540f)
                     .WithPanelScale(1f, 1f)
                     .WithBackgroundId("背包背景")
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
@@ -142,9 +191,37 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                     .WithOffset(-150f, 275f)
                     .WithBackgroundId("背包背景")
                     .WithTextPadding(40f, 40f)
-                    .WithFontSize(14)
+                    .WithFontSize(20)
                     .WithTextColor(new Color(0.95f, 0.95f, 0.95f, 1f))
-                    .WithEmptyPlaceholder("（点击物品查看描述）"))
+                    .WithEmptyPlaceholder("（点击物品查看描述）")
+                    // 内部图标 / 文本整体在 300 宽面板内右移 ~25px（避免贴左边缘），同步收窄宽度避免溢出
+                    .WithIconConfig(new DescriptionIconConfig()
+                        .WithPosition(150f, 370f)
+                        .WithSize(112f, 112f))
+                    .WithNameConfig(new DescriptionTextElementConfig
+                    {
+                        Position  = new Vector2(150f, 300f),
+                        Size      = new Vector2(260f, 48f),
+                        FontSize  = 26,
+                        TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
+                        Alignment = TextAnchor.MiddleCenter,
+                    })
+                    .WithStackConfig(new DescriptionTextElementConfig
+                    {
+                        Position  = new Vector2(150f, 260f),
+                        Size      = new Vector2(260f, 36f),
+                        FontSize  = 20,
+                        TextColor = new Color(1f, 0.85f, 0.4f, 1f),
+                        Alignment = TextAnchor.MiddleCenter,
+                    })
+                    .WithDescTextConfig(new DescriptionTextElementConfig
+                    {
+                        Position  = new Vector2(150f, 125f),
+                        Size      = new Vector2(250f, 190f),
+                        FontSize  = 20,
+                        TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
+                        Alignment = TextAnchor.MiddleCenter,
+                    }))
                 .WithShowTitle(true)
                 .WithTitleConfig(new TitleConfig(420f, 40f)
                     .WithPosition(340f, 530f)        // 主面板顶部居中（680/2, 560-30）
@@ -152,11 +229,54 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                     .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
                     .WithAlignment(TextAnchor.MiddleCenter));
 
-        /// <summary>创建调试用默认 Inventory（玩家）。</summary>
+        /// <summary>快捷栏配置：9 格 × 1 行，常驻屏幕底部居中，无标题/描述/关闭按钮。</summary>
+        private static InventoryConfig BuildHotbarConfig(string id, string label) =>
+            new InventoryConfig(id, label)
+                .WithPageCount(1)
+                .WithSlotsPerPage(9)
+                .WithSlotConfig(new SlotConfig(70f, 70f, 9)
+                    .WithSlotSpacing(8f, 8f)
+                    .WithStartOffset(78f, 50f)             // 780 宽：左右各 43 padding + 半槽 35 = 78；垂直居中 100/2
+                    .WithSlotBackgroundId("Slot_1"))
+                .WithPanelConfig(new PanelConfig(780f, 100f)
+                    .WithPanelPosition(960f, 80f)          // 1920×1080 底部居中（上沿距屏底 30）
+                    .WithPanelScale(1f, 1f)
+                    .WithBackgroundId("背包背景")
+                    .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.85f)))
+                .WithCloseButtonConfig(new ButtonConfig(0f, 0f, 0f, 0f).WithVisible(false).WithInteractable(false))
+                .WithShowTitle(false)
+                .WithShowDescription(false);
+
+        /// <summary>装备栏配置：5 格 × 1 列（头盔/盔甲/护腿/鞋子/背包），插在玩家背包右侧。</summary>
+        private static InventoryConfig BuildEquipmentConfig(string id, string label) =>
+            new InventoryConfig(id, label)
+                .WithPageCount(1)
+                .WithSlotsPerPage(5)
+                .WithSlotConfig(new SlotConfig(80f, 80f, 1)
+                    .WithSlotSpacing(0f, 12f)
+                    .WithStartOffset(60f, 465f)            // 120 宽 → 居中 60；标题下方开始，5 格完整落在面板内
+                    .WithSlotBackgroundId("Slot_1"))
+                .WithPanelConfig(new PanelConfig(120f, 550f)
+                    .WithPanelPosition(1520f, 540f)        // PlayerBackPack 右边沿 1450 + 10 间隔 + 60 半宽 = 1520，留 10
+                    .WithPanelScale(1f, 1f)
+                    .WithBackgroundId("背包背景")
+                    .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
+                .WithCloseButtonConfig(new ButtonConfig(0f, 0f, 0f, 0f).WithVisible(false).WithInteractable(false))
+                .WithShowTitle(true)
+                .WithTitleConfig(new TitleConfig(110f, 30f)
+                    .WithPosition(60f, 545f)               // 120 宽中心 60，500 高顶部 -15
+                    .WithFontSize(16)
+                    .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
+                    .WithAlignment(TextAnchor.MiddleCenter))
+                .WithShowDescription(false);
+
+        /// <summary>创建调试用默认 Inventory（玩家背包 / 快捷栏 / 装备栏）。</summary>
         private void CreateDefaultInventories()
         {
-            Service.CreateInventory("player", "玩家背包", 30);
-            Log("创建默认 Inventory: player", Color.cyan);
+            Service.CreateInventory(ID_PLAYER,    "玩家背包", 30);
+            Service.CreateInventory(ID_HOTBAR,    "快捷栏",    9);
+            Service.CreateInventory(ID_EQUIPMENT, "装备栏",    5);
+            Log("创建默认 Inventory: player / hotbar / equipment", Color.cyan);
         }
 
         #endregion
@@ -184,6 +304,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 {
                     cached.Visible = true;
                     Log($"复用缓存的Inventory UI: {inventoryId}", Color.green);
+                    // PlayerBackPack 联动（缓存路径同样要恢复装备栏可见）
+                    if (inventoryId == ID_PLAYER && Service.GetInventory(ID_EQUIPMENT) != null)
+                        OpenInventoryUI(new List<object> { ID_EQUIPMENT, CFG_EQUIPMENT });
                     return ResultCode.Ok(inventoryId);
                 }
                 // 实体已销毁（外部触发 EVT_UNREGISTER 等）→ 清理缓存重建
@@ -216,6 +339,11 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             // UI 注册后挂上拖拽处理器（依赖 GameObject 已创建）
             InventoryUIBuilder.AttachSlotDragHandlers(inventoryId, config.SlotsPerPage);
 
+            // PlayerBackPack 联动：打开玩家背包时同步打开装备栏（并插在右侧）。
+            // 不加缓存判断 —— OpenInventoryUI 内部已经会复用缓存并切 Visible=true。
+            if (inventoryId == ID_PLAYER && Service.GetInventory(ID_EQUIPMENT) != null)
+                OpenInventoryUI(new List<object> { ID_EQUIPMENT, CFG_EQUIPMENT });
+
             Log($"成功构建并打开Inventory UI: {inventoryId}", Color.green);
             return ResultCode.Ok(inventoryId);
         }
@@ -229,6 +357,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
         public List<object> CloseInventoryUI(List<object> data)
         {
             if (!TryGetId(data, 0, out var inventoryId, out var fail)) return fail;
+
+            // PlayerBackPack 联动：关闭玩家背包时同步隐藏装备栏
+            if (inventoryId == ID_PLAYER && _rootPanels.TryGetValue(ID_EQUIPMENT, out var eqPanel))
+                eqPanel.Visible = false;
 
             if (_rootPanels.TryGetValue(inventoryId, out var panel))
             {
@@ -261,6 +393,99 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
             Log($"销毁Inventory UI: {inventoryId}", Color.green);
             return ResultCode.Ok(inventoryId);
+        }
+
+        [Event(EVT_REGISTER_ITEM)]
+        public List<object> RegisterItem(List<object> data)
+        {
+            if (data == null || data.Count < 1 || !(data[0] is InventoryItem item))
+                return ResultCode.Fail("参数无效: [InventoryItem]");
+            RegisterTemplateIfMissing(item);
+            return ResultCode.Ok(item.Id);
+        }
+
+        [Event(EVT_REGISTER_PICKABLE_ITEM)]
+        public List<object> RegisterPickableItem(List<object> data)
+        {
+            if (data == null || data.Count < 1 || !(data[0] is PickableItemDefinition definition))
+                return ResultCode.Fail("参数无效: [PickableItemDefinition]");
+            if (string.IsNullOrEmpty(definition.Id) || string.IsNullOrEmpty(definition.ItemTemplateId))
+                return ResultCode.Fail("可拾取物定义缺少 Id 或 ItemTemplateId");
+
+            definition.DefaultAmount = Mathf.Max(1, definition.DefaultAmount);
+            _pickableDefinitions[definition.Id] = definition;
+            Log($"注册可拾取物定义: {definition.Id} -> {definition.ItemTemplateId}", Color.cyan);
+            return ResultCode.Ok(definition.Id);
+        }
+
+        [Event(EVT_SPAWN_PICKABLE_ITEM)]
+        public List<object> SpawnPickableItem(List<object> data)
+        {
+            if (!TryGetId(data, 0, out var pickableId, out var fail)) return fail;
+            if (!_pickableDefinitions.TryGetValue(pickableId, out var definition))
+                return ResultCode.Fail($"可拾取物定义不存在: {pickableId}");
+
+            var position = data.Count >= 2 && data[1] is Vector3 v3
+                ? v3
+                : data.Count >= 2 && data[1] is Vector2 v2
+                    ? new Vector3(v2.x, v2.y, 0f)
+                    : Vector3.zero;
+            var targetInventoryId = data.Count >= 3 && data[2] is string invId && !string.IsNullOrEmpty(invId)
+                ? invId
+                : ID_PLAYER;
+            var amount = data.Count >= 4 ? System.Convert.ToInt32(data[3]) : definition.DefaultAmount;
+
+            var go = new GameObject(string.IsNullOrEmpty(definition.DisplayName) ? definition.Id : definition.DisplayName);
+            go.transform.position = position;
+
+            var sr = go.AddComponent<SpriteRenderer>();
+            if (!string.IsNullOrEmpty(definition.SpriteResourcePath))
+            {
+                sr.sprite = Resources.Load<Sprite>(definition.SpriteResourcePath);
+                if (sr.sprite == null) Log($"可拾取物 Sprite 加载失败: Resources/{definition.SpriteResourcePath}", Color.yellow);
+            }
+
+            var rb = go.AddComponent<Rigidbody2D>();
+            rb.gravityScale = 1f;
+            rb.freezeRotation = true;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            var colliderRadius = sr.sprite != null
+                ? Mathf.Max(sr.bounds.size.x, sr.bounds.size.y) * 0.5f
+                : Mathf.Max(definition.ColliderSize.x, definition.ColliderSize.y) * 0.25f;
+            colliderRadius = Mathf.Max(0.05f, colliderRadius);
+
+            var physicalCollider = go.AddComponent<CircleCollider2D>();
+            physicalCollider.isTrigger = false;
+            physicalCollider.radius = colliderRadius;
+            physicalCollider.offset = definition.ColliderOffset;
+
+            var pickupTriggerGo = new GameObject("PickupTrigger");
+            pickupTriggerGo.transform.SetParent(go.transform, false);
+            var pickupTrigger = pickupTriggerGo.AddComponent<CircleCollider2D>();
+            pickupTrigger.isTrigger = true;
+            pickupTrigger.radius = colliderRadius;
+            pickupTrigger.offset = definition.ColliderOffset;
+
+            var pickable = go.AddComponent<PickableItem>();
+            pickable.Configure(targetInventoryId, definition.ItemTemplateId, amount);
+
+            Log($"生成可拾取物: {pickableId} at {position}", Color.green);
+            return ResultCode.Ok(go);
+        }
+
+        [Event(EVT_ADD_ITEM)]
+        public List<object> AddItemByEvent(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数不足: [inventoryId, itemIdOrItem, amount?]");
+            var inventoryId = data[0] as string;
+            var amount = data.Count >= 3 ? System.Convert.ToInt32(data[2]) : 1;
+            InventoryItem item = data[1] as InventoryItem;
+            if (item == null && data[1] is string templateId) item = Service.InstantiateTemplate(templateId, amount);
+            if (item == null) return ResultCode.Fail("未知物品或模板 ID");
+
+            var result = Service.AddItem(inventoryId, item, amount);
+            return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
         }
 
         /// <summary>

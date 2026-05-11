@@ -27,16 +27,20 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
             public bool   Loop;
         }
 
+        // Loop 语义：
+        //   true  = 持续状态动作（移动/待机/防御按住）→ 末帧回 0 重播
+        //   false = 一次性动作（攻击/受击/死亡/跳跃/特殊）→ 停在末帧 + 触发 OnActionComplete
+        // 业务层（如 TribePlayer.PlayThenReturn）应监听完成事件再切回 Idle/Walk。
         private static readonly ActionDef[] Actions =
         {
-            new ActionDef { Name = "Walk",    FrameCount = 6, Fps = 12f, Loop = true },
-            new ActionDef { Name = "Idle",    FrameCount = 4, Fps = 8f,  Loop = true },
-            new ActionDef { Name = "Jump",    FrameCount = 3, Fps = 10f, Loop = true },
-            new ActionDef { Name = "Attack",  FrameCount = 4, Fps = 14f, Loop = true },
-            new ActionDef { Name = "Defend",  FrameCount = 4, Fps = 10f, Loop = true },
-            new ActionDef { Name = "Damage",  FrameCount = 3, Fps = 12f, Loop = true },
-            new ActionDef { Name = "Death",   FrameCount = 5, Fps = 8f,  Loop = true },
-            new ActionDef { Name = "Special", FrameCount = 6, Fps = 12f, Loop = true },
+            new ActionDef { Name = "Walk",    FrameCount = 6, Fps = 12f, Loop = true  },
+            new ActionDef { Name = "Idle",    FrameCount = 4, Fps = 8f,  Loop = true  },
+            new ActionDef { Name = "Jump",    FrameCount = 3, Fps = 10f, Loop = false },
+            new ActionDef { Name = "Attack",  FrameCount = 4, Fps = 14f, Loop = false },
+            new ActionDef { Name = "Defend",  FrameCount = 4, Fps = 10f, Loop = true  },
+            new ActionDef { Name = "Damage",  FrameCount = 3, Fps = 12f, Loop = false },
+            new ActionDef { Name = "Death",   FrameCount = 5, Fps = 8f,  Loop = false },
+            new ActionDef { Name = "Special", FrameCount = 6, Fps = 12f, Loop = false },
         };
 
         public const string DefaultAction = "Idle";
@@ -49,6 +53,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
         public static CharacterConfig BuildWarrior() =>
             new CharacterConfig(WarriorId, "战士")
                 .WithRootScale(Vector3.one)
+                .WithRenderMode(CharacterRenderMode.Sprite2DAnimator)
                 .WithPart(MakeAnimatedPart("Skin",   "Skin_warrior_1",            0))
                 .WithPart(MakeAnimatedPart("Cloth",  "Cloth_warrior_red",         1))
                 .WithPart(MakeAnimatedPart("Eyes",   "Eyes_blue",                 2))
@@ -61,6 +66,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
         public static CharacterConfig BuildMage() =>
             new CharacterConfig(MageId, "法师")
                 .WithRootScale(Vector3.one)
+                .WithRenderMode(CharacterRenderMode.Sprite2DAnimator)
                 .WithPart(MakeAnimatedPart("Skin",   "Skin_mage_1",                  0))
                 .WithPart(MakeAnimatedPart("Cloth",  "Cloth_mage_purple",            1))
                 .WithPart(MakeAnimatedPart("Eyes",   "Eyes_blue",                    2))

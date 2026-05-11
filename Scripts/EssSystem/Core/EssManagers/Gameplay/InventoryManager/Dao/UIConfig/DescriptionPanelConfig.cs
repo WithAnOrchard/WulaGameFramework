@@ -146,6 +146,30 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao
             return this;
         }
 
+        public DescriptionPanelConfig WithIconConfig(DescriptionIconConfig cfg)
+        {
+            IconConfig = cfg ?? new DescriptionIconConfig();
+            return this;
+        }
+
+        public DescriptionPanelConfig WithNameConfig(DescriptionTextElementConfig cfg)
+        {
+            NameConfig = cfg ?? new DescriptionTextElementConfig();
+            return this;
+        }
+
+        public DescriptionPanelConfig WithStackConfig(DescriptionTextElementConfig cfg)
+        {
+            StackConfig = cfg ?? new DescriptionTextElementConfig();
+            return this;
+        }
+
+        public DescriptionPanelConfig WithDescTextConfig(DescriptionTextElementConfig cfg)
+        {
+            DescTextConfig = cfg ?? new DescriptionTextElementConfig();
+            return this;
+        }
+
         #endregion
     }
 }

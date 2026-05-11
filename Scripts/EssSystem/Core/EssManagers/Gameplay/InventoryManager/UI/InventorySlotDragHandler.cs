@@ -1,12 +1,16 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using EssSystem.Core;
+using EssSystem.Core.Event;
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
 
 namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 {
     /// <summary>
     /// 槽位拖拽处理器 — 挂在 Slot 的 GameObject 上，提供「按住拖动 → 释放交换/堆叠/搬运」功能。
-    /// <para>数据层走 <see cref="InventoryService.MoveItem"/>；UI 通过 <c>EVT_CHANGED</c> 广播自动刷新。</para>
+    /// <para>强解耦：拖落时通过 <see cref="InventoryService.EVT_MOVE"/> 事件触发，<b>不直接调 Service API</b>。UI 通过 <c>EVT_CHANGED</c> 广播自动刷新。</para>
     /// </summary>
     public class InventorySlotDragHandler : MonoBehaviour,
         IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
@@ -25,7 +29,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            var inv  = InventoryService.Instance?.GetInventory(InventoryId);
+            if (!EventProcessor.HasInstance) return;
+            // 强解耦：通过 EVT_QUERY 取容器；不直接 InventoryService.Instance
+            var qr = EventProcessor.Instance.TriggerEventMethod(
+                InventoryService.EVT_QUERY, new List<object> { InventoryId });
+            if (!ResultCode.IsOk(qr) || qr.Count < 2) return;
+            var inv  = qr[1] as Inventory;
             var slot = inv?.GetSlot(SlotIndex);
             if (slot == null || slot.IsEmpty) return;
 
@@ -69,10 +78,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 ? eventData.pointerDrag.GetComponent<InventorySlotDragHandler>()
                 : null;
             if (src == null || src == this) return;
-            // 暂只支持同容器内移动；跨容器需扩展 InventoryService
-            if (src.InventoryId != InventoryId) return;
+            if (!EventProcessor.HasInstance) return;
 
-            InventoryService.Instance?.MoveItem(InventoryId, src.SlotIndex, SlotIndex);
+            // 强解耦：走 EVT_MOVE 事件（跨容器 5 参形），不直调 Service API
+            EventProcessor.Instance.TriggerEventMethod(
+                InventoryService.EVT_MOVE,
+                new List<object> { src.InventoryId, src.SlotIndex, InventoryId, SlotIndex, -1 });
         }
 
         private void UpdateGhostPosition(PointerEventData eventData)

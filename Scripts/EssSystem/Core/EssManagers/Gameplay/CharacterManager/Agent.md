@@ -6,7 +6,8 @@
 
 - 一个 Character 由多个**部件**组成（如 Body / Head / Weapon）
 - 渲染模式由 `CharacterConfig.RenderMode` 决定（**整 Character 一致**，不混用）：
-  - **`CharacterRenderMode.Sprite2D`**（默认）—— `CharacterPartView2D` + `SpriteRenderer` + 帧序列
+  - **`CharacterRenderMode.Sprite2D`**（默认）—— `CharacterPartView2D` + `SpriteRenderer` + 帧序列（手动 Update 切帧）
+  - **`CharacterRenderMode.Sprite2DAnimator`** —— `CharacterPartView2DAnimator` + `SpriteRenderer` + Unity `Animator` + `AnimatorOverrideController`（运行时 `new AnimationClip` 覆盖 placeholder） + `Update` 读 normalizedTime 手动 swap sprite。**前提**：先跑一次 `Tools/Character/Build Sprite Animator Base Controller` 生成 `Resources/Generated/CharacterAnimBase.controller`（只生成一次）
   - **`CharacterRenderMode.Prefab3D`** —— `CharacterPartView3D` + 实例化 Prefab + `Animator` + **AnimatorController 状态切换**（要求 .controller 资产）
   - **`CharacterRenderMode.Prefab3DClips`** —— `CharacterPartView3DClips` + 实例化 FBX + **Playables 直接播 AnimationClip**（**零配置**，无需 AnimatorController）
 - 2D 部件按 PartType 区分 Static/Dynamic；3D 部件天然有 Animator，统一按 Dynamic 处理

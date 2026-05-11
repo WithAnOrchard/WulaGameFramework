@@ -19,6 +19,14 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
     /// </summary>
     internal static class InventoryUIBuilder
     {
+        /// <summary>
+        /// 文本超采样倍率（参 <c>Assets/Agent.md §5「文本清晰度」</c>）。
+        /// FontSize × N + Size × N + Scale × (1/N)：让字体以 N× 分辨率栅格化再缩小渲染，
+        /// 显著降低 uGUI Text 在 1080p+ 屏幕上的模糊感。建议整数倍（2×/3×）。
+        /// </summary>
+        private const float TextSupersample = 6f;
+        private static DescUIRefs _sharedDescRefs;
+
         #region Public API
 
         /// <summary>
@@ -92,8 +100,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             {
                 icon.BackgroundSpriteId = item.IconSpriteId ?? string.Empty;
                 icon.BackgroundColor    = Color.white;
-                name.Text  = item.Name ?? item.Id ?? string.Empty;
-                stack.Text = $"{item.CurrentStack}/{item.MaxStack}";
+                name.Text  = string.Empty;
+                stack.Text = item.CurrentStack > 0 ? item.CurrentStack.ToString() : string.Empty;
             }
             else
             {
@@ -145,11 +153,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
             var titleText = new UITextComponent($"{inventoryId}_Title", $"{inventoryId}_Title")
                 .SetPosition(posX, posY)
-                .SetSize(tc.Size.x, tc.Size.y)
-                .SetFontSize(tc.FontSize)
                 .SetColor(tc.TextColor)
                 .SetAlignment(tc.Alignment)
                 .SetText(text);
+            ApplySupersample(titleText, tc.Size.x, tc.Size.y, tc.FontSize);
             titleText.SetVisible(true);
             parent.AddChild(titleText);
         }
@@ -165,7 +172,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 Stacks = new UITextComponent [config.SlotsPerPage],
             };
 
-            var smallFont = Mathf.Max(8, Mathf.RoundToInt(sc.SlotHeight * 0.13f));
+            var stackFont = Mathf.Max(16, Mathf.RoundToInt(sc.SlotHeight * 0.24f));
 
             for (var i = 0; i < config.SlotsPerPage; i++)
             {
@@ -183,7 +190,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                     .SetInteractable(true);
 
                 // 图标（slot 居中）
-                var iconSize = Mathf.Min(sc.SlotWidth, sc.SlotHeight) * 0.55f;
+                var iconSize = Mathf.Min(sc.SlotWidth, sc.SlotHeight) * 0.72f;
                 var iconPanel = new UIPanelComponent($"{inventoryId}_Slot_{i}_Icon", $"Slot_{i}_Icon")
                     .SetPosition(sc.SlotWidth * 0.5f, sc.SlotHeight * 0.5f)
                     .SetSize(iconSize, iconSize)
@@ -194,22 +201,20 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 // 名称（slot 顶部）
                 var nameText = new UITextComponent($"{inventoryId}_Slot_{i}_NameText", $"Slot_{i}_Name")
                     .SetPosition(0f, sc.SlotHeight * 0.38f)
-                    .SetSize(Mathf.Max(1f, sc.SlotWidth - 4f), sc.SlotHeight * 0.18f)
-                    .SetFontSize(smallFont)
                     .SetColor(Color.white)
                     .SetAlignment(TextAnchor.MiddleCenter)
                     .SetText(string.Empty);
-                nameText.SetVisible(true);
+                ApplySupersample(nameText, Mathf.Max(1f, sc.SlotWidth - 4f), sc.SlotHeight * 0.18f, stackFont);
+                nameText.SetVisible(false);
                 slotBtn.AddChild(nameText);
 
                 // 数量（slot 底部右对齐）
                 var stackText = new UITextComponent($"{inventoryId}_Slot_{i}_StackText", $"Slot_{i}_Stack")
-                    .SetPosition(0f, -sc.SlotHeight * 0.38f)
-                    .SetSize(Mathf.Max(1f, sc.SlotWidth - 4f), sc.SlotHeight * 0.18f)
-                    .SetFontSize(smallFont)
+                    .SetPosition(-sc.SlotWidth * 0.08f, -sc.SlotHeight * 0.34f)
                     .SetColor(new Color(1f, 0.85f, 0.4f, 1f))
                     .SetAlignment(TextAnchor.MiddleRight)
                     .SetText(string.Empty);
+                ApplySupersample(stackText, Mathf.Max(1f, sc.SlotWidth - 8f), sc.SlotHeight * 0.28f, stackFont);
                 stackText.SetVisible(true);
                 slotBtn.AddChild(stackText);
 
@@ -220,12 +225,14 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                 ApplyItemToSlot(iconPanel, nameText, stackText, inv?.GetSlot(slotIdx)?.Item);
 
                 // 点击 slot → 更新描述面板
-                if (descRefs != null)
+                var targetDescRefs = descRefs ?? _sharedDescRefs;
+                if (targetDescRefs != null)
                 {
-                    var capturedRefs = descRefs;
-                    slotBtn.OnClick += _ =>
+                    var capturedRefs = targetDescRefs;
+                    slotBtn.OnClick += clickedButton =>
                     {
-                        var clickedItem = InventoryService.Instance.GetInventory(inventoryId)?.GetSlot(slotIdx)?.Item;
+                        var clickedSlotIdx = ParseSlotIndex(clickedButton?.Id, slotIdx);
+                        var clickedItem = InventoryService.Instance.GetInventory(inventoryId)?.GetSlot(clickedSlotIdx)?.Item;
                         ApplyItemToDesc(capturedRefs, clickedItem);
                     };
                 }
@@ -252,17 +259,27 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             panel.AddChild(closeBtn);
         }
 
-        private static DescUIRefs BuildDescriptionPanel(string inventoryId, UIPanelComponent parent, DescriptionPanelConfig dp)
+        private static int ParseSlotIndex(string buttonId, int fallback)
+        {
+            if (string.IsNullOrEmpty(buttonId)) return fallback;
+            var marker = "_Slot_";
+            var idx = buttonId.LastIndexOf(marker, System.StringComparison.Ordinal);
+            if (idx < 0) return fallback;
+            var start = idx + marker.Length;
+            return int.TryParse(buttonId.Substring(start), out var slotIndex) ? slotIndex : fallback;
+        }
+
+        private static DescUIRefs BuildDescriptionPanel(string inventoryId, UIPanelComponent parent, DescriptionPanelConfig dc)
         {
             var descPanel = new UIPanelComponent($"{inventoryId}_DescPanel", $"{inventoryId}_DescriptionPanel")
-                .SetPosition(dp.Offset.x, dp.Offset.y)
-                .SetSize(dp.Width, dp.Height)
-                .SetBackgroundSpriteId(dp.BackgroundSpriteId)
-                .SetBackgroundColor(SpriteAwareTint(dp.BackgroundSpriteId, dp.BackgroundColor))
+                .SetPosition(dc.Offset.x, dc.Offset.y)
+                .SetSize(dc.Width, dc.Height)
+                .SetBackgroundSpriteId(dc.BackgroundSpriteId)
+                .SetBackgroundColor(SpriteAwareTint(dc.BackgroundSpriteId, dc.BackgroundColor))
                 .SetVisible(true);
 
             // 图标
-            var ic = dp.IconConfig ?? new DescriptionIconConfig();
+            var ic = dc.IconConfig ?? new DescriptionIconConfig();
             var iconPanel = new UIPanelComponent($"{inventoryId}_DescIcon", $"{inventoryId}_DescriptionIcon")
                 .SetPosition(ic.Position.x, ic.Position.y)
                 .SetSize(ic.Size.x, ic.Size.y)
@@ -272,25 +289,27 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
             // 三个文本子组件
             var nameText  = BuildDescText($"{inventoryId}_DescName",  $"{inventoryId}_DescriptionName",
-                                           dp.NameConfig,  dp, string.Empty);
+                                           dc.NameConfig,  dc, string.Empty);
             var stackText = BuildDescText($"{inventoryId}_DescStack", $"{inventoryId}_DescriptionStack",
-                                           dp.StackConfig, dp, string.Empty);
+                                           dc.StackConfig, dc, string.Empty);
             var descText  = BuildDescText($"{inventoryId}_DescText",  $"{inventoryId}_DescriptionText",
-                                           dp.DescTextConfig, dp, dp.EmptyPlaceholder ?? string.Empty);
+                                           dc.DescTextConfig, dc, dc.EmptyPlaceholder ?? string.Empty);
             descPanel.AddChild(nameText);
             descPanel.AddChild(stackText);
             descPanel.AddChild(descText);
 
             parent.AddChild(descPanel);
 
-            return new DescUIRefs
+            var refs = new DescUIRefs
             {
                 Icon = iconPanel,
                 Name = nameText,
                 Stack = stackText,
                 Description = descText,
-                EmptyPlaceholder = dp.EmptyPlaceholder ?? string.Empty,
+                EmptyPlaceholder = dc.EmptyPlaceholder ?? string.Empty,
             };
+            _sharedDescRefs = refs;
+            return refs;
         }
 
         /// <summary>
@@ -309,13 +328,25 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
 
             var t = new UITextComponent(daoId, name)
                 .SetPosition(posX, posY)
-                .SetSize(cfg.Size.x, cfg.Size.y)
-                .SetFontSize(cfg.FontSize)
                 .SetColor(cfg.TextColor)
                 .SetAlignment(cfg.Alignment)
                 .SetText(initialText ?? string.Empty);
+            ApplySupersample(t, cfg.Size.x, cfg.Size.y, cfg.FontSize);
             t.SetVisible(cfg.IsVisible);
             return t;
+        }
+
+        /// <summary>
+        /// 对已经设好 Position/Color/Alignment 的 <see cref="UITextComponent"/> 应用 N× 超采样：
+        /// FontSize × N、Size × N、Scale × (1/N)。视觉尺寸不变，但字体以 N× 分辨率栅格化显著减糊。
+        /// </summary>
+        private static void ApplySupersample(UITextComponent text, float width, float height, int fontSize)
+        {
+            var n = TextSupersample;
+            var inv = 1f / n;
+            text.SetSize(width * n, height * n)
+                .SetFontSize(Mathf.Max(1, Mathf.RoundToInt(fontSize * n)))
+                .SetScale(inv, inv);
         }
 
         #endregion
