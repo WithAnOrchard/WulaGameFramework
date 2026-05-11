@@ -122,7 +122,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &20912132
+--- !u!1 &341685162
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -130,22 +130,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 20912134}
-  - component: {fileID: 20912133}
+  - component: {fileID: 341685164}
+  - component: {fileID: 341685163}
   m_Layer: 0
-  m_Name: DayNightGameManager
+  m_Name: GameObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &20912133
+--- !u!114 &341685163
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 20912132}
+  m_GameObject: {fileID: 341685162}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d6ad786e837d7b41bc692d19c5c426f, type: 3}
@@ -156,6 +156,8 @@ MonoBehaviour:
   _playerConfigId: herobrine
   _autoSpawnVoxelWorld: 1
   _voxelConfig:
+    ConfigId: island_voxel_3d
+    DisplayName: Island Voxel 3D
     Seed: 20240501
     ChunkSize: 16
     MaxHeight: 96
@@ -168,111 +170,72 @@ MonoBehaviour:
     Lacunarity: 2
     BeachBand: 2
     SnowLine: 60
-  _voxelRenderRadius: 6
---- !u!4 &20912134
+    ElevationScale: 0.01
+    ElevationOctaves: 4
+    ElevationPersistence: 0.5
+    ElevationLacunarity: 2
+    BaseTemperature: 0.7
+    LatitudePeriod: 4000
+    LatitudeStrength: 0.5
+    ElevationLapseRate: 0.4
+    TemperatureNoiseScale: 0.005
+    TemperatureNoiseStrength: 0.1
+    BaseMoisture: 0.5
+    MoistureScale: 0.005
+    MoistureOctaves: 3
+    MoisturePersistence: 0.5
+    MoistureLacunarity: 2
+    OceanMoistureBoost: 0.4
+    ElevationDryness: 0.3
+    IslandCenterChunk: {x: 0, y: 0}
+    HalfChunksXZ: 40
+    LandRadiusBlocks: 580
+    CoastFalloffBlocks: 64
+    IslandPeakHeightAboveSea: 50
+    TerraceStepBlocks: 1
+    TerraceFromAboveSea: 8
+    CliffStoneAboveSea: 20
+    TownEnabled: 0
+    TownCenterOffsetBlocks: {x: 0, y: 0}
+    TownRadiusBlocks: 88
+    TownPlateauAboveSea: 6
+    TownEdgeFalloffBlocks: 22
+    TownShapeIrregularity: 0.45
+    TownHeightUndulation: 2
+    SmallFlatPatchCount: 20
+    SmallFlatPatchRadiusMin: 16
+    SmallFlatPatchRadiusMax: 28
+    SmallFlatPatchPlateauAboveSeaMin: 4
+    SmallFlatPatchPlateauAboveSeaMax: 12
+    SmallFlatPatchEdgeFalloff: 4
+    SmallFlatPatchScatterMinFraction: 0.4
+    SmallFlatPatchScatterMaxFraction: 0.9
+    RoadEnabled: 0
+    RoadHalfWidthBlocks: 2
+    RoadEdgeFalloffBlocks: 4
+    WallThicknessBlocks: 2
+    WallHeightAboveSea: 2
+  _voxelRenderRadius: 20
+  _clampPlayerToIsland: 1
+  _randomizeSeedEachPlay: 1
+  _clearPersistedMapEachPlay: 1
+  _autoSpawnLightManager: 1
+  _spawnDemoLights: 1
+  _initialDayCycle: 0.5
+  _spawnTownLayout: 1
+  _townPresets: []
+  _townStreetWidth: 2
+  _coastalSiteCount: 12
+--- !u!4 &341685164
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 20912132}
+  m_GameObject: {fileID: 341685162}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.13322282, y: 2.0513072, z: -1.9225225}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1780659303
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1780659305}
-  - component: {fileID: 1780659304}
-  m_Layer: 0
-  m_Name: Light
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!108 &1780659304
-Light:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1780659303}
-  m_Enabled: 1
-  serializedVersion: 10
-  m_Type: 2
-  m_Shape: 0
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
-  m_Range: 5000
-  m_SpotAngle: 30
-  m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
-  m_Shadows:
-    m_Type: 0
-    m_Resolution: -1
-    m_CustomResolution: -1
-    m_Strength: 1
-    m_Bias: 0.05
-    m_NormalBias: 0.4
-    m_NearPlane: 0.2
-    m_CullingMatrixOverride:
-      e00: 1
-      e01: 0
-      e02: 0
-      e03: 0
-      e10: 0
-      e11: 1
-      e12: 0
-      e13: 0
-      e20: 0
-      e21: 0
-      e22: 1
-      e23: 0
-      e30: 0
-      e31: 0
-      e32: 0
-      e33: 1
-    m_UseCullingMatrixOverride: 0
-  m_Cookie: {fileID: 0}
-  m_DrawHalo: 0
-  m_Flare: {fileID: 0}
-  m_RenderMode: 0
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingLayerMask: 1
-  m_Lightmapping: 1
-  m_LightShadowCasterMode: 0
-  m_AreaSize: {x: 1, y: 1}
-  m_BounceIntensity: 1
-  m_ColorTemperature: 6570
-  m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
-  m_UseBoundingSphereOverride: 0
-  m_UseViewFrustumForShadowCasterCull: 1
-  m_ShadowRadius: 0
-  m_ShadowAngle: 0
---- !u!4 &1780659305
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1780659303}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 3.11, y: 17.93, z: -2.3053205}
+  m_LocalPosition: {x: -73.921005, y: 58.08968, z: 75.74427}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -375,5 +338,4 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 2130135154}
-  - {fileID: 1780659305}
-  - {fileID: 20912134}
+  - {fileID: 341685164}

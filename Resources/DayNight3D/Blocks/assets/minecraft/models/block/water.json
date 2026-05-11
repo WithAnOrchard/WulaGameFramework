@@ -1,0 +1,7 @@
+{
+    "_comment": "Simplified water block model; vanilla MC uses fluid renderer rather than block model JSON.",
+    "parent": "minecraft:block/cube_all",
+    "textures": {
+        "all": "minecraft:block/water_still"
+    }
+}

@@ -24,6 +24,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
         /// <summary>每格侧面方块 ID（cliff 露出的）。</summary>
         public readonly byte[] SideBlocks;
 
+        /// <summary>每格生物群系 ID（参 <see cref="VoxelBiomeIds"/>）。生成器先按 (height, elev, temp, moist) 分类，
+        /// 再由 <see cref="VoxelBiomes"/> 查 (Top, Side) 写入对应方块；装饰器可读 Biomes 做按群系 spawn。</summary>
+        public readonly byte[] Biomes;
+
         /// <summary>世界坐标系下 chunk 起点（minX, minZ；y 永远从 0 起）。</summary>
         public int WorldMinX => ChunkX * Size;
         public int WorldMinZ => ChunkZ * Size;
@@ -34,6 +38,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
             Heights    = new byte[size * size];
             TopBlocks  = new byte[size * size];
             SideBlocks = new byte[size * size];
+            Biomes     = new byte[size * size];
         }
 
         /// <summary>(lx, lz) 行主序索引：lz * Size + lx。</summary>
@@ -42,6 +47,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao
         public byte GetHeight(int lx, int lz)    => Heights[Index(lx, lz)];
         public byte GetTopBlock(int lx, int lz)  => TopBlocks[Index(lx, lz)];
         public byte GetSideBlock(int lx, int lz) => SideBlocks[Index(lx, lz)];
+        public byte GetBiome(int lx, int lz)     => Biomes[Index(lx, lz)];
 
         // ──────────────────────────────────────────────────────────────
         // 持久化差量 API（Phase 4a）

@@ -7,6 +7,9 @@ using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using Demo.DayNight3D.Player;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Lighting;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Persistence;
+using Demo.DayNight3D.Map;
 
 namespace Demo.DayNight3D
 {
@@ -41,11 +44,30 @@ namespace Demo.DayNight3D
         [Tooltip("启动时自动创建 <see cref=\"Voxel3DMapView\"/> 体素世界。")]
         [SerializeField] private bool _autoSpawnVoxelWorld = true;
 
-        [Tooltip("体素世界生成参数。在 Inspector 里展开调 Seed / SeaLevel / SnowLine 等。")]
-        [SerializeField] private VoxelMapConfig _voxelConfig = new VoxelMapConfig();
+        [Tooltip("DayNight3D 专属体素世界配置（基于默认 VoxelMapConfig 微调：SnowLine=32, BeachBand=3, Seed=20240509，ConfigId=daynight3d_voxel。\n" +
+                 "Inspector 调 Seed / TerrainAmplitude / MCAmplitudeScale / ContinentalnessScale / ErosionScale / WeirdnessScale / MCHeightSmoothRadius 看生成变化。")]
+        [SerializeField] private DayNight3DVoxelMapConfig _voxelConfig = new DayNight3DVoxelMapConfig();
 
-        [Tooltip("体素远智半径（chunk 数）。")]
-        [SerializeField, Range(2, 16)] private int _voxelRenderRadius = 6;
+        [Tooltip("体素渲染半径（chunk 数）。调高会明显增加首帧烘 mesh 代价（~R² chunk），距离 30+ 需中高端机器。")]
+        [SerializeField, Range(2, 32)] private int _voxelRenderRadius = 12;
+
+        [Tooltip("每次进 PlayMode 都随机化 Seed，得到全新世界（默认 true）。\n" +
+                 "关掉则使用 Inspector 里 _voxelConfig.Seed 的值（同 seed 同世界，便于反复测试 / 截图复现）。")]
+        [SerializeField] private bool _randomizeSeedEachPlay = true;
+
+        [Tooltip("每次进 PlayMode 都把上一轮持久化的 chunk 存档清掉（默认 true）。\n" +
+                 "保证不会读到旧 seed 留下的 chunk 数据；关掉则保留存档（生产环境别关）。")]
+        [SerializeField] private bool _clearPersistedMapEachPlay = true;
+
+        [Header("Lighting (Voxel)")]
+        [Tooltip("是否在场景中自动挂 VoxelLightManager 子节点（提供 DayCycle 滑块 + 光源 API）。")]
+        [SerializeField] private bool _autoSpawnLightManager = true;
+
+        [Tooltip("启动时在小镇和小平地中心撒一组演示光源（中心萤石 + 边缘火把环 + 各小平地灯笼）。")]
+        [SerializeField] private bool _spawnDemoLights = true;
+
+        [Tooltip("启动 DayCycle 值 [0..1]：0 = 午夜全黑、0.5 = 正午全亮（默认）、0.85 = 黄昏接近黑夜，能看到火把暖光最明显。")]
+        [SerializeField, Range(0f, 1f)] private float _initialDayCycle = 0.5f;
 
         #endregion
 
@@ -54,9 +76,46 @@ namespace Demo.DayNight3D
 
         protected override void Awake()
         {
+            // 必须在 base.Awake / 任何 Manager 初始化之前 ——
+            //   * 随机 Seed → 影响地形 / planner RNG / 光照位置等所有用 Seed 派生的东西
+            //   * 清持久化 → 防止读到上轮旧 chunk
+            ResetWorldForFreshPlayMode();
+
             EnsureSubManager<CharacterManager>();
+            if (_autoSpawnLightManager) EnsureSubManager<VoxelLightManager>();
             base.Awake();
             Debug.Log("[DayNight3DGameManager] 基础 Manager 初始化完成");
+        }
+
+        /// <summary>每次进 PlayMode 时调用：根据 Inspector 开关重置 cfg.Seed + 清掉持久化的 chunk 存档。
+        /// 让"按 Play 按钮 = 全新世界"成立。</summary>
+        private void ResetWorldForFreshPlayMode()
+        {
+            if (_voxelConfig == null) return;
+
+            // 1) 随机 Seed —— 用 System.Random 不污染 Unity Random.state（Unity 全局给业务用）
+            if (_randomizeSeedEachPlay)
+            {
+                var newSeed = new System.Random().Next(int.MinValue, int.MaxValue);
+                Debug.Log($"[DayNight3DGameManager] 重新生成地图 Seed：{_voxelConfig.Seed} → {newSeed}");
+                _voxelConfig.Seed = newSeed;
+            }
+
+            // 2) 清持久化 chunk 存档（路径 {persistentDataPath}/VoxelMapData/{ConfigId}/）
+            //    防止上轮 seed 留下的 region 文件被读回来覆盖新地形
+            if (_clearPersistedMapEachPlay && !string.IsNullOrEmpty(_voxelConfig.ConfigId))
+            {
+                try
+                {
+                    var ok = VoxelMapPersistenceService.Instance.DeleteMapData(_voxelConfig.ConfigId);
+                    Debug.Log($"[DayNight3DGameManager] 清持久化地图存档 '{_voxelConfig.ConfigId}'：{(ok ? "已清" : "无需清/无存档")}");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[DayNight3DGameManager] 清持久化失败（可忽略，未首次绑定持久化）：{ex.Message}");
+                }
+            }
+
         }
 
         private void EnsureSubManager<T>() where T : MonoBehaviour
@@ -86,6 +145,14 @@ namespace Demo.DayNight3D
             // 先建 World，再 Spawn Player 并把出生点提到地表高 + 2
             Voxel3DMapView world = null;
             if (_autoSpawnVoxelWorld) world = SpawnVoxelWorld();
+
+            // 光源系统：先设 DayCycle，再撒 demo 光源 —— 全部在 view 第一次 Update 烘 mesh 前完成，
+            // 这样首帧的 mesh 顶点色就能正确反映黄昏 + 火把
+            if (VoxelLightManager.HasInstance)
+            {
+                VoxelLightManager.Instance.DayCycle01 = _initialDayCycle;
+                if (_spawnDemoLights) SpawnDemoLights();
+            }
 
             if (_autoSpawnPlayer) SpawnPlayer(world);
         }
@@ -152,7 +219,11 @@ namespace Demo.DayNight3D
             }
 
             // 让体素世界跟随玩家
-            if (world != null) world.FollowTarget = player.transform;
+            if (world != null)
+            {
+                world.FollowTarget = player.transform;
+                player.World       = world; // Player.LateUpdate 据此钳位（若 world.HasWorldBounds）
+            }
         }
 
         private Voxel3DMapView SpawnVoxelWorld()
@@ -168,10 +239,58 @@ namespace Demo.DayNight3D
             view.Config = _voxelConfig;
             view.RenderRadius = _voxelRenderRadius;
             view.KeepAliveRadius = Mathf.Max(view.KeepAliveRadius, _voxelRenderRadius + 2);
-            Debug.Log($"[DayNight3DGameManager] Spawn VoxelWorld（seed={_voxelConfig.Seed}, R={_voxelRenderRadius}）");
+
+            // DayNight3D 专属 AABB —— 仅作 Player 钳位 safety net；岛屿形状由 DayNight3DIslandGenerator 径向 mask 自包含
+            if (_voxelConfig.BoundedWorld)
+            {
+                view.SetWorldBoundsXZ(_voxelConfig.WorldRect, enabled: true);
+                Debug.Log($"[DayNight3DGameManager] Spawn VoxelWorld（seed={_voxelConfig.Seed}, R={_voxelRenderRadius}, MC noise router, AABB={_voxelConfig.WorldHalfChunksXZ * 2}×{_voxelConfig.WorldHalfChunksXZ * 2} chunks）");
+            }
+            else
+            {
+                Debug.Log($"[DayNight3DGameManager] Spawn VoxelWorld（seed={_voxelConfig.Seed}, R={_voxelRenderRadius}, MC noise router, 无边界）");
+            }
             return view;
         }
 
         #endregion
+
+        // ─────────────────────────────────────────────────────────────
+        #region Lighting Demo
+
+        /// <summary>
+        /// 在世界中心周围撒一组演示光源：1 盏萤石 + 一圈火把环。
+        /// <para>高度采用生成器实际地表 + 2，避免黄昏时灯被埋在山体里。</para>
+        /// </summary>
+        private void SpawnDemoLights()
+        {
+            if (_voxelConfig == null || !VoxelLightManager.HasInstance) return;
+            var lm  = VoxelLightManager.Instance;
+            var gen = _voxelConfig.CreateGenerator();
+
+            var center = _voxelConfig.WorldCenterWorld;
+            var cx     = Mathf.RoundToInt(center.x);
+            var cz     = Mathf.RoundToInt(center.y);
+
+            // 1) 世界中心：1 盏萤石
+            var centerY = gen.SampleHeight(cx, cz) + 2f;
+            lm.AddGlowstone(new Vector3(center.x, centerY, center.y));
+
+            // 2) 周围火把环：半径 24 block（8 盏均布）
+            const float ringR = 24f;
+            const int   ringN = 8;
+            for (var i = 0; i < ringN; i++)
+            {
+                var a  = i * (Mathf.PI * 2f / ringN);
+                var px = center.x + Mathf.Cos(a) * ringR;
+                var pz = center.y + Mathf.Sin(a) * ringR;
+                var py = gen.SampleHeight(Mathf.RoundToInt(px), Mathf.RoundToInt(pz)) + 1.5f;
+                lm.AddTorch(new Vector3(px, py, pz));
+            }
+            Debug.Log($"[DayNight3DGameManager] 世界中心 ({center.x:F0}, {center.y:F0}) 演示光源：1 萤石 + {ringN} 火把，ringR={ringR}");
+        }
+
+        #endregion
+
     }
 }

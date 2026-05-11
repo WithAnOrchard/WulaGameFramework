@@ -55,8 +55,20 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         // ─────────────────────────────────────────────────────────────
         #region Runtime
 
-        private VoxelHeightmapGenerator _generator;
+        private IVoxelMapGenerator _generator;
         private VoxelBlockType[] _palette;
+
+        /// <summary>世界 (x, z) 平面的可达范围（block 单位）。<see cref="HasWorldBounds"/>=false 时无限。</summary>
+        public Rect WorldBoundsXZ { get; private set; }
+        /// <summary>是否启用 <see cref="WorldBoundsXZ"/> 钳位（业务侧调 <see cref="SetWorldBoundsXZ"/> 后为 true）。</summary>
+        public bool HasWorldBounds { get; private set; }
+
+        /// <summary>设定世界水平 AABB；Player / 业务侧据此钳位移动。传入 null 大小表示禁用。</summary>
+        public void SetWorldBoundsXZ(Rect rect, bool enabled = true)
+        {
+            WorldBoundsXZ  = rect;
+            HasWorldBounds = enabled;
+        }
 
         /// <summary>由 <see cref="Bind"/> 注入的数据源（来自 Voxel3DMapService）。null 时退化为 Inspector 直跑。</summary>
         private VoxelMap _boundMap;
@@ -123,7 +135,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         private void EnsureInitialized()
         {
             if (_generator != null) return;
-            _generator = new VoxelHeightmapGenerator(Config);
+            // 走 Config.CreateGenerator() 多态分支，让派生 Config（如 IslandVoxelMapConfig）切到自家生成器
+            _generator = Config != null ? Config.CreateGenerator() : new VoxelHeightmapGenerator(new VoxelMapConfig());
             _palette   = VoxelBlockTypes.DefaultPalette;
             if (ChunkMaterial == null) ChunkMaterial = VoxelMaterialFactory.CreateDefault();
 
@@ -338,7 +351,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime
         public void Reset()
         {
             ClearAllChunks();
-            _generator = new VoxelHeightmapGenerator(Config);
+            _generator = Config != null ? Config.CreateGenerator() : new VoxelHeightmapGenerator(new VoxelMapConfig());
         }
 
         /// <summary>仅清空 GO 与本地数据缓存；不重建 generator，也不解绑 _boundMap。</summary>

@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Lighting;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Lighting.Dao;
 
 namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator
 {
@@ -37,6 +39,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator
             var uvs    = new List<Vector2>(size * size * 4);
             var tris   = new List<int>(size * size * 6);
 
+            // 光照服务（缺席时为 null → 退化为基础色不调制，等价"全亮"）
+            var light = VoxelLightService.HasInstance ? VoxelLightService.Instance : null;
+
             for (var lz = 0; lz < size; lz++)
             for (var lx = 0; lx < size; lx++)
             {
@@ -50,37 +55,61 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator
                 var surfaceY = topId == VoxelBlockTypes.Water ? sea : realH;
                 var topColor = palette[topId].TopColor;
 
+                // 世界坐标 —— 用于变体哈希（同坐标永远同变体）+ 光照采样
+                var wx = chunk.ChunkX * size + lx;
+                var wz = chunk.ChunkZ * size + lz;
+
                 // ── UV 槽位 ─────────────────────────────────────────
-                var topUV  = VoxelTextureAtlas.GetSlotUV((byte)VoxelAtlasSlots.SlotForTop(topId));
-                var sideUV = VoxelTextureAtlas.GetSlotUV((byte)VoxelAtlasSlots.SlotForSide(sideId));
+                var topUV  = VoxelTextureAtlas.GetSlotUV((byte)VoxelAtlasSlots.SlotForTop(topId, wx, wz));
+                var sideUV = VoxelTextureAtlas.GetSlotUV((byte)VoxelAtlasSlots.SlotForSide(sideId, wx, wz));
 
                 // ── 顶面 ─────────────────────────────────────────────
-                EmitTopQuad(verts, norms, cols, uvs, tris, lx, surfaceY, lz, topColor, topUV);
+                // 顶面采样点 = (wx, surfaceY, wz)：恰好暴露天空，吃 sky + block 组合
+                var topLit = ApplyLight(light, topColor, wx, surfaceY, wz, surfaceY);
+                EmitTopQuad(verts, norms, cols, uvs, tris, lx, surfaceY, lz, topLit, topUV);
 
                 if (topId == VoxelBlockTypes.Water) continue; // 水不画侧面
 
                 var sideColor = palette[sideId].SideColor;
 
                 // ── 4 侧面（仅邻居更矮）──────────────────────────────
+                // 侧面采样点 = 邻居那侧面中点：(邻居 wx, midY, 邻居 wz)；midY 落在两高之间，
+                // 尚处暴露空间（邻居矮 → 邻居那一格上方有空气），吃 sky；同时受附近光源影响。
                 // X-（朝 -X 方向的面，位于 x=lx 平面）
                 var nx = NeighborTopY(chunk, neighborXM, neighborXP, neighborZM, neighborZP,
                                       lx - 1, lz, sea, surfaceY);
-                if (nx < surfaceY) EmitSideQuadXMinus(verts, norms, cols, uvs, tris, lx, nx, surfaceY, lz, sideColor, sideUV);
+                if (nx < surfaceY)
+                {
+                    var sLit = ApplyLight(light, sideColor, wx - 1, (nx + surfaceY) >> 1, wz, nx);
+                    EmitSideQuadXMinus(verts, norms, cols, uvs, tris, lx, nx, surfaceY, lz, sLit, sideUV);
+                }
 
                 // X+
                 var px = NeighborTopY(chunk, neighborXM, neighborXP, neighborZM, neighborZP,
                                       lx + 1, lz, sea, surfaceY);
-                if (px < surfaceY) EmitSideQuadXPlus(verts, norms, cols, uvs, tris, lx, px, surfaceY, lz, sideColor, sideUV);
+                if (px < surfaceY)
+                {
+                    var sLit = ApplyLight(light, sideColor, wx + 1, (px + surfaceY) >> 1, wz, px);
+                    EmitSideQuadXPlus(verts, norms, cols, uvs, tris, lx, px, surfaceY, lz, sLit, sideUV);
+                }
 
                 // Z-
                 var nz = NeighborTopY(chunk, neighborXM, neighborXP, neighborZM, neighborZP,
                                       lx, lz - 1, sea, surfaceY);
-                if (nz < surfaceY) EmitSideQuadZMinus(verts, norms, cols, uvs, tris, lx, nz, surfaceY, lz, sideColor, sideUV);
+                if (nz < surfaceY)
+                {
+                    var sLit = ApplyLight(light, sideColor, wx, (nz + surfaceY) >> 1, wz - 1, nz);
+                    EmitSideQuadZMinus(verts, norms, cols, uvs, tris, lx, nz, surfaceY, lz, sLit, sideUV);
+                }
 
                 // Z+
                 var pz = NeighborTopY(chunk, neighborXM, neighborXP, neighborZM, neighborZP,
                                       lx, lz + 1, sea, surfaceY);
-                if (pz < surfaceY) EmitSideQuadZPlus(verts, norms, cols, uvs, tris, lx, pz, surfaceY, lz, sideColor, sideUV);
+                if (pz < surfaceY)
+                {
+                    var sLit = ApplyLight(light, sideColor, wx, (pz + surfaceY) >> 1, wz + 1, pz);
+                    EmitSideQuadZPlus(verts, norms, cols, uvs, tris, lx, pz, surfaceY, lz, sLit, sideUV);
+                }
             }
 
             var mesh = new Mesh
@@ -119,6 +148,35 @@ namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator
             var nTop = target.TopBlocks[idx];
             var nH   = target.Heights[idx];
             return nTop == VoxelBlockTypes.Water ? seaLevel : nH;
+        }
+
+        // ──────────────────────────────────────────────────────────────
+        // 光照调制：把基础顶点色乘上 (亮度系数 × 暖光偏色)。
+        // 暖光偏色按 block/sky 占比 blend：纯 sky 时白光、纯 block 时取累积 tint。
+        // ──────────────────────────────────────────────────────────────
+        private static Color32 ApplyLight(VoxelLightService svc, Color32 baseColor,
+                                          int wx, int wy, int wz, int surfaceY)
+        {
+            if (svc == null) return baseColor;
+
+            var combined = svc.SampleLight(wx, wy, wz, surfaceY, out var warmTint, out var blockLight);
+            var bright   = VoxelLightConstants.ToBrightness01(combined);
+
+            // sky vs block 占比：blockW = blockLight / max(combined, 1)
+            var blockW = combined > 0 ? blockLight / (float)combined : 0f;
+            var skyW   = 1f - blockW;
+
+            // tint mix：sky 部分用白 (1,1,1)；block 部分用 warmTint
+            var tR = (warmTint.r * blockW + 255f * skyW) / 255f;
+            var tG = (warmTint.g * blockW + 255f * skyW) / 255f;
+            var tB = (warmTint.b * blockW + 255f * skyW) / 255f;
+
+            // 最终：base × bright × tint，保持 alpha 不变
+            return new Color32(
+                (byte)Mathf.Clamp(baseColor.r * bright * tR, 0f, 255f),
+                (byte)Mathf.Clamp(baseColor.g * bright * tG, 0f, 255f),
+                (byte)Mathf.Clamp(baseColor.b * bright * tB, 0f, 255f),
+                baseColor.a);
         }
 
         // ──────────────────────────────────────────────────────────────

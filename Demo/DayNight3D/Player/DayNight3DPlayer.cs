@@ -1,6 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
+using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
 
 namespace Demo.DayNight3D.Player
 {
@@ -56,6 +57,9 @@ namespace Demo.DayNight3D.Player
         public CharacterController3D   Controller => _ctrl;
         public CameraController3D      CameraController => _cam;
         public Transform CharacterRoot => _binder != null ? _binder.CharacterRoot : transform;
+
+        /// <summary>玩家所在世界（GameManager Spawn 后注入）。含边界时 Player 自动钳位。</summary>
+        public Voxel3DMapView World { get; set; }
 
         public void SetConfigId(string configId)
         {
@@ -148,6 +152,35 @@ namespace Demo.DayNight3D.Player
             else                            desired = _resolvedWalk;
 
             if (!string.IsNullOrEmpty(desired)) _binder.Play(desired);
+        }
+
+        private void LateUpdate()
+        {
+            // 岛屿 AABB 钳位：防玩家跑出地图。同时同步 Rigidbody.position，避免 FixedUpdate 用旧坐标。
+            if (World == null || !World.HasWorldBounds) return;
+            var rect = World.WorldBoundsXZ;
+            var p    = transform.position;
+            // 预留 0.5 block 内块避免戍在边界时跳起走 mesh
+            const float margin = 0.5f;
+            var minX = rect.xMin + margin;
+            var maxX = rect.xMax - margin;
+            var minZ = rect.yMin + margin;
+            var maxZ = rect.yMax - margin;
+            var clampedX = Mathf.Clamp(p.x, minX, maxX);
+            var clampedZ = Mathf.Clamp(p.z, minZ, maxZ);
+            if (clampedX == p.x && clampedZ == p.z) return;
+            var clamped = new Vector3(clampedX, p.y, clampedZ);
+            transform.position = clamped;
+            var rb = _ctrl != null ? _ctrl.GetComponent<Rigidbody>() : GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.position = clamped;
+                // 将越界方向的水平速度归零，避免玩家被项回袭抹靠在边界上
+                var v = rb.velocity;
+                if (clampedX != p.x) v.x = 0f;
+                if (clampedZ != p.z) v.z = 0f;
+                rb.velocity = v;
+            }
         }
 
         #endregion
