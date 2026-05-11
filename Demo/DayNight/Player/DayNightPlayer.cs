@@ -74,6 +74,16 @@ namespace Demo.DayNight.Player
         [Tooltip("背包开关键。")]
         [SerializeField] private KeyCode _inventoryToggleKey = KeyCode.B;
 
+        [Header("Dialogue")]
+        [Tooltip("是否启用对话测试。按 _dialogueToggleKey 打开/关闭测试对话。")]
+        [SerializeField] private bool _enableDialogueTest = true;
+
+        [Tooltip("打开的对话 Id（DialogueManager 默认会注册 DebugDialogue 供调试）。")]
+        [SerializeField] private string _dialogueId = "DebugDialogue";
+
+        [Tooltip("对话开关键。")]
+        [SerializeField] private KeyCode _dialogueToggleKey = KeyCode.I;
+
         [Header("Camera Follow")]
         [Tooltip("让 Main Camera 跟随玩家。仅平移，不改 Z 与 orthographicSize。")]
         [SerializeField] private bool _autoFollowMainCamera = true;
@@ -134,6 +144,10 @@ namespace Demo.DayNight.Player
             if (Input.GetKeyDown(_inventoryToggleKey))
                 ToggleInventory();
 
+            // ── 对话开关（I 键）──
+            if (_enableDialogueTest && Input.GetKeyDown(_dialogueToggleKey))
+                ToggleDialogue();
+
             // ── 攻击输入（Update 处理 GetMouseButtonDown 才能精确捕获单帧）──
             if (_enableMouseAttack && Input.GetMouseButtonDown(0))
                 TriggerAttack();
@@ -189,6 +203,38 @@ namespace Demo.DayNight.Player
                 visible
                     ? new List<object> { _inventoryId }
                     : new List<object> { _inventoryId, _inventoryConfigId });
+        }
+
+        /// <summary>
+        /// 切换调试对话 UI —— 通过事件调 DialogueManager 命令
+        /// （§4.1 跨模块 bare-string 协议，**不**直接 using DialogueManager）。
+        /// 已有活动对话则关闭，否则打开 <see cref="_dialogueId"/> 对应对话。
+        /// </summary>
+        private void ToggleDialogue()
+        {
+            if (!EventProcessor.HasInstance) return;
+
+            // §4.1 跨模块 bare-string：DialogueService.EVT_QUERY_CURRENT
+            var current = EventProcessor.Instance.TriggerEventMethod(
+                "QueryDialogueCurrent", new List<object>());
+
+            if (ResultCode.IsOk(current))
+            {
+                // §4.1 跨模块 bare-string：DialogueManager.EVT_CLOSE_UI
+                EventProcessor.Instance.TriggerEventMethod(
+                    "CloseDialogueUI", new List<object>());
+                return;
+            }
+
+            // §4.1 跨模块 bare-string：DialogueManager.EVT_OPEN_UI
+            var result = EventProcessor.Instance.TriggerEventMethod(
+                "OpenDialogueUI",
+                new List<object> { _dialogueId });
+            if (!ResultCode.IsOk(result))
+            {
+                var msg = result != null && result.Count >= 2 ? result[1] : "unknown";
+                Debug.LogWarning($"[DayNightPlayer] 打开对话失败: {msg}（请确认 DialogueManager 已挂载且对话 Id `{_dialogueId}` 已注册）");
+            }
         }
 
         /// <summary>查 UIManager：背包 UI 实体当前是否处于显示状态。</summary>

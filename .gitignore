@@ -31,3 +31,5 @@
 # Local-only assets (excluded from VCS)
 Resources/DayNight3D/waitforselect/
 Resources/DayNight3D/waitforselect.meta
+Resources/DayNight3D/Minecraft/
+Resources/DayNight3D/Minecraft.meta

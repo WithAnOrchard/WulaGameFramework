@@ -97,12 +97,12 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: GUI_0
+      name: Bar_2
       rect:
         serializedVersion: 2
-        x: 8
+        x: 135
         y: 293
-        width: 172
+        width: 45
         height: 7
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
@@ -121,10 +121,10 @@ TextureImporter:
       name: GUI_1
       rect:
         serializedVersion: 2
-        x: 6
-        y: 258
-        width: 115
-        height: 24
+        x: 49
+        y: 257
+        width: 46
+        height: 14
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -139,7 +139,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: GUI_2
+      name: Bar_1
       rect:
         serializedVersion: 2
         x: 135
@@ -205,10 +205,10 @@ TextureImporter:
       name: GUI_5
       rect:
         serializedVersion: 2
-        x: 96
-        y: 244
-        width: 64
-        height: 24
+        x: 147
+        y: 261
+        width: 10
+        height: 9
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -268,10 +268,10 @@ TextureImporter:
       name: GUI_8
       rect:
         serializedVersion: 2
-        x: 69
-        y: 230
-        width: 6
-        height: 5
+        x: 66
+        y: 227
+        width: 11
+        height: 11
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -2049,6 +2049,174 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: GUI_3
+      rect:
+        serializedVersion: 2
+        x: 132
+        y: 261
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4697a520a2c5206438c6b69fc16f25c7
+      internalID: -148379139
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: GUI_7
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 211
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d1f6c33fc70e13e47b135ebaf8072e1e
+      internalID: -1325199887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BlueBar
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 295
+        width: 42
+        height: 3
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 253dd481795209144bfc7f8d69ab59c4
+      internalID: -1316488737
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: RedBar
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 279
+        width: 49
+        height: 3
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c99cfa7dfc890b34b97623415acd5429
+      internalID: 867174537
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AzureBar
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 295
+        width: 42
+        height: 3
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c5979945d6f709e408ea1ce4a20e341d
+      internalID: -1101286717
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Brown_Bar
+      rect:
+        serializedVersion: 2
+        x: 6
+        y: 279
+        width: 49
+        height: 3
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8c850c3f0c0d6db47af4198a396ad7ad
+      internalID: 1252384944
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CoinContainer
+      rect:
+        serializedVersion: 2
+        x: 121
+        y: 244
+        width: 39
+        height: 12
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 999b16ef43475b74d80aaabda3433f14
+      internalID: -822338102
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Head
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 244
+        width: 26
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c9e6f1348d3cc3c4bb16dfaf3adecab6
+      internalID: 1783299248
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -2060,8 +2228,13 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
+      AzureBar: -1101286717
+      Bar_1: 215777376
+      Bar_2: 462618951
+      BlueBar: -1316488737
+      Brown_Bar: 1252384944
       Btn_Close: -1903194846
-      GUI_0: 462618951
+      CoinContainer: -822338102
       GUI_1: 541498577
       GUI_10: -490467009
       GUI_11: -1907829362
@@ -2072,7 +2245,6 @@ TextureImporter:
       GUI_16: -1884011469
       GUI_17: 893761564
       GUI_18: -575458091
-      GUI_2: 215777376
       GUI_20: 774386228
       GUI_21: 1572058338
       GUI_22: 1164355451
@@ -2081,6 +2253,7 @@ TextureImporter:
       GUI_27: 1729975415
       GUI_28: 427069457
       GUI_29: 1657644474
+      GUI_3: -148379139
       GUI_30: 1394938314
       GUI_31: 1232853096
       GUI_32: 1919653594
@@ -2124,6 +2297,7 @@ TextureImporter:
       GUI_67: 111255728
       GUI_68: -1424955638
       GUI_69: -1747973408
+      GUI_7: -1325199887
       GUI_70: -735943523
       GUI_71: -868942234
       GUI_72: -789408543
@@ -2147,6 +2321,8 @@ TextureImporter:
       GUI_90: 53142482
       GUI_91: 1471329956
       GUI_92: -55159832
+      Head: 1783299248
+      RedBar: 867174537
       Slot: 1915397753
       Slot_1: 1131304819
       btn_left: 1312932814

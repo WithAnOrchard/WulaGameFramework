@@ -45,6 +45,13 @@ public class TestPlayer : MonoBehaviour
     [Tooltip("按空格在当前位置生成一颗小树（随机 4 种贴图之一）。")]
     [SerializeField] private bool _enableSpawnTree = true;
 
+    [Header("Dialogue (I 键)")]
+    [Tooltip("按 I 键打开调试对话（依赖场景中挂有 DialogueManager）。")]
+    [SerializeField] private bool _enableDialogueTest = true;
+
+    [Tooltip("打开的对话 Id，需事先注册到 DialogueService（DialogueManager 默认会注册 DebugDialogue）。")]
+    [SerializeField] private string _dialogueId = "DebugDialogue";
+
     private Camera _cam;
     private int _treeSpawnCounter;
 
@@ -78,6 +85,55 @@ public class TestPlayer : MonoBehaviour
         {
             SpawnSmallTreeAtSelf();
         }
+
+        if (_enableDialogueTest && Input.GetKeyDown(KeyCode.I))
+        {
+            ToggleTestDialogue();
+        }
+    }
+
+    /// <summary>
+    /// 切换调试对话 UI —— 通过事件中心调用 DialogueManager 的命令
+    /// （§4.1 跨模块 bare-string 协议，不直接 using DialogueManager）。
+    /// 当前已有活动对话则关闭，否则打开。
+    /// </summary>
+    private void ToggleTestDialogue()
+    {
+        if (!EventProcessor.HasInstance)
+        {
+            Debug.LogWarning("[TestPlayer] EventProcessor 未就绪，无法测试对话");
+            return;
+        }
+
+        // 查询当前是否已有活动对话
+        // §4.1 跨模块 bare-string：DialogueService.EVT_QUERY_CURRENT
+        var current = EventProcessor.Instance.TriggerEventMethod(
+            "QueryDialogueCurrent", new List<object>());
+
+        if (ResultCode.IsOk(current))
+        {
+            // 已有活动 → 关闭
+            // §4.1 跨模块 bare-string：DialogueManager.EVT_CLOSE_UI
+            EventProcessor.Instance.TriggerEventMethod(
+                "CloseDialogueUI", new List<object>());
+            Debug.Log("[TestPlayer] 关闭对话");
+            return;
+        }
+
+        // 否则打开
+        // §4.1 跨模块 bare-string：DialogueManager.EVT_OPEN_UI
+        var result = EventProcessor.Instance.TriggerEventMethod(
+            "OpenDialogueUI",
+            new List<object> { _dialogueId });
+
+        if (!ResultCode.IsOk(result))
+        {
+            var msg = result != null && result.Count >= 2 ? result[1] : "unknown";
+            Debug.LogWarning($"[TestPlayer] 打开对话失败: {msg}（请确认 DialogueManager 已挂载且对话 Id `{_dialogueId}` 已注册）");
+            return;
+        }
+
+        Debug.Log($"[TestPlayer] 打开对话: {_dialogueId}");
     }
 
     /// <summary>
