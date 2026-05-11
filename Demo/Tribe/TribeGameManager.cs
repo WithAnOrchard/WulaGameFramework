@@ -5,6 +5,7 @@ using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.DialogueManager;
@@ -206,7 +207,7 @@ namespace Demo.Tribe
             collider2D.size = Vector2.one;
             collider2D.isTrigger = true;
 
-            var entity = go.AddComponent<TribeAttackableDropEntity>();
+            var entity = go.AddComponent<PickableDropEntity>();
             entity.Configure(pickableId, hp, dropAmount, InventoryManager.ID_PLAYER);
         }
 

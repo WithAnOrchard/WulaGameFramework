@@ -4,6 +4,7 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
 using Demo.Tribe;
@@ -397,7 +398,7 @@ namespace Demo.Tribe.Player
             var hits = Physics2D.OverlapBoxAll(center, GetAttackBoxSize(), 0f);
             for (var i = 0; i < hits.Length; i++)
             {
-                var target = hits[i].GetComponentInParent<TribeAttackableDropEntity>();
+                var target = hits[i].GetComponentInParent<PickableDropEntity>();
                 if (target != null)
                 {
                     if (!_currentAttackHits.Add(target)) continue;
