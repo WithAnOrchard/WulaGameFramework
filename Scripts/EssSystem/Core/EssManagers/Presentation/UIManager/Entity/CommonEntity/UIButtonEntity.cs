@@ -26,6 +26,7 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Entity.CommonEntity
             _button = gameObject.GetComponent<Button>() ?? gameObject.AddComponent<Button>();
             _image = gameObject.GetComponent<Image>() ?? gameObject.AddComponent<Image>();
             _text = GetComponentInChildren<Text>() ?? CreateTextComponent();
+            if (_text != null) _text.raycastTarget = false;
             _button.onClick.AddListener(OnButtonClick);
         }
 

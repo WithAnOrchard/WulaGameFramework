@@ -4,6 +4,8 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
 // 本文件不 <c>using</c> CharacterManager——跨模块调用一律走 EventProcessor。
 
 namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
@@ -28,6 +30,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
         public const string EVT_CREATE_ENTITY  = "CreateEntity";
         /// <summary>销毁 Entity。data: [instanceId]. 返回 ResultCode.Ok(instanceId) / Fail。</summary>
         public const string EVT_DESTROY_ENTITY = "DestroyEntity";
+        public const string EVT_REGISTER_SCENE_ENTITY = "RegisterSceneEntity";
+        public const string EVT_DAMAGE_ENTITY = "DamageEntity";
 
         #region Inspector
 
@@ -128,6 +132,63 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             return Service.DestroyEntity(instanceId)
                 ? ResultCode.Ok(instanceId)
                 : ResultCode.Fail($"Entity 不存在: {instanceId}");
+        }
+
+        [Event(EVT_REGISTER_SCENE_ENTITY)]
+        public List<object> RegisterSceneEntity(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
+            if (data == null || data.Count < 3) return ResultCode.Fail("参数无效：需要 [instanceId, GameObject, EntityRuntimeDefinition]");
+
+            var instanceId = data[0] as string;
+            var host = data[1] as GameObject;
+            var definition = data[2] as EntityRuntimeDefinition;
+            if (string.IsNullOrEmpty(instanceId) || host == null || definition == null)
+                return ResultCode.Fail("instanceId / GameObject / EntityRuntimeDefinition 不能为空");
+
+            var entity = Service.CreateSceneEntity(instanceId, host, definition);
+            return entity != null ? ResultCode.Ok(entity.CharacterRoot) : ResultCode.Fail($"注册场景 Entity 失败: {instanceId}");
+        }
+
+        [Event(EVT_DAMAGE_ENTITY)]
+        public List<object> DamageEntity(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [instanceId, damage]");
+
+            var instanceId = data[0] as string;
+            var target = Service.GetEntity(instanceId);
+            if (target == null) return ResultCode.Fail($"Entity 不存在: {instanceId}");
+
+            var damage = System.Convert.ToSingle(data[1]);
+            var dealt = Service.TryDamage(target, damage, null, data.Count > 2 ? data[2] as string : null);
+            return ResultCode.Ok(dealt);
+        }
+
+        public static void ApplyRuntimeCollider(GameObject host, EntityColliderConfig cfg)
+        {
+            if (host == null || cfg == null || cfg.Shape == EntityColliderShape.None) return;
+            switch (cfg.Shape)
+            {
+                case EntityColliderShape.Box:
+                {
+                    var box = host.GetComponent<BoxCollider2D>();
+                    if (box == null) box = host.AddComponent<BoxCollider2D>();
+                    box.size = cfg.Size;
+                    box.offset = cfg.Offset;
+                    box.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Circle:
+                {
+                    var circle = host.GetComponent<CircleCollider2D>();
+                    if (circle == null) circle = host.AddComponent<CircleCollider2D>();
+                    circle.radius = Mathf.Max(0.01f, cfg.Size.x);
+                    circle.offset = cfg.Offset;
+                    circle.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+            }
         }
 
         #endregion

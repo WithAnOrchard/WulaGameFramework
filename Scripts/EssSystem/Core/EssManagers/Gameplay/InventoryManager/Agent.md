@@ -9,6 +9,11 @@
 - 堆叠 / 权重上限 / 槽位锁定 / 移动/拆堆
 - 配置驱动 UI（`InventoryConfig` + `PanelConfig` + `SlotConfig` + `ButtonConfig`）
 - 通过 Event 调用 UIManager，**完全解耦**
+- **3 个内置默认容器**（`Initialize` 时自动注册，仅持久化缺失时）：
+  - `player` (configId `PlayerBackPack`) — 30 格主背包，居中显示
+  - `hotbar` (configId `Hotbar`) — 9 格快捷栏，**启动后自动打开常驻底部**
+  - `equipment` (configId `PlayerEquipment`) — 5 格装备栏（头盔/盔甲/护腿/鞋子/背包），**与 `player` 联动开关**，挂在玩家背包右侧
+- **快捷栏键盘**：监听 `KeyCode.Alpha1 ~ Alpha9`，按下时广播 `EVT_HOTBAR_USE` 携带 `[invId, slotIndex, item]`，业务层（如 EquipmentManager）订阅处理
 
 ## 文件结构
 
@@ -106,15 +111,55 @@ InventoryManager/
 
 #### `InventoryService.EVT_MOVE` — 移动物品
 - **常量**: `InventoryService.EVT_MOVE` = `"InventoryMove"`
-- **参数**: `[string inventoryId, int fromSlot, int toSlot, int amount]`
+- **参数**: `[string inventoryId, int fromSlot, int toSlot, int amount]`（同容器）
 - **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
 - **副作用**: 修改槽位状态；广播 `EVT_CHANGED`
+- **跨容器**: 直接调 `InventoryService.MoveItem(fromInv, fromIdx, toInv, toIdx, amount)` —— 拖拽 handler 已默认走此重载，背包 ↔ 快捷栏 ↔ 装备栏可互拖
 
 #### `InventoryService.EVT_QUERY` — 查询容器
 - **常量**: `InventoryService.EVT_QUERY` = `"InventoryQuery"`
 - **参数**: `[string inventoryId]`
 - **返回**: `ResultCode.Ok(Inventory)` / `ResultCode.Fail(msg)`
 - **副作用**: 无（纯查询）
+
+#### `InventoryManager.EVT_HOTBAR_USE` — 快捷栏使用（广播）
+- **常量**: `InventoryManager.EVT_HOTBAR_USE` = `"InventoryHotbarUse"`
+- **触发条件**: 玩家按下 `KeyCode.Alpha1 ~ Alpha9`（在 `InventoryManager.Update` 内监听）
+- **参数**: `[string inventoryId, int slotIndex, InventoryItem item]`
+  - `inventoryId` 固定为 `"hotbar"`，`slotIndex` 为 0~8（对应 1~9 键）
+  - `item` 为该槽当前物品；空槽时为 `null`
+- **典型订阅**: 业务层（EquipmentManager / 战斗模块 / 物品使用系统）订阅，按 item 类型自行装备或使用
+- **示例**:
+  ```csharp
+  [EventListener(InventoryManager.EVT_HOTBAR_USE)]
+  public List<object> OnHotbarUse(string evt, List<object> args)
+  {
+      var item = args[2] as InventoryItem;
+      if (item == null || item.IsEmpty) return null;
+      // 自行处理装备 / 使用 / 释放技能...
+      return null;
+  }
+  ```
+
+#### `InventoryManager.EVT_REGISTER_ITEM` — 注册物品模板
+- **常量**: `InventoryManager.EVT_REGISTER_ITEM` = `"InventoryRegisterItem"`
+- **参数**: `[InventoryItem item]`
+- **返回**: `ResultCode.Ok(item.Id)` / `ResultCode.Fail(msg)`
+
+#### `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` — 注册可拾取物定义
+- **常量**: `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` = `"InventoryRegisterPickableItem"`
+- **参数**: `[PickableItemDefinition definition]`
+- **返回**: `ResultCode.Ok(definition.PickableId)` / `ResultCode.Fail(msg)`
+
+#### `InventoryManager.EVT_ADD_ITEM` — 添加物品到容器
+- **常量**: `InventoryManager.EVT_ADD_ITEM` = `"InventoryAddItem"`
+- **参数**: `[string inventoryId, object itemIdOrItem, int amount]`
+- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
+
+#### `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` — 生成场景可拾取物
+- **常量**: `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` = `"InventorySpawnPickableItem"`
+- **参数**: `[string pickableId, Vector3 worldPosition, string targetInventoryId?, int amount?]`
+- **返回**: `ResultCode.Ok(GameObject)` / `ResultCode.Fail(msg)`
 
 ### 广播类（用 `[EventListener]` 订阅，无返回值期望）
 

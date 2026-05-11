@@ -5,6 +5,7 @@ using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
 // 碰撞体类型都在 UnityEngine 命名空间 —— 已由 `using UnityEngine;` 覆盖
 // 本模块不 <c>using</c> 任何 CharacterManager 依赖——跨模块调用一律走 EventProcessor。
@@ -171,6 +172,44 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             SetData(CAT_INSTANCES, instanceId, entity);
 
             Log($"创建 Entity 实例: {instanceId} (config={configId})", Color.green);
+            return entity;
+        }
+
+        public Entity CreateSceneEntity(string instanceId, GameObject host, EntityRuntimeDefinition definition)
+        {
+            if (string.IsNullOrEmpty(instanceId) || host == null || definition == null)
+            {
+                LogWarning("CreateSceneEntity 参数无效");
+                return null;
+            }
+
+            if (HasData(CAT_INSTANCES, instanceId)) return GetEntity(instanceId);
+
+            var entity = new Entity
+            {
+                InstanceId = instanceId,
+                ConfigId = "SceneEntity",
+                Kind = definition.Kind,
+                CharacterInstanceId = instanceId,
+                CharacterRoot = host.transform,
+                WorldPosition = host.transform.position,
+            };
+
+            EntityManager.ApplyRuntimeCollider(host, definition.Collider);
+
+            if (definition.CanMove)
+                entity.Add<IMovable>(new MovableComponent(definition.MoveSpeed));
+            if (definition.CanBeAttacked)
+            {
+                var damageable = entity.Add<IDamageable>(new DamageableComponent(definition.MaxHp));
+                if (definition.Died != null)
+                    damageable.Died += (_, __) => definition.Died(instanceId);
+            }
+            if (definition.CanAttack)
+                entity.Add<IAttacker>(new AttackerComponent(definition.AttackPower, definition.AttackRange, definition.AttackCooldown));
+
+            SetData(CAT_INSTANCES, instanceId, entity);
+            Log($"注册场景 Entity 实例: {instanceId}", Color.green);
             return entity;
         }
 

@@ -248,6 +248,11 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Dao
             return Type == UIType.Text ? this as UITextComponent : null;
         }
 
+        public UIBarComponent AsBar()
+        {
+            return Type == UIType.Bar ? this as UIBarComponent : null;
+        }
+
         /// <summary>
         ///     检查是否为按钮类型
         /// </summary>
@@ -273,6 +278,11 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Dao
         public bool IsText()
         {
             return Type == UIType.Text;
+        }
+
+        public bool IsBar()
+        {
+            return Type == UIType.Bar;
         }
 
         #endregion

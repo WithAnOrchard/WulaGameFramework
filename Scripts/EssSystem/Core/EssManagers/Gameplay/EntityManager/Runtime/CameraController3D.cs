@@ -58,7 +58,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
         [Header("Third Person")]
         [SerializeField] private Vector3 _thirdPersonOffset    = new Vector3(0f, 1.8f, -4f);
         [SerializeField, Min(0f)] private float _thirdPersonLookHeight = 1.4f;
-        [SerializeField, Range(0f, 1f)] private float _thirdPersonSmoothing = 0.2f;
+        [Tooltip("第三人称相机平滑度。1 = 即时跟随（推荐，消除奔跑抖动）；< 1 软跟随但跑步时会有 lag/抖。")]
+        [SerializeField, Range(0f, 1f)] private float _thirdPersonSmoothing = 1f;
 
         [Header("Camera Settings")]
         [SerializeField, Range(20f, 120f)] private float _fieldOfView = 60f;

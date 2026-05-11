@@ -31,6 +31,7 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 实体系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md` |
 | 背包系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md` |
 | 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md` |
+| 对话系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/DialogueManager/Agent.md` |
 | 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
 | 昼夜求生 Demo | `Scripts/Demo/DayNight/Agent.md` |
 
@@ -48,7 +49,8 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `CharacterManager` | 11 | Core/EssManagers 下 |
 | `MapManager` | 12 | Core/EssManagers 下 |
 | `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
-| 其它业务 Manager | 14+ | 新增默认起步 |
+| `DialogueManager` | 15 | Core/EssManagers 下 |
+| 其它业务 Manager | 16+ | 新增默认起步 |
 | `WaveSpawnManager`（Demo） | 20 | Demo/DayNight 下 |
 | `BaseDefenseManager`（Demo） | 21 | Demo/DayNight 下 |
 | `ConstructionManager`（Demo） | 22 | Demo/DayNight 下 |
@@ -270,6 +272,11 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `UIManager.EVT_HOT_RELOAD` | `HotReloadUIConfigs` | Core/UIManager | 热重载 UI 配置（命令） |
 | `InventoryManager.EVT_OPEN_UI` | `OpenInventoryUI` | InventoryManager | 打开背包 UI（命令） |
 | `InventoryManager.EVT_CLOSE_UI` | `CloseInventoryUI` | InventoryManager | 关闭背包 UI（命令） |
+| `InventoryManager.EVT_HOTBAR_USE` | `InventoryHotbarUse` | InventoryManager | 玩家按 1~9 使用快捷栏槽位**广播**（args: `[invId, slotIndex, item]`） |
+| `InventoryManager.EVT_REGISTER_ITEM` | `InventoryRegisterItem` | InventoryManager | 注册物品模板 |
+| `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` | `InventoryRegisterPickableItem` | InventoryManager | 注册可拾取物定义 |
+| `InventoryManager.EVT_ADD_ITEM` | `InventoryAddItem` | InventoryManager | 添加物品到容器 |
+| `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` | `InventorySpawnPickableItem` | InventoryManager | 在场景中生成可拾取物 |
 | `InventoryService.EVT_CREATE` | `InventoryCreate` | InventoryManager | 创建容器 |
 | `InventoryService.EVT_DELETE` | `InventoryDelete` | InventoryManager | 删除容器 |
 | `InventoryService.EVT_ADD` | `InventoryAdd` | InventoryManager | 添加物品 |
@@ -313,6 +320,8 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `CharacterManager.EVT_MOVE_CHARACTER` | `MoveCharacter` | Core/CharacterManager | 在当前位置上平移；data: `[instanceId, Vector3 delta]` |
 | `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Transform CharacterRoot)`（E2 后协议解耦不返 Entity） |
 | `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
+| `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `RegisterSceneEntity` | Core/EntityManager | 注册已有场景 GameObject 为 Entity；data: `[instanceId, GameObject host, EntityRuntimeDefinition definition]` |
+| `EntityManager.EVT_DAMAGE_ENTITY` | `DamageEntity` | Core/EntityManager | 对运行时 Entity 造成伤害；data: `[instanceId, damage, damageType?]` |
 | `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
 | `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |
 | `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/UIManager | UIComponent 属性变更广播（`[daoId, propName, value]`，UIService 内转发给 UIEntity） |
@@ -332,6 +341,17 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ConstructionManager.EVT_REMOVE` | `RemoveConstruction` | Demo/DayNight | 移除工事（命令），参数 `[string instanceId]` |
 | `ConstructionService.EVT_PLACED` | `OnConstructionPlaced` | Demo/DayNight | 工事已放置**广播**，参数 `[string instanceId, string typeId, Vector3 position]` |
 | `ConstructionService.EVT_REMOVED` | `OnConstructionRemoved` | Demo/DayNight | 工事已移除**广播**，参数 `[string instanceId]` |
+| `DialogueManager.EVT_OPEN_UI` | `OpenDialogueUI` | Core/DialogueManager | 打开对话 UI 并启动会话（命令），参数 `[string dialogueId, string configId?]` |
+| `DialogueManager.EVT_CLOSE_UI` | `CloseDialogueUI` | Core/DialogueManager | 结束对话并隐藏 UI（命令），无参 |
+| `DialogueService.EVT_REGISTER_DIALOGUE` | `RegisterDialogue` | Core/DialogueManager | 注册 `Dialogue`（命令），参数 `[Dialogue]` |
+| `DialogueService.EVT_REGISTER_CONFIG` | `RegisterDialogueConfig` | Core/DialogueManager | 注册 `DialogueConfig`（命令），参数 `[DialogueConfig]` |
+| `DialogueService.EVT_ADVANCE` | `AdvanceDialogue` | Core/DialogueManager | 推进到下一行（命令），无参 |
+| `DialogueService.EVT_SELECT_OPTION` | `SelectDialogueOption` | Core/DialogueManager | 选择当前行第 N 个选项（命令），参数 `[int index]` |
+| `DialogueService.EVT_END` | `EndDialogue` | Core/DialogueManager | 强制结束当前会话（命令），无参 |
+| `DialogueService.EVT_QUERY_CURRENT` | `QueryDialogueCurrent` | Core/DialogueManager | 查询当前会话（查询），返回 `[OK, dialogueId, lineId, configId]` |
+| `DialogueService.EVT_STARTED` | `OnDialogueStarted` | Core/DialogueManager | 对话启动**广播**，参数 `[string dialogueId, string configId]` |
+| `DialogueService.EVT_LINE_CHANGED` | `OnDialogueLineChanged` | Core/DialogueManager | 当前行切换**广播**，参数 `[string dialogueId, string lineId]` |
+| `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
 
 > ℹ️ **几乎无 Event 的模块**：`CharacterManager` / `MapManager` 当前以纯 C# API 为主（`CharacterService.Instance.XXX` / `MapService.Instance.XXX`）。`CharacterService.EVT_FRAME_EVENT` 是该家族目前唯一的跨模块广播；`MapManager` 目前不暴露 `EVT_*`。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 

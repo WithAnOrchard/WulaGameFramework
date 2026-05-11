@@ -89,6 +89,8 @@ entity.Remove<IInvulnerable>();             // 限时无敌结束
 |---|---|---|
 | `EntityManager.EVT_CREATE_ENTITY` | `[configId, instanceId, parent:Transform?, worldPosition:Vector3?]` | `Ok(Transform CharacterRoot)` / `Fail(msg)` |
 | `EntityManager.EVT_DESTROY_ENTITY` | `[instanceId]` | `Ok(instanceId)` / `Fail(msg)` |
+| `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `[instanceId, GameObject host, EntityRuntimeDefinition definition]` | `Ok(instanceId)` / `Fail(msg)` |
+| `EntityManager.EVT_DAMAGE_ENTITY` | `[instanceId, damage:float, damageType?:string]` | `Ok(actualDamage)` / `Fail(msg)` |
 
 > **§2 协议解耦**：`EVT_CREATE_ENTITY` 返回 Unity 原生 `Transform`（CharacterRoot），不暴露模块私有 `Entity` 类型。业务侧需获得 `Entity` 逻辑实例（为挂能力/查询 HP 等）请用 `EntityService.Instance.GetEntity(instanceId)` —— 全局唯一入口。
 >

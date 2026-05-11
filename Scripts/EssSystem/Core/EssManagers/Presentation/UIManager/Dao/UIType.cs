@@ -18,7 +18,9 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Dao
         /// <summary>
         ///     文本
         /// </summary>
-        Text
+        Text,
+
+        Bar
     }
 
     /// <summary>
@@ -38,6 +40,7 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Dao
                 UIType.Button => "按钮",
                 UIType.Panel => "面板",
                 UIType.Text => "文本",
+                UIType.Bar => "进度条",
                 _ => uiType.ToString()
             };
         }

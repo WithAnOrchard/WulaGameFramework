@@ -38,6 +38,7 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Entity
                 UIType.Button => gameObject.AddComponent<UIButtonEntity>(),
                 UIType.Panel => gameObject.AddComponent<UIPanelEntity>(),
                 UIType.Text => gameObject.AddComponent<UITextEntity>(),
+                UIType.Bar => gameObject.AddComponent<UIBarEntity>(),
                 _ => gameObject.AddComponent<UIEntity>()
             };
 
@@ -101,6 +102,11 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Entity
                     textComponent.fontSize = 14;
                     textComponent.color = Color.black;
                     textComponent.alignment = TextAnchor.MiddleCenter;
+                    break;
+                case UIType.Bar:
+                    var barImage = gameObject.AddComponent<Image>();
+                    barImage.color = dao is UIBarComponent barDao ? barDao.BackgroundColor : Color.black;
+                    barImage.raycastTarget = false;
                     break;
             }
         }
