@@ -19,9 +19,16 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
         public string ConfigId { get; private set; }
 
         private readonly Dictionary<string, CharacterPartView> _parts = new Dictionary<string, CharacterPartView>();
+        /// <summary>partId → 上一次实际底层 Play 的 actionName —— 用于减少重复 Play 导致的重置。</summary>
+        private readonly Dictionary<string, string> _lastPartActions = new Dictionary<string, string>();
+        /// <summary>攻击锁定截止时间（Time.time）—— 期间 Attack 角色部件保持 Attack 动作。</summary>
+        private float _attackLockUntil;
 
         /// <summary>所有部件 View（partId → view）。</summary>
         public IReadOnlyDictionary<string, CharacterPartView> Parts => _parts;
+
+        /// <summary>是否处于攻击锁定窗口中。</summary>
+        public bool IsAttacking => Time.time < _attackLockUntil;
 
         /// <summary>
         /// 非循环动作在所有部件播完时触发一次（聚合事件）。参数：actionName。
@@ -95,18 +102,26 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 
         #region Convenience API
 
-        /// <summary>给指定部件播放动作；partId 为空则对所有 Dynamic 部件尝试播放同名动作。</summary>
+        /// <summary>给指定部件播放动作；partId 为空则对所有 Dynamic 部件尝试播放同名动作。
+        /// <para>内部去重：同一部件连续送同名动作不会重置帧计数。</para></summary>
         public void Play(string actionName, string partId = null)
         {
             if (string.IsNullOrEmpty(partId))
             {
-                foreach (var kv in _parts)
-                    kv.Value?.Play(actionName);
+                foreach (var kv in _parts) PlayPart(kv.Key, kv.Value, actionName);
                 return;
             }
 
             if (_parts.TryGetValue(partId, out var view))
-                view?.Play(actionName);
+                PlayPart(partId, view, actionName);
+        }
+
+        private void PlayPart(string partId, CharacterPartView view, string actionName)
+        {
+            if (view == null || string.IsNullOrEmpty(actionName)) return;
+            if (_lastPartActions.TryGetValue(partId, out var current) && current == actionName) return;
+            _lastPartActions[partId] = actionName;
+            view.Play(actionName);
         }
 
         /// <summary>停止指定部件；partId 为空则停止全部。</summary>
@@ -160,6 +175,60 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime
 
             if (_parts.TryGetValue(partId, out var view))
                 view?.SetVisible(visible);
+        }
+
+        #endregion
+
+        #region Locomotion / Combat State Machine
+
+        /// <summary>根据部件 <see cref="CharacterPartConfig.LocomotionRole"/> 分发一次运动状态动作。
+        /// <list type="bullet">
+        /// <item><b>Movement</b>：Walk / Idle</item>
+        /// <item><b>Body</b>：未落地时 Jump，否则 Walk / Idle</item>
+        /// <item><b>Attack</b>：<see cref="IsAttacking"/> 期间保持 Attack，否则 Walk / Idle</item>
+        /// </list></summary>
+        public void PlayLocomotion(bool moving, bool grounded = true,
+            string moveAction = "Walk", string idleAction = "Idle",
+            string jumpAction = "Jump", string attackAction = "Attack")
+        {
+            var move = moving ? moveAction : idleAction;
+            var body = grounded ? move : jumpAction;
+            var attacking = IsAttacking;
+            foreach (var kv in _parts)
+            {
+                var role = kv.Value?.Config?.LocomotionRole ?? CharacterLocomotionRole.Movement;
+                var action = role switch
+                {
+                    CharacterLocomotionRole.Body => body,
+                    CharacterLocomotionRole.Attack => attacking ? attackAction : move,
+                    _ => move,
+                };
+                PlayPart(kv.Key, kv.Value, action);
+            }
+        }
+
+        /// <summary>触发一次攻击：锁定 <paramref name="duration"/> 秒，期间 Attack 角色部件播放 <paramref name="attackAction"/>。
+        /// <para>同一锁定窗口内多次调用会动作重起。</para></summary>
+        public void TriggerAttack(float duration, string attackAction = "Attack")
+        {
+            _attackLockUntil = Time.time + Mathf.Max(0.01f, duration);
+            foreach (var kv in _parts)
+            {
+                if ((kv.Value?.Config?.LocomotionRole ?? CharacterLocomotionRole.Movement) != CharacterLocomotionRole.Attack)
+                    continue;
+                _lastPartActions.Remove(kv.Key);
+                PlayPart(kv.Key, kv.Value, attackAction);
+            }
+        }
+
+        /// <summary>设置面朝：通过翻转 localScale.x 实现。</summary>
+        public void SetFacingRight(bool right)
+        {
+            var s = transform.localScale;
+            var abs = Mathf.Abs(s.x);
+            var target = right ? abs : -abs;
+            if (!Mathf.Approximately(s.x, target))
+                transform.localScale = new Vector3(target, s.y, s.z);
         }
 
         #endregion

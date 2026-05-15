@@ -178,6 +178,33 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
             return true;
         }
 
+        /// <summary>分发一次运动状态动作；按部件 <c>LocomotionRole</c> 路由到 Walk/Idle/Jump/Attack。</summary>
+        public bool PlayLocomotion(string instanceId, bool moving, bool grounded = true)
+        {
+            var c = GetCharacter(instanceId);
+            if (c == null || c.View == null) return false;
+            c.View.PlayLocomotion(moving, grounded);
+            return true;
+        }
+
+        /// <summary>触发一次攻击锁定窗口；期间 Attack 角色部件播放 <c>Attack</c> 动作。</summary>
+        public bool TriggerAttack(string instanceId, float duration)
+        {
+            var c = GetCharacter(instanceId);
+            if (c == null || c.View == null) return false;
+            c.View.TriggerAttack(duration);
+            return true;
+        }
+
+        /// <summary>设置 Character 面朝（翻转 localScale.x）。</summary>
+        public bool SetFacingRight(string instanceId, bool right)
+        {
+            var c = GetCharacter(instanceId);
+            if (c == null || c.View == null) return false;
+            c.View.SetFacingRight(right);
+            return true;
+        }
+
         #endregion
 
         // ─────────────────────────────────────────────────────────────

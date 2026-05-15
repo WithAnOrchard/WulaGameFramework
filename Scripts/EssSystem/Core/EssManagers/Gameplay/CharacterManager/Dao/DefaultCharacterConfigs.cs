@@ -54,25 +54,25 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
             new CharacterConfig(WarriorId, "战士")
                 .WithRootScale(Vector3.one)
                 .WithRenderMode(CharacterRenderMode.Sprite2DAnimator)
-                .WithPart(MakeAnimatedPart("Skin",   "Skin_warrior_1",            0))
-                .WithPart(MakeAnimatedPart("Cloth",  "Cloth_warrior_red",         1))
+                .WithPart(MakeAnimatedPart("Skin",   "Skin_warrior_1",            0, CharacterLocomotionRole.Body))
+                .WithPart(MakeAnimatedPart("Cloth",  "Cloth_warrior_red",         1, CharacterLocomotionRole.Body))
                 .WithPart(MakeAnimatedPart("Eyes",   "Eyes_blue",                 2))
                 .WithPart(MakeAnimatedPart("Hair",   "Hair_1_1_brown",            3))
                 .WithPart(MakeAnimatedPart("Head",   "Headgear_Helmet_Close_1",   4))
-                .WithPart(MakeAnimatedPart("Weapon", "Weapon_Sword_1",            5))
-                .WithPart(MakeAnimatedPart("Shield", "Equipment_Shield_01",       6));
+                .WithPart(MakeAnimatedPart("Weapon", "Weapon_Sword_1",            5, CharacterLocomotionRole.Attack))
+                .WithPart(MakeAnimatedPart("Shield", "Equipment_Shield_01",       6, CharacterLocomotionRole.Attack));
 
         /// <summary>法师默认 Model：长袍 + 巫师帽 + 法杖。</summary>
         public static CharacterConfig BuildMage() =>
             new CharacterConfig(MageId, "法师")
                 .WithRootScale(Vector3.one)
                 .WithRenderMode(CharacterRenderMode.Sprite2DAnimator)
-                .WithPart(MakeAnimatedPart("Skin",   "Skin_mage_1",                  0))
-                .WithPart(MakeAnimatedPart("Cloth",  "Cloth_mage_purple",            1))
+                .WithPart(MakeAnimatedPart("Skin",   "Skin_mage_1",                  0, CharacterLocomotionRole.Body))
+                .WithPart(MakeAnimatedPart("Cloth",  "Cloth_mage_purple",            1, CharacterLocomotionRole.Body))
                 .WithPart(MakeAnimatedPart("Eyes",   "Eyes_blue",                    2))
                 .WithPart(MakeAnimatedPart("Hair",   "Hair_2_2_brown",               3))
                 .WithPart(MakeAnimatedPart("Head",   "Headgear_WitchHat_1_purple",   4))
-                .WithPart(MakeAnimatedPart("Weapon", "Weapon_Rod_1",                 5));
+                .WithPart(MakeAnimatedPart("Weapon", "Weapon_Rod_1",                 5, CharacterLocomotionRole.Attack));
 
         #endregion
 
@@ -82,7 +82,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
         /// 用给定的 sheet 前缀生成一个 Dynamic 部件，含 8 个标准动作。
         /// 暴露为 public 便于 <c>CharacterPreviewPanel</c> 在切换变体时重建。
         /// </summary>
-        public static CharacterPartConfig MakeAnimatedPart(string partId, string sheetPrefix, int sortingOrder)
+        public static CharacterPartConfig MakeAnimatedPart(string partId, string sheetPrefix, int sortingOrder,
+            CharacterLocomotionRole role = CharacterLocomotionRole.Movement)
         {
             var actions = new CharacterActionConfig[Actions.Length];
             for (var i = 0; i < Actions.Length; i++)
@@ -99,7 +100,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
 
             return new CharacterPartConfig(partId, CharacterPartType.Dynamic)
                 .WithDynamic(DefaultAction, actions)
-                .WithSortingOrder(sortingOrder);
+                .WithSortingOrder(sortingOrder)
+                .WithLocomotionRole(role);
         }
 
         /// <summary>枚举所有标准动作名称（与切片工具的行顺序一致）。</summary>

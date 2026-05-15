@@ -40,6 +40,17 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
         /// <summary>初始是否可见。</summary>
         public bool IsVisible = true;
 
+        /// <summary>
+        /// 运动角色：决定该部件在 <see cref="Runtime.CharacterView.PlayLocomotion"/> 与
+        /// <see cref="Runtime.CharacterView.TriggerAttack"/> 中如何分派动作。
+        /// <list type="bullet">
+        /// <item><b>Movement</b>（默认）：只播 Walk / Idle，攻击和跳跃期间也保持移动动作。</item>
+        /// <item><b>Body</b>：在空中播 Jump，地面播 Walk / Idle（身体躯干）。</item>
+        /// <item><b>Attack</b>：攻击窗口内播 Attack；非攻击期间退化为 Walk / Idle。</item>
+        /// </list>
+        /// </summary>
+        public CharacterLocomotionRole LocomotionRole = CharacterLocomotionRole.Movement;
+
         #endregion
 
         #region Static Mode
@@ -98,6 +109,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
         public CharacterPartConfig WithSortingOrder(int order)           { SortingOrder = order; return this; }
         public CharacterPartConfig WithColor(Color c)                    { Color = c; return this; }
         public CharacterPartConfig WithVisible(bool v)                   { IsVisible = v; return this; }
+        public CharacterPartConfig WithLocomotionRole(CharacterLocomotionRole role) { LocomotionRole = role; return this; }
 
         /// <summary>
         /// 3D 模式专用：指定 Prefab 资源路径，并把 PartType 标记为 <see cref="CharacterPartType.Dynamic"/>

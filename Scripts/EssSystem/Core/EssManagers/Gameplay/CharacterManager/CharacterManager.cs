@@ -31,6 +31,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
         public const string EVT_SET_CHARACTER_POSITION = "SetCharacterPosition";
         /// <summary>在当前位置基础上平移 Character。data: [instanceId, Vector3 delta].</summary>
         public const string EVT_MOVE_CHARACTER         = "MoveCharacter";
+        /// <summary>分发运动状态动作（按 LocomotionRole 路由）。data: [instanceId, moving(bool), grounded(bool, 可选 默认 true)].</summary>
+        public const string EVT_PLAY_LOCOMOTION        = "PlayCharacterLocomotion";
+        /// <summary>触发一次攻击锁定（Attack 角色部件播放 Attack）。data: [instanceId, duration(float)].</summary>
+        public const string EVT_TRIGGER_ATTACK         = "TriggerCharacterAttack";
+        /// <summary>设置 Character 面朝（翻转 localScale.x）。data: [instanceId, facingRight(bool)].</summary>
+        public const string EVT_SET_FACING             = "SetCharacterFacing";
 
         #region Inspector
 
@@ -175,6 +181,37 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager
             if (!TryGetVec3(data, 1, out var delta, out var fail2)) return fail2;
             return Service.Move(instanceId, delta)
                 ? ResultCode.Ok(instanceId) : ResultCode.Fail($"Move 失败: {instanceId}");
+        }
+
+        [Event(EVT_PLAY_LOCOMOTION)]
+        public List<object> PlayLocomotion(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
+            if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
+            var moving = data.Count > 1 && data[1] is bool b1 && b1;
+            var grounded = data.Count <= 2 || !(data[2] is bool b2) || b2;
+            return Service.PlayLocomotion(instanceId, moving, grounded)
+                ? ResultCode.Ok(instanceId) : ResultCode.Fail($"PlayLocomotion 失败: {instanceId}");
+        }
+
+        [Event(EVT_TRIGGER_ATTACK)]
+        public List<object> TriggerAttack(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
+            if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
+            var duration = data.Count > 1 && data[1] is float f ? f : 0.4f;
+            return Service.TriggerAttack(instanceId, duration)
+                ? ResultCode.Ok(instanceId) : ResultCode.Fail($"TriggerAttack 失败: {instanceId}");
+        }
+
+        [Event(EVT_SET_FACING)]
+        public List<object> SetFacing(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("CharacterService 未初始化");
+            if (!TryGetString(data, 0, out var instanceId, out var fail)) return fail;
+            var right = data.Count > 1 && data[1] is bool b && b;
+            return Service.SetFacingRight(instanceId, right)
+                ? ResultCode.Ok(instanceId) : ResultCode.Fail($"SetFacing 失败: {instanceId}");
         }
 
         private static bool TryGetString(List<object> data, int idx, out string value, out List<object> fail)
