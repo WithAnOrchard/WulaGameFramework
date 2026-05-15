@@ -2,7 +2,7 @@
 
 ## 概述
 
-`EssSystem.Core.EssManagers` 提供框架的 Manager 系统，包括基类与 5 个核心 Manager。
+`EssSystem.Core.EssManagers` 提供框架的 Manager 系统，包括基类与 6 个核心 Manager。
 
 ## 模块组成
 
@@ -14,12 +14,13 @@
 |---|---|---|
 | `Manager/` | `Manager<T>` / `Service<T>` 基类、`ManagerAttribute` | [Manager 指南](Manager/Agent.md) |
 
-### `Foundation/` — 框架基础服务（优先级 -20 ~ 0）
+### `Foundation/` — 框架基础服务（优先级 -20 ~ 3）
 
 | 子模块 | 优先级 | 内容 | 文档 |
 |---|---:|---|---|
 | `Foundation/DataManager/` | -20 | 数据持久化 + Service 自动注册 | [DataManager 指南](Foundation/DataManager/Agent.md) |
 | `Foundation/ResourceManager/` | 0 | 资源加载/缓存（Prefab/Sprite/Audio/Texture） | [ResourceManager 指南](Foundation/ResourceManager/Agent.md) |
+| `Foundation/AudioManager/` | 3 | BGM / SFX 音频管理 + 音量持久化 | [AudioManager 指南](Foundation/AudioManager/Agent.md) |
 
 ### `Presentation/` — 表现层（5）
 
@@ -55,6 +56,7 @@
 | `EventProcessor` | -30 | 框架核心，最先 |
 | `DataManager` | -20 | 监听 Service 初始化事件 |
 | `ResourceManager` | 0 | |
+| `AudioManager` | 3 | 音频系统 |
 | `UIManager` | 5 | |
 | `InventoryManager` | 10 | |
 | `CharacterManager` | 11 | 角色系统 |
