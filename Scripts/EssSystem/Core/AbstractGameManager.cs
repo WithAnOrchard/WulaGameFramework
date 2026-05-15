@@ -39,7 +39,7 @@ namespace EssSystem.Core
         }
 
         /// <summary>
-        /// 确保基础 Manager 存在（EventProcessor、DataManager、ResourceManager、UIManager）
+        /// 确保基础 Manager 存在（EventProcessor、DataManager、ResourceManager、AudioManager、UIManager）
         /// </summary>
         private void EnsureBaseManagers()
         {
@@ -49,6 +49,7 @@ namespace EssSystem.Core
                 ("EventProcessor", -30),
                 ("DataManager", -20),
                 ("ResourceManager", 0),
+                ("AudioManager", 3),
                 ("UIManager", 5)
             };
 
