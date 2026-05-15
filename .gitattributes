@@ -1,0 +1,40 @@
+# 默认：所有文本走 LF 标准化（git 内部存 LF，checkout 时按 core.autocrlf 处理）
+* text=auto
+
+# C# / Unity 元数据 / 配置 — 强制 UTF-8 + CRLF（Windows 工具链友好）
+*.cs       text working-tree-encoding=UTF-8 eol=crlf
+*.meta     text working-tree-encoding=UTF-8 eol=crlf
+*.asmdef   text working-tree-encoding=UTF-8 eol=lf
+*.json     text working-tree-encoding=UTF-8 eol=lf
+*.shader   text working-tree-encoding=UTF-8 eol=crlf
+*.cginc    text working-tree-encoding=UTF-8 eol=crlf
+*.hlsl     text working-tree-encoding=UTF-8 eol=crlf
+
+# 文档 — UTF-8 + LF
+*.md       text working-tree-encoding=UTF-8 eol=lf
+*.txt      text working-tree-encoding=UTF-8 eol=lf
+
+# 脚本
+*.ps1      text working-tree-encoding=UTF-8 eol=crlf
+*.sh       text working-tree-encoding=UTF-8 eol=lf
+
+# 二进制：禁止行尾转换
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.tga      binary
+*.psd      binary
+*.fbx      binary
+*.unity    binary
+*.prefab   binary
+*.asset    binary
+*.mat      binary
+*.anim     binary
+*.controller binary
+*.wav      binary
+*.mp3      binary
+*.ogg      binary
+*.dll      binary
+*.so       binary
+*.dylib    binary
