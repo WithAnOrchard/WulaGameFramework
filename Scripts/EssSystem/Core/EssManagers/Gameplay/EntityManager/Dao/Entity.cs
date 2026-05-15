@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
 
 namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao
@@ -100,6 +101,124 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao
             {
                 try { caps[i].OnDetach(this); } catch { /* swallow */ }
             }
+        }
+
+        // ─── 链式 Fluent API ─────────────────────────────────────────
+        //
+        // 设计目标：把"装能力"从 `entity.Add<IDamageable>(new DamageableComponent(100))`
+        // 这种两段式调用，简化为像自然语言一样的链：
+        //
+        //   entity.CanMove(3f).CanAttack(10, 1.5f).CanBeAttacked(100).CanFlash(root);
+        //
+        // 规则：
+        //   - 所有 Can* / Cannot* 方法返回 `this`，可无限链下去
+        //   - 主键仍是接口类型，重复调用同名 Can* 会覆盖（参 Add<T> 语义）
+        //   - 不会做"GetOrAdd" —— 每次都创建新组件实例并替换
+        //   - 想自定义实现：仍可走 `entity.With<T>(myCustomComponent)`
+        //   - 想运行时摘掉：`entity.Without<T>()`
+        //
+        // 这是纯客户端便利封装，运行时行为与 Add<T> 一致。
+
+        /// <summary>通用链式挂载 —— 等价于 <see cref="Add{T}"/>，但返回 <c>this</c> 以便链调。</summary>
+        public Entity With<T>(T capability) where T : class, IEntityCapability
+        {
+            Add(capability);
+            return this;
+        }
+
+        /// <summary>通用链式卸载 —— 等价于 <see cref="Remove{T}"/>，但返回 <c>this</c>。</summary>
+        public Entity Without<T>() where T : class, IEntityCapability
+        {
+            Remove<T>();
+            return this;
+        }
+
+        /// <summary>赋予移动能力（<see cref="IMovable"/> + <see cref="MovableComponent"/>）。</summary>
+        public Entity CanMove(float moveSpeed)
+        {
+            Add<IMovable>(new MovableComponent(moveSpeed));
+            return this;
+        }
+
+        /// <summary>赋予攻击能力（<see cref="IAttacker"/> + <see cref="AttackerComponent"/>）。</summary>
+        public Entity CanAttack(float attackPower, float attackRange = 1.5f, float attackCooldown = 0.6f)
+        {
+            Add<IAttacker>(new AttackerComponent(attackPower, attackRange, attackCooldown));
+            return this;
+        }
+
+        /// <summary>赋予可被伤害能力（<see cref="IDamageable"/> + <see cref="DamageableComponent"/>）。</summary>
+        public Entity CanBeAttacked(float maxHp)
+        {
+            Add<IDamageable>(new DamageableComponent(maxHp));
+            return this;
+        }
+
+        /// <summary>
+        /// 监听死亡事件 —— 必须在 <see cref="CanBeAttacked"/> 之后链。无 <see cref="IDamageable"/> 时静默忽略。
+        /// 等价于 <c>entity.Get&lt;IDamageable&gt;().Died += handler</c>。
+        /// </summary>
+        public Entity OnDied(Action<Entity, Entity> handler)
+        {
+            if (handler == null) return this;
+            var dmg = Get<IDamageable>();
+            if (dmg != null) dmg.Died += handler;
+            return this;
+        }
+
+        /// <summary>
+        /// 监听受伤事件 —— 必须在 <see cref="CanBeAttacked"/> 之后链。无 <see cref="IDamageable"/> 时静默忽略。
+        /// </summary>
+        public Entity OnDamaged(Action<Entity, Entity, float, string> handler)
+        {
+            if (handler == null) return this;
+            var dmg = Get<IDamageable>();
+            if (dmg != null) dmg.Damaged += handler;
+            return this;
+        }
+
+        /// <summary>挂"暂时不可被攻击"标记（<see cref="IInvulnerable"/>）。配合 <see cref="Without{T}"/> 解除。</summary>
+        public Entity CannotBeAttacked(string reason = "Default")
+        {
+            Add<IInvulnerable>(new InvulnerableComponent(reason, true));
+            return this;
+        }
+
+        /// <summary>受伤变白闪烁效果 —— root 自动搜索其下所有 SpriteRenderer。</summary>
+        public Entity CanFlash(Transform root, float flashDuration = 0.15f, Color? flashColor = null)
+        {
+            Add<IFlashEffect>(new FlashEffectComponent(root, flashDuration, flashColor));
+            return this;
+        }
+
+        /// <summary>受伤击退效果 —— 需要 Rigidbody2D 参与方向计算。</summary>
+        public Entity CanKnockback(Rigidbody2D rb, float force = 5f, float duration = 0.2f)
+        {
+            Add<IKnockbackEffect>(new KnockbackEffectComponent(rb, force, duration));
+            return this;
+        }
+
+        /// <summary>接触伤害（铁丝网类）—— 周期 <see cref="Physics2D.OverlapCircle"/> 扫描造成伤害。</summary>
+        public Entity CanDamageOnContact(float damagePerTick, float radius,
+            float tickInterval = 1f, string damageType = "ContactDamage", LayerMask layerMask = default)
+        {
+            Add<IContactDamage>(new ContactDamageComponent(damagePerTick, radius, tickInterval, damageType, layerMask));
+            return this;
+        }
+
+        /// <summary>光环（治疗塔 / 毒气云）—— 周期 OverlapCircle，对范围内 <see cref="IDamageable"/> 加血或扣血。</summary>
+        public Entity EmitAura(float healPerTick, float radius,
+            float tickInterval = 1f, LayerMask layerMask = default, bool includeSelf = false)
+        {
+            Add<IAura>(new AuraComponent(healPerTick, radius, tickInterval, layerMask, includeSelf));
+            return this;
+        }
+
+        /// <summary>周期采集 —— 定时往 <paramref name="targetInventoryId"/> 容器丢一份物品。</summary>
+        public Entity Harvest(string itemId, int amount, float interval, string targetInventoryId = "player")
+        {
+            Add<IHarvester>(new HarvesterComponent(itemId, amount, interval, targetInventoryId));
+            return this;
         }
     }
 }

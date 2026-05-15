@@ -3,7 +3,6 @@ using UnityEngine;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
-using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
 
 namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
 {
@@ -16,8 +15,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
         [SerializeField, Min(1f)] private float _maxHp = 1f;
         [SerializeField, Min(1)] private int _dropAmount = 1;
         [SerializeField] private Vector3 _dropOffset = Vector3.up * 0.25f;
-        [SerializeField] private string _targetInventoryId = InventoryManager.ID_PLAYER;
-        [SerializeField] private string _damageType = "PlayerAttack";
+        [SerializeField] private string _targetInventoryId = "player";
 
         private bool _dead;
         private string _entityInstanceId;
@@ -27,19 +25,18 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
             _pickableId = pickableId;
             _maxHp = Mathf.Max(1f, maxHp);
             _dropAmount = Mathf.Max(1, dropAmount);
-            _targetInventoryId = string.IsNullOrEmpty(targetInventoryId) ? InventoryManager.ID_PLAYER : targetInventoryId;
+            _targetInventoryId = string.IsNullOrEmpty(targetInventoryId) ? "player" : targetInventoryId;
             _dead = false;
             RegisterEntity();
         }
 
-        public void Configure(string pickableId, float maxHp, int dropAmount, string targetInventoryId, Vector3 dropOffset, string damageType)
+        public void Configure(string pickableId, float maxHp, int dropAmount, string targetInventoryId, Vector3 dropOffset)
         {
             _pickableId = pickableId;
             _maxHp = Mathf.Max(1f, maxHp);
             _dropAmount = Mathf.Max(1, dropAmount);
-            _targetInventoryId = string.IsNullOrEmpty(targetInventoryId) ? InventoryManager.ID_PLAYER : targetInventoryId;
+            _targetInventoryId = string.IsNullOrEmpty(targetInventoryId) ? "player" : targetInventoryId;
             _dropOffset = dropOffset;
-            _damageType = string.IsNullOrEmpty(damageType) ? "PlayerAttack" : damageType;
             _dead = false;
             RegisterEntity();
         }
@@ -49,25 +46,13 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
             RegisterEntity();
         }
 
-        public void TakeHit(float damage)
-        {
-            if (_dead) return;
-            if (!EventProcessor.HasInstance || string.IsNullOrEmpty(_entityInstanceId)) return;
-            EventProcessor.Instance.TriggerEventMethod(
-                EntityManager.EVT_DAMAGE_ENTITY,
-                new List<object> { _entityInstanceId, Mathf.Max(1f, damage), _damageType });
-        }
-
-        public void TakeDamage(float damage)
-        {
-            TakeHit(damage);
-        }
+        // 受击：由框架 EntityHandle.TakeDamage / EVT_DAMAGE_ENTITY 入口完成；本类不再暴露 TakeHit。
 
         private void DropPickableItem()
         {
             if (!EventProcessor.HasInstance || string.IsNullOrEmpty(_pickableId)) return;
             EventProcessor.Instance.TriggerEventMethod(
-                InventoryManager.EVT_SPAWN_PICKABLE_ITEM,
+                "InventorySpawnPickableItem",
                 new List<object> { _pickableId, transform.position + _dropOffset, _targetInventoryId, _dropAmount });
         }
 
@@ -80,6 +65,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime
                 Kind = EntityKind.Static,
                 Collider = BuildSpriteBoundsCollider(),
                 CanMove = false,
+                EnableFlashEffect = false, // 植物不需要闪烁效果
+                EnableKnockbackEffect = false, // 植物不需要击退效果
                 CanBeAttacked = true,
                 MaxHp = _maxHp,
                 CanAttack = false,

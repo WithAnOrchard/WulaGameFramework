@@ -7,6 +7,7 @@ using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 // 碰撞体类型都在 UnityEngine 命名空间 —— 已由 `using UnityEngine;` 覆盖
 // 本模块不 <c>using</c> 任何 CharacterManager 依赖——跨模块调用一律走 EventProcessor。
 
@@ -132,22 +133,16 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             var charConfigId = PickCharacterConfigId(config);
             if (!string.IsNullOrEmpty(charConfigId))
             {
-                // 跨模块调用：走 Event，不引用 CharacterService
-                var createResult = EventProcessor.HasInstance
-                    ? EventProcessor.Instance.TriggerEventMethod(
-                        "CreateCharacter",   // = CharacterManager.EVT_CREATE_CHARACTER
-                        new List<object> { charConfigId, instanceId, parent, worldPosition ?? Vector3.zero })
-                    : null;
-
-                if (ResultCode.IsOk(createResult) && createResult.Count >= 2 && createResult[1] is Transform root)
+                var root = CharacterViewBridge.CreateCharacter(
+                    charConfigId, instanceId, parent, worldPosition);
+                if (root != null)
                 {
                     entity.CharacterInstanceId = instanceId;
                     entity.CharacterRoot       = root;
                 }
                 else
                 {
-                    var msg = createResult != null && createResult.Count >= 2 ? createResult[1] : "<no event handler>";
-                    LogWarning($"创建显示 Character 失败（CharacterConfigId={charConfigId}）：{msg}");
+                    LogWarning($"创建显示 Character 失败（CharacterConfigId={charConfigId}）");
                 }
             }
 
@@ -158,18 +153,19 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
                 ApplyCollider(entity.CharacterRoot.gameObject, config.Collider);
             }
 
-            // 世界空间偏移 —— 走 EVT_MOVE_CHARACTER（与缩放解耦）
-            if (config.SpawnOffset != Vector3.zero && !string.IsNullOrEmpty(entity.CharacterInstanceId)
-                && EventProcessor.HasInstance)
+            // 世界空间偏移 —— 走 CharacterViewBridge（与缩放解耦）
+            if (config.SpawnOffset != Vector3.zero && !string.IsNullOrEmpty(entity.CharacterInstanceId))
             {
-                EventProcessor.Instance.TriggerEventMethod(
-                    "MoveCharacter",   // = CharacterManager.EVT_MOVE_CHARACTER
-                    new List<object> { entity.CharacterInstanceId, config.SpawnOffset });
+                CharacterViewBridge.Move(entity.CharacterInstanceId, config.SpawnOffset);
             }
 
             // E3: CAT_INSTANCES 是 transient category，IsTransientCategory 返 true，
             //     SetData 会进 _dataStorage 但 OnCategoryDataChanged 全程跳过写盘，安全。
             SetData(CAT_INSTANCES, instanceId, entity);
+
+            // 挂载 EntityHandle：让 Unity 碰撞回调能反查 Entity，并提供 TakeDamage 便捷入口
+            if (entity.CharacterRoot != null)
+                AttachEntityHandle(entity.CharacterRoot.gameObject, entity);
 
             Log($"创建 Entity 实例: {instanceId} (config={configId})", Color.green);
             return entity;
@@ -197,20 +193,36 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
 
             EntityManager.ApplyRuntimeCollider(host, definition.Collider);
 
-            if (definition.CanMove)
-                entity.Add<IMovable>(new MovableComponent(definition.MoveSpeed));
+            // 使用链式 fluent API（参 Entity.cs 末尾 Fluent API 注释）
+            if (definition.CanMove)       entity.CanMove(definition.MoveSpeed);
             if (definition.CanBeAttacked)
             {
-                var damageable = entity.Add<IDamageable>(new DamageableComponent(definition.MaxHp));
+                entity.CanBeAttacked(definition.MaxHp);
                 if (definition.Died != null)
-                    damageable.Died += (_, __) => definition.Died(instanceId);
+                    entity.OnDied((_, __) => definition.Died(instanceId));
             }
-            if (definition.CanAttack)
-                entity.Add<IAttacker>(new AttackerComponent(definition.AttackPower, definition.AttackRange, definition.AttackCooldown));
+            if (definition.CanAttack)     entity.CanAttack(definition.AttackPower, definition.AttackRange, definition.AttackCooldown);
+            if (definition.EnableFlashEffect)
+                entity.CanFlash(host.transform, definition.FlashDuration, definition.FlashColor);
+            if (definition.EnableKnockbackEffect)
+            {
+                var rb = host.GetComponent<Rigidbody2D>();
+                if (rb != null) entity.CanKnockback(rb, definition.KnockbackForce, definition.KnockbackDuration);
+            }
 
             SetData(CAT_INSTANCES, instanceId, entity);
+            AttachEntityHandle(host, entity);
             Log($"注册场景 Entity 实例: {instanceId}", Color.green);
             return entity;
+        }
+
+        /// <summary>给承载 GameObject 带上 <see cref="EntityHandle"/> 并绑定。已存在则重绑。</summary>
+        internal static void AttachEntityHandle(GameObject host, Entity entity)
+        {
+            if (host == null || entity == null) return;
+            var handle = host.GetComponent<EntityHandle>();
+            if (handle == null) handle = host.AddComponent<EntityHandle>();
+            handle.Bind(entity.InstanceId, entity);
         }
 
         /// <summary>从 <paramref name="config"/> 解析本次创建用的 CharacterConfig ID —— variants 非空则随机挑一个。</summary>
@@ -231,7 +243,7 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
         /// 这里会用 <c>lossyScale</c> 反向补偿，确保 config 写多大世界里就多大，与 RootScale 解耦。</para>
         /// <para>注意：Unity 组件的 <c>==</c> 是重载的"假 null"，必须用 <c>if (x == null)</c> 判断，不能用 <c>??</c>。</para>
         /// </summary>
-        private static void ApplyCollider(GameObject host, EntityColliderConfig cfg)
+        internal static void ApplyCollider(GameObject host, EntityColliderConfig cfg)
         {
             // 反向补偿世界缩放——这样 cfg.Size 真正代表世界 tile 数（与 CharacterConfig.RootScale 解耦）
             var ls = host.transform.lossyScale;
@@ -270,14 +282,19 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             var e = GetEntity(instanceId);
             if (e == null) return false;
 
+            // 解绑 EntityHandle（GameObject 即将被 Destroy，仅为处于存活阶段的脚本处理）
+            if (e.CharacterRoot != null)
+            {
+                var handle = e.CharacterRoot.GetComponent<EntityHandle>();
+                if (handle != null) handle.Unbind();
+            }
+
             // 先卸能力，再销毁 Character —— 能力可能在 OnDetach 里用到 Character
             e.DetachAllCapabilities();
 
-            if (!string.IsNullOrEmpty(e.CharacterInstanceId) && EventProcessor.HasInstance)
+            if (!string.IsNullOrEmpty(e.CharacterInstanceId))
             {
-                EventProcessor.Instance.TriggerEventMethod(
-                    "DestroyCharacter",   // = CharacterManager.EVT_DESTROY_CHARACTER
-                    new List<object> { e.CharacterInstanceId });
+                CharacterViewBridge.DestroyCharacter(e.CharacterInstanceId);
             }
             e.CharacterInstanceId = null;
             e.CharacterRoot       = null;
@@ -300,7 +317,8 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
         /// 否则会绕过无敌检查。
         /// </summary>
         /// <returns>实际造成的伤害（未命中 / 无敌 / 无 IDamageable 均返回 0）。</returns>
-        public float TryDamage(Entity target, float amount, Entity source = null, string damageType = null)
+        public float TryDamage(Entity target, float amount, Entity source = null,
+            string damageType = null, Vector3? damageSourcePosition = null)
         {
             if (target == null || amount <= 0f) return 0f;
 
@@ -311,7 +329,31 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             var dmg = target.Get<IDamageable>();
             if (dmg == null) return 0f;
 
-            return dmg.TakeDamage(amount, source, damageType);
+            var dealt = dmg.TakeDamage(amount, source, damageType);
+
+            // 触发受伤效果（如果存在）
+            if (dealt > 0f)
+            {
+                // 优先使用显式传入的攻击者坐标，其次从 source Entity 取，最后 fallback 到目标自身位置
+                var sourcePos = damageSourcePosition
+                    ?? (source != null && source.CharacterRoot != null
+                        ? source.CharacterRoot.position
+                        : target.CharacterRoot != null
+                            ? target.CharacterRoot.position
+                            : target.WorldPosition);
+
+                // 触发闪烁效果
+                target.Get<IFlashEffect>()?.OnFlash();
+
+                // 触发击退效果
+                target.Get<IKnockbackEffect>()?.OnKnockback(sourcePos);
+
+                // 播放受伤音效
+                // §4.1 跨模块 AudioManager 走 bare-string
+                EventProcessor.Instance?.TriggerEventMethod("PlayDamageSFX", null);
+            }
+
+            return dealt;
         }
 
         /// <summary>便捷查询：该 Entity 当前是否"可被攻击"（有 IDamageable 且未无敌）。</summary>
@@ -341,7 +383,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             {
                 if (!(kv.Value is Entity e)) continue;
 
-                // TODO: AI / 物理 / 状态机…（仅 Dynamic）
+                // 自动 tick 所有 ITickableCapability（闪烁恢复、击退衰减等）
+                foreach (var cap in e.Capabilities.Values)
+                    if (cap is ITickableCapability tickable)
+                        tickable.Tick(deltaTime);
 
                 // 位置同步到显示层（仅 Dynamic）—— 直接用缓存的 Transform（Unity 原生类型，非跨模块耦合）
                 if (e.Kind == EntityKind.Dynamic && e.CharacterRoot != null)

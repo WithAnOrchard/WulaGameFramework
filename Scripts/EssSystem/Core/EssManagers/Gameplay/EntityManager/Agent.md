@@ -47,21 +47,40 @@ EntityManager/
 
 ### 2. Capability（能力 = 可插拔接口）
 
-主键是**接口类型**，同一接口只能挂一个实例。用法：
+主键是**接口类型**，同一接口只能挂一个实例。
+
+**推荐用法 —— 链式 Fluent API**（参 `Dao/Entity.cs` 末尾的 "Fluent API" 段）：
 
 ```csharp
-// 挂能力
-entity.Add<IDamageable>(new DamageableComponent(maxHp: 100));
-entity.Add<IAttacker>(new AttackerComponent(attackPower: 15, attackRange: 2f));
-entity.Add<IInvulnerable>(new InvulnerableComponent("ScriptedCutscene"));
-entity.Add<IStorage>(new StorageComponent("chest_001", capacity: 20));
+entity
+    .CanMove(moveSpeed: 3f)
+    .CanAttack(attackPower: 15, attackRange: 2f, attackCooldown: 0.6f)
+    .CanBeAttacked(maxHp: 100)
+        .OnDied((self, killer) => Debug.Log($"{self.InstanceId} 死了"))
+        .OnDamaged((self, src, dmg, type) => Debug.Log($"扣 {dmg}"))
+    .CanFlash(entity.CharacterRoot)
+    .CanKnockback(rb, force: 5f);
 
-// 查询
+entity.CannotBeAttacked("ScriptedCutscene");   // 限时无敌
+entity.Without<IInvulnerable>();                // 解除无敌
+```
+
+每个 `CanXxx` 方法等价于挂"默认实现"组件并返回 `this`。要替换为自定义实现，仍走通用 API：
+
+```csharp
+entity
+    .With<IDamageable>(new MyArmoredDamageable(maxHp: 200, armor: 10))  // 自定义组件
+    .With<IStorage>(new StorageComponent("chest_001", capacity: 20))
+    .CanAttack(20f);   // 后续仍可继续链
+```
+
+**底层 API**（仍保留，向后兼容）：
+
+```csharp
+entity.Add<IDamageable>(new DamageableComponent(100));   // 返回组件实例
+var dmg = entity.Get<IDamageable>();                     // null if not present
 if (entity.Has<IDamageable>()) { /* 有血 */ }
-var dmg = entity.Get<IDamageable>();       // null if not present
-
-// 卸载
-entity.Remove<IInvulnerable>();             // 限时无敌结束
+entity.Remove<IInvulnerable>();
 ```
 
 **"不可被攻击"通过 `IInvulnerable` 表达，而不是移除 `IDamageable`** —— 这样能保留 HP 状态，只是暂时豁免伤害。
@@ -134,6 +153,49 @@ if (slime.Has<IDamageable>() && !slime.Has<IInvulnerable>())
     slime.Get<IDamageable>().TakeDamage(10, source: attacker);
 }
 ```
+
+## 全量 Capability 速查表
+
+| 接口 | 默认实现 | 链式方法 | 用途 |
+|---|---|---|---|
+| `IMovable` | `MovableComponent` | `entity.CanMove(speed)` | 移动 |
+| `IAttacker` | `AttackerComponent` | `entity.CanAttack(power, range, cd)` | 攻击 |
+| `IDamageable` | `DamageableComponent` | `entity.CanBeAttacked(maxHp)` | 受伤 / HP |
+| `IInvulnerable` | `InvulnerableComponent` | `entity.CannotBeAttacked(reason)` | 免疫伤害 |
+| `IFlashEffect` | `FlashEffectComponent` | `entity.CanFlash(root, dur, color)` | 受伤白闪 |
+| `IKnockbackEffect` | `KnockbackEffectComponent` | `entity.CanKnockback(rb, force, dur)` | 击退 |
+| `IFacing` | `FacingComponent` | — | 朝向翻转 |
+| `IPatrol` | `HorizontalPatrolComponent` | — | 左右巡逻 |
+| `IGroundSensor` | `Raycast2DGroundSensorComponent` | — | 地面检测 |
+| `IJumpable` | `Rigidbody2DJumpableComponent` | — | 跳跃 |
+| `IRigidbody2DMover` | `Rigidbody2DMoverComponent` | — | Rigidbody 移动 |
+| `IStorage` | `StorageComponent` | — | 容器/存储 |
+| `IColliderPhaseThrough` | `ColliderPhaseThroughComponent` | — | 碰撞穿透 |
+| **`IContactDamage`** | **`ContactDamageComponent`** | **`entity.CanDamageOnContact(dmg, radius, interval, type, mask)`** | 接触伤害（铁丝网） |
+| **`IAura`** | **`AuraComponent`** | **`entity.EmitAura(heal, radius, interval, mask, self)`** | 范围治疗/毒气 |
+| **`IHarvester`** | **`HarvesterComponent`** | **`entity.Harvest(itemId, amount, interval, invId)`** | 周期采集 |
+
+> 加粗 = 本次新增。详细构造参数见各接口 xmldoc。
+
+### 新增 Capability 详情
+
+#### IContactDamage — 接触伤害
+- **文件**: `Dao/Capabilities/IContactDamage.cs` + `Default/ContactDamageComponent.cs`
+- **机制**: `ITickableCapability`；每 `TickInterval` 秒用 `Physics2D.OverlapCircle(CharacterRoot.position, Radius, LayerMask)` 扫描，对非自身且有 `IDamageable` 的 Entity 调 `EntityService.TryDamage`
+- **链式**: `entity.CanDamageOnContact(5f, 1f, 1f, "BarbedWire")`
+- **用例**: 铁丝网、火焰陷阱、荆棘地
+
+#### IAura — 光环
+- **文件**: `Dao/Capabilities/IAura.cs` + `Default/AuraComponent.cs`
+- **机制**: 同上 OverlapCircle，`HealPerTick >= 0` → 调 `Heal`，`< 0` → 调 `TryDamage`
+- **链式**: `entity.EmitAura(healPerTick: 5f, radius: 3.5f)`
+- **用例**: 治疗塔、buff 图腾、毒气云
+
+#### IHarvester — 周期采集
+- **文件**: `Dao/Capabilities/IHarvester.cs` + `Default/HarvesterComponent.cs`
+- **机制**: `ITickableCapability`；每 `Interval` 秒通过 bare-string `"InventoryAddItem"` 往 `TargetInventoryId` 丢 `Amount` 个 `ItemId`
+- **链式**: `entity.Harvest("wood", 1, 5f, "player")`
+- **用例**: 自动农场、矿石钻头
 
 ## 扩展点（后续补充）
 

@@ -161,7 +161,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             if (target == null) return ResultCode.Fail($"Entity 不存在: {instanceId}");
 
             var damage = System.Convert.ToSingle(data[1]);
-            var dealt = Service.TryDamage(target, damage, null, data.Count > 2 ? data[2] as string : null);
+            var damageType = data.Count > 2 ? data[2] as string : null;
+            var sourcePos = data.Count > 3 && data[3] is Vector3 sp ? sp : (Vector3?)null;
+            var dealt = Service.TryDamage(target, damage, null, damageType, sourcePos);
             return ResultCode.Ok(dealt);
         }
 
