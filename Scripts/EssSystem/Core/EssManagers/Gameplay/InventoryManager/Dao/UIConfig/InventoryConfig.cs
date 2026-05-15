@@ -1,4 +1,5 @@
 using System;
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao.UIConfig;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao

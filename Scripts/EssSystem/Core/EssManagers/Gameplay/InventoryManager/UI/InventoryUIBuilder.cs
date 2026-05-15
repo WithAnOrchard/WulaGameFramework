@@ -4,6 +4,8 @@ using EssSystem.Core;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao.UIConfig;
+
 // 本文件不 <c>using</c> UIManager 模块。查 GameObject 走 EVT_GET_UI_GAMEOBJECT 事件。
 
 namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager

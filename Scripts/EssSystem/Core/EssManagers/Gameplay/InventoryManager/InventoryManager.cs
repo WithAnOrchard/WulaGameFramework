@@ -4,6 +4,7 @@ using EssSystem.Core;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
+using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao.UIConfig;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
 // §4.1 跨模块调用走 bare-string 协议，不 using UIManager 获得运行时零跨模块依赖
 
@@ -441,8 +442,13 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
             var sr = go.AddComponent<SpriteRenderer>();
             if (!string.IsNullOrEmpty(definition.SpriteResourcePath))
             {
-                sr.sprite = Resources.Load<Sprite>(definition.SpriteResourcePath);
-                if (sr.sprite == null) Log($"可拾取物 Sprite 加载失败: Resources/{definition.SpriteResourcePath}", Color.yellow);
+                // 走 ResourceManager 事件通道加载（§4.1 bare-string），自动走缓存 + subfolder hints
+                var spriteResult = EventProcessor.Instance.TriggerEventMethod(
+                    "GetSprite", new List<object> { definition.SpriteResourcePath });
+                if (ResultCode.IsOk(spriteResult) && spriteResult.Count >= 2 && spriteResult[1] is Sprite spr)
+                    sr.sprite = spr;
+                else
+                    Log($"可拾取物 Sprite 加载失败: {definition.SpriteResourcePath}", Color.yellow);
             }
 
             var rb = go.AddComponent<Rigidbody2D>();

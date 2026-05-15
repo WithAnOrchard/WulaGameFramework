@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao
+namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao.UIConfig
 {
     /// <summary>
     /// 按钮配置 - 定义关闭按钮的参数（参照Adjustable）

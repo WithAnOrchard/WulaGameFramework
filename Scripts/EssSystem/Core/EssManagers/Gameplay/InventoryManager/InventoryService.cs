@@ -391,6 +391,12 @@ namespace EssSystem.Core.EssManagers.Gameplay.InventoryManager
                     args[0]?.ToString(),
                     args[1]?.ToString(),
                     args.Count >= 3 ? Convert.ToInt32(args[2]) : 1);
+                
+                if (result.Success)
+                {
+                    EventProcessor.Instance?.TriggerEventMethod("PlayItemUseSFX", null);
+                }
+                
                 return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
             }
             catch (Exception ex) { return ResultCode.Fail(ex.Message); }
