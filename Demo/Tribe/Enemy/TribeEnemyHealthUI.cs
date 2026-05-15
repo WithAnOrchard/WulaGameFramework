@@ -1,8 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
 // §4.1 跨模块 UIManager 走 bare-string，不 using。
 

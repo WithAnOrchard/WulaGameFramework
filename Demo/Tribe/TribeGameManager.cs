@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using EssSystem.Core.Base;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
 // §4.1 跨模块 InventoryManager / ResourceService 事件常量走 bare-string。
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;

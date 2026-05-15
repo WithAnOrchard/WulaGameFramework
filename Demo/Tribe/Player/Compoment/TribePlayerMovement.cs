@@ -98,7 +98,7 @@ namespace Demo.Tribe.Player
                 _entity.Add<IPhaseThrough>(new ColliderPhaseThroughComponent(_collider));
 
             // 注册到 EntityService —— 让 EntityHandle 自动挂上，所有碰撞回调可反查 Entity
-            EntityService.Instance?.AttachEntityHandle(gameObject, _entity);
+            EntityService.AttachEntityHandle(gameObject, _entity);
         }
 
         private void ConfigureRigidbody()

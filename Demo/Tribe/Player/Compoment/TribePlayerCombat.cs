@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 // §4.1 跨模块 AudioManager 走 bare-string，不 using。

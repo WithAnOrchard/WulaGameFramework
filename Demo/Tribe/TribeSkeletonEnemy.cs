@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Demo.Tribe.Enemy;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 // §4.1 跨模块 EntityManager 事件常量走 bare-string。
