@@ -85,6 +85,17 @@ namespace EssSystem.Core.EssManagers.Presentation.UIManager.Dao
         #region Virtual Methods
 
         /// <summary>
+        ///     直接写入 _position 字段，**不触发** <see cref="OnPositionChanged"/> 回调和事件广播。
+        ///     用于每帧高频定位（如 HUD 跟随世界坐标），避免 <c>EVT_DAO_PROPERTY_CHANGED</c> 事件噪声。
+        ///     <para>调用方通常已持有 RectTransform 引用，直接写 <c>anchoredPosition</c>；
+        ///     本方法仅保持 DAO 字段与实际 UI 状态同步。</para>
+        /// </summary>
+        public void SetPositionSilent(float x, float y)
+        {
+            _position = new Vector2(x, y);
+        }
+
+        /// <summary>
         ///     Called when position changes
         ///     position
         /// </summary>
