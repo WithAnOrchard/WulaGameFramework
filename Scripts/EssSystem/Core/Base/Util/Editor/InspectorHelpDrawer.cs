@@ -1,8 +1,8 @@
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using UnityEditor;
 using UnityEngine;
 
-namespace EssSystem.Core.Util.EditorTools
+namespace EssSystem.Core.Base.Util.EditorTools
 {
     /// <summary>
     /// <see cref="InspectorHelpAttribute"/> 的 DecoratorDrawer：在字段上方绘制 HelpBox。

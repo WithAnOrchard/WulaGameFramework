@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Foundation.DataManager

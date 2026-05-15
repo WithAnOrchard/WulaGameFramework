@@ -4,12 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Singleton;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Singleton;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 // ApplicationLifecycle 已在 EssSystem.Core.Util using 范围内
 
-namespace EssSystem.Core.Event
+namespace EssSystem.Core.Base.Event
 {
     /// <summary>
     ///     事件委托 - 事件监听器的委托类型

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using EssSystem.Core.Base;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
 using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using Demo.DayNight3D.Player;

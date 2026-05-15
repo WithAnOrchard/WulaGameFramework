@@ -1,6 +1,8 @@
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
+namespace EssSystem.Core.Base.Singleton
+{
 /// <summary>
 ///     Unity MonoBehaviour Singleton Pattern with Mono suffix
 ///     MonoBehaviour  singleton
@@ -148,4 +150,5 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     {
         Debug.LogError($"[{typeof(T).Name}] {message}");
     }
+}
 }

@@ -3,7 +3,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace EssSystem.Core.Singleton
+namespace EssSystem.Core.Base.Singleton
 {
     /// <summary>
     /// **Editor "Reload Domain" 关闭场景下的关键守卫**：

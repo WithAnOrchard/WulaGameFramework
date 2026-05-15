@@ -1,3 +1,4 @@
+using EssSystem.Core.Base.Event;
 using System;
 
 namespace BiliBiliDanmu.Dao

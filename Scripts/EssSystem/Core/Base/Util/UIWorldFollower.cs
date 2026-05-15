@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// 世界坐标 → Screen-space UI 投影工具 —— 统一"HUD 跟随世界物体"的重复逻辑。

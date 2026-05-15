@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// 全局应用生命周期信号 —— 解决 Unity 退出 Play 时单例销毁顺序不可控的问题。

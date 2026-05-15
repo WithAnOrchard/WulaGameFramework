@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao;
-using EssSystem.Core;
+using EssSystem.Core.Base.Util;
 
 namespace EssSystem.Core.EssManagers.Presentation.UIManager
 {

@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     ///     程序集工具类 — 提供程序集相关的公用判断方法

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 
 namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default
 {

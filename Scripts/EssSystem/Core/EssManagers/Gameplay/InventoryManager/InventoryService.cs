@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager.Dao;
 

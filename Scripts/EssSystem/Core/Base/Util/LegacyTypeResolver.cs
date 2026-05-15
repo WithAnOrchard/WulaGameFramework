@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     ///     标记类型曾经使用的旧 namespace / 类型名，使老存档（按 <see cref="Type.AssemblyQualifiedName"/> 写入）

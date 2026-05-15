@@ -1,3 +1,4 @@
+using EssSystem.Core.Base.Singleton;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao;

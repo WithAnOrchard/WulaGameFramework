@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Event
+namespace EssSystem.Core.Base.Event
 {
     /// <summary>
     ///     Event特性 - 用于将方法自动注册为事件

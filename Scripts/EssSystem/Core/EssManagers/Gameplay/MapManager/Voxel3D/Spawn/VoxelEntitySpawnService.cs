@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Spawn.Dao;
 // §4.1 跨模块 EVT_X 走 bare-string，不 using EntityManager

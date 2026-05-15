@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
 // §4.1 跨模块走 bare-string 协议，不 using ResourceManager
 

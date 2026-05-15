@@ -1,7 +1,8 @@
 using System.Linq;
+using EssSystem.Core.Base;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
 using EssSystem.Core.EssManagers.Foundation.ResourceManager;

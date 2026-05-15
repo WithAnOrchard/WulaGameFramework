@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Foundation.ResourceManager

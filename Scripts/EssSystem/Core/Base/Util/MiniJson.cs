@@ -4,7 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// 轻量级 JSON 序列化器 — 专为框架的 <c>Dictionary&lt;string, object&gt;</c> + <c>List&lt;object&gt;</c>

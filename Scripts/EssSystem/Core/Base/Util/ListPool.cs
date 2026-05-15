@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     ///     线程安全的 <see cref="List{T}"/> 对象池 —— 减少热路径上 List 的 alloc / GC。

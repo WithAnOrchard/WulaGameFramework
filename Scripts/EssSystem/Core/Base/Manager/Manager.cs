@@ -1,4 +1,6 @@
 using System;
+using EssSystem.Core.Base.Singleton;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Manager

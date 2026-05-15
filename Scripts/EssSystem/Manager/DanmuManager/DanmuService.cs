@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 using BiliBiliDanmu.Dao;
 using BiliBiliDanmu.Net;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Event;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
 namespace BiliBiliDanmu

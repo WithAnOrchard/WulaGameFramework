@@ -1,4 +1,5 @@
 using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 
 namespace BiliBiliDanmu

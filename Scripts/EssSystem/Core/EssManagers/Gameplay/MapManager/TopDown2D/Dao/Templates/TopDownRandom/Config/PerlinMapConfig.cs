@@ -1,5 +1,5 @@
 using System;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Config;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Generator;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Generator;

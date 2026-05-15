@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace EssSystem.Core
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     ///     统一结果码 — 替代全局魔法字符串 "成功"/"错误"

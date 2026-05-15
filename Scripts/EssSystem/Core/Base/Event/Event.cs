@@ -1,4 +1,4 @@
-namespace EssSystem.Core.Event
+namespace EssSystem.Core.Base.Event
 {
     /// <summary>
     ///     事件基类 - 所有事件的基础类

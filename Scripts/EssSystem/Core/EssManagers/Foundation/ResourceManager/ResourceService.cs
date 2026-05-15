@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Util;
-using EssSystem.Core.Event;
-using EssSystem.Core;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 
 namespace EssSystem.Core.EssManagers.Foundation.ResourceManager
 {

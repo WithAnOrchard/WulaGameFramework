@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao

@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Event;
-using EssSystem.Core;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Base.Util;
 
 namespace EssSystem.Core.EssManagers.Foundation.AudioManager
 {
@@ -145,6 +145,9 @@ namespace EssSystem.Core.EssManagers.Foundation.AudioManager
             source.volume = _sfxVolume * volumeScale;
             source.Play();
         }
+
+        /// <summary>当前 SFX 音量 (0..1)</summary>
+        public float SFXVolume => _sfxVolume;
 
         /// <summary>设置 SFX 音量</summary>
         public void SetSFXVolume(float volume) => _sfxVolume = Mathf.Clamp01(volume);

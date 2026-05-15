@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace EssSystem.Core.Singleton
+namespace EssSystem.Core.Base.Singleton
 {
     /// <summary>
     ///     Normal Class Singleton Pattern

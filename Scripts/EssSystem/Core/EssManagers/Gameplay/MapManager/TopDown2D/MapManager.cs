@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using EssSystem.Core.Base;
 using UnityEngine;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom;

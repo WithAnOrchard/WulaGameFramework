@@ -179,10 +179,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
             try
             {
                 // §4.1 跨模块 bare-string：ResourceManager.EVT_GET_MODEL_CLIPS
-                var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
+                var r = EssSystem.Core.Base.Event.EventProcessor.Instance.TriggerEventMethod(
                     "GetModelClips",
                     new System.Collections.Generic.List<object> { fbxPath });
-                if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2 &&
+                if (EssSystem.Core.Base.Util.ResultCode.IsOk(r) && r.Count >= 2 &&
                     r[1] is System.Collections.Generic.List<UnityEngine.AnimationClip> clips)
                 {
                     foreach (var c in clips)
@@ -230,10 +230,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
             try
             {
                 // §4.1 跨模块 bare-string：ResourceManager.EVT_GET_ALL_MODEL_PATHS
-                var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
+                var r = EssSystem.Core.Base.Event.EventProcessor.Instance.TriggerEventMethod(
                     "GetAllModelPaths",
                     new System.Collections.Generic.List<object>());
-                if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2)
+                if (EssSystem.Core.Base.Util.ResultCode.IsOk(r) && r.Count >= 2)
                     allPaths = r[1] as System.Collections.Generic.List<string>;
             }
             catch (System.Exception ex)
@@ -265,10 +265,10 @@ namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao
                 try
                 {
                     // §4.1 跨模块 bare-string：ResourceManager.EVT_GET_MODEL_CLIPS
-                    var r = EssSystem.Core.Event.EventProcessor.Instance.TriggerEventMethod(
+                    var r = EssSystem.Core.Base.Event.EventProcessor.Instance.TriggerEventMethod(
                         "GetModelClips",
                         new System.Collections.Generic.List<object> { relNorm });
-                    if (EssSystem.Core.ResultCode.IsOk(r) && r.Count >= 2 &&
+                    if (EssSystem.Core.Base.Util.ResultCode.IsOk(r) && r.Count >= 2 &&
                         r[1] is System.Collections.Generic.List<UnityEngine.AnimationClip> clips && clips.Count > 0)
                     {
                         foreach (var pref in defaultActionPreferences)

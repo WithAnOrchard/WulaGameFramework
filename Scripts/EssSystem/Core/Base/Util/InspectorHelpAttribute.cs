@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// 在 Inspector 中字段上方直接绘制一个 HelpBox（说明文字默认始终可见，无需悬停）。

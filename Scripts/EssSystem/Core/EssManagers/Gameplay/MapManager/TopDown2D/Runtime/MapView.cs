@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 // §4.1 跨模块 EVT 走 bare-string 协议，不 using ResourceManager
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao;
 using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Dao;

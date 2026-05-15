@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
 
 namespace EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime

@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// Rigidbody2D + Collider2D 常用配置参数包 —— 统一"重力 + 碰撞检测 + 约束"的重复初始化代码。

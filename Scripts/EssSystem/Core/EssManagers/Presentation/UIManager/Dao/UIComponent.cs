@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 // 本文件为中立 DAO 层——不 <c>using</c> UIManager 模块。广播属性变更走 EVT_DAO_PROPERTY_CHANGED 事件。
 

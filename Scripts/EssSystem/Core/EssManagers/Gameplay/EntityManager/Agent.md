@@ -110,8 +110,12 @@ entity.Remove<IInvulnerable>();
 | `EntityManager.EVT_DESTROY_ENTITY` | `[instanceId]` | `Ok(instanceId)` / `Fail(msg)` |
 | `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `[instanceId, GameObject host, EntityRuntimeDefinition definition]` | `Ok(instanceId)` / `Fail(msg)` |
 | `EntityManager.EVT_DAMAGE_ENTITY` | `[instanceId, damage:float, damageType?:string]` | `Ok(actualDamage)` / `Fail(msg)` |
+| `EntityManager.EVT_REGISTER_ENTITY_CONFIG` | `[EntityConfig config]` | `Ok(configId)` / `Fail(msg)` |
+| `EntityManager.EVT_GET_ENTITY` | `[instanceId]` | `Ok(Entity)` / `Fail(msg)` |
+| `EntityManager.EVT_APPLY_COLLIDER` | `[GameObject host, EntityColliderConfig cfg]` | `Ok(host)` / `Fail(msg)` |
+| `EntityManager.EVT_ATTACH_ENTITY_HANDLE` | `[GameObject host, Entity entity]` | `Ok(host)` / `Fail(msg)` |
 
-> **§2 协议解耦**：`EVT_CREATE_ENTITY` 返回 Unity 原生 `Transform`（CharacterRoot），不暴露模块私有 `Entity` 类型。业务侧需获得 `Entity` 逻辑实例（为挂能力/查询 HP 等）请用 `EntityService.Instance.GetEntity(instanceId)` —— 全局唯一入口。
+> **§2 协议解耦**：`EVT_CREATE_ENTITY` 返回 Unity 原生 `Transform`（CharacterRoot），不暴露模块私有 `Entity` 类型。需要 `Entity` 逻辑实例（挂能力/查询 HP）走 `EVT_GET_ENTITY` 或 `EntityService.Instance.GetEntity(instanceId)`。
 >
 > **§4.1 跨模块 bare-string**：调用方不 `using EntityManager` ，直接传字符串 `"CreateEntity"` / `"DestroyEntity"`。
 

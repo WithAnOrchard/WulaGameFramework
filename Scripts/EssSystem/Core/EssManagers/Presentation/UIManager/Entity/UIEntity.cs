@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Presentation.UIManager.Dao;
 using TMPro;
 using UnityEngine;

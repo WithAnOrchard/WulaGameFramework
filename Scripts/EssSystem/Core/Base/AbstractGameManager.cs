@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 
-namespace EssSystem.Core
+namespace EssSystem.Core.Base
 {
     /// <summary>
     /// 抽象游戏管理器 - 用于初始化和管理当前 GameObject 及其子对象上的所有 Manager

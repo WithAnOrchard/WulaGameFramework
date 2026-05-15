@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core;
+using EssSystem.Core.Base.Util;
 using EssSystem.Core.EssManagers.Manager;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Event;
 using Demo.DayNight.WaveSpawn.Dao;
 
 namespace Demo.DayNight.WaveSpawn

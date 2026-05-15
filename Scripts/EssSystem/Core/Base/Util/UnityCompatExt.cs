@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace EssSystem.Core.Util
+namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// Unity 兼容性扩展方法 —— 绕过 <c>??</c> / <c>?.</c> 对 <see cref="UnityEngine.Object"/> fake-null 的陷阱。

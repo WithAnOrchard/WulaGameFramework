@@ -330,6 +330,13 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
 | `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `RegisterSceneEntity` | Core/EntityManager | 注册已有场景 GameObject 为 Entity；data: `[instanceId, GameObject host, EntityRuntimeDefinition definition]` |
 | `EntityManager.EVT_DAMAGE_ENTITY` | `DamageEntity` | Core/EntityManager | 对运行时 Entity 造成伤害；data: `[instanceId, damage, damageType?]` |
+| `EntityManager.EVT_REGISTER_ENTITY_CONFIG` | `RegisterEntityConfig` | Core/EntityManager | 注册 Entity 配置（模板）；data: `[EntityConfig]` → `Ok(configId)` |
+| `EntityManager.EVT_GET_ENTITY` | `GetEntity` | Core/EntityManager | 查询 Entity 实例；data: `[instanceId]` → `Ok(Entity)` |
+| `EntityManager.EVT_APPLY_COLLIDER` | `ApplyCollider` | Core/EntityManager | 应用 Collider 到 GameObject；data: `[GameObject, EntityColliderConfig]` |
+| `EntityManager.EVT_ATTACH_ENTITY_HANDLE` | `AttachEntityHandle` | Core/EntityManager | 挂载 EntityHandle 桥接；data: `[GameObject, Entity]` |
+| `SkillManager.EVT_REGISTER_SKILL` | `RegisterSkill` | Core/SkillManager | 注册技能定义；data: `[SkillDefinition]` |
+| `SkillManager.EVT_LEARN_SKILL` | `LearnSkill` | Core/SkillManager | 实体学习技能；data: `[entityId, skillId]` |
+| `SkillManager.EVT_CAST_SKILL` | `CastSkill` | Core/SkillManager | 释放技能；data: `[Entity caster, skillId, target?, Vector3 dir?, Vector3 pos?]` → `Ok`/`Fail` |
 | `BuildingManager.EVT_REGISTER_BUILDING_CONFIG` | `RegisterBuildingConfig` | Core/BuildingManager | 注册建筑模板（命令），参数 `[BuildingConfig]` → `Ok(configId)` |
 | `BuildingManager.EVT_PLACE_BUILDING` | `PlaceBuilding` | Core/BuildingManager | 放置建筑（命令），参数 `[configId, instanceId, Vector3 position, bool startCompleted?]` → `Ok(Transform)` |
 | `BuildingManager.EVT_SUPPLY_BUILDING` | `SupplyBuilding` | Core/BuildingManager | 送材料（命令），参数 `[instanceId, itemId, int amount]` → `Ok(int remaining)` |

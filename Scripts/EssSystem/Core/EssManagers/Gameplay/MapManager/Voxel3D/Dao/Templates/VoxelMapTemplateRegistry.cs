@@ -1,3 +1,4 @@
+using EssSystem.Core.Base.Singleton;
 using System.Collections.Generic;
 
 namespace EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao.Templates

@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
 namespace BiliBiliDanmu.Dao

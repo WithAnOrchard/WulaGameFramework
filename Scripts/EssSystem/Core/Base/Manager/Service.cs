@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using EssSystem.Core.Singleton;
-using EssSystem.Core.Event;
-using EssSystem.Core.Util;
+using EssSystem.Core.Base.Singleton;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Base.Util;
 using UnityEngine;
 
 namespace EssSystem.Core.EssManagers.Manager
