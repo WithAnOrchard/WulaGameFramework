@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
@@ -32,6 +32,15 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
         public const string EVT_DESTROY_ENTITY = "DestroyEntity";
         public const string EVT_REGISTER_SCENE_ENTITY = "RegisterSceneEntity";
         public const string EVT_DAMAGE_ENTITY = "DamageEntity";
+
+        /// <summary>注册 Entity 配置（模板）。data: [EntityConfig config]. → Ok(configId)/Fail.</summary>
+        public const string EVT_REGISTER_ENTITY_CONFIG = "RegisterEntityConfig";
+        /// <summary>查询 Entity 实例。data: [string instanceId]. → Ok(Entity)/Fail.</summary>
+        public const string EVT_GET_ENTITY = "GetEntity";
+        /// <summary>给 GameObject 应用 Collider。data: [GameObject host, EntityColliderConfig cfg]. → Ok(host)/Fail.</summary>
+        public const string EVT_APPLY_COLLIDER = "ApplyCollider";
+        /// <summary>挂载 EntityHandle 桥接。data: [GameObject host, Entity entity]. → Ok(host)/Fail.</summary>
+        public const string EVT_ATTACH_ENTITY_HANDLE = "AttachEntityHandle";
 
         #region Inspector
 
@@ -165,6 +174,48 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager
             var sourcePos = data.Count > 3 && data[3] is Vector3 sp ? sp : (Vector3?)null;
             var dealt = Service.TryDamage(target, damage, null, damageType, sourcePos);
             return ResultCode.Ok(dealt);
+        }
+
+        [Event(EVT_REGISTER_ENTITY_CONFIG)]
+        public List<object> RegisterEntityConfig(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
+            if (data == null || data.Count < 1 || !(data[0] is EntityConfig cfg))
+                return ResultCode.Fail("参数无效：需要 [EntityConfig]");
+            Service.RegisterConfig(cfg);
+            return ResultCode.Ok(cfg.ConfigId);
+        }
+
+        [Event(EVT_GET_ENTITY)]
+        public List<object> GetEntityEvent(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
+            if (data == null || data.Count < 1) return ResultCode.Fail("参数无效：需要 [instanceId]");
+            var instanceId = data[0] as string;
+            var entity = Service.GetEntity(instanceId);
+            return entity != null ? ResultCode.Ok(entity) : ResultCode.Fail($"Entity 不存在: {instanceId}");
+        }
+
+        [Event(EVT_APPLY_COLLIDER)]
+        public List<object> ApplyColliderEvent(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [GameObject host, EntityColliderConfig cfg]");
+            var host = data[0] as GameObject;
+            var cfg = data[1] as EntityColliderConfig;
+            if (host == null || cfg == null) return ResultCode.Fail("host / cfg 不能为空");
+            EntityService.ApplyCollider(host, cfg);
+            return ResultCode.Ok(host);
+        }
+
+        [Event(EVT_ATTACH_ENTITY_HANDLE)]
+        public List<object> AttachEntityHandleEvent(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [GameObject host, Entity entity]");
+            var host = data[0] as GameObject;
+            var entity = data[1] as Entity;
+            if (host == null || entity == null) return ResultCode.Fail("host / entity 不能为空");
+            EntityService.AttachEntityHandle(host, entity);
+            return ResultCode.Ok(host);
         }
 
         public static void ApplyRuntimeCollider(GameObject host, EntityColliderConfig cfg)

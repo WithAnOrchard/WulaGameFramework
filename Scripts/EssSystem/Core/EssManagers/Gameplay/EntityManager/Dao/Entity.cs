@@ -220,5 +220,19 @@ namespace EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao
             Add<IHarvester>(new HarvesterComponent(itemId, amount, interval, targetInventoryId));
             return this;
         }
+
+        /// <summary>
+        /// 启用 Utility AI（<see cref="IBrain"/> + <see cref="BrainComponent"/>）。
+        /// <para><paramref name="setup"/> 用于添加 Sensor / Consideration / Patrol 等。</para>
+        /// <para>互斥规则：自动移除已挂的 <see cref="IPatrol"/>（Brain 接管移动决策）。</para>
+        /// </summary>
+        public Entity CanThink(Action<BrainComponent> setup = null)
+        {
+            Remove<IPatrol>();
+            var brain = new BrainComponent();
+            setup?.Invoke(brain);
+            Add<IBrain>(brain);
+            return this;
+        }
     }
 }

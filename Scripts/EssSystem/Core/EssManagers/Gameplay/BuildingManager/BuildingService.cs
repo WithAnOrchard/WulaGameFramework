@@ -1,16 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core;
-using EssSystem.Core.Event;
+using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.EssManagers.Gameplay.BuildingManager.Dao;
 using EssSystem.Core.EssManagers.Gameplay.BuildingManager.Dao.Config;
 using EssSystem.Core.EssManagers.Gameplay.BuildingManager.Runtime;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
-// 同模块 EntityManager 在 Core 内，作为底层依赖；BuildingManager 直接复用 EntityService 不算跨模块业务耦合。
+using EssSystem.Core.EssManagers.Gameplay.EntityManager;            // CharacterViewBridge 仅作为 typed event wrapper 引入
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;        // Entity / EntityKind 作为 DTO
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config; // EntityConfig / EntityColliderConfig / EntityColliderShape 作为 DTO
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;    // EntityHandle 仅用于 Unbind 调用
+// 跨模块业务调用一律走 EventProcessor bare-string（4.1）；Dao 类型仅作为 DTO 允许直接引用。
 
 namespace EssSystem.Core.EssManagers.Gameplay.BuildingManager
 {
@@ -88,12 +88,17 @@ namespace EssSystem.Core.EssManagers.Gameplay.BuildingManager
             var config = GetConfig(configId);
             if (config == null) { LogWarning($"BuildingConfig 不存在: {configId}"); return null; }
 
-            // 1) 底层 Entity（复用 EntityService）
+            // 1) 底层 Entity（走 EntityManager bare-string）
             var entityCfgId = $"_building:{configId}";
             EnsureEntityConfig(entityCfgId, config, useCompletedVisual: startCompleted || IsAlreadyComplete(config));
 
-            var entity = EntityService.Instance.CreateEntity(entityCfgId, instanceId, parent: null, worldPosition: position);
-            if (entity == null) { LogWarning($"创建底层 Entity 失败: {instanceId}"); return null; }
+            var createR = EventProcessor.Instance.TriggerEventMethod(
+                "CreateEntity",
+                new List<object> { entityCfgId, instanceId, null, position });
+            if (!ResultCode.IsOk(createR)) { LogWarning($"创建底层 Entity 失败: {instanceId}"); return null; }
+
+            var entity = QueryEntity(instanceId);
+            if (entity == null) { LogWarning($"创建后查不到 Entity: {instanceId}"); return null; }
 
             // 2) HP / 死亡级联
             if (config.MaxHp > 0f)
@@ -175,8 +180,9 @@ namespace EssSystem.Core.EssManagers.Gameplay.BuildingManager
                 b.CostHudHost = null;
             }
 
-            // 底层 Entity
-            EntityService.Instance.DestroyEntity(instanceId);
+            // 底层 Entity（走 EntityManager bare-string）
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod("DestroyEntity", new List<object> { instanceId });
 
             RemoveData(CAT_INSTANCES, instanceId);
             if (EventProcessor.HasInstance)
@@ -295,7 +301,16 @@ namespace EssSystem.Core.EssManagers.Gameplay.BuildingManager
                 Collider = bc.Collider,
                 SpawnOffset = bc.SpawnOffset,
             };
-            EntityService.Instance.RegisterConfig(ec);
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod("RegisterEntityConfig", new List<object> { ec });
+        }
+
+        /// <summary>查询 EntityManager 指定 instanceId 的 Entity。</summary>
+        private static Entity QueryEntity(string instanceId)
+        {
+            if (!EventProcessor.HasInstance) return null;
+            var r = EventProcessor.Instance.TriggerEventMethod("GetEntity", new List<object> { instanceId });
+            return ResultCode.IsOk(r) && r.Count >= 2 ? r[1] as Entity : null;
         }
 
         /// <summary>建造完成 —— 换皮（若有 pending→completed 视觉差异）、跑能力链、广播。</summary>
@@ -358,12 +373,16 @@ namespace EssSystem.Core.EssManagers.Gameplay.BuildingManager
                 entity.CharacterInstanceId = instanceId;
                 entity.CharacterRoot = root;
 
-                // 3) 重挂碰撞体
-                if (cfg.Collider != null && cfg.Collider.Shape != EntityColliderShape.None)
-                    EntityService.Instance.ApplyCollider(root.gameObject, cfg.Collider);
+                // 3) 重挂碰撞体（走 EntityManager bare-string）
+                if (cfg.Collider != null && cfg.Collider.Shape != EntityColliderShape.None &&
+                    EventProcessor.HasInstance)
+                    EventProcessor.Instance.TriggerEventMethod(
+                        "ApplyCollider", new List<object> { root.gameObject, cfg.Collider });
 
-                // 4) 重挂 EntityHandle
-                EntityService.Instance.AttachEntityHandle(root.gameObject, entity);
+                // 4) 重挂 EntityHandle（走 EntityManager bare-string）
+                if (EventProcessor.HasInstance)
+                    EventProcessor.Instance.TriggerEventMethod(
+                        "AttachEntityHandle", new List<object> { root.gameObject, entity });
 
                 // 5) SpawnOffset
                 if (cfg.SpawnOffset != Vector3.zero)
