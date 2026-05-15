@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.Foundation.ResourceManager;
 using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
+// §4.1 跨模块 InventoryManager / ResourceService 事件常量走 bare-string。
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
 using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
@@ -164,10 +164,10 @@ namespace Demo.Tribe
         private static void RegisterTribeItem(InventoryItem item, PickableItemDefinition pickableDefinition)
         {
             EventProcessor.Instance.TriggerEventMethod(
-                InventoryManager.EVT_REGISTER_ITEM,
+                "InventoryRegisterItem",
                 new List<object> { item });
             EventProcessor.Instance.TriggerEventMethod(
-                InventoryManager.EVT_REGISTER_PICKABLE_ITEM,
+                "InventoryRegisterPickableItem",
                 new List<object> { pickableDefinition });
         }
 
@@ -208,7 +208,7 @@ namespace Demo.Tribe
             collider2D.isTrigger = true;
 
             var entity = go.AddComponent<PickableDropEntity>();
-            entity.Configure(pickableId, hp, dropAmount, InventoryManager.ID_PLAYER);
+            entity.Configure(pickableId, hp, dropAmount, "player");
         }
 
         private void SpawnTribeSkeletonEnemies()
@@ -232,15 +232,13 @@ namespace Demo.Tribe
 
         private static void SpawnTribeSkeletonEnemy(Vector3 position, Transform root, int sortingOrder)
         {
+            // 根 GameObject scale 保持 1（与 TribePlayer 一致）；视觉缩放由 TribeSkeletonEnemy 在 Start 时
+            // 创建的 "Visual" 子节点承担。RequireComponent 链会自动加 Rigidbody2D + CircleCollider2D。
             var go = new GameObject("TribeSkeletonEnemy");
             go.transform.position = position;
-            go.transform.localScale = Vector3.one * 4f;
             if (root != null) go.transform.SetParent(root, true);
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sortingOrder = sortingOrder;
-            go.AddComponent<BoxCollider2D>();
-            go.AddComponent<Rigidbody2D>();
-            go.AddComponent<TribeSkeletonEnemy>();
+            var enemy = go.AddComponent<TribeSkeletonEnemy>();
+            enemy.SortingOrder = sortingOrder;
         }
 
         private static int GetLayerSortingOrder(Transform layer)
@@ -338,7 +336,7 @@ namespace Demo.Tribe
             // 触发 ResourceService 同步预加载（幂等）
             if (EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod(
-                    ResourceService.EVT_DATA_LOADED, new List<object>());
+                    "OnResourceDataLoaded", new List<object>());
 
             var configId = !string.IsNullOrEmpty(_mapConfigId)
                 ? _mapConfigId

@@ -1,245 +1,242 @@
 using System.Collections.Generic;
-using Demo.Tribe.Player;
+using Demo.Tribe.Enemy;
 using EssSystem.Core.Event;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
+// §4.1 跨模块 EntityManager 事件常量走 bare-string。
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
+using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
 using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
 using UnityEngine;
 
 namespace Demo.Tribe
 {
+    /// <summary>
+    /// 部落 Demo 骷髅敌人 —— **编排器**：物理结构完全照搬 <see cref="Demo.Tribe.Player.TribePlayer"/>：
+    /// <list type="bullet">
+    /// <item><b>根 GameObject</b>：scale = 1，挂 <see cref="Rigidbody2D"/> + <see cref="CircleCollider2D"/> + 本类 + ContactDamager + HealthUI</item>
+    /// <item><b>子节点 "Visual"</b>：scale = <see cref="_visualScale"/>，挂 <see cref="SpriteRenderer"/> + <see cref="TribeSkeletonAnimator"/></item>
+    /// </list>
+    /// 这样 collider 永远在 scale = 1 的世界空间，半径 = <see cref="_colliderRadius"/>（与玩家一致），
+    /// 不会因 visualScale 放大碰撞体导致初始穿透地板。
+    /// <para>注册为场景 Entity（<c>EVT_REGISTER_SCENE_ENTITY</c>），获得 Damageable / Attacker / Movable；
+    /// 额外挂 <see cref="HorizontalPatrolComponent"/> 实现横向往返；血条走 UIManager。</para>
+    /// </summary>
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(SpriteRenderer))]
-    [RequireComponent(typeof(BoxCollider2D))]
     [RequireComponent(typeof(Rigidbody2D))]
+    [RequireComponent(typeof(CircleCollider2D))]
     public class TribeSkeletonEnemy : MonoBehaviour
     {
+        [Header("Stats")]
         [SerializeField, Min(1f)] private float _maxHp = 10f;
         [SerializeField, Min(0f)] private float _moveSpeed = 1.2f;
         [SerializeField, Min(0f)] private float _patrolDistance = 2.5f;
         [SerializeField, Min(0f)] private float _contactDamage = 8f;
         [SerializeField, Min(0.1f)] private float _damageCooldown = 1f;
-        [SerializeField, Min(0.01f)] private float _animationFrameTime = 0.1f;
-        [SerializeField] private Vector3 _healthBarOffset = new Vector3(0f, 0.85f, 0f);
 
-        private readonly List<Sprite> _idleFrames = new List<Sprite>();
-        private readonly List<Sprite> _walkFrames = new List<Sprite>();
-        private readonly List<Sprite> _currentFrames = new List<Sprite>();
-        private SpriteRenderer _renderer;
+        [Header("Visual")]
+        [Tooltip("视觉子节点的缩放（仅作用于 Visual 子 GameObject，不影响物理）。")]
+        [SerializeField, Min(0.1f)] private float _visualScale = 10f;
+
+        [Tooltip("视觉子节点相对根 transform 的本地 Y 偏移；典型让 sprite 中心位于碰撞体顶部。")]
+        [SerializeField] private float _visualYOffset = 0f;
+
+        [Header("Physics (与 TribePlayer 一致)")]
+        [SerializeField] private bool _useGravity = true;
+        [SerializeField, Min(0f)] private float _gravityScale = 5f;
+        [SerializeField, Min(0f)] private float _linearDrag = 0f;
+
+        [Tooltip("启用重力时是否冻结 X —— 冻结后玩家撞不动怪物；巡逻通过逻辑模式（直写 transform.position.x）绕开。")]
+        [SerializeField] private bool _freezePositionXWhenGravity = true;
+
+        [Header("Collider (圆形，与玩家一致)")]
+        [Tooltip("CircleCollider2D 半径（世界单位，根 transform 不缩放）。")]
+        [SerializeField, Min(0.05f)] private float _colliderRadius = 0.45f;
+
+        // ─── 运行时 ─────────────────────────────────────────────
         private Rigidbody2D _rb;
-        private BoxCollider2D _collider;
-        private Transform _healthFill;
-        private float _hp;
-        private float _spawnX;
-        private float _nextDamageTime;
-        private float _animTimer;
-        private int _frameIndex;
-        private int _direction = 1;
-        private int _lastAnimationGroup = -1;
-        private bool _dead;
-        private string _entityInstanceId;
+        private CircleCollider2D _collider;
+        private GameObject _visual;
+        private SpriteRenderer _renderer;
+        private TribeSkeletonAnimator _animator;
+        private TribeEnemyHealthUI _healthBar;
+        private TribeEnemyContactDamager _contactDamager;
+        private int _sortingOrder;
 
+        private string _entityInstanceId;
+        private Entity _entity;
+        private IDamageable _damageable;
+        private IPatrol _patrol;
+        private bool _dead;
+
+        /// <summary>外部生成时设视觉的 sortingOrder（在 Start 之前调用才会生效；之后调用会立即应用）。</summary>
+        public int SortingOrder
+        {
+            get => _sortingOrder;
+            set { _sortingOrder = value; if (_renderer != null) _renderer.sortingOrder = value; }
+        }
+
+        // ─── 生命周期 ───────────────────────────────────────────
         private void Awake()
         {
-            _renderer = GetComponent<SpriteRenderer>();
             _rb = GetComponent<Rigidbody2D>();
-            _collider = GetComponent<BoxCollider2D>();
-            _rb.gravityScale = 0f;
-            _rb.freezeRotation = true;
-            _rb.bodyType = RigidbodyType2D.Kinematic;
-            _collider.isTrigger = true;
-            _collider.size = new Vector2(0.65f, 0.9f);
-            _collider.offset = new Vector2(0f, 0.05f);
-            _hp = _maxHp;
-            _spawnX = transform.position.x;
+            _collider = GetComponent<CircleCollider2D>();
+            ConfigureRigidbody();
         }
 
         private void Start()
         {
-            LoadAnimationFrames();
-            CreateHealthBar();
-            RegisterEntity();
-            ApplyHealthBar();
+            BuildVisual();
+            BuildAnimator();
+            BuildHealthBar();
+            BuildContactDamager();
+            RegisterEntityAndPatrol();
         }
 
         private void Update()
         {
             if (_dead) return;
-            UpdatePatrol();
-            UpdateAnimation();
-            UpdateHealthBarPosition();
-        }
-
-        public void TakeHit(float damage)
-        {
-            if (_dead) return;
-            _hp = Mathf.Max(0f, _hp - Mathf.Max(1f, damage));
-            ApplyHealthBar();
-            if (EventProcessor.HasInstance && !string.IsNullOrEmpty(_entityInstanceId))
+            _patrol?.Tick(Time.deltaTime);
+            if (_animator != null && _patrol != null)
             {
-                EventProcessor.Instance.TriggerEventMethod(
-                    EntityManager.EVT_DAMAGE_ENTITY,
-                    new List<object> { _entityInstanceId, Mathf.Max(1f, damage), "TribePlayerAttack" });
+                _animator.SetDirection(_patrol.Direction);
+                _animator.SetWalking(_patrol.IsMoving);
             }
-            if (_hp <= 0f) Die();
+            _animator?.Tick(Time.deltaTime);
+
+            // 闪烁 / 击退由 EntityService.Tick 自动驱动（ITickableCapability）
         }
 
-        public void TakeDamage(float damage)
+        // 受击：由框架 EntityHandle.TakeDamage / EVT_DAMAGE_ENTITY 入口完成；本类不再暴露 TakeHit。
+
+        // ─── 子模块构建 ─────────────────────────────────────────
+        /// <summary>与玩家 ConfigureRigidbody 一致：Dynamic + FreezeRotation [+ FreezePositionX]，CircleCollider2D 设半径。</summary>
+        private void ConfigureRigidbody()
         {
-            TakeHit(damage);
+            _rb.gravityScale = _useGravity ? _gravityScale : 0f;
+            _rb.bodyType = _useGravity ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
+            _rb.drag = _linearDrag;
+            _rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            _rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+
+            var c = RigidbodyConstraints2D.FreezeRotation;
+            if (_useGravity && _freezePositionXWhenGravity) c |= RigidbodyConstraints2D.FreezePositionX;
+            _rb.constraints = c;
+
+            _collider.radius = _colliderRadius;
+            _collider.isTrigger = !_useGravity;
+
+            Debug.Log($"[TribeSkeletonEnemy] Rigidbody 配置: gravityScale={_rb.gravityScale}, bodyType={_rb.bodyType}, " +
+                     $"constraints={_rb.constraints}, collider.isTrigger={_collider.isTrigger}, " +
+                     $"_useGravity={_useGravity}, _freezePositionXWhenGravity={_freezePositionXWhenGravity}");
         }
 
-        private void OnTriggerStay2D(Collider2D other)
+        /// <summary>创建视觉子 GameObject —— 仅它承担 _visualScale 缩放，根 transform 保持 1。</summary>
+        private void BuildVisual()
         {
-            if (_dead || Time.time < _nextDamageTime) return;
-            var player = other.GetComponentInParent<TribePlayer>();
-            if (player == null) return;
-            player.TakeDamage(_contactDamage);
-            _nextDamageTime = Time.time + _damageCooldown;
+            // 如果根上有遗留的 SpriteRenderer（来自旧版自动 AddComponent），移除
+            var legacySR = GetComponent<SpriteRenderer>();
+            if (legacySR != null) Destroy(legacySR);
+
+            var existing = transform.Find("Visual");
+            _visual = existing != null ? existing.gameObject : new GameObject("Visual");
+            _visual.transform.SetParent(transform, false);
+            _visual.transform.localPosition = new Vector3(0f, _visualYOffset, 0f);
+            _visual.transform.localScale = Vector3.one * _visualScale;
+
+            // 不用 ??：Unity 的 fake-null 会让 ?? 跳过 AddComponent 分支，造成 _renderer == null 但进不了 if 。
+            _renderer = _visual.GetComponent<SpriteRenderer>();
+            if (_renderer == null) _renderer = _visual.AddComponent<SpriteRenderer>();
+            _renderer.sortingOrder = _sortingOrder;
         }
 
-        private void UpdatePatrol()
+        private void BuildAnimator()
         {
-            var nextX = transform.position.x + _direction * _moveSpeed * Time.deltaTime;
-            if (_patrolDistance > 0f && Mathf.Abs(nextX - _spawnX) > _patrolDistance)
-            {
-                _direction *= -1;
-                _frameIndex = 0;
-                _lastAnimationGroup = -1;
-                nextX = Mathf.Clamp(nextX, _spawnX - _patrolDistance, _spawnX + _patrolDistance);
-            }
-            transform.position = new Vector3(nextX, transform.position.y, transform.position.z);
+            _animator = _visual.GetComponent<TribeSkeletonAnimator>();
+            if (_animator == null) _animator = _visual.AddComponent<TribeSkeletonAnimator>();
+            _animator.LoadFrames();
         }
 
-        private void UpdateAnimation()
+        private void BuildHealthBar()
         {
-            RefreshCurrentFrames();
-            if (_currentFrames.Count == 0) return;
-            _animTimer += Time.deltaTime;
-            if (_animTimer < _animationFrameTime) return;
-            _animTimer -= _animationFrameTime;
-            _frameIndex = (_frameIndex + 1) % _currentFrames.Count;
-            _renderer.sprite = _currentFrames[_frameIndex];
+            _healthBar = gameObject.GetComponent<TribeEnemyHealthUI>();
+            if (_healthBar == null) _healthBar = gameObject.AddComponent<TribeEnemyHealthUI>();
+            _healthBar.Build(_entityInstanceId ?? gameObject.name + "_" + GetInstanceID());
+            _healthBar.SetValue(_maxHp, _maxHp);
         }
 
-        private void LoadAnimationFrames()
+        /// <summary>创建接触伤害组件。</summary>
+        private void BuildContactDamager()
         {
-            LoadFrames("Tribe/Entity/Skeleton 01_idle (16x16)", _idleFrames);
-            LoadFrames("Tribe/Entity/Skeleton 01_walk (16x16)", _walkFrames);
-            RefreshCurrentFrames();
-            if (_currentFrames.Count > 0) _renderer.sprite = _currentFrames[0];
+            var damager = gameObject.AddComponent<TribeEnemyContactDamager>();
+            damager.Configure(_contactDamage, _damageCooldown);
         }
 
-        private static void LoadFrames(string path, List<Sprite> target)
-        {
-            var sprites = Resources.LoadAll<Sprite>(path);
-            target.Clear();
-            if (sprites == null || sprites.Length == 0) return;
-            target.AddRange(sprites);
-            target.Sort((a, b) => GetFrameIndex(a.name).CompareTo(GetFrameIndex(b.name)));
-        }
-
-        private void RefreshCurrentFrames()
-        {
-            var group = _direction < 0 ? 1 : 3;
-            var source = _moveSpeed > 0f && _walkFrames.Count >= 16 ? _walkFrames : _idleFrames;
-            if (group == _lastAnimationGroup && _currentFrames.Count > 0) return;
-
-            _lastAnimationGroup = group;
-            _currentFrames.Clear();
-            var start = group * 4;
-            if (source.Count >= start + 4)
-            {
-                for (var i = 0; i < 4; i++) _currentFrames.Add(source[start + i]);
-                _frameIndex = Mathf.Clamp(_frameIndex, 0, _currentFrames.Count - 1);
-                return;
-            }
-            _currentFrames.AddRange(source);
-            _frameIndex = Mathf.Clamp(_frameIndex, 0, Mathf.Max(0, _currentFrames.Count - 1));
-        }
-
-        private static int GetFrameIndex(string spriteName)
-        {
-            if (string.IsNullOrEmpty(spriteName)) return 0;
-            var underscore = spriteName.LastIndexOf('_');
-            if (underscore < 0 || underscore >= spriteName.Length - 1) return 0;
-            return int.TryParse(spriteName.Substring(underscore + 1), out var index) ? index : 0;
-        }
-
-        private void CreateHealthBar()
-        {
-            var root = new GameObject("HealthBar");
-            root.transform.SetParent(transform, false);
-            root.transform.localPosition = _healthBarOffset;
-
-            var bg = new GameObject("Background");
-            bg.transform.SetParent(root.transform, false);
-            bg.transform.localScale = new Vector3(0.7f, 0.08f, 1f);
-            var bgRenderer = bg.AddComponent<SpriteRenderer>();
-            bgRenderer.sprite = CreatePixelSprite();
-            bgRenderer.color = new Color(0f, 0f, 0f, 0.75f);
-            bgRenderer.sortingOrder = _renderer.sortingOrder + 10;
-
-            var fill = new GameObject("Fill");
-            fill.transform.SetParent(root.transform, false);
-            fill.transform.localPosition = Vector3.zero;
-            fill.transform.localScale = new Vector3(0.66f, 0.045f, 1f);
-            var fillRenderer = fill.AddComponent<SpriteRenderer>();
-            fillRenderer.sprite = CreatePixelSprite();
-            fillRenderer.color = new Color(0.85f, 0.1f, 0.1f, 1f);
-            fillRenderer.sortingOrder = _renderer.sortingOrder + 11;
-            _healthFill = fill.transform;
-        }
-
-        private void UpdateHealthBarPosition()
-        {
-            if (_healthFill == null) return;
-            _healthFill.parent.localPosition = _healthBarOffset;
-        }
-
-        private void ApplyHealthBar()
-        {
-            if (_healthFill == null) return;
-            var percent = Mathf.Clamp01(_hp / Mathf.Max(1f, _maxHp));
-            _healthFill.localScale = new Vector3(0.66f * percent, 0.045f, 1f);
-            _healthFill.localPosition = new Vector3(-0.33f * (1f - percent), 0f, 0f);
-        }
-
-        private void RegisterEntity()
+        private void RegisterEntityAndPatrol()
         {
             if (!EventProcessor.HasInstance || !string.IsNullOrEmpty(_entityInstanceId)) return;
             _entityInstanceId = $"{gameObject.name}_{GetInstanceID()}";
             var definition = new EntityRuntimeDefinition
             {
                 Kind = EntityKind.Dynamic,
-                Collider = new EntityColliderConfig(EntityColliderShape.Box, _collider.size, _collider.offset, true),
+                Collider = new EntityColliderConfig(EntityColliderShape.Circle,
+                    new Vector2(_colliderRadius, _colliderRadius), Vector2.zero, !_useGravity),
                 CanMove = true,
+                EnableFlashEffect = true,
+                FlashDuration = 0.15f,
+                FlashColor = Color.white, // 全白闪烁
+                EnableKnockbackEffect = true,
+                KnockbackForce = 15f,
                 MoveSpeed = _moveSpeed,
                 CanBeAttacked = true,
                 MaxHp = _maxHp,
                 CanAttack = true,
                 AttackPower = _contactDamage,
                 AttackCooldown = _damageCooldown,
-                Died = _ => Die()
+                Died = _ => Die(),
             };
             EventProcessor.Instance.TriggerEventMethod(
-                EntityManager.EVT_REGISTER_SCENE_ENTITY,
+                "RegisterSceneEntity",
                 new List<object> { _entityInstanceId, gameObject, definition });
+
+            _entity = EntityManager.Instance != null ? EntityManager.Instance.Service.GetEntity(_entityInstanceId) : null;
+            if (_entity == null)
+            {
+                Debug.LogWarning($"[TribeSkeletonEnemy] 取回 Entity 失败: {_entityInstanceId}");
+                return;
+            }
+
+            _damageable = _entity.Get<IDamageable>();
+            if (_damageable != null) _damageable.Damaged += OnDamaged;
+
+            // 闪烁 / 击退由框架 RegisterSceneEntity 根据 definition 标志自动挂载
+
+            // 巡逻走逻辑模式（传 null）—— 重力开启时 X 被冻结，velocity.x 无效，只能改 transform.position.x。
+            _patrol = _entity.Add<IPatrol>(new HorizontalPatrolComponent(_moveSpeed, _patrolDistance, null));
+        }
+
+        // ─── 事件回调 ───────────────────────────────────────────
+        private void OnDamaged(Entity owner, Entity source, float dealt, string damageType)
+        {
+            if (_damageable == null || _healthBar == null) return;
+            _healthBar.SetValue(_damageable.CurrentHp, _damageable.MaxHp);
+            // 受伤效果由 EntityService.TryDamage 自动触发，无需手动调用
         }
 
         private void Die()
         {
             if (_dead) return;
             _dead = true;
+            if (_patrol != null) _patrol.Paused = true;
+            if (_contactDamager != null) _contactDamager.Enabled = false;
+            if (_damageable != null) _damageable.Damaged -= OnDamaged;
+            if (_healthBar != null) _healthBar.Dispose();
             Destroy(gameObject);
         }
 
-        private static Sprite CreatePixelSprite()
+        private void OnDestroy()
         {
-            var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-            texture.SetPixel(0, 0, Color.white);
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+            if (_damageable != null) _damageable.Damaged -= OnDamaged;
         }
     }
 }
