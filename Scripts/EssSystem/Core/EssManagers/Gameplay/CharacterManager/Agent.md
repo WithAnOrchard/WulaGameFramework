@@ -114,6 +114,9 @@ CharacterManager/
 | `EVT_SET_CHARACTER_SCALE` | `"SetCharacterScale"` | `[instanceId, Vector3 scale]` | `Ok` / `Fail` |
 | `EVT_SET_CHARACTER_POSITION` | `"SetCharacterPosition"` | `[instanceId, Vector3 worldPosition]` | `Ok` / `Fail` |
 | `EVT_MOVE_CHARACTER` | `"MoveCharacter"` | `[instanceId, Vector3 delta]` | `Ok` / `Fail` |
+| `EVT_PLAY_LOCOMOTION` | `"PlayCharacterLocomotion"` | `[instanceId, moving(bool), grounded(bool, 可选)]` | `Ok` / `Fail` |
+| `EVT_TRIGGER_ATTACK` | `"TriggerCharacterAttack"` | `[instanceId, duration(float)]` | `Ok` / `Fail` |
+| `EVT_SET_FACING` | `"SetCharacterFacing"` | `[instanceId, facingRight(bool)]` | `Ok` / `Fail` |
 
 ### `EVT_FRAME_EVENT` — 角色动画帧事件（广播）
 - **常量**：`CharacterService.EVT_FRAME_EVENT` = `"OnCharacterFrameEvent"`

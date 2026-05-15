@@ -27,8 +27,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 数据持久化 | `Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md` |
 | 资源加载 | `Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md` |
 | UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md` |
+| 音频系统 | `Scripts/EssSystem/Core/EssManagers/Foundation/AudioManager/Agent.md` |
 | 角色系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/CharacterManager/Agent.md` |
 | 实体系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md` |
+| 建筑系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/BuildingManager/Agent.md` |
 | 背包系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md` |
 | 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md` |
 | 对话系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/DialogueManager/Agent.md` |
@@ -44,11 +46,13 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `EventProcessor` | -30 | ⚠️ 必须最先 |
 | `DataManager` | -20 | ⚠️ 监听 Service 初始化事件 |
 | `ResourceManager` | 0 | |
+| `AudioManager` | 3 | Core/EssManagers/Foundation 下 |
 | `UIManager` | 5 | |
 | `InventoryManager` | 10 | Core/EssManagers 下 |
 | `CharacterManager` | 11 | Core/EssManagers 下 |
 | `MapManager` | 12 | Core/EssManagers 下 |
 | `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
+| `BuildingManager` | 14 | Core/EssManagers 下，依赖 EntityManager |
 | `DialogueManager` | 15 | Core/EssManagers 下 |
 | 其它业务 Manager | 16+ | 新增默认起步 |
 | `WaveSpawnManager`（Demo） | 20 | Demo/DayNight 下 |
@@ -127,7 +131,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 
 跨模块消费失去 IDE 跳转的代价由两点弥补：(a) lint [6] 必拦事件名拼写错误，(b) 根 `Agent.md` 维护事件速查表作为权威索引。
 
-**已应用范围**：`UIManager` / `ResourceManager` / `InventoryManager` / `CharacterManager` / `EntityManager` / `DanmuService` / `Service<T>.EVT_INITIALIZED` / `CharacterService.EVT_FRAME_EVENT`。共 60 个 `EVT_XXX` 常量，全部在根 `Agent.md` 全局索引登记。`MapManager` 当前仅提供纯 C# API。新增模块**必须遵守**此规则；CI 由 `agent_lint.ps1 -Strict` 在 pre-commit 阶段强制执行。
+**已应用范围**：`UIManager` / `ResourceManager` / `AudioManager` / `InventoryManager` / `CharacterManager` / `EntityManager` / `BuildingManager` / `DanmuService` / `Service<T>.EVT_INITIALIZED` / `CharacterService.EVT_FRAME_EVENT`。共 80 个 `EVT_XXX` 常量，全部在根 `Agent.md` 全局索引登记。`MapManager` 当前仅提供纯 C# API。新增模块**必须遵守**此规则；CI 由 `agent_lint.ps1 -Strict` 在 pre-commit 阶段强制执行。
 
 ### 5. UI 必须经 UIManager（**强制规则**）
 
@@ -176,6 +180,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `InventoryManager` | 改为通过 Event 调用 UIManager，完全解耦 |
 | 业务模块目录归位 | `InventoryManager` / `MapManager` / `EntityManager` 全部迁到 `Core/EssManagers/`；`Manager/` 仅留可选第三方模块（如 `DanmuManager`） |
 | 跨模块解耦完成 | `EntityManager` ↔ `CharacterManager`、`InventoryManager` / `CharacterPreviewPanel` / `GameManager` ↔ `UIManager` 全部走 EventProcessor + Unity 中立类型；UIComponent (DAO) 通过 `EVT_DAO_PROPERTY_CHANGED` 广播取代直接 `using UIManager.Entity` |
+| `AudioManager` 重构 | 从 `Manager/`（基类文件夹）迁到 `Foundation/AudioManager/`；namespace `EssSystem.Core.EssManagers.Foundation.AudioManager`；优先级 `[Manager(3)]`；全部 12 个事件改 `[Event(EVT_XXX)]`（去掉手动 `AddListener`）；音频加载走 `ResourceManager`（bare-string `"GetAudioClip"`）；调用方（EntityService / TribePlayerCombat / TribePlayerInteraction）改 bare-string §4.1 |
 | `UIEntity` 命名空间 | 从 `EssSystem.Core.UI.Entity.*` 收回到 `EssSystem.Core.EssManagers.UIManager.Entity.*`（属于 UIManager 的私有实现） |
 | `EventProcessor.TriggerEventMethod` | catch 块解 `TargetInvocationException` → 暴露真实 `InnerException`，不再吞 listener 抛出的业务异常 |
 
@@ -318,10 +323,20 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `CharacterManager.EVT_SET_CHARACTER_SCALE` | `SetCharacterScale` | Core/CharacterManager | 设置根节点 localScale；data: `[instanceId, Vector3]` |
 | `CharacterManager.EVT_SET_CHARACTER_POSITION` | `SetCharacterPosition` | Core/CharacterManager | 设置世界坐标；data: `[instanceId, Vector3]` |
 | `CharacterManager.EVT_MOVE_CHARACTER` | `MoveCharacter` | Core/CharacterManager | 在当前位置上平移；data: `[instanceId, Vector3 delta]` |
+| `CharacterManager.EVT_PLAY_LOCOMOTION` | `PlayCharacterLocomotion` | Core/CharacterManager | 分发运动状态（idle/walk/airborne）；data: `[instanceId, moving(bool), grounded(bool, 可选)]` |
+| `CharacterManager.EVT_TRIGGER_ATTACK` | `TriggerCharacterAttack` | Core/CharacterManager | 触发攻击锁定动画；data: `[instanceId, duration(float)]` |
+| `CharacterManager.EVT_SET_FACING` | `SetCharacterFacing` | Core/CharacterManager | 设置面朝方向（翻转 localScale.x）；data: `[instanceId, facingRight(bool)]` |
 | `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Transform CharacterRoot)`（E2 后协议解耦不返 Entity） |
 | `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
 | `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `RegisterSceneEntity` | Core/EntityManager | 注册已有场景 GameObject 为 Entity；data: `[instanceId, GameObject host, EntityRuntimeDefinition definition]` |
 | `EntityManager.EVT_DAMAGE_ENTITY` | `DamageEntity` | Core/EntityManager | 对运行时 Entity 造成伤害；data: `[instanceId, damage, damageType?]` |
+| `BuildingManager.EVT_REGISTER_BUILDING_CONFIG` | `RegisterBuildingConfig` | Core/BuildingManager | 注册建筑模板（命令），参数 `[BuildingConfig]` → `Ok(configId)` |
+| `BuildingManager.EVT_PLACE_BUILDING` | `PlaceBuilding` | Core/BuildingManager | 放置建筑（命令），参数 `[configId, instanceId, Vector3 position, bool startCompleted?]` → `Ok(Transform)` |
+| `BuildingManager.EVT_SUPPLY_BUILDING` | `SupplyBuilding` | Core/BuildingManager | 送材料（命令），参数 `[instanceId, itemId, int amount]` → `Ok(int remaining)` |
+| `BuildingManager.EVT_DESTROY_BUILDING` | `DestroyBuilding` | Core/BuildingManager | 销毁建筑（命令），参数 `[instanceId]` → `Ok(instanceId)` |
+| `BuildingService.EVT_COMPLETED` | `OnBuildingCompleted` | Core/BuildingManager | 建造完成**广播**，参数 `[instanceId, configId]` |
+| `BuildingService.EVT_DESTROYED` | `OnBuildingDestroyed` | Core/BuildingManager | 建筑销毁**广播**，参数 `[instanceId]` |
+| `BuildingService.EVT_SUPPLY_PROGRESS` | `OnBuildingSupplyProgress` | Core/BuildingManager | 补给进度**广播**，参数 `[instanceId, itemId, remaining]` |
 | `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
 | `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |
 | `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/UIManager | UIComponent 属性变更广播（`[daoId, propName, value]`，UIService 内转发给 UIEntity） |
@@ -330,6 +345,18 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |
 | `DanmuService.EVT_GIFT` | `OnDanmuGift` | DanmuManager | 礼物**广播**，参数 `[string userName, string giftName, int giftCount, long userId]` |
 | `DanmuService.EVT_RAW` | `OnDanmuRaw` | DanmuManager | 全类型原始 `DanmakuModel`**广播**（含 SuperChat / 上船 / 进场等高级类型） |
+| `AudioManager.EVT_PLAY_BGM` | `PlayBGM` | Core/AudioManager | 播放背景音乐（命令），参数 `[string path, bool fade?]` |
+| `AudioManager.EVT_STOP_BGM` | `StopBGM` | Core/AudioManager | 停止背景音乐（命令），参数 `[bool fade?]` |
+| `AudioManager.EVT_PAUSE_BGM` | `PauseBGM` | Core/AudioManager | 暂停背景音乐（命令） |
+| `AudioManager.EVT_RESUME_BGM` | `ResumeBGM` | Core/AudioManager | 继续背景音乐（命令） |
+| `AudioManager.EVT_PLAY_SFX` | `PlaySFX` | Core/AudioManager | 播放自定义音效（命令），参数 `[string path, float volumeScale?]` |
+| `AudioManager.EVT_SET_MASTER_VOLUME` | `SetMasterVolume` | Core/AudioManager | 设置主音量（命令），参数 `[float volume]` |
+| `AudioManager.EVT_SET_BGM_VOLUME` | `SetBGMVolume` | Core/AudioManager | 设置 BGM 音量（命令），参数 `[float volume]` |
+| `AudioManager.EVT_SET_SFX_VOLUME` | `SetSFXVolume` | Core/AudioManager | 设置 SFX 音量（命令），参数 `[float volume]` |
+| `AudioManager.EVT_PLAY_DAMAGE_SFX` | `PlayDamageSFX` | Core/AudioManager | 播放受伤音效（便捷命令） |
+| `AudioManager.EVT_PLAY_ATTACK_SFX` | `PlayAttackSFX` | Core/AudioManager | 播放攻击音效（便捷命令） |
+| `AudioManager.EVT_PLAY_UI_SFX` | `PlayUISFX` | Core/AudioManager | 播放 UI 操作音效（便捷命令） |
+| `AudioManager.EVT_PLAY_ITEM_USE_SFX` | `PlayItemUseSFX` | Core/AudioManager | 播放物品使用音效（便捷命令） |
 | `DayNightGameManager.EVT_PHASE_CHANGED` | `DayNightPhaseChanged` | Demo/DayNight | 昼夜阶段切换**广播**，参数 `[bool isNight, int round, bool isBossNight]` |
 | `WaveSpawnService.EVT_WAVE_STARTED` | `OnWaveStarted` | Demo/DayNight | 波次开始**广播**，参数 `[int round, int waveIndex, int totalEnemies]` |
 | `WaveSpawnService.EVT_WAVE_CLEARED` | `OnWaveCleared` | Demo/DayNight | 波次清完**广播**，参数 `[int round, int waveIndex]` |
@@ -353,7 +380,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `DialogueService.EVT_LINE_CHANGED` | `OnDialogueLineChanged` | Core/DialogueManager | 当前行切换**广播**，参数 `[string dialogueId, string lineId]` |
 | `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
 
-> ℹ️ **几乎无 Event 的模块**：`CharacterManager` / `MapManager` 当前以纯 C# API 为主（`CharacterService.Instance.XXX` / `MapService.Instance.XXX`）。`CharacterService.EVT_FRAME_EVENT` 是该家族目前唯一的跨模块广播；`MapManager` 目前不暴露 `EVT_*`。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
+> ℹ️ **几乎无 Event 的模块**：`MapManager` 当前以纯 C# API 为主（`MapService.Instance.XXX`），目前不暴露 `EVT_*`。`CharacterManager` 已有完整 Event API（10 个 `EVT_*` 常量），跨模块调用统一经 `CharacterViewBridge` 收口。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 
 > ⚠️ **命名冲突警示**：`InventoryManager.EVT_OPEN_UI` 是**命令**（`"OpenInventoryUI"`），`InventoryService.EVT_OPEN_UI` 是**广播**（`"OnOpenInventoryUI"`）。命令由调用方主动触发；广播由 Service 在 UI 实际打开后发出，供其他模块监听。混用会找不到 handler。
 

@@ -1,3 +1,4 @@
+using EssSystem.Core.Util;
 using UnityEngine;
 
 /// <summary>
@@ -19,9 +20,8 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     {
         get
         {
-            if (_applicationIsQuitting)
+            if (_applicationIsQuitting || ApplicationLifecycle.IsQuitting)
             {
-                Debug.LogWarning($"[SingletonMono] 实例 '{typeof(T)}' 已在应用程序退出时销毁。不会再次创建 - 返回null。");
                 return null;
             }
 
@@ -64,7 +64,7 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     ///     Check if instance exists
     ///     instance
     /// </summary>
-    public static bool HasInstance => _instance != null;
+    public static bool HasInstance => _instance != null && !ApplicationLifecycle.IsQuitting;
 
     /// <summary>
     ///     Called when the instance is created

@@ -7,6 +7,7 @@ using EssSystem.Core.EssManagers.Manager;
 using EssSystem.Core.Singleton;
 using EssSystem.Core.Util;
 using UnityEngine;
+// ApplicationLifecycle 已在 EssSystem.Core.Util using 范围内
 
 namespace EssSystem.Core.Event
 {
@@ -144,6 +145,9 @@ namespace EssSystem.Core.Event
         /// <returns>事件结果</returns>
         public List<object> TriggerEvent(string eventName, List<object> data = null)
         {
+            // TODO#1: 应用退出期间静默跳过所有事件分发，避免访问已销毁的 Unity Object
+            if (ApplicationLifecycle.IsQuitting) return _emptyData;
+
             if (string.IsNullOrEmpty(eventName))
             {
                 LogError("事件名称不能为空或null");
@@ -463,6 +467,9 @@ namespace EssSystem.Core.Event
         /// </summary>
         public List<object> TriggerEventMethod(string eventName, List<object> data = null)
         {
+            // TODO#1: 应用退出期间静默跳过所有事件分发，避免访问已销毁的 Unity Object
+            if (ApplicationLifecycle.IsQuitting) return _emptyData;
+
             // C-E3: TryGetValue 一次查找。
             if (!_eventMethods.TryGetValue(eventName, out var eventInfo))
             {
