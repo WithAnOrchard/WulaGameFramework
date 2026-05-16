@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
-using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Dao;
-using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
+using EssSystem.Core.Presentation.CharacterManager;
+using EssSystem.Core.Presentation.CharacterManager.Dao;
+using EssSystem.Core.Application.SingleManagers.InventoryManager;
 
 namespace Demo.DayNight.Player
 {

@@ -1,6 +1,6 @@
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao;
 
 /// <summary>
 /// 挂在玩家（或任意跟随物体）上，用屏幕左上角 OnGUI 面板实时显示当前脚下 Tile 的 Biome 参数。

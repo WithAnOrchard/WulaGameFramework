@@ -1,7 +1,7 @@
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.CharacterManager.Runtime;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
+using EssSystem.Core.Presentation.CharacterManager.Runtime;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Runtime;
 
 namespace Demo.DayNight3D.Player
 {

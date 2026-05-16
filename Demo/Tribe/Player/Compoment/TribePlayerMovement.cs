@@ -1,8 +1,8 @@
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
 
 namespace Demo.Tribe.Player
 {

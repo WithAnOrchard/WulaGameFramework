@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
+using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 // §4.1 跨模块 AudioManager 走 bare-string，不 using。
 
 namespace Demo.Tribe.Player
@@ -10,7 +10,7 @@ namespace Demo.Tribe.Player
     /// <summary>
     /// 玩家近战攻击模块 —— 鼠标左键触发攻击窗口，期间用 OverlapBox 检测命中范围内的
     /// <see cref="EntityHandle"/>（统一桥接：任何注册到 EntityManager 的实体都自动带上 Handle），
-    /// 走框架 <c>EVT_DAMAGE_ENTITY</c> 走 <see cref="EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.IDamageable"/> 结算。
+    /// 走框架 <c>EVT_DAMAGE_ENTITY</c> 走 <see cref="EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.IDamageable"/> 结算。
     /// <para>本模块不再耦合具体业务类型（PickableDropEntity / TribeSkeletonEnemy）。</para>
     /// <para>可选半透明矩形提示攻击范围（仅视觉，不影响判定）。</para>
     /// </summary>

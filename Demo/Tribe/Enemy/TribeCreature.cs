@@ -1,14 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Brain;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Brain.Actions;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Brain.Default;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
+using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain.Actions;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 using UnityEngine;
 
 namespace Demo.Tribe.Enemy

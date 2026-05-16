@@ -3,13 +3,13 @@ using EssSystem.Core.Base;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
-using EssSystem.Core.EssManagers.Foundation.ResourceManager;
+using EssSystem.Core.Presentation.CharacterManager;
+using EssSystem.Core.Foundation.ResourceManager;
 using Demo.DayNight3D.Player;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Runtime;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Lighting;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Persistence;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Runtime;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Lighting;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Persistence;
 using Demo.DayNight3D.Map;
 
 namespace Demo.DayNight3D

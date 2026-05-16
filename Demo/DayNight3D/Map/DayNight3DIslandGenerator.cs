@@ -1,6 +1,6 @@
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Dao;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.Voxel3D.Generator;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao;
+using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Generator;
 
 namespace Demo.DayNight3D.Map
 {

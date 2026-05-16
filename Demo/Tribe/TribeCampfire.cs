@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.CharacterManager;
+using EssSystem.Core.Presentation.CharacterManager;
 using EssSystem.Core.Base.Event;
-using AudioMgr = EssSystem.Core.EssManagers.Foundation.AudioManager.AudioManager;
+using AudioMgr = EssSystem.Core.Presentation.AudioManager.AudioManager;
 
 namespace Demo.Tribe
 {

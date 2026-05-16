@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using Demo.DayNight.BaseDefense;
 using Demo.DayNight.WaveSpawn;
 

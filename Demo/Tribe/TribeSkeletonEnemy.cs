@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using Demo.Tribe.Enemy;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao;
+using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 // §4.1 跨模块 EntityManager 事件常量走 bare-string。
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Capabilities.Default;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Dao.Config;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 using UnityEngine;
 
 namespace Demo.Tribe

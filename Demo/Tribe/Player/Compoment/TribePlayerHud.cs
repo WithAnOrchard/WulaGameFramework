@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
-using EssSystem.Core.EssManagers.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 
 namespace Demo.Tribe.Player
 {

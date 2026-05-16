@@ -1,5 +1,5 @@
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 
 namespace Demo.Tribe.Enemy
 {

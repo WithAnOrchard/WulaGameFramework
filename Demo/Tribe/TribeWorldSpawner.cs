@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.EntityManager.Runtime;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 using Demo.Tribe.Player;
 
 namespace Demo.Tribe

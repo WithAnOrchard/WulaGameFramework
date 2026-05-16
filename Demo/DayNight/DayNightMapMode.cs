@@ -1,4 +1,4 @@
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.TopDownRandom;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.TopDownRandom;
 using Demo.DayNight.Map;
 
 namespace Demo.DayNight

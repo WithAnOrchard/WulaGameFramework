@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using Demo.DayNight.Construction.Dao;
 

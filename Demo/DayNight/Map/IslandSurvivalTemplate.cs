@@ -1,11 +1,11 @@
 using EssSystem.Core.Base.Singleton;
 using UnityEngine;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Config;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Dao;
-using EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Spawn;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Config;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Dao;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Spawn;
 using Demo.DayNight.Map.Config;
 
 namespace Demo.DayNight.Map
