@@ -7,7 +7,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.Manager
+namespace EssSystem.Core.Base.Manager
 {
     /// <summary>Service 数据 Inspector 信息 — 用于在 Manager Inspector 中显示。</summary>
     [Serializable]
@@ -61,7 +61,7 @@ namespace EssSystem.Core.EssManagers.Manager
         protected readonly Dictionary<string, Dictionary<string, object>> _dataStorage = new();
 
         /// <summary>数据存储根路径（默认 <c>{persistentDataPath}/ServiceData/{TypeName}</c>）。</summary>
-        protected virtual string DataRootPath => Path.Combine(Application.persistentDataPath, "ServiceData", GetType().Name);
+        protected virtual string DataRootPath => Path.Combine(UnityEngine.Application.persistentDataPath, "ServiceData", GetType().Name);
 
         // M4: Inspector 脉冲 — 仅在数据变动后重建 InspectorInfo，避免每 0.25s LINQ + new 量产 GC。
         [NonSerialized] private bool _inspectorDirty = true;

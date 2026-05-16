@@ -2,7 +2,7 @@
 
 ## 概述
 
-`EssSystem.Core.EssManagers.Manager` 命名空间提供 Manager 系统的基类。
+`EssSystem.Core.Base.Manager` 命名空间提供 Manager 系统的基类。
 
 ## ManagerAttribute
 

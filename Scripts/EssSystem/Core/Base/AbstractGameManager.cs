@@ -145,7 +145,7 @@ namespace EssSystem.Core.Base
             var currentType = type;
             while (currentType != null && currentType != typeof(MonoBehaviour))
             {
-                if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(EssSystem.Core.EssManagers.Manager.Manager<>))
+                if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(EssSystem.Core.Base.Manager.Manager<>))
                 {
                     return true;
                 }
@@ -160,7 +160,7 @@ namespace EssSystem.Core.Base
         /// </summary>
         private int GetManagerPriority(Type type)
         {
-            var attribute = type.GetCustomAttribute<EssSystem.Core.EssManagers.Manager.ManagerAttribute>();
+            var attribute = type.GetCustomAttribute<EssSystem.Core.Base.Manager.ManagerAttribute>();
             return attribute?.order ?? 0;
         }
 

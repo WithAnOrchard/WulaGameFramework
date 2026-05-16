@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using BiliBiliDanmu.Dao;
 using BiliBiliDanmu.Net;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using UnityEngine;

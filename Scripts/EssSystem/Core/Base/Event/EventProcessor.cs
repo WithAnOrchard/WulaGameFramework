@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Singleton;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
@@ -334,7 +334,7 @@ namespace EssSystem.Core.Base.Event
                 var currentType = type.BaseType;
                 while (currentType != null && currentType != typeof(MonoBehaviour))
                 {
-                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(EssSystem.Core.EssManagers.Manager.Manager<>))
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(EssSystem.Core.Base.Manager.Manager<>))
                     {
                         isManagerType = true;
                         break;

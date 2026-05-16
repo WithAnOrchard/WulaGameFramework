@@ -42,7 +42,7 @@ namespace EssSystem.Core.Base.Util
                 if (_instance != null) return;
 
                 // 仅在运行时创建，编辑器模式下也要求有 Application 存在
-                if (!Application.isPlaying) return;
+                if (!UnityEngine.Application.isPlaying) return;
 
                 var go = new GameObject("[MainThreadDispatcher]");
                 go.hideFlags = HideFlags.HideAndDontSave;

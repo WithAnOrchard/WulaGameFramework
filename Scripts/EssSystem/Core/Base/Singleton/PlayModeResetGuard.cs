@@ -95,8 +95,8 @@ namespace EssSystem.Core.Base.Singleton
             // MapTemplateRegistry: 内部 _templates 字典需要清空，否则 MapManager.Initialize
             // 走 Contains() 判断会跳过重新注册，新 Play session 仍然引用上次的实例（无害但不一致）。
             var regType = Type.GetType(
-                "EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.MapTemplateRegistry, " +
-                FindAssemblyNameOf("EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.MapTemplateRegistry"));
+                "EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.MapTemplateRegistry, " +
+                FindAssemblyNameOf("EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.MapTemplateRegistry"));
             if (regType != null)
             {
                 var dictField = regType.GetField("_templates", BindingFlags.NonPublic | BindingFlags.Static);

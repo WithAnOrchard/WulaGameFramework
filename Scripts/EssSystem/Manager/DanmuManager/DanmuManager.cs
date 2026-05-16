@@ -1,4 +1,4 @@
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
 

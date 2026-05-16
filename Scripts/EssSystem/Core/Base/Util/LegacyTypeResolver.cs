@@ -15,7 +15,7 @@ namespace EssSystem.Core.Base.Util
     ///     <para>典型用法：</para>
     ///     <code>
     ///     // 以前在 EssSystem.EssManager.MapManager.Dao.PerlinMapConfig
-    ///     // 现在搬到了 EssSystem.Core.EssManagers.Gameplay.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Config.PerlinMapConfig
+    ///     // 现在搬到了 EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Config.PerlinMapConfig
     ///     [FormerName("EssSystem.EssManager.MapManager.Dao.PerlinMapConfig")]
     ///     [Serializable]
     ///     public class PerlinMapConfig : MapConfig { ... }

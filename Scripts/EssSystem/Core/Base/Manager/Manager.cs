@@ -3,7 +3,7 @@ using EssSystem.Core.Base.Singleton;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
 
-namespace EssSystem.Core.EssManagers.Manager
+namespace EssSystem.Core.Base.Manager
 {
     /// <summary>
     ///     Manager 优先级特性 — 等效于 Unity 的 <see cref="DefaultExecutionOrder" />。
