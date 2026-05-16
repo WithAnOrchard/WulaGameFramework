@@ -26,7 +26,7 @@ public List<object> Open(...) { ... }
 
 ```csharp
 // ❌ 跨模块仅为读 EVT_X 常量而 using 其他业务 Manager ——等同于运行时引用，破坏 Event 解耦
-using EssSystem.Core.EssManagers.Gameplay.InventoryManager;
+using EssSystem.Core.Application.SingleManagers.InventoryManager;
 EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI, data);
 
 // ✅ 跨模块消费方：直接 bare-string
@@ -274,12 +274,12 @@ public void Foo()
 | `UIService` 用反射拿 Canvas | 改用 `UIManager.EVT_GET_CANVAS_TRANSFORM` 事件 |
 | `InventoryManager` 直接 `using UIManager` | 已改为通过 Event 调，完全解耦 |
 | `ResultCode.cs` 在 `Core/` 根目录 | 已移到 `Core/Util/`（namespace 仍 `EssSystem.Core`） |
-| `EssManagers/` 平铺业务 Manager（极早期布局） | 已按 `Foundation/` `Presentation/` `Gameplay/` 分组；InventoryManager / CharacterManager / EntityManager / MapManager 为 `Gameplay/`子级 |
-| 业务 Manager 放在 `EssSystem/Manager/` | 仅限可选第三方模块（如 `DanmuManager`）；框架原生业务全部迁入 `Core/EssManagers/Gameplay/` |
-| `UIEntity` 命名空间为 `EssSystem.Core.UI.Entity.*` | 已收回 `EssSystem.Core.EssManagers.UIManager.Entity.*`（UIManager 私有实现） |
+| `EssManagers/` 平铺业务 Manager（极早期布局） | 已拆除 `EssManagers/`，按 `Foundation/` `Presentation/` `Application/` 三层直接平铺在 `Core/` 下（与 `Base/` 同级） |
+| 业务 Manager 放在 `EssSystem/Manager/` | 仅限可选第三方模块（如 `DanmuManager`）；框架原生业务全部迁入 `Core/Foundation/` / `Core/Presentation/` / `Core/Application/` |
+| `UIEntity` 命名空间为 `EssSystem.Core.UI.Entity.*` | 已收回 `EssSystem.Core.Presentation.UIManager.Entity.*`（UIManager 私有实现） |
 | `EventProcessor.TriggerEventMethod` 吞后续异常 | 已解 `TargetInvocationException` 暴露真实 `InnerException`，不要加 try/catch 遮盖 |
 | 在 `Manager/` 下手写业务脚手架 | 用 `tools/new-module.ps1 -Name Xxx -Priority N`，自动遵守常量化/目录结构/Agent.md 模板 |
-| `AudioManager` 放 `Manager/` 基类文件夹 | 已迁到 `Foundation/AudioManager/`（namespace `EssSystem.Core.EssManagers.Foundation.AudioManager`），优先级 `[Manager(3)]`；旧文件 `#if false` 待删 |
+| `AudioManager` 放 `Manager/` 基类文件夹 | 已迁到 `Core/Presentation/AudioManager/`（namespace `EssSystem.Core.Presentation.AudioManager`），优先级 `[Manager(3)]`；旧文件 `#if false` 待删 |
 | `AudioManager` 手动 `AddListener` 注册事件 | 全部改 `[Event(EVT_XXX)]`，去掉 `RegisterEvents()` / `OnDestroy` 手动注销 |
 | `AudioManager` 直接 `Resources.Load<AudioClip>` | 改走 ResourceManager bare-string `"GetAudioClip"` |
 | 提交前不跑 `agent_lint` | `tools/install-hooks.ps1` 一次性安装 pre-commit hook，自动 `agent_lint -Strict` |

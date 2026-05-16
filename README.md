@@ -40,7 +40,7 @@ Assets/
 │   │   │       │   └── ResourceManager/         # 资源加载/缓存
 │   │   │       ├── Presentation/
 │   │   │       │   └── UIManager/               # UI Dao/Entity/Service
-│   │   │       └── Gameplay/
+│   │   │       └── Application/
 │   │   │           ├── CharacterManager/        # 角色 + 部件 + 帧事件
 │   │   │           ├── EntityManager/           # 实体 (Character + 行为)
 │   │   │           ├── MapManager/              # 2D 地图（Dao/Templates/TopDownRandom 等）
@@ -72,7 +72,7 @@ Assets/
 │ 框架 Manager:                                      │
 │   EventProcessor(-30) → DataManager(-20)           │
 │   → ResourceManager(0) → UIManager(5)              │
-│ Gameplay Manager:                                  │
+│ Application Manager:                                  │
 │   InventoryManager(10) → CharacterManager(11)      │
 │   → MapManager(12) → EntityManager(13)             │
 └────────────────────────────────────────────────────┘
@@ -135,7 +135,7 @@ git clone https://github.com/WithAnOrchard/WulaGameFramework.git
 using System.Collections.Generic;
 using EssSystem.Core;
 using EssSystem.Core.Event;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 
 // 1) 定义 Service（自动被 DataService 发现并持久化）
 public class ScoreService : Service<ScoreService>
@@ -263,11 +263,11 @@ EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
 每个核心子目录都有 `Agent.md` 说明，深入用法请直接查阅：
 
 - 项目顶层：[Agent.md](Agent.md)（**必读，含全局 Event 索引**）/ [Anti-Patterns.md](Anti-Patterns.md)
-- Core：[Core 总览](Scripts/EssSystem/Core/Agent.md) / [Singleton](Scripts/EssSystem/Core/Singleton/Agent.md) / [Event](Scripts/EssSystem/Core/Event/Agent.md)
-- EssManagers：[总览](Scripts/EssSystem/Core/EssManagers/Agent.md) / [Manager 基类](Scripts/EssSystem/Core/EssManagers/Manager/Agent.md)
-- Foundation：[DataManager](Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md)
-- Presentation：[UIManager](Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md)
-- Gameplay：[CharacterManager](Scripts/EssSystem/Core/EssManagers/Gameplay/CharacterManager/Agent.md) / [EntityManager](Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md) / [MapManager](Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md) / [InventoryManager](Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md)
+- Core：[Core 总览](Scripts/EssSystem/Core/Agent.md) / [Managers 总览](Scripts/EssSystem/Core/Managers.md) / [Manager 基类](Scripts/EssSystem/Core/Base/Manager/Agent.md) / [Singleton](Scripts/EssSystem/Core/Base/Singleton/Agent.md) / [Event](Scripts/EssSystem/Core/Base/Event/Agent.md)
+- Foundation：[DataManager](Scripts/EssSystem/Core/Foundation/DataManager/Agent.md) / [ResourceManager](Scripts/EssSystem/Core/Foundation/ResourceManager/Agent.md)
+- Presentation：[AudioManager](Scripts/EssSystem/Core/Presentation/AudioManager/Agent.md) / [UIManager](Scripts/EssSystem/Core/Presentation/UIManager/Agent.md) / [CharacterManager](Scripts/EssSystem/Core/Presentation/CharacterManager/Agent.md)
+- Application/SingleManagers：[InventoryManager](Scripts/EssSystem/Core/Application/SingleManagers/InventoryManager/Agent.md) / [EntityManager](Scripts/EssSystem/Core/Application/SingleManagers/EntityManager/Agent.md) / [DialogueManager](Scripts/EssSystem/Core/Application/SingleManagers/DialogueManager/Agent.md)
+- Application/MultiManagers：[MapManager](Scripts/EssSystem/Core/Application/MultiManagers/MapManager/Agent.md) / [BuildingManager](Scripts/EssSystem/Core/Application/MultiManagers/BuildingManager/Agent.md) / [SkillManager](Scripts/EssSystem/Core/Application/MultiManagers/SkillManager/Agent.md)
 - 第三方业务：[DanmuManager](Scripts/EssSystem/Manager/DanmuManager/Agent.md)
 - Demo：[DayNight](Scripts/Demo/DayNight/Agent.md)
 

@@ -18,7 +18,7 @@ Scripts/EssSystem/
 │       ├── Manager/                     Manager<T> / Service<T> 基类
 │       ├── Foundation/                  基础服务（优先级 -20 ~ 3）
 │       ├── Presentation/                表现层（优先级 5）
-│       └── Gameplay/                    游戏业务（优先级 10+）
+│       └── Application/                    游戏业务（优先级 10+）
 └── Manager/                         ← 扩展 Manager（非核心，可选）
     └── DanmuManager/                    弹幕系统（50）
 
@@ -37,15 +37,15 @@ Demo/                                ← 演示项目（不属于框架核心）
 | **0** | `ResourceManager` | Foundation | 资源加载/缓存（Prefab/Sprite/Audio/Texture） |
 | **3** | `AudioManager` | Foundation | BGM / SFX 播放 + 音量持久化 |
 | **5** | `UIManager` | Presentation | Canvas 管理 + UI 实体注册中心 |
-| **10** | `InventoryManager` | Gameplay | 背包/物品系统 + 物品 UI |
-| **11** | `CharacterManager` | Gameplay | 角色 Config 持久化 + 帧动画运行时 + 预览面板 |
-| **12** | `MapManager` | Gameplay | 2D 地图：分块生成/持久化/流式加载（TopDown + SideScroller） |
-| **13** | `EntityManager` | Gameplay | 实体系统：能力(Capability)组合 + AI Brain + 伤害流水线 |
-| **13** | `Voxel3DMapManager` | Gameplay | 3D 体素地图：分块/Mesh/Lighting |
-| **14** | `BuildingManager` | Gameplay | 建筑系统：放置/拆除/升级 |
-| **14** | `VoxelLightManager` | Gameplay | 体素光照计算 |
-| **15** | `DialogueManager` | Gameplay | 对话系统：对话树/选项/UI |
-| **15** | `SkillManager` | Gameplay | 技能系统：技能定义/释放/Buff/冷却 |
+| **10** | `InventoryManager` | Application | 背包/物品系统 + 物品 UI |
+| **11** | `CharacterManager` | Application | 角色 Config 持久化 + 帧动画运行时 + 预览面板 |
+| **12** | `MapManager` | Application | 2D 地图：分块生成/持久化/流式加载（TopDown + SideScroller） |
+| **13** | `EntityManager` | Application | 实体系统：能力(Capability)组合 + AI Brain + 伤害流水线 |
+| **13** | `Voxel3DMapManager` | Application | 3D 体素地图：分块/Mesh/Lighting |
+| **14** | `BuildingManager` | Application | 建筑系统：放置/拆除/升级 |
+| **14** | `VoxelLightManager` | Application | 体素光照计算 |
+| **15** | `DialogueManager` | Application | 对话系统：对话树/选项/UI |
+| **15** | `SkillManager` | Application | 技能系统：技能定义/释放/Buff/冷却 |
 | **50** | `DanmuManager` | Manager(扩展) | 弹幕消息系统 |
 
 ## 目录详细结构
@@ -66,7 +66,7 @@ Core/EssManagers/
 │       ├── Dao/CommonComponents/        通用 UI 组件
 │       └── Entity/CommonEntity/         通用 UI 实体（Toast/弹窗等）
 │
-└── Gameplay/                        ← 游戏业务
+└── Application/                        ← 游戏业务
     ├── InventoryManager/
     │   ├── Dao/UIConfig/                物品 UI 配置
     │   └── UI/                          背包界面
@@ -224,12 +224,12 @@ Application.quitting → DataService.SaveAllCategories() → 所有 IServicePers
 - [Manager/Service 基类指南](EssManagers/Manager/Agent.md)
 - [DataManager 指南](EssManagers/Foundation/DataManager/Agent.md)
 - [ResourceManager 指南](EssManagers/Foundation/ResourceManager/Agent.md)
-- [AudioManager 指南](EssManagers/Foundation/AudioManager/Agent.md)
+- [AudioManager 指南](EssManagers/Presentation/AudioManager/Agent.md)
 - [UIManager 指南](EssManagers/Presentation/UIManager/Agent.md)
-- [InventoryManager 指南](EssManagers/Gameplay/InventoryManager/Agent.md)
-- [CharacterManager 指南](EssManagers/Gameplay/CharacterManager/Agent.md)
-- [MapManager 指南](EssManagers/Gameplay/MapManager/Agent.md)
-- [EntityManager 指南](EssManagers/Gameplay/EntityManager/Agent.md)
-- [BuildingManager 指南](EssManagers/Gameplay/BuildingManager/Agent.md)
-- [DialogueManager 指南](EssManagers/Gameplay/DialogueManager/Agent.md)
-- [SkillManager 指南](EssManagers/Gameplay/SkillManager/Agent.md)
+- [InventoryManager 指南](EssManagers/Application/InventoryManager/Agent.md)
+- [CharacterManager 指南](EssManagers/Application/CharacterManager/Agent.md)
+- [MapManager 指南](EssManagers/Application/MapManager/Agent.md)
+- [EntityManager 指南](EssManagers/Application/EntityManager/Agent.md)
+- [BuildingManager 指南](EssManagers/Application/BuildingManager/Agent.md)
+- [DialogueManager 指南](EssManagers/Application/DialogueManager/Agent.md)
+- [SkillManager 指南](EssManagers/Application/SkillManager/Agent.md)

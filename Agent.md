@@ -27,13 +27,13 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 数据持久化 | `Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md` |
 | 资源加载 | `Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md` |
 | UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md` |
-| 音频系统 | `Scripts/EssSystem/Core/EssManagers/Foundation/AudioManager/Agent.md` |
-| 角色系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/CharacterManager/Agent.md` |
-| 实体系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/EntityManager/Agent.md` |
-| 建筑系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/BuildingManager/Agent.md` |
-| 背包系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/Agent.md` |
-| 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/MapManager/Agent.md` |
-| 对话系统 | `Scripts/EssSystem/Core/EssManagers/Gameplay/DialogueManager/Agent.md` |
+| 音频系统 | `Scripts/EssSystem/Core/EssManagers/Presentation/AudioManager/Agent.md` |
+| 角色系统 | `Scripts/EssSystem/Core/EssManagers/Application/CharacterManager/Agent.md` |
+| 实体系统 | `Scripts/EssSystem/Core/EssManagers/Application/EntityManager/Agent.md` |
+| 建筑系统 | `Scripts/EssSystem/Core/EssManagers/Application/BuildingManager/Agent.md` |
+| 背包系统 | `Scripts/EssSystem/Core/EssManagers/Application/InventoryManager/Agent.md` |
+| 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Application/MapManager/Agent.md` |
+| 对话系统 | `Scripts/EssSystem/Core/EssManagers/Application/DialogueManager/Agent.md` |
 | 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
 | 昼夜求生 Demo | `Scripts/Demo/DayNight/Agent.md` |
 
@@ -157,7 +157,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 
 **例外**：纯非交互的 SpriteRenderer 渲染（如 Character 自身贴图）不属于 UI，正常用 `SpriteRenderer`。规则只覆盖 `Canvas` / uGUI 范畴。
 
-**参考实现**：`Scripts/EssSystem/Core/EssManagers/Gameplay/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
+**参考实现**：`Scripts/EssSystem/Core/EssManagers/Application/InventoryManager/UI/InventoryUIBuilder.cs` —— 整个背包 UI 全部走 UIManager DAO，可直接照搬模式。
 
 ### 6. Service 持久化
 
@@ -178,10 +178,10 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ResolveTarget` | 调用时延迟解析，修复扫描期 Manager 未 Awake 问题 |
 | `UIService` 中 `ServiceXxx` 事件 | **已删除**（冗余 thin wrapper） |
 | `InventoryManager` | 改为通过 Event 调用 UIManager，完全解耦 |
-| 业务模块目录归位 | `InventoryManager` / `MapManager` / `EntityManager` 全部迁到 `Core/EssManagers/`；`Manager/` 仅留可选第三方模块（如 `DanmuManager`） |
+| 业务模块目录归位 | `InventoryManager` / `MapManager` / `EntityManager` 全部迁到 `Core/Foundation·Presentation·Application/` 三层（与 `Base/` 同级平铺）；`Manager/` 仅留可选第三方模块（如 `DanmuManager`） |
 | 跨模块解耦完成 | `EntityManager` ↔ `CharacterManager`、`InventoryManager` / `CharacterPreviewPanel` / `GameManager` ↔ `UIManager` 全部走 EventProcessor + Unity 中立类型；UIComponent (DAO) 通过 `EVT_DAO_PROPERTY_CHANGED` 广播取代直接 `using UIManager.Entity` |
-| `AudioManager` 重构 | 从 `Manager/`（基类文件夹）迁到 `Foundation/AudioManager/`；namespace `EssSystem.Core.EssManagers.Foundation.AudioManager`；优先级 `[Manager(3)]`；全部 12 个事件改 `[Event(EVT_XXX)]`（去掉手动 `AddListener`）；音频加载走 `ResourceManager`（bare-string `"GetAudioClip"`）；调用方（EntityService / TribePlayerCombat / TribePlayerInteraction）改 bare-string §4.1 |
-| `UIEntity` 命名空间 | 从 `EssSystem.Core.UI.Entity.*` 收回到 `EssSystem.Core.EssManagers.UIManager.Entity.*`（属于 UIManager 的私有实现） |
+| `AudioManager` 重构 | 从 `Manager/`（基类文件夹）迁到 `Presentation/AudioManager/`；namespace `EssSystem.Core.Presentation.AudioManager`；优先级 `[Manager(3)]`；全部 12 个事件改 `[Event(EVT_XXX)]`（去掉手动 `AddListener`）；音频加载走 `ResourceManager`（bare-string `"GetAudioClip"`）；调用方（EntityService / TribePlayerCombat / TribePlayerInteraction）改 bare-string §4.1 |
+| `UIEntity` 命名空间 | 从 `EssSystem.Core.UI.Entity.*` 收回到 `EssSystem.Core.Presentation.UIManager.Entity.*`（属于 UIManager 的私有实现） |
 | `EventProcessor.TriggerEventMethod` | catch 块解 `TargetInvocationException` → 暴露真实 `InnerException`，不再吞 listener 抛出的业务异常 |
 
 ## 工具脚本
@@ -295,6 +295,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ResourceManager.EVT_GET_SPRITE` | `GetSprite` | Core/ResourceManager | 同步取 Sprite |
 | `ResourceManager.EVT_GET_AUDIO_CLIP` | `GetAudioClip` | Core/ResourceManager | 同步取 AudioClip |
 | `ResourceManager.EVT_GET_TEXTURE` | `GetTexture` | Core/ResourceManager | 同步取 Texture |
+| `ResourceManager.EVT_GET_MATERIAL` | `GetMaterial` | Core/ResourceManager | 同步取 Material（LightManager 用于加载天空盒） |
 | `ResourceManager.EVT_GET_RULE_TILE` | `GetRuleTile` | Core/ResourceManager | 同步取 RuleTile |
 | `ResourceManager.EVT_GET_EXTERNAL_SPRITE` | `GetExternalSprite` | Core/ResourceManager | 同步取外部图片缓存 |
 | `ResourceManager.EVT_LOAD_PREFAB_ASYNC` | `LoadPrefabAsync` | Core/ResourceManager | 异步加载 Prefab |
@@ -364,6 +365,49 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `AudioManager.EVT_PLAY_ATTACK_SFX` | `PlayAttackSFX` | Core/AudioManager | 播放攻击音效（便捷命令） |
 | `AudioManager.EVT_PLAY_UI_SFX` | `PlayUISFX` | Core/AudioManager | 播放 UI 操作音效（便捷命令） |
 | `AudioManager.EVT_PLAY_ITEM_USE_SFX` | `PlayItemUseSFX` | Core/AudioManager | 播放物品使用音效（便捷命令） |
+| `CameraManager.EVT_GET_MAIN_CAMERA` | `GetMainCamera` | Core/CameraManager | 取主相机引用（查询），返回 `Ok(Camera)` |
+| `CameraManager.EVT_FOLLOW_TARGET` | `FollowCameraTarget` | Core/CameraManager | 设置跟随目标（命令），参数 `[Transform target, Vector3 offset?]` |
+| `CameraManager.EVT_STOP_FOLLOW` | `StopCameraFollow` | Core/CameraManager | 停止跟随（命令） |
+| `CameraManager.EVT_SHAKE` | `ShakeCamera` | Core/CameraManager | 触发震屏（命令），参数 `[float amplitude, float duration, int frequency?]` |
+| `CameraManager.EVT_SET_ZOOM` | `SetCameraZoom` | Core/CameraManager | 设置缩放（命令），参数 `[float value, float duration?]` |
+| `CameraManager.EVT_WORLD_TO_SCREEN` | `WorldToScreenPoint` | Core/CameraManager | 世界→屏幕坐标（查询），参数 `[Vector3]`，返回 `Ok(Vector2)` |
+| `CameraManager.EVT_SCREEN_TO_WORLD` | `ScreenToWorldPoint` | Core/CameraManager | 屏幕→世界坐标（查询），参数 `[Vector2 screenPos, float zDistance?]`，返回 `Ok(Vector3)` |
+| `CameraManager.EVT_SET_POSITION` | `SetCameraPosition` | Core/CameraManager | 瞬间设置相机位置（命令），参数 `[Vector3 worldPos]` |
+| `CameraManager.EVT_LOOK_AT` | `LookCameraAt` | Core/CameraManager | 瞬间相机朝向某点（命令），参数 `[Vector3 worldPoint]` |
+| `InputManager.EVT_BIND_ACTION` | `BindInputAction` | Core/InputManager | 覆盖 Action 绑定（命令），参数 `[string actionName, params KeyCode[] keys]` |
+| `InputManager.EVT_UNBIND_ACTION` | `UnbindInputAction` | Core/InputManager | 解绑 Action（命令），参数 `[string actionName]` |
+| `InputManager.EVT_IS_PRESSED` | `IsInputPressed` | Core/InputManager | Action 是否按住（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
+| `InputManager.EVT_IS_DOWN` | `IsInputDown` | Core/InputManager | Action 本帧是否按下（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
+| `InputManager.EVT_IS_UP` | `IsInputUp` | Core/InputManager | Action 本帧是否抬起（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
+| `InputManager.EVT_GET_AXIS` | `GetInputAxis` | Core/InputManager | 取轴向值（查询），参数 `[axisName]` 或 `[negativeAction, positiveAction]`，返回 `Ok(float)` |
+| `InputManager.EVT_GET_MOVE_AXIS` | `GetInputMoveAxis` | Core/InputManager | 取 2D 移动向量（查询），返回 `Ok(Vector2)` |
+| `InputManager.EVT_GET_MOUSE_POS` | `GetMouseScreenPosition` | Core/InputManager | 鼠标屏幕坐标（查询），返回 `Ok(Vector2)` |
+| `InputManager.EVT_GET_MOUSE_SCROLL` | `GetMouseScroll` | Core/InputManager | 鼠标滚轮 delta（查询），返回 `Ok(float)` |
+| `InputManager.EVT_INPUT_DOWN` | `OnInputDown` | Core/InputManager | Action 本帧按下**广播**，参数 `[string actionName]` |
+| `InputManager.EVT_INPUT_UP` | `OnInputUp` | Core/InputManager | Action 本帧抬起**广播**，参数 `[string actionName]` |
+| `EffectsManager.EVT_REGISTER_VFX` | `RegisterVFX` | Core/EffectsManager | 注册 VFX 资源映射（命令），参数 `[string vfxId, string prefabPath]` |
+| `EffectsManager.EVT_UNREGISTER_VFX` | `UnregisterVFX` | Core/EffectsManager | 移除 VFX 注册（命令），参数 `[string vfxId]` |
+| `EffectsManager.EVT_PLAY_VFX` | `PlayVFX` | Core/EffectsManager | 播放 VFX（命令），参数 `[string vfxId, Vector3 worldPos, Quaternion? rot, float? autoDestroy]`，返回 `Ok(string instanceId)` |
+| `EffectsManager.EVT_STOP_VFX` | `StopVFX` | Core/EffectsManager | 停止单个 VFX 实例（命令），参数 `[string instanceId]` |
+| `EffectsManager.EVT_STOP_ALL_VFX` | `StopAllVFX` | Core/EffectsManager | 停止所有 VFX（命令） |
+| `EffectsManager.EVT_SCREEN_FLASH` | `PlayScreenFlash` | Core/EffectsManager | 屏幕闪光（命令），参数 `[Color color, float duration?]` |
+| `LightManager.EVT_SET_SUN_COLOR` | `SetSunColor` | Core/LightManager | 设置主光颜色（命令），参数 `[Color]` |
+| `LightManager.EVT_SET_SUN_INTENSITY` | `SetSunIntensity` | Core/LightManager | 设置主光强度（命令），参数 `[float]` |
+| `LightManager.EVT_SET_SUN_ROTATION` | `SetSunRotation` | Core/LightManager | 设置主光朝向（命令），参数 `[Vector3 euler]` |
+| `LightManager.EVT_SET_AMBIENT` | `SetAmbientLight` | Core/LightManager | 设置环境光（命令），参数 `[Color color, float intensity?]` |
+| `LightManager.EVT_SET_FOG` | `SetFog` | Core/LightManager | 设置雾（命令），参数 `[bool enable, Color? color, float? density]` |
+| `LightManager.EVT_SET_SKYBOX` | `SetSkybox` | Core/LightManager | 切换天空盒（命令），参数 `[string resourcesPath]`（走 ResourceManager `GetMaterial`） |
+| `LightManager.EVT_SET_BLOOM` | `SetBloom` | Core/LightManager | 设置 URP Bloom（命令），参数 `[float intensity, float? threshold]` |
+| `LightManager.EVT_SET_VIGNETTE` | `SetVignette` | Core/LightManager | 设置 URP Vignette（命令），参数 `[float intensity, Color? color]` |
+| `LightManager.EVT_SET_CHROMATIC_ABERRATION` | `SetChromaticAberration` | Core/LightManager | 设置 URP 色差（命令），参数 `[float strength]` |
+| `LightManager.EVT_SET_COLOR_ADJUSTMENTS` | `SetColorAdjustments` | Core/LightManager | 设置 URP 调色（命令），参数 `[float postExposure, float? saturation, float? contrast]` |
+| `LightManager.EVT_REGISTER_PRESET` | `RegisterLightPreset` | Core/LightManager | 注册灯光预设（命令），参数 `[LightPreset]` |
+| `LightManager.EVT_APPLY_PRESET` | `ApplyLightPreset` | Core/LightManager | 应用预设（命令），参数 `[string presetName, float duration?]`，支持插值过渡 |
+| `LightManager.EVT_REGISTER_LIGHT` | `RegisterLight` | Core/LightManager | 注册 3D 动态光（命令），参数 `[string lightId, Light]` |
+| `LightManager.EVT_SET_LIGHT_INTENSITY` | `SetLightIntensity` | Core/LightManager | 设置 3D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
+| `LightManager.EVT_REGISTER_LIGHT_2D` | `RegisterLight2D` | Core/LightManager | 注册 URP 2D Light2D（命令），参数 `[string lightId, Light2D]` |
+| `LightManager.EVT_SET_LIGHT_2D_INTENSITY` | `SetLight2DIntensity` | Core/LightManager | 设置 2D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
+| `LightManager.EVT_SET_LIGHT_2D_COLOR` | `SetLight2DColor` | Core/LightManager | 设置 2D 光颜色（命令），参数 `[string lightId, Color]` |
 | `DayNightGameManager.EVT_PHASE_CHANGED` | `DayNightPhaseChanged` | Demo/DayNight | 昼夜阶段切换**广播**，参数 `[bool isNight, int round, bool isBossNight]` |
 | `WaveSpawnService.EVT_WAVE_STARTED` | `OnWaveStarted` | Demo/DayNight | 波次开始**广播**，参数 `[int round, int waveIndex, int totalEnemies]` |
 | `WaveSpawnService.EVT_WAVE_CLEARED` | `OnWaveCleared` | Demo/DayNight | 波次清完**广播**，参数 `[int round, int waveIndex]` |
