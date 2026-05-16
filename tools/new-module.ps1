@@ -47,7 +47,7 @@ Write-Doc "$moduleRoot\${Name}Manager.cs" @"
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Event;
 
 namespace EssSystem.EssManager.${Name}Manager
@@ -97,7 +97,7 @@ Write-Doc "$moduleRoot\${Name}Service.cs" @"
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core;
-using EssSystem.Core.EssManagers.Manager;
+using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Event;
 using EssSystem.EssManager.${Name}Manager.Dao;
 
