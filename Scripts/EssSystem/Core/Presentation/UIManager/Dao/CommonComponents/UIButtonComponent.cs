@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
 {
@@ -16,6 +17,11 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         ///     按钮背景 Sprite ID
         /// </summary>
         private string _buttonSpriteId;
+
+        /// <summary>
+        ///     按钮背景 Image 颜色（作为 Unity Image.color 应用；sprite 有色套白、无 sprite 可作纯色块）。
+        /// </summary>
+        private Color _buttonColor = Color.white;
 
         /// <summary>  
         ///     构造函数
@@ -59,6 +65,22 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         }
 
         /// <summary>
+        ///     按钮背景 Image 颜色。与 <see cref="ButtonSpriteId"/> 联合作为 Image.color 应用（色套白）。
+        /// </summary>
+        public Color ButtonColor
+        {
+            get => _buttonColor;
+            set
+            {
+                if (_buttonColor != value)
+                {
+                    _buttonColor = value;
+                    OnButtonColorChanged(value);
+                }
+            }
+        }
+
+        /// <summary>
         ///     点击事件
         /// </summary>
         public event Action<UIButtonComponent> OnClick;
@@ -85,7 +107,14 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
             return this;
         }
 
-      
+        /// <summary>
+        ///     设置按钮背景颜色（Image.color）。使用现成 Sprite 时该色作为色套；无 Sprite 时作为纯色块。
+        /// </summary>
+        public UIButtonComponent SetButtonColor(Color color)
+        {
+            ButtonColor = color;
+            return this;
+        }
 
         protected virtual void OnTextChanged(string newText)
         {
@@ -95,6 +124,11 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         protected virtual void OnButtonSpriteIdChanged(string newId)
         {
             NotifyEntityPropertyChanged("ButtonSpriteId", newId);
+        }
+
+        protected virtual void OnButtonColorChanged(Color newColor)
+        {
+            NotifyEntityPropertyChanged("ButtonColor", newColor);
         }
 
         // Simplified chain methods for better usability

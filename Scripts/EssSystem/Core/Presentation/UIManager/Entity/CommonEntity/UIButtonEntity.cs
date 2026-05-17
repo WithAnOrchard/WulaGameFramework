@@ -59,6 +59,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             {
                 if (_text != null) _text.text = buttonDao.Text;
                 if (_button != null) _button.interactable = Dao.Interactable;
+                if (_image != null) _image.color = buttonDao.ButtonColor;
 
                 // 通过Event机制从ResourceManager加载Sprite
                 if (!string.IsNullOrEmpty(buttonDao.ButtonSpriteId) && _image != null)
@@ -89,6 +90,10 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
                         {
                             _image.sprite = null;
                         }
+                        break;
+
+                    case "ButtonColor":
+                        _image.color = buttonDao.ButtonColor;
                         break;
                 }
             }

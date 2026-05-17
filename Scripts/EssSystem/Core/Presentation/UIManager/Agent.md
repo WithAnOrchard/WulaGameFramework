@@ -25,7 +25,9 @@ Presentation/UIManager/
 ├── Dao/               UIComponent 数据类（业务侧用）
 │   ├── UIComponent.cs（基类）
 │   ├── UIType.cs      Adjustable.cs
-│   └── CommonComponents/  UIPanelComponent / UIButtonComponent / UITextComponent / UIBarComponent
+│   ├── CommonComponents/  UIPanelComponent / UIButtonComponent / UITextComponent / UIBarComponent（运行时 DAO）
+│   └── Specs/             UIPanelSpec / UIButtonSpec / UITextSpec / UIIconSpec
+│                          （[Serializable] 纯数据 + With* 链式 + CreateComponent 工厂，业务模块持久化/复用首选）
 ├── Entity/            UIEntity 运行时（MonoBehaviour，框架内部）
 │   ├── UIEntity.cs（基类）  UIEntityFactory.cs
 │   └── CommonEntity/  UIPanelEntity / UIButtonEntity / UITextEntity / UIBarEntity
