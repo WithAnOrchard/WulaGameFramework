@@ -1,7 +1,0 @@
-{
-    "_comment": "Custom variant for grass side adjacent to snow tops; uses MC's snowy grass side texture as cube_all.",
-    "parent": "minecraft:block/cube_all",
-    "textures": {
-        "all": "minecraft:block/grass_block_snow"
-    }
-}
