@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager.Dao
 {
     /// <summary>
     /// 配方输出物品 —— "成功后产出 N 个 X 物品（按 Chance 概率）"。

@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.ShopManager
+namespace EssSystem.Core.Application.MultiManagers.ShopManager
 {
     /// <summary>
     /// 商店业务服务 —— 持久化 ShopConfig + CurrencyEntry，运行时维护钱包余额查询。

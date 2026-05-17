@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager.Dao
 {
     /// <summary>
     /// 配方技能 / 属性门槛 —— 玩家需达到全部门槛才能制作。

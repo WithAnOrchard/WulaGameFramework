@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.ShopManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.ShopManager.Dao
 {
     /// <summary>
     /// 货币条目 —— 注册到 ShopManager 的虚拟货币定义。

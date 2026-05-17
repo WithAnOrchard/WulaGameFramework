@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager.Dao
 {
     /// <summary>
     /// 配方输入材料 —— "需要 N 个 X 物品"。

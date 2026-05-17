@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager.Dao
 {
     /// <summary>
     /// 配方 —— 输入材料 + 输出物品 + 工作台门槛 + 技能要求 + 蓝图关联。

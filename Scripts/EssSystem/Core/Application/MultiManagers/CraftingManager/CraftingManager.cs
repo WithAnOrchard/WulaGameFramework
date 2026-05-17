@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager
 {
     /// <summary>
     /// 制作门面 —— 配方注册 / 蓝图学习 / 工作台路由 / 制作 Session 控制。

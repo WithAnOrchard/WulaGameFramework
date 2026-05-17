@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager
 {
     /// <summary>
     /// 制作业务服务 —— 持久化配方表 / 工作台表 / 玩家已学配方；运行时维护 CraftingSession 列表。

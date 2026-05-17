@@ -1,4 +1,4 @@
-namespace EssSystem.Core.Application.SingleManagers.CraftingManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.CraftingManager.Dao
 {
     /// <summary>
     /// 制作品质 —— 影响输出 InventoryItem 上的运行时 Modifier 加成。

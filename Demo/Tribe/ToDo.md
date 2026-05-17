@@ -190,7 +190,7 @@
   - 走 UIManager.Specs 风格统一
 
 - **影响范围**:
-  - 新增框架：`SingleManagers/CraftingManager/`
+  - 新增框架：`MultiManagers/CraftingManager/`（依赖 InventoryManager/IStats，归 MultiManagers）
     - `CraftingManager.cs / CraftingService.cs`
     - `Dao/CraftingRecipe / CraftIngredient / CraftOutput / RecipeSkillRequirement`
     - `Dao/WorkstationDefinition / CraftQuality / CraftingSession / KnownRecipesData`
@@ -386,7 +386,7 @@
     - `Dao/NpcConfig / NpcInstance / NpcRole / NpcInteractionFlags`
     - `UI/NpcInteractionUIBuilder.cs`
     - `Agent.md`
-  - 新增框架：`SingleManagers/ShopManager/`
+  - 新增框架：`MultiManagers/ShopManager/`（依赖 InventoryManager/IStats，归 MultiManagers）
     - `ShopManager.cs / ShopService.cs`
     - `Dao/ShopConfig / ShopStock / ShopPolicy / ShopType / CurrencyEntry`
     - `UI/ShopUIBuilder.cs`

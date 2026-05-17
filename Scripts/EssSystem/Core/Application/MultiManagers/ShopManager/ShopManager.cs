@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.ShopManager
+namespace EssSystem.Core.Application.MultiManagers.ShopManager
 {
     /// <summary>
     /// 商店门面 —— 配置注册 / 货币 / 钱包 / Buy-Sell 事务原子性。

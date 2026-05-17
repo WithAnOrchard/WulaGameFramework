@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.ShopManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.ShopManager.Dao
 {
     /// <summary>
     /// 单条商品库存。

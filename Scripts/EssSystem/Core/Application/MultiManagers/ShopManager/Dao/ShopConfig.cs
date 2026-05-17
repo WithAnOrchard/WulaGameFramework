@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace EssSystem.Core.Application.SingleManagers.ShopManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.ShopManager.Dao
 {
     /// <summary>
     /// 商店配置 —— 一家商店的全部静态数据。

@@ -1,4 +1,4 @@
-namespace EssSystem.Core.Application.SingleManagers.ShopManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.ShopManager.Dao
 {
     /// <summary>
     /// 商店类别 —— 决定 UI 标题 / 默认接收的物品白名单 / 价格倾向。
