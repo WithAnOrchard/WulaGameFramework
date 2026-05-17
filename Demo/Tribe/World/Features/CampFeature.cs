@@ -28,11 +28,13 @@ namespace Demo.Tribe.World.Features
         /// <summary>营火音效路径（走 ResourceManager bare-string EVT_GET_AUDIO_CLIP）。</summary>
         public string CampfireAudioPath = "Sound/feuer";
 
-        /// <summary>营火世界缩放（与 sprite PPU 配合调整大小）。</summary>
-        public Vector2 CampfireScale = new Vector2(2f, 2f);
+        /// <summary>营火世界缩放（campfire.png 单帧 16x32 @ PPU=100 → 0.16x0.32 单位；
+        /// 缩放 8 → 1.28x2.56 单位，比原先 (2,2) 大 4 倍线性尺寸）。</summary>
+        public Vector2 CampfireScale = new Vector2(8f, 8f);
 
-        /// <summary>营火相对 ctx.GroundY 的 Y 偏移（贴地）。</summary>
-        public float CampfireYOffset = 0.4f;
+        /// <summary>营火相对 ctx.GroundY 的 Y 偏移。
+        /// campfire sprite pivot = (0,0) 左下角，故 0 即底边贴地。</summary>
+        public float CampfireYOffset = 0f;
 
         // ─── NPC ──────────────────────────────────────────
         /// <summary>NPC 视觉用的 CharacterConfig Id（与玩家 "Warrior" 同模式，"Mage" 即不同素材）。</summary>
@@ -95,7 +97,12 @@ namespace Demo.Tribe.World.Features
         {
             var go = new GameObject("Campfire");
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(0f, CampfireYOffset, 0f);
+            // campfire sprite pivot=(0,0) 左下角 → 把节点向左移半个 sprite 宽度（16px @ PPU=100 = 0.16 单位）
+            // 让营火视觉中心对齐营地 X，底边对齐 ctx.GroundY
+            const float spritePixelWidth = 16f;
+            const float ppu = 100f;
+            var halfWorldWidth = (spritePixelWidth / ppu) * 0.5f * CampfireScale.x;
+            go.transform.localPosition = new Vector3(-halfWorldWidth, CampfireYOffset, 0f);
             go.transform.localScale = new Vector3(CampfireScale.x, CampfireScale.y, 1f);
 
             var sr = go.AddComponent<SpriteRenderer>();
