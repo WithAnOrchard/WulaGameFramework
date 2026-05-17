@@ -54,18 +54,23 @@ namespace Demo.Tribe.World.Presets
         private static TribeBiomeConfig BuildMeadow(float x0, float x1)
         {
             var b = new TribeBiomeConfig("meadow", "起源草地", x0, x1, MEADOW_TINT);
-            // 现有素材：胡萝卜 / 向日葵 / 红蘑菇 / 浆果
-            b.Add(new GatherableFeature(x0 + 5f,  "向日葵", "Tribe/Objects/Crops (sunflower)", "tribe_sunflower_pickable"));
-            b.Add(new GatherableFeature(x0 + 12f, "红蘑菇", "Tribe/Objects/Mushroom_2",        "tribe_red_mushroom_pickable"));
-            b.Add(new GatherableFeature(x0 + 20f, "浆果丛", "Tribe/Objects/Crops (berries)",   "tribe_berries_pickable",   2f, 3));
-            b.Add(new GatherableFeature(x0 + 30f, "胡萝卜", "Tribe/Objects/Crops (carrot)",    "tribe_carrot_pickable"));
-            b.Add(new GatherableFeature(x0 + 45f, "向日葵2","Tribe/Objects/Crops (sunflower)", "tribe_sunflower_pickable"));
+            // 出生点临时小营地（X≈4，玩家在 X=0 朝右出生即可看到）：
+            //   营火 + 左右帐篷占位 + 引路 NPC（用 CharacterManager 默认 Mage 配置，
+            //   与玩家 Warrior 同套身体部位系统，只是不同 sprite sheet）
+            b.Add(new CampFeature(x0 + 4f, npcInstanceId: "TribeNpc_Alice",
+                npcDisplayName: "向导艾丽丝", npcCharacterConfigId: "Mage"));
+            // 既有素材：胡萝卜 / 向日葵 / 红蘑菇 / 浆果（推到营地东侧 X≥15 开始铺）
+            b.Add(new GatherableFeature(x0 + 15f, "向日葵", "Tribe/Objects/Crops (sunflower)", "tribe_sunflower_pickable"));
+            b.Add(new GatherableFeature(x0 + 22f, "红蘑菇", "Tribe/Objects/Mushroom_2",        "tribe_red_mushroom_pickable"));
+            b.Add(new GatherableFeature(x0 + 30f, "浆果丛", "Tribe/Objects/Crops (berries)",   "tribe_berries_pickable",   2f, 3));
+            b.Add(new GatherableFeature(x0 + 40f, "胡萝卜", "Tribe/Objects/Crops (carrot)",    "tribe_carrot_pickable"));
+            b.Add(new GatherableFeature(x0 + 50f, "向日葵2","Tribe/Objects/Crops (sunflower)", "tribe_sunflower_pickable"));
             // 占位：浅水洼 + 传送门入口（通往 #3 静谧采集林）
-            b.Add(new PlaceholderFeature(x0 + 15f, "水洼",   WATER_C,  new Vector2(2f, 0.4f),  yOffset: -0.2f));
-            b.Add(new PlaceholderFeature(x0 + 40f, "🌀传送门\n静谧采集林", PORTAL_C, new Vector2(1.5f, 3f), yOffset: 0.5f));
+            b.Add(new PlaceholderFeature(x0 + 20f, "水洼",   WATER_C,  new Vector2(2f, 0.4f),  yOffset: -0.2f));
+            b.Add(new PlaceholderFeature(x0 + 70f, "🌀传送门\n静谧采集林", PORTAL_C, new Vector2(1.5f, 3f), yOffset: 0.5f));
             // 友好动物（用现有 Cow / Hen 预设）
-            b.Add(new CreatureFeature(x0 + 25f, "奶牛", TribeCreaturePresets.Cow()));
-            b.Add(new CreatureFeature(x0 + 55f, "母鸡", TribeCreaturePresets.Hen()));
+            b.Add(new CreatureFeature(x0 + 35f, "奶牛", TribeCreaturePresets.Cow()));
+            b.Add(new CreatureFeature(x0 + 60f, "母鸡", TribeCreaturePresets.Hen()));
             return b;
         }
 
