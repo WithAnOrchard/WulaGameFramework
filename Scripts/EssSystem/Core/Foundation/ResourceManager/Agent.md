@@ -52,7 +52,7 @@ public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, Animati
 
 ### 命令类（façade — 同步获取）
 
-> 缓存命中直接返；未命中且非外部 → 自动 fallback 按候选子目录 `Resources.Load`。子目录候选（按命中概率）：`""` / `Tiles` / `Sprites` / `Sprites/Tiles` / `Sprites/UI` / `Sprites/Characters` / `Prefabs` / `Audio` / `Models` / `Models/Characters3D`。路径已含 `/` 时只按原路径试一次，不叠加。
+> 缓存命中直接返；未命中且非外部 → 自动 fallback 按候选子目录 `Resources.Load`。子目录候选（按命中概率）：`""` / `Tiles` / `Sprites` / `Sprites/Tiles` / `Sprites/UI` / `Sprites/Characters` / `Prefabs` / `Audio` / `Sound` / `Models` / `Models/Characters3D`。路径已含 `/` 时只按原路径试一次，不叠加。
 
 #### `ResourceManager.EVT_GET_PREFAB` — 同步取 Prefab（含 FBX 根）
 - **常量**: `ResourceManager.EVT_GET_PREFAB` = `"GetPrefab"`

@@ -107,7 +107,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         private static readonly string[] _subfolderHints =
         {
             "", "Tiles", "Sprites", "Sprites/Tiles", "Sprites/UI", "Sprites/Characters",
-            "Prefabs", "Audio", "Models", "Models/Characters3D",
+            "Prefabs", "Audio", "Sound", "Models", "Models/Characters3D",
         };
 
         private const string FBXManifestResourcePath = "CharacterFBXManifest";
