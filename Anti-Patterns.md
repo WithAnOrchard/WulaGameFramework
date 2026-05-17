@@ -156,10 +156,10 @@ GameObject.Instantiate(prefab);
 
 ### B5. ❌ 命令事件 vs 广播事件命名混用
 约定（**强制**）：
-- **命令**（让别人做某事）：`EVT_<VERB>_<NOUN>`，方法名动词开头 → `EVT_OPEN_UI` → `"OpenInventoryUI"`
-- **广播**（已经发生）：广播事件常量值用 `On` 前缀字符串，方法名 `On` 开头 → `EVT_OPEN_UI` 在 Service 上对应 `"OnOpenInventoryUI"`（同名常量但语义相反，**靠模块归属区分**）
+- **命令**（让别人做某事）：`EVT_<VERB>_<NOUN>`，方法名动词开头 → e.g. `EVT_OPEN_UI` → `"OpenInventoryUI"`
+- **广播**（已经发生）：广播事件常量值用 `On` 前缀字符串，方法名 `On` 开头 → e.g. `EVT_STARTED` → `"OnDialogueStarted"`
 
-**理由**：`Inventory` 模块就有 `InventoryManager.EVT_OPEN_UI`（命令）vs `InventoryService.EVT_OPEN_UI`（广播）的命名碰撞案例。**新模块务必在 `Agent.md` 的 Event API 标注"命令/广播"**。
+**理由**：旧版 `Inventory` 模块曾出现 `InventoryManager.EVT_OPEN_UI`（命令）与同名 Service 广播的碰撞，已统一收敛到 Manager 侧。**新模块务必在 `Agent.md` 的 Event API 标注"命令/广播"**，避免再次出现 façade ↔ Service 同字符串。
 
 ### B6. ❌ 同字符串多处 `[Event(...)]` 注册
 ```csharp

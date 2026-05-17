@@ -280,7 +280,6 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `InventoryManager.EVT_HOTBAR_USE` | `InventoryHotbarUse` | InventoryManager | 玩家按 1~9 使用快捷栏槽位**广播**（args: `[invId, slotIndex, item]`） |
 | `InventoryManager.EVT_REGISTER_ITEM` | `InventoryRegisterItem` | InventoryManager | 注册物品模板 |
 | `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` | `InventoryRegisterPickableItem` | InventoryManager | 注册可拾取物定义 |
-| `InventoryManager.EVT_ADD_ITEM` | `InventoryAddItem` | InventoryManager | 添加物品到容器 |
 | `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` | `InventorySpawnPickableItem` | InventoryManager | 在场景中生成可拾取物 |
 | `InventoryService.EVT_CREATE` | `InventoryCreate` | InventoryManager | 创建容器 |
 | `InventoryService.EVT_DELETE` | `InventoryDelete` | InventoryManager | 删除容器 |
@@ -289,8 +288,6 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `InventoryService.EVT_MOVE` | `InventoryMove` | InventoryManager | 槽位移动 |
 | `InventoryService.EVT_QUERY` | `InventoryQuery` | InventoryManager | 查询容器 |
 | `InventoryService.EVT_CHANGED` | `InventoryChanged` | InventoryManager | 背包变化**广播**（用 `[EventListener]` 订阅） |
-| `InventoryService.EVT_OPEN_UI` | `OnOpenInventoryUI` | InventoryManager | UI 已打开**广播**（订阅用，区别于 `InventoryManager.EVT_OPEN_UI`） |
-| `InventoryService.EVT_CLOSE_UI` | `OnCloseInventoryUI` | InventoryManager | UI 已关闭**广播**（订阅用） |
 | `ResourceManager.EVT_GET_PREFAB` | `GetPrefab` | Core/ResourceManager | 同步取 Prefab（仅缓存） |
 | `ResourceManager.EVT_GET_SPRITE` | `GetSprite` | Core/ResourceManager | 同步取 Sprite |
 | `ResourceManager.EVT_GET_AUDIO_CLIP` | `GetAudioClip` | Core/ResourceManager | 同步取 AudioClip |
@@ -432,8 +429,6 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
 
 > ℹ️ **几乎无 Event 的模块**：`MapManager` 当前以纯 C# API 为主（`MapService.Instance.XXX`），目前不暴露 `EVT_*`。`CharacterManager` 已有完整 Event API（10 个 `EVT_*` 常量），跨模块调用统一经 `CharacterViewBridge` 收口。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
-
-> ⚠️ **命名冲突警示**：`InventoryManager.EVT_OPEN_UI` 是**命令**（`"OpenInventoryUI"`），`InventoryService.EVT_OPEN_UI` 是**广播**（`"OnOpenInventoryUI"`）。命令由调用方主动触发；广播由 Service 在 UI 实际打开后发出，供其他模块监听。混用会找不到 handler。
 
 > ⚠️ **façade vs Service 同名**：`ResourceManager.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` 与 `ResourceService.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` **字符串相同**，仅后者实际生效（字典覆盖）。调用方只需用 façade 常量。
 

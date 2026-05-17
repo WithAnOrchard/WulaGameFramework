@@ -18,13 +18,12 @@ Demo/Tribe/
 ├── Tribe.unity                          演示场景
 ├── TribeGameManager.cs                  总控（继承 AbstractGameManager）
 ├── TribeWorldSpawner.cs                 世界随机生成器（泊松采样 + 加权随机）
-├── TribeSkeletonEnemy.cs                骷髅敌人（独立编排器，非 TribeCreature 模板）
 ├── TribeCampfire.cs                     营火（动画 + 距离音量）
 │
 ├── Player/                              玩家系统
 │   ├── TribePlayer.cs                       玩家编排器（HP/MP/Exp/金币/死亡重生）
 │   ├── TribePlayerDamageEffect.cs           受伤闪烁 + 击退
-│   └── Compoment/                           子模块组件
+│   └── Component/                           子模块组件（physical-only 子目录）
 │       ├── TribePlayerMovement.cs               能力装配（IMovable/IJumpable/IFacing/...）
 │       ├── TribePlayerCombat.cs                 近战攻击（鼠标左键 + OverlapBox）
 │       ├── TribePlayerHud.cs                    HUD（血/蓝/经验条 + 金币 + 头像）
@@ -37,12 +36,19 @@ Demo/Tribe/
 │   ├── TribeCreaturePresets.cs              预定义配置（Cow/Chicken/Wolf/Ogre/...）
 │   ├── TribeEnemyContactDamager.cs          接触伤害组件
 │   ├── TribeEnemyHealthUI.cs                血条 UI
-│   ├── TribeSkeletonAnimator.cs             骷髅专用动画器
-│   └── TribeSpriteAnimator.cs               通用 4×4 帧动画器
+│   └── TribeSpriteAnimator.cs               通用 4行×4列 16帧 spritesheet 动画器
+│
+├── Resource/                            可采集资源
+│   └── PickableDropEntity.cs                可被攻击的掉落实体（树/蘑菇/浆果丛等）
 │
 └── Background/                          背景
     └── ParallaxLayer.cs                     视差背景单层（循环平铺）
 ```
+
+> 本次结构调整：
+> - `Player/Compoment/` 拼写修正 → `Player/Component/`
+> - `TribeSkeletonEnemy.cs` + `TribeSkeletonAnimator.cs` 已删：骷髅走通用 `TribeCreature` + `TribeCreaturePresets.Skeleton()` 驱动，专用骨架动画器被 `TribeSpriteAnimator` 覆盖
+> - `PickableDropEntity.cs` 根目录 → `Resource/`（资源采集实体有专属包）
 
 ## 启动流程
 
@@ -105,10 +111,7 @@ TribePlayer (MonoBehaviour, 编排器)
    - `TribeCreaturePresets` 提供 Cow / Chicken / Wolf / Ogre / Skeleton 等预设
    - 自动构建：Visual + Animator + HealthUI（如可攻击）+ ContactDamager（如可攻击）+ Brain AI
 
-2. **`TribeSkeletonEnemy`**（独立，遗留）—— 自带物理结构
-   - 物理结构 = 玩家同款（CircleCollider2D + Rigidbody2D + 视觉子 GO）
-   - 已具备 ChaseAction 追击行为
-   - 后续可逐步迁移到通用 `TribeCreature`
+2. **骷髅**已并入 `TribeCreature` —— 调用 `AddComponent<TribeCreature>().Configure(TribeCreaturePresets.Skeleton())` 即可生成，与其它怀物 / 动物走同一条 Brain + Capability 链路。
 
 ### Enemy AI（Brain）
 
@@ -188,7 +191,6 @@ Resources/
 
 ## 扩展建议
 
-- **TribeSkeletonEnemy** 可逐步迁移到 `TribeCreature` 模板，统一配置驱动
 - **新增动物 / 怪物**：在 `TribeCreaturePresets` 添加配置 + 在 `_spawnZones` 引用
 - **建筑系统**：当前帐篷/营火/篱笆是手写代码，可迁移到 `BuildingManager`
 - **技能系统**：玩家攻击当前是直接近战 OverlapBox，可改用新的 `SkillManager` 体系

@@ -7,7 +7,10 @@ using AudioMgr = EssSystem.Core.Presentation.AudioManager.AudioManager;
 namespace Demo.Tribe
 {
     /// <summary>
-    /// 钀ョ伀缁勪欢 鈥斺€?鎾斁 spritesheet 甯у姩鐢?+ 鏍规嵁涓庣帺瀹惰窛绂绘帶鍒剁噧鐑ч煶閲忋€?    /// 閫氳繃 <see cref="CharacterService"/> 鑾峰彇鐜╁浣嶇疆锛?    /// 閫氳繃 <see cref="AudioMgr"/> 鐨?SFX 闊抽噺璁剧疆褰卞搷鏈€缁堥煶閲忋€?    /// </summary>
+    /// 营火组件 —— 播放 spritesheet 帧动画 + 根据与玩家距离控制燃烧音量。
+    /// 通过 <see cref="CharacterService"/> 获取玩家位置，
+    /// 通过 <see cref="AudioMgr"/> 的 SFX 音量设置影响最终音量。
+    /// </summary>
     public class TribeCampfire : MonoBehaviour
     {
         [SerializeField] private float _frameRate = 8f;
@@ -69,16 +72,18 @@ namespace Demo.Tribe
             if (_playerTransform == null) return;
 
             var dist = Vector2.Distance(transform.position, _playerTransform.position);
-            // 绾挎€ц“鍑忥細璺濈 0 鈫?maxVolume锛岃窛绂?>= hearDistance 鈫?0
+            // 线性衰减：距离 0 → maxVolume，距离 >= hearDistance → 0
             var baseVolume = Mathf.Clamp01(1f - dist / _hearDistance) * _maxVolume;
 
-            // 鍙?AudioManager 鐨?SFX 闊抽噺褰卞搷
+            // 受 AudioManager 的 SFX 音量影响
             var sfxScale = AudioMgr.HasInstance ? AudioMgr.Instance.SFXVolume : 1f;
             _audio.volume = baseVolume * sfxScale;
         }
 
         /// <summary>
-        /// 鏌ユ壘鐜╁ Transform锛氫紭鍏堥€氳繃 CharacterService 鑾峰彇瑙掕壊 View 鐨勭埗鑺傜偣锛圱ribePlayer 鏍癸級锛?        /// 鍥為€€鍒?FindObjectOfType銆?        /// </summary>
+        /// 查找玩家 Transform：优先通过 CharacterService 获取角色 View 的父节点（TribePlayer 根），
+        /// 回退到 FindObjectOfType。
+        /// </summary>
         private static Transform FindPlayerTransform()
         {
             if (CharacterService.HasInstance)
@@ -87,13 +92,13 @@ namespace Demo.Tribe
                 {
                     if (c.View != null)
                     {
-                        // CharacterView 鏄?TribePlayer 鐨勫瓙鑺傜偣锛屽彇 parent 寰楀埌鐜╁鏍?Transform
+                        // CharacterView 是 TribePlayer 的子节点，取 parent 得到玩家根 Transform
                         var parent = c.View.transform.parent;
                         return parent != null ? parent : c.View.transform;
                     }
                 }
             }
-            // 鍥為€€
+            // 回退
             var player = FindObjectOfType<Player.TribePlayer>();
             return player != null ? player.transform : null;
         }

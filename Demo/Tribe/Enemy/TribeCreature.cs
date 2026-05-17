@@ -3,28 +3,28 @@ using System.Linq;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain.Actions;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Brain.Default;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 using UnityEngine;
 
 namespace Demo.Tribe.Enemy
 {
     /// <summary>
-    /// 閫氱敤閮ㄨ惤鐢熺墿 鈥斺€?鐢?<see cref="TribeCreatureConfig"/> 椹卞姩鐨勫彲閰嶇疆瀹炰綋銆?    /// <list type="bullet">
-    /// <item>鍔ㄧ墿锛氭棤鎺ヨЕ浼ゅ銆佹棤琛€鏉?/item>
-    /// <item>鎬墿锛氭湁鎺ヨЕ浼ゅ銆佹湁琛€鏉?/item>
+    /// 通用部落生物 —— 由 <see cref="TribeCreatureConfig"/> 驱动的可配置实体。
+    /// <list type="bullet">
+    /// <item>动物：无接触伤害、无血条</item>
+    /// <item>怪物：有接触伤害、有血条</item>
     /// </list>
-    /// 鐗╃悊缁撴瀯涓?<c>TribeSkeletonEnemy</c> 涓€鑷达細鏍?scale=1 + Visual 瀛愯妭鐐圭缉鏀俱€?    /// </summary>
+    /// 物理结构：根 scale=1 + Visual 子节点缩放（与 TribePlayer 同款，collider 始终在 scale=1 世界空间）。
+    /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Rigidbody2D))]
     [RequireComponent(typeof(CircleCollider2D))]
     public class TribeCreature : MonoBehaviour
     {
-        // 鈹€鈹€鈹€ 杩愯鏃?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ─── 运行时 ──────────────────────────────────────
         private TribeCreatureConfig _config;
         private Rigidbody2D _rb;
         private CircleCollider2D _collider;
@@ -41,20 +41,20 @@ namespace Demo.Tribe.Enemy
         private bool _dead;
         private int _sortingOrder;
 
-        /// <summary>澶栭儴鐢熸垚鏃惰瑙嗚鐨?sortingOrder銆?/summary>
+        /// <summary>外部生成时设视觉的 sortingOrder。</summary>
         public int SortingOrder
         {
             get => _sortingOrder;
             set { _sortingOrder = value; if (_renderer != null) _renderer.sortingOrder = value; }
         }
 
-        /// <summary>鐢ㄩ厤缃垵濮嬪寲鐢熺墿銆傚湪 AddComponent 鍚庣珛鍗宠皟鐢紙Start 鍓嶏級銆?/summary>
+        /// <summary>用配置初始化生物。在 AddComponent 后立即调用（Start 前）。</summary>
         public void Configure(TribeCreatureConfig config)
         {
             _config = config;
         }
 
-        // 鈹€鈹€鈹€ 鐢熷懡鍛ㄦ湡 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ─── 生命周期 ────────────────────────────────
         private void Awake()
         {
             _rb = GetComponent<Rigidbody2D>();
@@ -65,7 +65,7 @@ namespace Demo.Tribe.Enemy
         {
             if (_config == null)
             {
-                Debug.LogWarning($"[TribeCreature] {gameObject.name} 缂哄皯閰嶇疆锛岃烦杩囧垵濮嬪寲");
+                Debug.LogWarning($"[TribeCreature] {gameObject.name} 缺少配置，跳过初始化");
                 return;
             }
             ConfigureRigidbody();
@@ -83,7 +83,7 @@ namespace Demo.Tribe.Enemy
         {
             if (_dead || _config == null) return;
 
-            // 
+            // ─── 动画同步 ───
             if (_animator != null && _brain != null)
             {
                 var ctx = _brain.Context;
@@ -94,7 +94,7 @@ namespace Demo.Tribe.Enemy
             _animator?.Tick(Time.deltaTime);
         }
 
-        // 鈹€鈹€鈹€ 瀛愭ā鍧楁瀯寤?鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ─── 子模块构建 ──────────────────────────────
         private void ConfigureRigidbody()
         {
             _rb.gravityScale = _config.UseGravity ? _config.GravityScale : 0f;
@@ -248,7 +248,7 @@ namespace Demo.Tribe.Enemy
             _brain = _entity.Get<IBrain>();
         }
 
-        // 鈹€鈹€鈹€ 浜嬩欢鍥炶皟 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // ─── 事件回调 ────────────────────────────────
         private void OnDamaged(Entity owner, Entity source, float dealt, string damageType)
         {
             if (_damageable == null || _healthBar == null) return;
@@ -264,7 +264,7 @@ namespace Demo.Tribe.Enemy
             if (_damageable != null) _damageable.Damaged -= OnDamaged;
             if (_healthBar != null) _healthBar.Dispose();
 
-            // 鎺夎惤
+            // 掉落
             if (!string.IsNullOrEmpty(_config.DropPickableId) && _config.DropAmount > 0)
             {
                 if (EventProcessor.HasInstance)

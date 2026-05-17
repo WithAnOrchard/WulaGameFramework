@@ -5,7 +5,7 @@ namespace EssSystem.Core.Base.Util
 {
     /// <summary>
     /// Rigidbody2D + Collider2D 常用配置参数包 —— 统一"重力 + 碰撞检测 + 约束"的重复初始化代码。
-    /// <para><see cref="TribePlayerMovement"/> 和 <see cref="TribeSkeletonEnemy"/> 都有几乎相同的
+    /// <para><see cref="TribePlayerMovement"/> 和 <c>TribeCreature</c> 都有几乎相同的
     /// <c>ConfigureRigidbody()</c>，本结构将字段提取为可序列化数据，用一行 <see cref="ApplyTo"/> 完成配置。</para>
     /// </summary>
     [Serializable]

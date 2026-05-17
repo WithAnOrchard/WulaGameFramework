@@ -6,7 +6,6 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.CharacterManager;
 // §4.1 跨模块 InventoryManager / ResourceService 事件常量走 bare-string。
 using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
 using EssSystem.Core.Application.SingleManagers.DialogueManager;
@@ -18,6 +17,8 @@ using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Runtime;
 using UnityEngine.Tilemaps;
 using Demo.Tribe.Player;
 using Demo.Tribe.Background;
+using Demo.Tribe.Enemy;
+using Demo.Tribe.Resource;
 
 namespace Demo.Tribe
 {
@@ -233,12 +234,13 @@ namespace Demo.Tribe
 
         private static void SpawnTribeSkeletonEnemy(Vector3 position, Transform root, int sortingOrder)
         {
-            // 根 GameObject scale 保持 1（与 TribePlayer 一致）；视觉缩放由 TribeSkeletonEnemy 在 Start 时
-            // 创建的 "Visual" 子节点承担。RequireComponent 链会自动加 Rigidbody2D + CircleCollider2D。
+            // 骷髅已统一走通用 <see cref="TribeCreature"/> + <see cref="TribeCreaturePresets.Skeleton"/> 配置。
+            // RequireComponent 链会自动加 Rigidbody2D + CircleCollider2D；视觉缩放由 Visual 子节点承担。
             var go = new GameObject("TribeSkeletonEnemy");
             go.transform.position = position;
             if (root != null) go.transform.SetParent(root, true);
-            var enemy = go.AddComponent<TribeSkeletonEnemy>();
+            var enemy = go.AddComponent<TribeCreature>();
+            enemy.Configure(TribeCreaturePresets.Skeleton());
             enemy.SortingOrder = sortingOrder;
         }
 

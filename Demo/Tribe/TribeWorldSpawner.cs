@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using Demo.Tribe.Enemy;
 using Demo.Tribe.Player;
+using Demo.Tribe.Resource;
 
 namespace Demo.Tribe
 {
@@ -155,17 +156,11 @@ namespace Demo.Tribe
             go.layer = _enemyLayer;
             if (_enemiesRoot != null) go.transform.SetParent(_enemiesRoot, true);
 
-            if (entry.CreatureConfig != null)
-            {
-                var creature = go.AddComponent<Enemy.TribeCreature>();
-                creature.Configure(entry.CreatureConfig);
-                creature.SortingOrder = _baseSortingOrder + entry.EnemySortingOrderOffset;
-            }
-            else
-            {
-                var enemy = go.AddComponent<TribeSkeletonEnemy>();
-                enemy.SortingOrder = _baseSortingOrder + entry.EnemySortingOrderOffset;
-            }
+            // CreatureConfig 缺省时退回 Skeleton 预设（保持与旧 TribeSkeletonEnemy 行为一致）。
+            var cfg = entry.CreatureConfig ?? Enemy.TribeCreaturePresets.Skeleton();
+            var creature = go.AddComponent<Enemy.TribeCreature>();
+            creature.Configure(cfg);
+            creature.SortingOrder = _baseSortingOrder + entry.EnemySortingOrderOffset;
         }
 
         private void SpawnAnimal(SpawnEntry entry, Vector3 position)

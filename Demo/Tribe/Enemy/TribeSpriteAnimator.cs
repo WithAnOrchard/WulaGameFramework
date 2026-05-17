@@ -4,8 +4,8 @@ using UnityEngine;
 namespace Demo.Tribe.Enemy
 {
     /// <summary>
-    /// 通用精灵动画器 —— 从 <see cref="TribeSkeletonAnimator"/> 泛化而来。
-    /// <para>支持通过 <see cref="Setup"/> 在运行时配置资源路径，适用于所有 4行×4列 16帧 spritesheet。</para>
+    /// 通用精灵动画器 —— 适用于所有 4行×4列 16帧 spritesheet。
+    /// <para>支持通过 <see cref="Setup"/> 在运行时配置资源路径 / 帧间隔 / 锚点，供 <c>TribeCreature</c> 使用。</para>
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(SpriteRenderer))]
