@@ -38,6 +38,25 @@ EventProcessor.Instance.TriggerEventMethod(EVT_OPEN_UI, data);
 
 **理由**：`agent_lint.ps1 [6]` 扫描所有 bare-string、cross-ref 全工程 `EVT_XXX` 常量池——拼错会打不过 lint。查 Event 不要猜：先看根 `Agent.md` 的【全局 Event 索引】表，再跳转到模块 `Agent.md` 的 `## Event API` 节。
 
+#### A2-例外. ✅ "数据密集型子系统" 允许保留直接 C# Singleton API
+**Event API 不是万能锤**。当模块满足下列**全部**条件时，可保留 `XxxService.Instance.Method(...)` 直接调用，不需要 EVT_ 常量化：
+
+1. **高频访问**：API 每帧/每 chunk 调用数百次以上（事件分派 + 装拆箱开销不可接受）
+2. **类型签名复杂**：参数/返回值含模块领域类型（`Map` / `IChunkDecorator` / `VoxelChunk` 等），bare-string `List<object>` 严重损害可读性与编译期检查
+3. **协作内聚**：API 间彼此关联深（chunk 流式生成 / 装饰器链 / 持久化协调），切碎成独立事件后业务侧反而要重新拼装
+4. **不依赖**其他 Application 层 Manager 的内部类型（即仍可独立部署，不破坏分层）
+
+**唯一合规先例**：`Application/MultiManagers/MapManager` & `Voxel3DMapManager`（地形生成 / 流式 chunk / atlas / 持久化）。Demo 侧 ~95 处直接耦合。
+
+**强制要求**（缺一不可）：
+- 模块 `Agent.md` **必须**在 `## Event API` 节顶部用粗体声明：
+  > **本模块当前不暴露任何 EVT_ 常量。** 业务层直接调用 `XxxService.Instance` 的 C# API 即可。
+- 该声明下**必须**完整列出 Service 的 public API（替代 EVT 列表的角色）
+- Service 的 public 方法签名**必须稳定**（破坏性改动按 §C 处理）
+- **依然**通过 `[Event]` 暴露低频/无类型耦合的命令（如 `DeleteMapData(string)` 这类标量 API），不要全有全无
+
+**理由**：硬把 `MapService` 事件化会让业务侧失去 IntelliSense / 编译期类型检查，且 95 处调用代价巨大。承认例外比假装合规更诚实。但例外**只**适用于 Application 层的内聚子系统，**不**适用 Foundation / Presentation（这两层必须 100% 走 §4.1）。
+
 ### A3. ❌ Service 里存 `GameObject` / `MonoBehaviour` / `Transform`
 ```csharp
 // ❌ Unity 对象不可序列化，持久化会炸

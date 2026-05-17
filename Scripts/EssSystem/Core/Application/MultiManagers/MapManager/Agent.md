@@ -1,5 +1,26 @@
 # MapManager 指南
 
+## ⚠️ 架构声明：本模块走"直接 C# API"例外（参 `Anti-Patterns.md §A2-例外`）
+
+**本模块（含 Voxel3D 子系统）当前不暴露任何 EVT_ 常量。** 业务层直接调用以下 Service 的 C# API 即可：
+- `MapService.Instance.X()` — 2D Tile 系统
+- `Voxel3DMapService.Instance.X()` — 3D 体素系统
+- `VoxelLightingManager.Instance.X()` — 体素 GI 光照（v5）
+
+**例外资格**（满足 §A2-例外 全部条件）：
+- ✅ 高频：`GetTile` / `GetOrGenerateChunk` 每帧调用数百次
+- ✅ 类型复杂：`Map` / `MapConfig` / `Chunk` / `IChunkDecorator` / `VoxelMap` 等领域类型
+- ✅ 协作内聚：chunk 流式生成 + 装饰器链 + 持久化层紧耦合
+- ✅ 自包含：仅依赖 Foundation 层 (`ResourceManager`)，不依赖其他 Application Manager 内部类型
+
+**Demo 现状**：~95 处直接 `MapService.Instance.X()` / 类型耦合，是框架内**唯一**已批准例外。
+
+**新增 API 注意**：
+- 高频/类型复杂的接口 → 加在 `MapService` 上，更新本 `Agent.md ## Service API` 节
+- 低频/标量参数（如 `DeleteMapData(string)`）→ 仍可加 `[Event]` 暴露，做混合 API
+
+---
+
 ## 概述
 
 `MapManager`（`[Manager(12)]`，薄门面）+ `MapService`（业务核心 + 配置持久化）提供**多模板**的 2D 地图系统：
