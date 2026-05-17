@@ -1,13 +1,13 @@
 using System;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 using UnityEngine;
 
 namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
 {
     /// <summary>
-    /// 描述面板配置 — 显示当前选中物品 Description 的子面板
-    /// <para>
-    /// 作为主 Panel 的子节点挂载，<see cref="Offset"/> 为相对主面板左下角的位置偏移。
-    /// </para>
+    /// 描述面板配置 — 显示当前选中物品 Description 的子面板（背包独有复合 Config）。
+    /// <para>本身是一个 <see cref="UIPanelSpec"/> 组合（面板尺寸 + 背景 + Offset），
+    /// 内部含 3 个 <see cref="UITextSpec"/> 文本子组件（名称/数量/详细描述）+ 1 个 <see cref="UIIconSpec"/> 图标。</para>
     /// </summary>
     [Serializable]
     public class DescriptionPanelConfig
@@ -32,20 +32,20 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         /// <summary>文本相对面板左下角的内边距偏移</summary>
         public Vector2 TextPadding = new Vector2(12f, 12f);
 
-        /// <summary>文本字体大小</summary>
+        /// <summary>默认字体大小（仅作为 With* 缺省 fallback；具体子组件以各自 Spec 字段为准）</summary>
         public int FontSize = 14;
 
-        /// <summary>文本颜色</summary>
+        /// <summary>默认文本颜色（同上 fallback）</summary>
         public Color TextColor = new Color(0.95f, 0.95f, 0.95f, 1f);
 
         /// <summary>没有选中物品时的占位文字</summary>
         public string EmptyPlaceholder = "（点击物品查看描述）";
 
         /// <summary>图标子组件（位置 / 尺寸 / 可见性）</summary>
-        public DescriptionIconConfig IconConfig = new DescriptionIconConfig();
+        public UIIconSpec IconConfig = new UIIconSpec();
 
         /// <summary>名称文本子组件</summary>
-        public DescriptionTextElementConfig NameConfig = new DescriptionTextElementConfig
+        public UITextSpec NameConfig = new UITextSpec
         {
             Position  = new Vector2(150f, 428f),
             Size      = new Vector2(276f, 47f),
@@ -55,7 +55,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         };
 
         /// <summary>数量文本子组件</summary>
-        public DescriptionTextElementConfig StackConfig = new DescriptionTextElementConfig
+        public UITextSpec StackConfig = new UITextSpec
         {
             Position  = new Vector2(150f, 293f),
             Size      = new Vector2(276f, 33f),
@@ -65,7 +65,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         };
 
         /// <summary>详细描述文本子组件</summary>
-        public DescriptionTextElementConfig DescTextConfig = new DescriptionTextElementConfig
+        public UITextSpec DescTextConfig = new UITextSpec
         {
             Position  = new Vector2(150f, 149f),
             Size      = new Vector2(276f, 233f),
@@ -98,75 +98,36 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
             return this;
         }
 
-        public DescriptionPanelConfig WithOffset(float x, float y)
+        public DescriptionPanelConfig WithOffset(float x, float y) { Offset = new Vector2(x, y); return this; }
+        public DescriptionPanelConfig WithOffset(Vector2 offset)   { Offset = offset; return this; }
+        public DescriptionPanelConfig WithBackgroundId(string id)  { BackgroundSpriteId = id; return this; }
+        public DescriptionPanelConfig WithBackgroundColor(Color c) { BackgroundColor = c; return this; }
+        public DescriptionPanelConfig WithTextPadding(float x, float y) { TextPadding = new Vector2(x, y); return this; }
+        public DescriptionPanelConfig WithFontSize(int size)       { FontSize = Mathf.Max(1, size); return this; }
+        public DescriptionPanelConfig WithTextColor(Color color)   { TextColor = color; return this; }
+        public DescriptionPanelConfig WithEmptyPlaceholder(string text) { EmptyPlaceholder = text ?? string.Empty; return this; }
+
+        public DescriptionPanelConfig WithIconConfig(UIIconSpec cfg)
         {
-            Offset = new Vector2(x, y);
+            IconConfig = cfg ?? new UIIconSpec();
             return this;
         }
 
-        public DescriptionPanelConfig WithOffset(Vector2 offset)
+        public DescriptionPanelConfig WithNameConfig(UITextSpec cfg)
         {
-            Offset = offset;
+            NameConfig = cfg ?? new UITextSpec();
             return this;
         }
 
-        public DescriptionPanelConfig WithBackgroundId(string spriteId)
+        public DescriptionPanelConfig WithStackConfig(UITextSpec cfg)
         {
-            BackgroundSpriteId = spriteId;
+            StackConfig = cfg ?? new UITextSpec();
             return this;
         }
 
-        public DescriptionPanelConfig WithBackgroundColor(Color color)
+        public DescriptionPanelConfig WithDescTextConfig(UITextSpec cfg)
         {
-            BackgroundColor = color;
-            return this;
-        }
-
-        public DescriptionPanelConfig WithTextPadding(float x, float y)
-        {
-            TextPadding = new Vector2(x, y);
-            return this;
-        }
-
-        public DescriptionPanelConfig WithFontSize(int size)
-        {
-            FontSize = Mathf.Max(1, size);
-            return this;
-        }
-
-        public DescriptionPanelConfig WithTextColor(Color color)
-        {
-            TextColor = color;
-            return this;
-        }
-
-        public DescriptionPanelConfig WithEmptyPlaceholder(string text)
-        {
-            EmptyPlaceholder = text ?? string.Empty;
-            return this;
-        }
-
-        public DescriptionPanelConfig WithIconConfig(DescriptionIconConfig cfg)
-        {
-            IconConfig = cfg ?? new DescriptionIconConfig();
-            return this;
-        }
-
-        public DescriptionPanelConfig WithNameConfig(DescriptionTextElementConfig cfg)
-        {
-            NameConfig = cfg ?? new DescriptionTextElementConfig();
-            return this;
-        }
-
-        public DescriptionPanelConfig WithStackConfig(DescriptionTextElementConfig cfg)
-        {
-            StackConfig = cfg ?? new DescriptionTextElementConfig();
-            return this;
-        }
-
-        public DescriptionPanelConfig WithDescTextConfig(DescriptionTextElementConfig cfg)
-        {
-            DescTextConfig = cfg ?? new DescriptionTextElementConfig();
+            DescTextConfig = cfg ?? new UITextSpec();
             return this;
         }
 

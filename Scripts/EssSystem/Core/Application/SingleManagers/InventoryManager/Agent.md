@@ -7,7 +7,7 @@
 - 多容器（玩家背包、箱子等）
 - 物品模板 + 链式 API（`InventoryItem`）
 - 堆叠 / 权重上限 / 槽位锁定 / 移动/拆堆
-- 配置驱动 UI（`InventoryConfig` + `PanelConfig` + `SlotConfig` + `ButtonConfig`）
+- 配置驱动 UI（`InventoryConfig` + `SlotConfig` + 通用 `UIPanelSpec` / `UIButtonSpec` / `UITextSpec`）
 - 通过 Event 调用 UIManager，**完全解耦**
 - **3 个内置默认容器**（`Initialize` 时自动注册，仅持久化缺失时）：
   - `player` (configId `PlayerBackPack`) — 30 格主背包，居中显示
@@ -19,27 +19,30 @@
 
 ```
 InventoryManager/
-├── InventoryManager.cs            薄门面：生命周期、默认注册、EVT_OPEN_UI / EVT_CLOSE_UI、缓存
+├── InventoryManager.cs            薄门面：生命周期、默认注册、EVT_OPEN_UI / EVT_CLOSE_UI、UI 缓存、可拾取定义注册/生成
 ├── InventoryService.cs            业务核心 + 持久化 + 7 个 [Event] handler
 ├── Agent.md                       本文档
 ├── Editor/
 │   └── InventoryManagerEditor.cs  Inspector 自定义绘制
+├── Runtime/
+│   └── PickableItem.cs            场景可拾取物 MonoBehaviour（玩家触发器进入 → 填背包）
 ├── UI/
 │   ├── InventoryUIBuilder.cs      纯静态 UI 构建/绑定/拖拽挂载（BuildPanelTree / ApplyItemToSlot 等）
 │   ├── InventoryUIRefs.cs         SlotUIRefs / DescUIRefs 引用集合
 │   └── InventorySlotDragHandler.cs slot 拖拽实现（IBeginDrag/IDrag/IEndDrag/IDropHandler）
 └── Dao/
-    ├── Inventory.cs               Inventory + InventorySlot
-    ├── Item.cs                    InventoryItem + InventoryItemType
-    └── UIConfig/                  UI 配置组
-        ├── InventoryConfig.cs         容器主配置（含 ShowTitle / ShowDescription 开关）
-        ├── PanelConfig.cs             主面板尺寸/位置/背景
-        ├── SlotConfig.cs              槽位布局/背景
-        ├── ButtonConfig.cs            通用按钮配置（关闭按钮等）
-        ├── TitleConfig.cs             容器标题文本
-        ├── DescriptionPanelConfig.cs  描述子面板：背景 + 4 个子组件
-        └── DescriptionElementConfig.cs DescriptionIconConfig / DescriptionTextElementConfig
+    ├── Inventory.cs                   Inventory + InventorySlot
+    ├── Item.cs                        InventoryItem + InventoryItemType
+    ├── InventoryResult.cs             Add/Remove/Move 统一返回结构
+    ├── PickableItemDefinition.cs      可拾取物定义（sprite/template/collider）
+    └── UIConfig/                      背包独有 UI Config（通用部分见 UIManager/Dao/Specs/*）
+        ├── InventoryConfig.cs         容器主配置：聚合 UIPanelSpec / UIButtonSpec / UITextSpec
+        ├── SlotConfig.cs              槽位网格布局（背包独有）
+        └── DescriptionPanelConfig.cs  描述子面板（背包独有复合，内含 UIPanelSpec / UIIconSpec / 3×UITextSpec）
 ```
+
+> 通用 UI 配置（面板/按钮/文本/图标）已上提到 `Core/Presentation/UIManager/Dao/Specs/`，供所有业务模块复用：
+> `UIPanelSpec` / `UIButtonSpec` / `UITextSpec` / `UIIconSpec`，每个都自带 `CreateComponent(id, name)` 工厂方法直接生成对应 `UI*Component`。
 
 ## 数据分类（持久化）
 
@@ -51,7 +54,7 @@ InventoryManager/
 
 ## Event API
 
-> 共 11 个：2 个 Manager 命令 + 7 个 Service 命令/查询 + 2 个 Service 广播。
+> 共 9 个：Manager 侧以 UI / 可拾取物 / 模板注册 / Hotbar 广播为主；Service 侧以 CRUD / 查询 / 内容变化广播为主。
 
 ### 命令类（调用方主动触发，期望返回结果）
 
@@ -59,7 +62,7 @@ InventoryManager/
 - **常量**: `InventoryManager.EVT_OPEN_UI` = `"OpenInventoryUI"`
 - **参数**: `[string inventoryId, string configId?]`（configId 缺省时用 inventoryId）
 - **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
-- **副作用**: 调 `UIManager.EVT_REGISTER_ENTITY` 创建 UI 实体；UI 打开后广播 `InventoryService.EVT_OPEN_UI`
+- **副作用**: 调 `UIManager.EVT_REGISTER_ENTITY`（bare-string `"RegisterUIEntity"`）创建 UI 实体；`inventoryId == "player"` 时额外联动打开装备栏
 - **示例**:
   ```csharp
   EventProcessor.Instance.TriggerEventMethod(
@@ -71,7 +74,7 @@ InventoryManager/
 - **常量**: `InventoryManager.EVT_CLOSE_UI` = `"CloseInventoryUI"`
 - **参数**: `[string inventoryId]`
 - **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
-- **副作用**: 调 `UIManager.EVT_UNREGISTER_ENTITY`；广播 `InventoryService.EVT_CLOSE_UI`
+- **副作用**: 仅 `Visible = false`（保留缓存 GameObject，下次 Open 复用）；`inventoryId == "player"` 时额外隐藏装备栏
 
 #### `InventoryService.EVT_CREATE` — 创建容器
 - **常量**: `InventoryService.EVT_CREATE` = `"InventoryCreate"`
@@ -151,11 +154,6 @@ InventoryManager/
 - **参数**: `[PickableItemDefinition definition]`
 - **返回**: `ResultCode.Ok(definition.PickableId)` / `ResultCode.Fail(msg)`
 
-#### `InventoryManager.EVT_ADD_ITEM` — 添加物品到容器
-- **常量**: `InventoryManager.EVT_ADD_ITEM` = `"InventoryAddItem"`
-- **参数**: `[string inventoryId, object itemIdOrItem, int amount]`
-- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
-
 #### `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` — 生成场景可拾取物
 - **常量**: `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` = `"InventorySpawnPickableItem"`
 - **参数**: `[string pickableId, Vector3 worldPosition, string targetInventoryId?, int amount?]`
@@ -181,26 +179,6 @@ InventoryManager/
   }
   ```
 
-#### `InventoryService.EVT_OPEN_UI` — UI 已打开（广播）
-- **常量**: `InventoryService.EVT_OPEN_UI` = `"OnOpenInventoryUI"`
-- **触发条件**: `InventoryManager.EVT_OPEN_UI` 命令成功执行后
-- **参数**: `[string inventoryId]`
-- ⚠️ **注意**: 与 `InventoryManager.EVT_OPEN_UI`（命令，`"OpenInventoryUI"`）**不同**
-
-#### `InventoryService.EVT_CLOSE_UI` — UI 已关闭（广播）
-- **常量**: `InventoryService.EVT_CLOSE_UI` = `"OnCloseInventoryUI"`
-- **触发条件**: `InventoryManager.EVT_CLOSE_UI` 命令成功执行后
-- **参数**: `[string inventoryId]`
-
-## 命令 vs 广播 对照表
-
-| 区分维度 | `InventoryManager.EVT_OPEN_UI`（命令） | `InventoryService.EVT_OPEN_UI`（广播） |
-|---|---|---|
-| 字符串值 | `"OpenInventoryUI"` | `"OnOpenInventoryUI"` |
-| 触发者 | 调用方主动调 `TriggerEventMethod` | Service 在命令完成后调 `TriggerEvent` |
-| 注解 | `[Event]` | `EventProcessor.Instance.TriggerEvent` 直接发出 |
-| 期望响应 | 返回成功/失败结果 | 无（订阅者按需响应） |
-| 接入方式 | `TriggerEventMethod(...)` | `[EventListener("OnOpenInventoryUI")]` |
 
 ## 批量操作（BeginBatch）
 

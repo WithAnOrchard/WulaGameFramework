@@ -1,31 +1,12 @@
 using UnityEngine;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
 
-namespace EssSystem.Core.Application.SingleManagers.InventoryManager
+namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Runtime
 {
-    [System.Serializable]
-    public class PickableItemDefinition
-    {
-        public string Id;
-        public string ItemTemplateId;
-        public string DisplayName;
-        public string SpriteResourcePath;
-        public int DefaultAmount = 1;
-        public Vector2 ColliderSize = Vector2.one;
-        public Vector2 ColliderOffset = Vector2.zero;
-
-        public PickableItemDefinition() { }
-
-        public PickableItemDefinition(string id, string itemTemplateId, string displayName, string spriteResourcePath, int defaultAmount = 1)
-        {
-            Id = id;
-            ItemTemplateId = itemTemplateId;
-            DisplayName = displayName;
-            SpriteResourcePath = spriteResourcePath;
-            DefaultAmount = Mathf.Max(1, defaultAmount);
-        }
-    }
-
+    /// <summary>
+    /// 场景中的可拾取物 MonoBehaviour —— 玩家进入触发器时把指定物品塞进 <see cref="_targetInventoryId"/>。
+    /// 通常由 <c>InventoryManager.EVT_SPAWN_PICKABLE_ITEM</c> 自动挂载。
+    /// </summary>
     [DisallowMultipleComponent]
     public class PickableItem : MonoBehaviour
     {
@@ -70,15 +51,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             EnsureTriggerCollider();
         }
 
-        private void Reset()
-        {
-            EnsureTriggerCollider();
-        }
-
-        private void Awake()
-        {
-            EnsureTriggerCollider();
-        }
+        private void Reset() => EnsureTriggerCollider();
+        private void Awake() => EnsureTriggerCollider();
 
         private void OnTriggerEnter2D(Collider2D other)
         {
@@ -90,12 +64,13 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             if (IsPlayerCollider(other)) GiveToTargetInventory();
         }
 
+        // 框架层不得引用 Demo —— 仅按 tag/名字识别玩家。
+        // 业务侧（TribePlayer 等）需保证根 GameObject 设置 tag="Player" 或名字包含 "Player"。
         private static bool IsPlayerCollider(Component other)
         {
             if (other == null) return false;
             var go = other.gameObject;
             if (go.CompareTag("Player")) return true;
-            if (go.GetComponentInParent<Demo.Tribe.Player.TribePlayer>() != null) return true;
             return go.name.IndexOf("Player", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
@@ -108,7 +83,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var item = InventoryService.Instance.InstantiateTemplate(_itemTemplateId, _amount);
             if (item == null) return InventoryResult.Fail($"找不到物品模板: {_itemTemplateId}");
 
-            InventoryResult result = InventoryService.Instance.AddItem(_targetInventoryId, item, _amount);
+            var result = InventoryService.Instance.AddItem(_targetInventoryId, item, _amount);
             if (!result.Success || result.Amount <= 0)
             {
                 if (_logResult) Debug.LogWarning($"拾取失败: {_itemTemplateId} x{_amount} -> {_targetInventoryId}, {result.Message}", this);
@@ -151,11 +126,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             pickupCollider2D.isTrigger = true;
 
             var pickupCollider = GetComponent<Collider>();
-            if (pickupCollider != null)
-            {
-                pickupCollider.isTrigger = true;
-                return;
-            }
+            if (pickupCollider != null) pickupCollider.isTrigger = true;
         }
     }
 }

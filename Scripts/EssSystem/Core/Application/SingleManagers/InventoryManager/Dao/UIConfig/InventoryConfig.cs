@@ -1,5 +1,5 @@
 using System;
-using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao.UIConfig;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 using UnityEngine;
 
 namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
@@ -7,7 +7,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
     /// <summary>
     /// 背包容器配置 — 定义不同类型容器的 UI 显示参数
     /// <para>
-    /// 用于配置如 PlayerBackPack、Chest 等不同容器类型的 UI 布局、背景、偏移等参数。
+    /// 用于配置如 PlayerBackPack、Chest 等不同容器类型的 UI 布局、背景、偏移等参数。<br/>
+    /// 通用部分（面板/按钮/标题）走 <c>UIManager/Dao/Specs/*</c>，背包独有的（槽位网格、描述子面板）继续保留本地 Config。
     /// </para>
     /// </summary>
     [Serializable]
@@ -27,26 +28,26 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         /// <summary>每页格子数</summary>
         public int SlotsPerPage = 20;
 
-        /// <summary>槽位配置</summary>
+        /// <summary>槽位配置（背包独有：网格布局 + 槽位背景）</summary>
         public SlotConfig SlotConfig = new SlotConfig();
 
-        /// <summary>面板配置</summary>
-        public PanelConfig PanelConfig = new PanelConfig();
+        /// <summary>面板配置（通用 <see cref="UIPanelSpec"/>）</summary>
+        public UIPanelSpec PanelConfig = new UIPanelSpec();
 
-        /// <summary>关闭按钮配置</summary>
-        public ButtonConfig CloseButtonConfig = new ButtonConfig();
+        /// <summary>关闭按钮配置（通用 <see cref="UIButtonSpec"/>）</summary>
+        public UIButtonSpec CloseButtonConfig = new UIButtonSpec();
 
         /// <summary>是否在主面板上额外显示物品描述子面板（点击 slot 后填充当前物品的 Description）</summary>
         public bool ShowDescription = false;
 
-        /// <summary>描述面板配置（仅当 <see cref="ShowDescription"/> = true 时生效）</summary>
+        /// <summary>描述面板配置（背包独有复合 Config：Panel + 3 个文本子组件 + 图标）</summary>
         public DescriptionPanelConfig DescriptionPanelConfig = new DescriptionPanelConfig();
 
-        /// <summary>是否显示容器标题（默认使用 <see cref="DisplayName"/>，可通过 <see cref="TitleConfig.CustomText"/> 覆盖）</summary>
+        /// <summary>是否显示容器标题（默认使用 <see cref="DisplayName"/>；可在 <see cref="TitleConfig"/>.Text 覆盖）</summary>
         public bool ShowTitle = true;
 
-        /// <summary>标题配置</summary>
-        public TitleConfig TitleConfig = new TitleConfig();
+        /// <summary>标题配置（通用 <see cref="UITextSpec"/>，Text 字段非空时覆盖 DisplayName）</summary>
+        public UITextSpec TitleConfig = new UITextSpec();
 
         #endregion
 
@@ -86,15 +87,15 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
             return this;
         }
 
-        public InventoryConfig WithPanelConfig(PanelConfig panelConfig)
+        public InventoryConfig WithPanelConfig(UIPanelSpec panel)
         {
-            PanelConfig = panelConfig ?? new PanelConfig();
+            PanelConfig = panel ?? new UIPanelSpec();
             return this;
         }
 
-        public InventoryConfig WithCloseButtonConfig(ButtonConfig buttonConfig)
+        public InventoryConfig WithCloseButtonConfig(UIButtonSpec button)
         {
-            CloseButtonConfig = buttonConfig ?? new ButtonConfig();
+            CloseButtonConfig = button ?? new UIButtonSpec();
             return this;
         }
 
@@ -116,9 +117,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
             return this;
         }
 
-        public InventoryConfig WithTitleConfig(TitleConfig config)
+        public InventoryConfig WithTitleConfig(UITextSpec title)
         {
-            TitleConfig = config ?? new TitleConfig();
+            TitleConfig = title ?? new UITextSpec();
             return this;
         }
 

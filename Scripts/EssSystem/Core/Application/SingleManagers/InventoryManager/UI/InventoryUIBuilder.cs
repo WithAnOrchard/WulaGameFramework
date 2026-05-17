@@ -3,8 +3,8 @@ using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
-using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao.UIConfig;
 
 // 本文件不 <c>using</c> UIManager 模块。查 GameObject 走 EVT_GET_UI_GAMEOBJECT 事件。
 
@@ -39,15 +39,15 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         {
             var pc = config.PanelConfig;
             var panel = new UIPanelComponent(inventoryId, $"{config.DisplayName} - {inventoryId}")
-                .SetPosition(pc.PanelPosition.x, pc.PanelPosition.y)
-                .SetSize(pc.PanelWidth, pc.PanelHeight)
-                .SetScale(pc.PanelScale.x, pc.PanelScale.y)
+                .SetPosition(pc.Position.x, pc.Position.y)
+                .SetSize(pc.Size.x, pc.Size.y)
+                .SetScale(pc.Scale.x, pc.Scale.y)
                 .SetBackgroundSpriteId(pc.BackgroundSpriteId)
                 .SetBackgroundColor(SpriteAwareTint(pc.BackgroundSpriteId, pc.BackgroundColor))
                 .SetVisible(true);
 
             // 0) 标题（容器名称）
-            if (config.ShowTitle && config.TitleConfig != null && config.TitleConfig.IsVisible)
+            if (config.ShowTitle && config.TitleConfig != null && config.TitleConfig.Visible)
                 BuildTitle(inventoryId, panel, config, pc);
 
             // 1) 描述子面板（先建，slot 点击回调引用其 refs）
@@ -144,14 +144,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         private static Color SpriteAwareTint(string spriteId, Color fallback) =>
             string.IsNullOrEmpty(spriteId) ? fallback : Color.white;
 
-        private static void BuildTitle(string inventoryId, UIPanelComponent parent, InventoryConfig config, PanelConfig pc)
+        private static void BuildTitle(string inventoryId, UIPanelComponent parent, InventoryConfig config, UIPanelSpec pc)
         {
             var tc = config.TitleConfig;
-            var text = !string.IsNullOrEmpty(tc.CustomText) ? tc.CustomText : (config.DisplayName ?? inventoryId);
+            var text = !string.IsNullOrEmpty(tc.Text) ? tc.Text : (config.DisplayName ?? inventoryId);
 
-            // TitleConfig.Position 用左下角约定 → UITextComponent 用中心约定，转换：减去 (PanelW/2, PanelH/2)
-            var posX = tc.Position.x - pc.PanelWidth  * 0.5f;
-            var posY = tc.Position.y - pc.PanelHeight * 0.5f;
+            // UITextSpec.Position 用左下角约定 → UITextComponent 用中心约定，转换：减去 (PanelW/2, PanelH/2)
+            var posX = tc.Position.x - pc.Size.x * 0.5f;
+            var posY = tc.Position.y - pc.Size.y * 0.5f;
 
             var titleText = new UITextComponent($"{inventoryId}_Title", $"{inventoryId}_Title")
                 .SetPosition(posX, posY)
@@ -245,15 +245,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             return refs;
         }
 
-        private static void BuildCloseButton(string inventoryId, UIPanelComponent panel, ButtonConfig cb)
+        private static void BuildCloseButton(string inventoryId, UIPanelComponent panel, UIButtonSpec cb)
         {
-            var closeBtn = new UIButtonComponent($"{inventoryId}_CloseButton", "CloseButton", cb.ButtonText)
-                .SetPosition(cb.Position.x, cb.Position.y)
-                .SetSize(cb.Size.x, cb.Size.y)
-                .SetScale(cb.Scale.x, cb.Scale.y)
-                .SetButtonSpriteId(cb.ButtonSpriteId)
-                .SetVisible(cb.IsVisible)
-                .SetInteractable(cb.IsInteractable);
+            var closeBtn = cb.CreateComponent($"{inventoryId}_CloseButton", "CloseButton");
 
             closeBtn.OnClick += _ => EventProcessor.Instance.TriggerEventMethod(
                 InventoryManager.EVT_CLOSE_UI, new List<object> { inventoryId });
@@ -281,12 +275,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .SetVisible(true);
 
             // 图标
-            var ic = dc.IconConfig ?? new DescriptionIconConfig();
-            var iconPanel = new UIPanelComponent($"{inventoryId}_DescIcon", $"{inventoryId}_DescriptionIcon")
-                .SetPosition(ic.Position.x, ic.Position.y)
-                .SetSize(ic.Size.x, ic.Size.y)
-                .SetBackgroundColor(new Color(0f, 0f, 0f, 0f))
-                .SetVisible(ic.IsVisible);
+            var ic = dc.IconConfig ?? new UIIconSpec();
+            var iconPanel = ic.CreateComponent($"{inventoryId}_DescIcon", $"{inventoryId}_DescriptionIcon");
             descPanel.AddChild(iconPanel);
 
             // 三个文本子组件
@@ -315,16 +305,16 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         }
 
         /// <summary>
-        /// 用 <see cref="DescriptionTextElementConfig"/> 创建一个 UITextComponent。
+        /// 用 <see cref="UITextSpec"/> 创建一个 UITextComponent。
         /// 配置 Position 是「rect 中心相对父面板左下角」，内部转成 UITextComponent 的「中心相对父中心」。
         /// </summary>
         private static UITextComponent BuildDescText(
             string daoId, string name,
-            DescriptionTextElementConfig cfg,
+            UITextSpec cfg,
             DescriptionPanelConfig dp,
             string initialText)
         {
-            cfg = cfg ?? new DescriptionTextElementConfig();
+            cfg = cfg ?? new UITextSpec();
             var posX = cfg.Position.x - dp.Width  * 0.5f;
             var posY = cfg.Position.y - dp.Height * 0.5f;
 
@@ -334,7 +324,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .SetAlignment(cfg.Alignment)
                 .SetText(initialText ?? string.Empty);
             ApplySupersample(t, cfg.Size.x, cfg.Size.y, cfg.FontSize);
-            t.SetVisible(cfg.IsVisible);
+            t.SetVisible(cfg.Visible);
             return t;
         }
 

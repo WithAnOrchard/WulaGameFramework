@@ -4,8 +4,9 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
-using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao.UIConfig;
+using EssSystem.Core.Application.SingleManagers.InventoryManager.Runtime;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 // §4.1 跨模块调用走 bare-string 协议，不 using UIManager 获得运行时零跨模块依赖
 
 namespace EssSystem.Core.Application.SingleManagers.InventoryManager
@@ -26,7 +27,6 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         public const string EVT_REGISTER_ITEM = "InventoryRegisterItem";
         public const string EVT_REGISTER_PICKABLE_ITEM = "InventoryRegisterPickableItem";
         public const string EVT_SPAWN_PICKABLE_ITEM = "InventorySpawnPickableItem";
-        public const string EVT_ADD_ITEM = "InventoryAddItem";
         /// <summary>快捷栏使用事件：玩家按下 1~9 时广播。args: [string inventoryId, int slotIndex, InventoryItem item|null]</summary>
         public const string EVT_HOTBAR_USE = "InventoryHotbarUse";
 
@@ -175,14 +175,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                     .WithSlotSpacing(12f, 12f)
                     .WithStartOffset(110f, 465f)
                     .WithSlotBackgroundId("Slot_1"))
-                .WithPanelConfig(new PanelConfig(680f, 560f)
+                .WithPanelConfig(new UIPanelSpec(680f, 560f)
                     // 主面板向右偏移 150：补偿左侧伸出的 300 宽描述子面板，
                     // 让 (主面板 + 描述子面板) 组合 bounding-box 在 1920×1080 参考分辨率下水平居中
-                    .WithPanelPosition(1110f, 540f)
-                    .WithPanelScale(1f, 1f)
+                    .WithPosition(1110f, 540f)
+                    .WithScale(1f, 1f)
                     .WithBackgroundId("背包背景")
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new ButtonConfig(640f, 520f, 80f, 80f)
+                .WithCloseButtonConfig(new UIButtonSpec(640f, 520f, 80f, 80f)
                     .WithScale(1f, 1f).WithText("×")
                     .WithSpriteId("Btn_Close")
                     .WithColor(new Color(1f, 0.3f, 0.3f, 1f))
@@ -196,10 +196,10 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                     .WithTextColor(new Color(0.95f, 0.95f, 0.95f, 1f))
                     .WithEmptyPlaceholder("（点击物品查看描述）")
                     // 内部图标 / 文本整体在 300 宽面板内右移 ~25px（避免贴左边缘），同步收窄宽度避免溢出
-                    .WithIconConfig(new DescriptionIconConfig()
+                    .WithIconConfig(new UIIconSpec()
                         .WithPosition(150f, 370f)
                         .WithSize(112f, 112f))
-                    .WithNameConfig(new DescriptionTextElementConfig
+                    .WithNameConfig(new UITextSpec
                     {
                         Position  = new Vector2(150f, 300f),
                         Size      = new Vector2(260f, 48f),
@@ -207,7 +207,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                         TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
                         Alignment = TextAnchor.MiddleCenter,
                     })
-                    .WithStackConfig(new DescriptionTextElementConfig
+                    .WithStackConfig(new UITextSpec
                     {
                         Position  = new Vector2(150f, 260f),
                         Size      = new Vector2(260f, 36f),
@@ -215,7 +215,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                         TextColor = new Color(1f, 0.85f, 0.4f, 1f),
                         Alignment = TextAnchor.MiddleCenter,
                     })
-                    .WithDescTextConfig(new DescriptionTextElementConfig
+                    .WithDescTextConfig(new UITextSpec
                     {
                         Position  = new Vector2(150f, 125f),
                         Size      = new Vector2(250f, 190f),
@@ -224,7 +224,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                         Alignment = TextAnchor.MiddleCenter,
                     }))
                 .WithShowTitle(true)
-                .WithTitleConfig(new TitleConfig(420f, 40f)
+                .WithTitleConfig(new UITextSpec(420f, 40f)
                     .WithPosition(340f, 530f)        // 主面板顶部居中（680/2, 560-30）
                     .WithFontSize(22)
                     .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
@@ -239,12 +239,12 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                     .WithSlotSpacing(8f, 8f)
                     .WithStartOffset(78f, 50f)             // 780 宽：左右各 43 padding + 半槽 35 = 78；垂直居中 100/2
                     .WithSlotBackgroundId("Slot_1"))
-                .WithPanelConfig(new PanelConfig(780f, 100f)
-                    .WithPanelPosition(960f, 80f)          // 1920×1080 底部居中（上沿距屏底 30）
-                    .WithPanelScale(1f, 1f)
+                .WithPanelConfig(new UIPanelSpec(780f, 100f)
+                    .WithPosition(960f, 80f)          // 1920×1080 底部居中（上沿距屏底 30）
+                    .WithScale(1f, 1f)
                     .WithBackgroundId("背包背景")
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.85f)))
-                .WithCloseButtonConfig(new ButtonConfig(0f, 0f, 0f, 0f).WithVisible(false).WithInteractable(false))
+                .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
                 .WithShowTitle(false)
                 .WithShowDescription(false);
 
@@ -257,14 +257,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                     .WithSlotSpacing(0f, 12f)
                     .WithStartOffset(60f, 465f)            // 120 宽 → 居中 60；标题下方开始，5 格完整落在面板内
                     .WithSlotBackgroundId("Slot_1"))
-                .WithPanelConfig(new PanelConfig(120f, 550f)
-                    .WithPanelPosition(1520f, 540f)        // PlayerBackPack 右边沿 1450 + 10 间隔 + 60 半宽 = 1520，留 10
-                    .WithPanelScale(1f, 1f)
+                .WithPanelConfig(new UIPanelSpec(120f, 550f)
+                    .WithPosition(1520f, 540f)        // PlayerBackPack 右边沿 1450 + 10 间隔 + 60 半宽 = 1520，留 10
+                    .WithScale(1f, 1f)
                     .WithBackgroundId("背包背景")
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new ButtonConfig(0f, 0f, 0f, 0f).WithVisible(false).WithInteractable(false))
+                .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
                 .WithShowTitle(true)
-                .WithTitleConfig(new TitleConfig(110f, 30f)
+                .WithTitleConfig(new UITextSpec(110f, 30f)
                     .WithPosition(60f, 545f)               // 120 宽中心 60，500 高顶部 -15
                     .WithFontSize(16)
                     .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
@@ -305,9 +305,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 {
                     cached.Visible = true;
                     Log($"复用缓存的Inventory UI: {inventoryId}", Color.green);
-                    // PlayerBackPack 联动（缓存路径同样要恢复装备栏可见）
-                    if (inventoryId == ID_PLAYER && Service.GetInventory(ID_EQUIPMENT) != null)
-                        OpenInventoryUI(new List<object> { ID_EQUIPMENT, CFG_EQUIPMENT });
+                    LinkPlayerEquipmentVisibility(inventoryId, true);
                     return ResultCode.Ok(inventoryId);
                 }
                 // 实体已销毁（外部触发 EVT_UNREGISTER 等）→ 清理缓存重建
@@ -340,10 +338,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             // UI 注册后挂上拖拽处理器（依赖 GameObject 已创建）
             InventoryUIBuilder.AttachSlotDragHandlers(inventoryId, config.SlotsPerPage);
 
-            // PlayerBackPack 联动：打开玩家背包时同步打开装备栏（并插在右侧）。
-            // 不加缓存判断 —— OpenInventoryUI 内部已经会复用缓存并切 Visible=true。
-            if (inventoryId == ID_PLAYER && Service.GetInventory(ID_EQUIPMENT) != null)
-                OpenInventoryUI(new List<object> { ID_EQUIPMENT, CFG_EQUIPMENT });
+            LinkPlayerEquipmentVisibility(inventoryId, true);
 
             Log($"成功构建并打开Inventory UI: {inventoryId}", Color.green);
             return ResultCode.Ok(inventoryId);
@@ -359,9 +354,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         {
             if (!TryGetId(data, 0, out var inventoryId, out var fail)) return fail;
 
-            // PlayerBackPack 联动：关闭玩家背包时同步隐藏装备栏
-            if (inventoryId == ID_PLAYER && _rootPanels.TryGetValue(ID_EQUIPMENT, out var eqPanel))
-                eqPanel.Visible = false;
+            LinkPlayerEquipmentVisibility(inventoryId, false);
 
             if (_rootPanels.TryGetValue(inventoryId, out var panel))
             {
@@ -480,20 +473,6 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             return ResultCode.Ok(go);
         }
 
-        [Event(EVT_ADD_ITEM)]
-        public List<object> AddItemByEvent(List<object> data)
-        {
-            if (data == null || data.Count < 2) return ResultCode.Fail("参数不足: [inventoryId, itemIdOrItem, amount?]");
-            var inventoryId = data[0] as string;
-            var amount = data.Count >= 3 ? System.Convert.ToInt32(data[2]) : 1;
-            InventoryItem item = data[1] as InventoryItem;
-            if (item == null && data[1] is string templateId) item = Service.InstantiateTemplate(templateId, amount);
-            if (item == null) return ResultCode.Fail("未知物品或模板 ID");
-
-            var result = Service.AddItem(inventoryId, item, amount);
-            return result.Success ? ResultCode.Ok(result) : ResultCode.Fail(result.Message);
-        }
-
         /// <summary>
         /// 监听 <see cref="InventoryService.EVT_CHANGED"/>，对已打开 UI 的容器原地刷新 slot 显示。
         /// args: [inventoryId, op, itemId, amount]
@@ -516,6 +495,25 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 InventoryUIBuilder.ApplyItemToSlot(refs.Icons[i], refs.Names[i], refs.Stacks[i], item);
             }
             return null;
+        }
+
+        /// <summary>
+        /// PlayerBackPack 联动：打开/关闭玩家背包时同步装备栏。
+        /// open=true 时 — 如装备栏未打开则调 OpenInventoryUI（内部会复用缓存）。
+        /// open=false 时 — 只隐藏已缓存面板，不销毁。
+        /// </summary>
+        private void LinkPlayerEquipmentVisibility(string inventoryId, bool open)
+        {
+            if (inventoryId != ID_PLAYER) return;
+            if (Service.GetInventory(ID_EQUIPMENT) == null) return;
+            if (open)
+            {
+                OpenInventoryUI(new List<object> { ID_EQUIPMENT, CFG_EQUIPMENT });
+            }
+            else if (_rootPanels.TryGetValue(ID_EQUIPMENT, out var eqPanel))
+            {
+                eqPanel.Visible = false;
+            }
         }
 
         /// <summary>统一参数校验：从 data[index] 取非空字符串。</summary>
