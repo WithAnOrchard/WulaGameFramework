@@ -37,3 +37,4 @@ Resources/DayNight3D/Minecraft.meta
 # AI 出图脚本：含 API Key，已移到 ../Tools/AssetsGenerator/（项目根外，不参与 git）
 AssetsGenerator/
 AssestGenerator/
+SpriteGenerator/
