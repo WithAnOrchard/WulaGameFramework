@@ -182,12 +182,24 @@ TribeEnemyContactDamager (OnTriggerStay2D)
 
 ```
 Resources/
-├── Tribe/
-│   ├── Background/                  视差背景图（按文件名排序为各层）
-│   └── Entity/
-│       ├── Skeleton 01_idle (16x16) 骷髅 idle spritesheet
-│       └── Skeleton 01_walk (16x16) 骷髅 walk spritesheet
+├── Sound/                            通用音频（含 feuer.wav 营火声）
+└── Tribe/
+    ├── Background/                  视差背景图（按文件名排序为各层）
+    ├── Entity/                      生物 spritesheet（骷髅 / 牛 / 狼 / Ogre / ... 16/20/32 px）
+    ├── Objects/                     场景物件素材（campfire / Crops / Plants / Mushroom_2 / ...）
+    └── Items/                       物品图标（按功能分类的子目录）
+        ├── Weapons/                     刀剑 / 弓 / 法杖 / 锤斧 / 投掷物
+        ├── Armor/                       盾牌 / 铠甲 / 头盔 / 法袍 / 面具
+        ├── Accessories/                 戒指 / 项链 / 宝石 / 灵球 / 翼饰
+        ├── Consumables/                 药水 / 食物 / 浆果 / 蘑菇 / 草药 / 花卉 / 橡果
+        ├── Materials/                   骨头 / 獠牙 / 眼球 / 蛋 / 木头 / 石头 / 史莱姆碎块
+        ├── Currency/                    金币袋 / 铜币堆 / 宝箱币
+        ├── Tools/                       铲 / 镐 / 钥匙 / 铁砧 / 钓具 / 箱子 / 卷轴
+        ├── Magic/                       月相 / 元素弹 / 风波 / 星光 / 心粒
+        └── UI/                          数字字符 / 槽位框 / 标记 / 鼠标 / 浮窗
 ```
+
+> 代码引用 Item 时使用完整路径：`"Tribe/Items/<分类>/<名称>"`，例如 `Tribe/Items/Consumables/carrot`。
 
 ## 扩展建议
 

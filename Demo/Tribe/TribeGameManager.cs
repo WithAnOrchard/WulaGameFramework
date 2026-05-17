@@ -130,37 +130,37 @@ namespace Demo.Tribe
                 new InventoryItem("tribe_carrot", "胡萝卜")
                     .WithDescription("新鲜的胡萝卜。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/carrot")
+                    .WithIcon("Tribe/Items/Consumables/carrot")
                     .WithMaxStack(99)
                     .WithValue(3),
-                new PickableItemDefinition("tribe_carrot_pickable", "tribe_carrot", "胡萝卜", "Tribe/Items/carrot", 1));
+                new PickableItemDefinition("tribe_carrot_pickable", "tribe_carrot", "胡萝卜", "Tribe/Items/Consumables/carrot", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_sunflower", "向日葵")
                     .WithDescription("面向太阳盛开的花。")
                     .WithType(InventoryItemType.Material)
-                    .WithIcon("Tribe/Items/flower_sunflower")
+                    .WithIcon("Tribe/Items/Consumables/flower_sunflower")
                     .WithMaxStack(99)
                     .WithValue(5),
-                new PickableItemDefinition("tribe_sunflower_pickable", "tribe_sunflower", "向日葵", "Tribe/Items/flower_sunflower", 1));
+                new PickableItemDefinition("tribe_sunflower_pickable", "tribe_sunflower", "向日葵", "Tribe/Items/Consumables/flower_sunflower", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_red_mushroom", "红蘑菇")
                     .WithDescription("鲜红色的蘑菇。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/mushroom_red")
+                    .WithIcon("Tribe/Items/Consumables/mushroom_red")
                     .WithMaxStack(99)
                     .WithValue(4),
-                new PickableItemDefinition("tribe_red_mushroom_pickable", "tribe_red_mushroom", "红蘑菇", "Tribe/Items/mushroom_red", 1));
+                new PickableItemDefinition("tribe_red_mushroom_pickable", "tribe_red_mushroom", "红蘑菇", "Tribe/Items/Consumables/mushroom_red", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_berries", "浆果")
                     .WithDescription("从灌木上采下来的浆果。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/berries_bush")
+                    .WithIcon("Tribe/Items/Consumables/berries_bush")
                     .WithMaxStack(99)
                     .WithValue(2),
-                new PickableItemDefinition("tribe_berries_pickable", "tribe_berries", "浆果", "Tribe/Items/berries_bush", 1));
+                new PickableItemDefinition("tribe_berries_pickable", "tribe_berries", "浆果", "Tribe/Items/Consumables/berries_bush", 1));
         }
 
         private static void RegisterTribeItem(InventoryItem item, PickableItemDefinition pickableDefinition)
