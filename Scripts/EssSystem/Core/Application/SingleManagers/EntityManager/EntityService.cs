@@ -4,8 +4,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 // 碰撞体类型都在 UnityEngine 命名空间 —— 已由 `using UnityEngine;` 覆盖
@@ -191,7 +190,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 WorldPosition = host.transform.position,
             };
 
-            EntityManager.ApplyRuntimeCollider(host, definition.Collider);
+            ApplyColliderLocal(host, definition.Collider);
 
             // 使用链式 fluent API（参 Entity.cs 末尾 Fluent API 注释）
             if (definition.CanMove)       entity.CanMove(definition.MoveSpeed);
@@ -270,6 +269,38 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                     // Circle radius 用 X 方向缩放补偿（CircleCollider2D 没有椭圆形，沿用 X 比例最稳）
                     circle.radius = Mathf.Max(0.01f, cfg.Size.x * sx);
                     circle.offset = localOffset;
+                    circle.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 按 <paramref name="cfg"/> 在 <paramref name="host"/> 上挂 2D Collider —— <b>不做缩放补偿</b>。
+        /// <para>用于场景 Entity 路径（<see cref="CreateSceneEntity"/>）：调用方已根据自身需求把 Size/Offset
+        /// 换算到 host 的局部坐标系（例如 <c>PickableDropEntity</c> 用 SpriteRenderer.bounds 自行换算）。</para>
+        /// <para>与 <see cref="ApplyCollider"/> 区别：后者输入是<b>世界 tile</b>单位，会反向除以 lossyScale。</para>
+        /// </summary>
+        private static void ApplyColliderLocal(GameObject host, EntityColliderConfig cfg)
+        {
+            if (host == null || cfg == null || cfg.Shape == EntityColliderShape.None) return;
+            switch (cfg.Shape)
+            {
+                case EntityColliderShape.Box:
+                {
+                    var box = host.GetComponent<BoxCollider2D>();
+                    if (box == null) box = host.AddComponent<BoxCollider2D>();
+                    box.size = cfg.Size;
+                    box.offset = cfg.Offset;
+                    box.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Circle:
+                {
+                    var circle = host.GetComponent<CircleCollider2D>();
+                    if (circle == null) circle = host.AddComponent<CircleCollider2D>();
+                    circle.radius = Mathf.Max(0.01f, cfg.Size.x);
+                    circle.offset = cfg.Offset;
                     circle.isTrigger = cfg.IsTrigger;
                     break;
                 }

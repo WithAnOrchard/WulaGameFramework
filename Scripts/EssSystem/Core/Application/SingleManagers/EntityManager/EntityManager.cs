@@ -4,7 +4,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 // 本文件不 <c>using</c> CharacterManager——跨模块调用一律走 EventProcessor。
 
@@ -187,7 +187,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         }
 
         [Event(EVT_GET_ENTITY)]
-        public List<object> GetEntityEvent(List<object> data)
+        public List<object> GetEntity(List<object> data)
         {
             if (Service == null) return ResultCode.Fail("EntityService 尚未初始化");
             if (data == null || data.Count < 1) return ResultCode.Fail("参数无效：需要 [instanceId]");
@@ -197,7 +197,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         }
 
         [Event(EVT_APPLY_COLLIDER)]
-        public List<object> ApplyColliderEvent(List<object> data)
+        public List<object> ApplyCollider(List<object> data)
         {
             if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [GameObject host, EntityColliderConfig cfg]");
             var host = data[0] as GameObject;
@@ -208,7 +208,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         }
 
         [Event(EVT_ATTACH_ENTITY_HANDLE)]
-        public List<object> AttachEntityHandleEvent(List<object> data)
+        public List<object> AttachEntityHandle(List<object> data)
         {
             if (data == null || data.Count < 2) return ResultCode.Fail("参数无效：需要 [GameObject host, Entity entity]");
             var host = data[0] as GameObject;
@@ -216,32 +216,6 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             if (host == null || entity == null) return ResultCode.Fail("host / entity 不能为空");
             EntityService.AttachEntityHandle(host, entity);
             return ResultCode.Ok(host);
-        }
-
-        public static void ApplyRuntimeCollider(GameObject host, EntityColliderConfig cfg)
-        {
-            if (host == null || cfg == null || cfg.Shape == EntityColliderShape.None) return;
-            switch (cfg.Shape)
-            {
-                case EntityColliderShape.Box:
-                {
-                    var box = host.GetComponent<BoxCollider2D>();
-                    if (box == null) box = host.AddComponent<BoxCollider2D>();
-                    box.size = cfg.Size;
-                    box.offset = cfg.Offset;
-                    box.isTrigger = cfg.IsTrigger;
-                    break;
-                }
-                case EntityColliderShape.Circle:
-                {
-                    var circle = host.GetComponent<CircleCollider2D>();
-                    if (circle == null) circle = host.AddComponent<CircleCollider2D>();
-                    circle.radius = Mathf.Max(0.01f, cfg.Size.x);
-                    circle.offset = cfg.Offset;
-                    circle.isTrigger = cfg.IsTrigger;
-                    break;
-                }
-            }
         }
 
         #endregion

@@ -1,4 +1,4 @@
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager.Runtime
 {

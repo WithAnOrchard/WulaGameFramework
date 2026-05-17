@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Capabilities.Default;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
