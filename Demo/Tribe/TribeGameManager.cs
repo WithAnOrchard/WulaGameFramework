@@ -19,6 +19,8 @@ using Demo.Tribe.Player;
 using Demo.Tribe.Background;
 using Demo.Tribe.Enemy;
 using Demo.Tribe.Resource;
+using Demo.Tribe.World;
+using Demo.Tribe.World.Presets;
 
 namespace Demo.Tribe
 {
@@ -118,8 +120,26 @@ namespace Demo.Tribe
             // 且其它 Manager.Initialize 均需在 base.Awake 完成 → Start 阶段才安全使用 Service。
             RegisterTribeInventoryContent();
             SpawnStartupMap();
-            SpawnTribeAttackableEntities();
-            SpawnTribeSkeletonEnemies();
+            SpawnTribeBiomes();
+        }
+
+        /// <summary>
+        /// 走 <see cref="TribeBiomeRegistry"/> 一次性构建 7 段带状世界。
+        /// 取代旧的 <c>SpawnTribeAttackableEntities</c> / <c>SpawnTribeSkeletonEnemies</c>
+        /// 硬编码 spawn —— 所有内容由 <see cref="TribeDefaultBiomes"/> 配置化驱动。
+        /// </summary>
+        private void SpawnTribeBiomes()
+        {
+            var layer = GameObject.Find("Layer_3_4_BACK")?.transform;
+            var ctx = new TribeBiomeContext
+            {
+                WorldRoot       = transform,
+                GatherablesRoot = EnsureGatherablesRoot(),
+                EnemiesRoot     = EnsureEnemiesRoot(),
+                GroundY         = _fallbackGroundY + 0.55f,
+                BaseSortingOrder = GetLayerSortingOrder(layer),
+            };
+            TribeBiomeRegistry.Build(TribeDefaultBiomes.Build(), ctx);
         }
 
         private void RegisterTribeInventoryContent()
@@ -173,17 +193,6 @@ namespace Demo.Tribe
                 new List<object> { pickableDefinition });
         }
 
-        private void SpawnTribeAttackableEntities()
-        {
-            var y = _fallbackGroundY + 0.55f;
-            var layer = GameObject.Find("Layer_3_4_BACK")?.transform;
-            var root = EnsureGatherablesRoot();
-            var sortingOrder = GetLayerSortingOrder(layer);
-            SpawnTribeAttackableEntity("向日葵", "Tribe/Objects/Crops (sunflower)", "tribe_sunflower_pickable", new Vector3(_playerSpawnX + 3f, y - 0.2f, 0f), 1f, 1, root, sortingOrder);
-            SpawnTribeAttackableEntity("红蘑菇", "Tribe/Objects/Mushroom_2", "tribe_red_mushroom_pickable", new Vector3(_playerSpawnX + 5f, y - 0.35f, 0f), 1f, 1, root, sortingOrder);
-            SpawnTribeAttackableEntity("浆果丛", "Tribe/Objects/Crops (berries)", "tribe_berries_pickable", new Vector3(_playerSpawnX + 7f, y + 0.25f, 0f), 2f, 3, root, sortingOrder);
-        }
-
         private Transform EnsureGatherablesRoot()
         {
             const string rootName = "TribeGatherables";
@@ -192,34 +201,6 @@ namespace Demo.Tribe
             var root = new GameObject(rootName);
             root.transform.SetParent(transform, false);
             return root.transform;
-        }
-
-        private static void SpawnTribeAttackableEntity(string displayName, string spriteResourcePath, string pickableId, Vector3 position, float hp, int dropAmount, Transform root, int sortingOrder)
-        {
-            var go = new GameObject(displayName);
-            go.transform.position = position;
-            go.transform.localScale = Vector3.one * 6f;
-            if (root != null) go.transform.SetParent(root, true);
-
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = LoadObjectSprite(spriteResourcePath);
-            sr.sortingOrder = sortingOrder;
-
-            var collider2D = go.AddComponent<BoxCollider2D>();
-            collider2D.size = Vector2.one;
-            collider2D.isTrigger = true;
-
-            var entity = go.AddComponent<PickableDropEntity>();
-            entity.Configure(pickableId, hp, dropAmount, "player");
-        }
-
-        private void SpawnTribeSkeletonEnemies()
-        {
-            var y = _fallbackGroundY + 0.75f;
-            var root = EnsureEnemiesRoot();
-            var layer = GameObject.Find("Layer_3_4_BACK")?.transform;
-            var sortingOrder = GetLayerSortingOrder(layer) + 2;
-            SpawnTribeSkeletonEnemy(new Vector3(_playerSpawnX + 10f, y, 0f), root, sortingOrder);
         }
 
         private Transform EnsureEnemiesRoot()
@@ -232,30 +213,10 @@ namespace Demo.Tribe
             return root.transform;
         }
 
-        private static void SpawnTribeSkeletonEnemy(Vector3 position, Transform root, int sortingOrder)
-        {
-            // 骷髅已统一走通用 <see cref="TribeCreature"/> + <see cref="TribeCreaturePresets.Skeleton"/> 配置。
-            // RequireComponent 链会自动加 Rigidbody2D + CircleCollider2D；视觉缩放由 Visual 子节点承担。
-            var go = new GameObject("TribeSkeletonEnemy");
-            go.transform.position = position;
-            if (root != null) go.transform.SetParent(root, true);
-            var enemy = go.AddComponent<TribeCreature>();
-            enemy.Configure(TribeCreaturePresets.Skeleton());
-            enemy.SortingOrder = sortingOrder;
-        }
-
         private static int GetLayerSortingOrder(Transform layer)
         {
             var renderer = layer != null ? layer.GetComponentInChildren<SpriteRenderer>() : null;
             return renderer != null ? renderer.sortingOrder : 20;
-        }
-
-        private static Sprite LoadObjectSprite(string spriteResourcePath)
-        {
-            var sprites = Resources.LoadAll<Sprite>(spriteResourcePath);
-            if (sprites != null && sprites.Length >= 3) return sprites[2];
-            if (sprites != null && sprites.Length > 0) return sprites[0];
-            return Resources.Load<Sprite>(spriteResourcePath);
         }
 
         /// <summary>
