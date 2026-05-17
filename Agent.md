@@ -54,7 +54,11 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
 | `BuildingManager` | 14 | Core/EssManagers 下，依赖 EntityManager |
 | `DialogueManager` | 15 | Core/EssManagers 下 |
-| 其它业务 Manager | 16+ | 新增默认起步 |
+| `SceneInstanceManager` | 16 | 子场景 / 副本管理（骨架，ToDo #3） |
+| `NpcManager` | 17 | NPC 配置 / 实例化 / 互动路由（骨架，ToDo #4 前置） |
+| `CraftingManager` | 18 | 装备制作 + 蓝图（骨架，ToDo #5） |
+| `ShopManager` | 19 | 商店交易（骨架，ToDo #4 后置） |
+| 其它业务 Manager | 20+ | 新增默认起步 |
 | `WaveSpawnManager`（Demo） | 20 | Demo/DayNight 下 |
 | `BaseDefenseManager`（Demo） | 21 | Demo/DayNight 下 |
 | `ConstructionManager`（Demo） | 22 | Demo/DayNight 下 |

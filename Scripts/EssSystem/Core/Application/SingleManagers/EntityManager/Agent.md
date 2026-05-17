@@ -39,10 +39,16 @@ EntityManager/
 │   │   ├── IJumpable / Rigidbody2DJumpableComponent
 │   │   ├── IPhaseThrough / ColliderPhaseThroughComponent
 │   │   └── IGroundSensor / Raycast2DGroundSensorComponent
-│   └── Resource/                      存储 / 采集 / 需求
-│       ├── IStorage / StorageComponent
-│       ├── IHarvester / HarvesterComponent
-│       └── INeeds / NeedsComponent
+│   ├── Resource/                      存储 / 采集 / 需求
+│   │   ├── IStorage / StorageComponent
+│   │   ├── IHarvester / HarvesterComponent
+│   │   └── INeeds / NeedsComponent
+│   └── Stats/                         RPG 属性面板（STR/DEX/CON/INT/WIS/CHA + 派生）
+│       ├── IStats / StatsComponent
+│       ├── PrimaryStat / DerivedStat (枚举)
+│       ├── StatModifier / StatModifierOp（装备/Buff 叠加）
+│       ├── AttributeSet（数据载体）
+│       └── StatFormulas（派生公式集中地）
 ├── Brain/                        ← **思维层 = 控制器**（Utility AI；调用 Capabilities 执行）
 │   ├── BrainComponent.cs              ← `IBrain` 默认实现，调度 Sensor / Consideration / Action
 │   ├── ISensor / RangeSensor
@@ -238,6 +244,18 @@ if (slime.Has<IDamageable>() && !slime.Has<IInvulnerable>())
 - **机制**: `ITickableCapability`；每 `Interval` 秒通过 bare-string `"InventoryAdd"`（= `InventoryService.EVT_ADD`）往 `TargetInventoryId` 丢 `Amount` 个 `ItemId`
 - **链式**: `entity.Harvest("wood", 1, 5f, "player")`
 - **用例**: 自动农场、矿石钻头
+
+#### IStats — RPG 属性面板（骨架）
+- **文件**: `Capabilities/Stats/IStats.cs` + `StatsComponent.cs`（默认实现）
+- **数据**: `AttributeSet` 持有 6 Primary 基值（STR/DEX/CON/INT/WIS/CHA）+ Modifier 列表
+- **派生**: `StatFormulas.ComputeDerived(stat, set)` 集中公式，业务侧禁止散落硬编码
+- **Modifier 叠加**：`final = (base + ΣFlat) * (1 + ΣPercentAdd) * Π(1 + PercentMul)`；
+  按 `SourceId` 一次性挂入 / 移除（卸装备 / Buff 失效）
+- **跨模块协作**（设计 ToDo #2 / #4 / #5）：
+  - InventoryManager 读 `CarryCapacity` 算 MaxWeight
+  - ShopManager 读 CHA 算价格折扣
+  - CraftingManager 读 INT 算品质 roll
+- **状态**: 🚧 骨架阶段，事件广播 / 持续时间 Tick / 持久化在 ToDo #2.M1 实施
 
 ## 扩展点（后续补充）
 
