@@ -11,7 +11,7 @@
 
 > **依赖**：URP package（`UnityEngine.Rendering.Universal`）。Built-in Render Pipeline 项目请勿挂载本 Manager。
 >
-> **与 `VoxelLightManager(14)` 正交**：本 Manager 处理 URP 场景级（sun + sky + post-FX）；VoxelLightManager 处理体素地图内的光照传播算法。互不干扰，可并存。
+> **与 `VoxelLightingManager(14)` 正交**：本 Manager 处理 URP 场景级（sun + sky + post-FX）；VoxelLightingManager 处理体素地图内的光照传播算法。互不干扰，可并存。
 
 ## 文件结构
 

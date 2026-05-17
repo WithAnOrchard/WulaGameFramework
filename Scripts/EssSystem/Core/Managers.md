@@ -43,11 +43,11 @@
 
 | 子模块 | 优先级 | 依赖的 Application Manager | 内容 | 文档 |
 |---|---:|---|---|---|
-| `MultiManagers/MapManager/` | 12 / 13 / 14 | EntityManager（运行时事件 `"CreateEntity"` / `"DestroyEntity"`） | 地图系统总目录；含 `TopDown2D/`（`MapManager` 优先级 12）与 `Voxel3D/`（`Voxel3DMapManager` 13 + `Lighting/VoxelLightManager` 14） | [MapManager 指南](Application/MultiManagers/MapManager/Agent.md) |
+| `MultiManagers/MapManager/` | 12 / 13 / 14 | EntityManager（运行时事件 `"CreateEntity"` / `"DestroyEntity"`） | 地图系统总目录；含 `TopDown2D/`（`MapManager` 优先级 12）与 `Voxel3D/`（`Voxel3DMapManager` 13 + `Lighting/VoxelLightingManager` 14） | [MapManager 指南](Application/MultiManagers/MapManager/Agent.md) |
 | `MultiManagers/BuildingManager/` | 14 | EntityManager（DTO + 事件） | 建筑系统：放置/拆除/升级 | [BuildingManager 指南](Application/MultiManagers/BuildingManager/Agent.md) |
 | `MultiManagers/SkillManager/` | 15 | EntityManager（DTO + 事件） | 技能系统：技能定义/释放/Buff/冷却 | [Skill 指南](Application/MultiManagers/SkillManager/Agent.md) |
 
-> **关于 Voxel 子 Manager**：`Voxel3DMapManager` 与 `VoxelLightManager` 在物理目录上是 `MapManager/Voxel3D/` 的实现子模块，但各自保留独立 `[Manager(N)]` 注解，作为常规 Manager 注册到框架，不在本表顶层重复列出。
+> **关于 Voxel 子 Manager**：`Voxel3DMapManager` 与 `VoxelLightingManager` 在物理目录上是 `MapManager/Voxel3D/` 的实现子模块，但各自保留独立 `[Manager(N)]` 注解，作为常规 Manager 注册到框架，不在本表顶层重复列出。
 
 > **分类依据：**跨 Application Manager 依赖同时考虑「编译期 `using`」与「运行时 bare-string 事件」两类。`tools/audit_application_deps.ps1` 可随时生成依赖报告。
 
@@ -77,7 +77,7 @@ Core/
         │   ├── Common/
         │   ├── TopDown2D/      → MapManager        [12]
         │   └── Voxel3D/        → Voxel3DMapManager [13]
-        │       └── Lighting/   → VoxelLightManager [14]
+        │       └── Lighting/   → VoxelLightingManager [14]
         ├── BuildingManager/   [14]
         └── SkillManager/      [15]
 ```
@@ -98,7 +98,7 @@ ResourceManager(0) ───→ AudioManager(3)
                                                          ↓
                                                     Application/World:
                                                     MapManager(12)
-                                                    Voxel3DMapManager(13) ──→ VoxelLightManager(14)
+                                                    Voxel3DMapManager(13) ──→ VoxelLightingManager(14)
                                                     BuildingManager(14)
                                                          ↓
                                                     Application/Systems:
@@ -134,7 +134,7 @@ ResourceManager(0) ───→ AudioManager(3)
 | `EntityManager` | 13 | Application/SingleManagers | 实体系统 |
 | `Voxel3DMapManager` | 13 | Application/MultiManagers（MapManager 内） | 3D 体素地图 |
 | `BuildingManager` | 14 | Application/MultiManagers | 建筑系统 |
-| `VoxelLightManager` | 14 | Application/MultiManagers（MapManager 内） | 体素光照 |
+| `VoxelLightingManager` | 14 | Application/MultiManagers（MapManager 内） | 体素光照 |
 | `DialogueManager` | 15 | Application/SingleManagers | 对话系统 |
 | `SkillManager` | 15 | Application/MultiManagers | 技能系统 |
 | `DanmuManager` | 50 | 项目扩展 `Manager/` | 弹幕系统（非框架核心） |

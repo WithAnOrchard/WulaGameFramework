@@ -11,7 +11,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Lighting
     /// 上千源后再加空间索引（chunk grid bucketing）。</para>
     /// <para>线程：所有 API 在主线程调用。Service 内部无锁。</para>
     /// </summary>
-    public class VoxelLightService : Service<VoxelLightService>
+    public class VoxelLightingService : Service<VoxelLightingService>
     {
         // ── Sky 调控（由 Manager 每帧从 DayCycle01 推下来）──────────────
 

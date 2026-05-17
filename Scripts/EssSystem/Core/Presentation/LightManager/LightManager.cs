@@ -17,7 +17,7 @@ namespace EssSystem.Core.Presentation.LightManager
     /// <summary>
     /// 灯光管理器（**URP 专用**）—— 主光 / 环境光 / 雾 / 天空盒 / 后处理 Volume / 动态 Light / Light2D 统一控制 + 昼夜预设。
     /// <para>本 Manager 依赖 URP package（<c>UnityEngine.Rendering.Universal</c>）。Built-in Render Pipeline 项目请勿挂载。</para>
-    /// <para>与 <c>VoxelLightManager</c> 正交：本 Manager 处理 URP 场景级（sun + sky + post-FX）；VoxelLightManager 处理体素地图内的光照传播。</para>
+    /// <para>与 <c>VoxelLightingManager</c> 正交：本 Manager 处理 URP 场景级（sun + sky + post-FX）；VoxelLightingManager 处理体素地图内的光照传播。</para>
     /// </summary>
     [Manager(7)]
     public class LightManager : Manager<LightManager>

@@ -43,7 +43,7 @@ Demo/                                ← 演示项目（不属于框架核心）
 | **13** | `EntityManager` | Application | 实体系统：能力(Capability)组合 + AI Brain + 伤害流水线 |
 | **13** | `Voxel3DMapManager` | Application | 3D 体素地图：分块/Mesh/Lighting |
 | **14** | `BuildingManager` | Application | 建筑系统：放置/拆除/升级 |
-| **14** | `VoxelLightManager` | Application | 体素光照计算 |
+| **14** | `VoxelLightingManager` | Application | 体素光照计算 |
 | **15** | `DialogueManager` | Application | 对话系统：对话树/选项/UI |
 | **15** | `SkillManager` | Application | 技能系统：技能定义/释放/Buff/冷却 |
 | **50** | `DanmuManager` | Manager(扩展) | 弹幕消息系统 |

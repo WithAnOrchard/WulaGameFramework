@@ -9,14 +9,14 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Lighting
     /// 体素光照门面 —— 与 <c>Voxel3DMapManager</c>(13) 平行的独立 Manager 模块。
     /// <para>职责：</para>
     /// <list type="bullet">
-    ///   <item>暴露 Inspector 调控（<see cref="DayCycle01"/> / <see cref="AmbientFloor"/>），每帧推到 <see cref="VoxelLightService"/>。</item>
+    ///   <item>暴露 Inspector 调控（<see cref="DayCycle01"/> / <see cref="AmbientFloor"/>），每帧推到 <see cref="VoxelLightingService"/>。</item>
     ///   <item>提供光源增删 API（火把/萤石/岩浆/灯笼预设 + 通用 AddSource）。</item>
-    ///   <item>聚合 <see cref="VoxelLightService.OnLightingChanged"/> 事件，用于上层（mesher/MapView）触发 chunk 重 mesh。</item>
+    ///   <item>聚合 <see cref="VoxelLightingService.OnLightingChanged"/> 事件，用于上层（mesher/MapView）触发 chunk 重 mesh。</item>
     /// </list>
     /// <para>查询走 <see cref="Service"/>.SampleLight；上层不必关心这个 Manager 是否存在（缺席时 mesher 退化为全亮）。</para>
     /// </summary>
     [Manager(14)]
-    public class VoxelLightManager : Manager<VoxelLightManager>
+    public class VoxelLightingManager : Manager<VoxelLightingManager>
     {
         #region Inspector
 
@@ -43,7 +43,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Lighting
 
         // ── 公共 API ────────────────────────────────────────────────
 
-        public VoxelLightService Service => VoxelLightService.Instance;
+        public VoxelLightingService Service => VoxelLightingService.Instance;
 
         /// <summary>当前时间循环 [0, 1]。set 后立即通知 Service。</summary>
         public float DayCycle01
@@ -149,7 +149,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Lighting
             if (!_autoRebuildOnChange) return;
             // mesher 由上层 Voxel3DMapView 持有，光照仅改顶点色 → 触发重 mesh 即可
             // 通过 EventProcessor 或直接 view.MarkAllDirty()；此处先留 hook 让具体集成方接入
-            // 推荐：在 Voxel3DMapView 中订阅 VoxelLightService.Instance.OnLightingChanged 调 RebuildAllMeshes()
+            // 推荐：在 Voxel3DMapView 中订阅 VoxelLightingService.Instance.OnLightingChanged 调 RebuildAllMeshes()
         }
     }
 }

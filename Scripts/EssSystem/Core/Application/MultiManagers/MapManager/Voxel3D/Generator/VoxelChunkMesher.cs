@@ -40,7 +40,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Generator
             var tris   = new List<int>(size * size * 6);
 
             // 光照服务（缺席时为 null → 退化为基础色不调制，等价"全亮"）
-            var light = VoxelLightService.HasInstance ? VoxelLightService.Instance : null;
+            var light = VoxelLightingService.HasInstance ? VoxelLightingService.Instance : null;
 
             for (var lz = 0; lz < size; lz++)
             for (var lx = 0; lx < size; lx++)
@@ -154,7 +154,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Generator
         // 光照调制：把基础顶点色乘上 (亮度系数 × 暖光偏色)。
         // 暖光偏色按 block/sky 占比 blend：纯 sky 时白光、纯 block 时取累积 tint。
         // ──────────────────────────────────────────────────────────────
-        private static Color32 ApplyLight(VoxelLightService svc, Color32 baseColor,
+        private static Color32 ApplyLight(VoxelLightingService svc, Color32 baseColor,
                                           int wx, int wy, int wz, int surfaceY)
         {
             if (svc == null) return baseColor;

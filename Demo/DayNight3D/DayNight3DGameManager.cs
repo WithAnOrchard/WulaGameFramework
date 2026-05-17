@@ -61,7 +61,7 @@ namespace Demo.DayNight3D
         [SerializeField] private bool _clearPersistedMapEachPlay = true;
 
         [Header("Lighting (Voxel)")]
-        [Tooltip("是否在场景中自动挂 VoxelLightManager 子节点（提供 DayCycle 滑块 + 光源 API）。")]
+        [Tooltip("是否在场景中自动挂 VoxelLightingManager 子节点（提供 DayCycle 滑块 + 光源 API）。")]
         [SerializeField] private bool _autoSpawnLightManager = true;
 
         [Tooltip("启动时在小镇和小平地中心撒一组演示光源（中心萤石 + 边缘火把环 + 各小平地灯笼）。")]
@@ -83,7 +83,7 @@ namespace Demo.DayNight3D
             ResetWorldForFreshPlayMode();
 
             EnsureSubManager<CharacterManager>();
-            if (_autoSpawnLightManager) EnsureSubManager<VoxelLightManager>();
+            if (_autoSpawnLightManager) EnsureSubManager<VoxelLightingManager>();
             base.Awake();
             Debug.Log("[DayNight3DGameManager] 基础 Manager 初始化完成");
         }
@@ -149,9 +149,9 @@ namespace Demo.DayNight3D
 
             // 光源系统：先设 DayCycle，再撒 demo 光源 —— 全部在 view 第一次 Update 烘 mesh 前完成，
             // 这样首帧的 mesh 顶点色就能正确反映黄昏 + 火把
-            if (VoxelLightManager.HasInstance)
+            if (VoxelLightingManager.HasInstance)
             {
-                VoxelLightManager.Instance.DayCycle01 = _initialDayCycle;
+                VoxelLightingManager.Instance.DayCycle01 = _initialDayCycle;
                 if (_spawnDemoLights) SpawnDemoLights();
             }
 
@@ -265,8 +265,8 @@ namespace Demo.DayNight3D
         /// </summary>
         private void SpawnDemoLights()
         {
-            if (_voxelConfig == null || !VoxelLightManager.HasInstance) return;
-            var lm  = VoxelLightManager.Instance;
+            if (_voxelConfig == null || !VoxelLightingManager.HasInstance) return;
+            var lm  = VoxelLightingManager.Instance;
             var gen = _voxelConfig.CreateGenerator();
 
             var center = _voxelConfig.WorldCenterWorld;
