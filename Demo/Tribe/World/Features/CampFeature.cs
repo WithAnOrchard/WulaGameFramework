@@ -55,6 +55,11 @@ namespace Demo.Tribe.World.Features
         /// <summary>NPC Character 视觉 Y 偏移（让脚踩在碰撞体上）。</summary>
         public float NpcVisualYOffset = 0.45f;
 
+        /// <summary>NPC 各部件 SpriteRenderer 的 sortingOrder 基准。
+        /// <para>默认走 <c>ctx.BaseSortingOrder</c> —— 与 <see cref="GatherableFeature"/> 同层，
+        /// 这样 NPC 武器 / 盾牌不会"穿透"渲染到玩家身上（玩家默认 0~6 在前）。</para></summary>
+        public bool NpcUseGatherableSortingLayer = true;
+
         // ─── 帐篷占位 ──────────────────────────────────────
         /// <summary>帐篷颜色块色调。</summary>
         public Color TentColor = new Color(0.65f, 0.45f, 0.30f);
@@ -164,6 +169,16 @@ namespace Demo.Tribe.World.Features
                 characterRoot.localPosition = new Vector3(0f, NpcVisualYOffset, 0f);
                 characterRoot.localScale = Vector3.one * NpcVisualScale;
                 CharacterViewBridge.PlayLocomotion(NpcInstanceId, moving: false, grounded: true);
+
+                // 把 NPC 各部件 SpriteRenderer 整体落到 ctx.BaseSortingOrder 基准（采集物 / 装饰同层），
+                // 保留 DefaultCharacterConfigs 内部 0~6 相对顺序（Skin..Shield 仍正确叠放）。
+                // 玩家未额外设 sortingOrder（默认 0~6），ctx.BaseSortingOrder 通常 < 0（背景层基准），
+                // 因此 NPC 整体会渲染在玩家之下，避免武器 / 盾牌透过玩家。
+                if (NpcUseGatherableSortingLayer)
+                {
+                    var renderers = characterRoot.GetComponentsInChildren<SpriteRenderer>(true);
+                    foreach (var r in renderers) r.sortingOrder += ctx.BaseSortingOrder;
+                }
             }
             else
             {
