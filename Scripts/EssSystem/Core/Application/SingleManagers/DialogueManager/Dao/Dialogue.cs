@@ -22,7 +22,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager.Dao
         /// <summary>整段对话的默认背景 Sprite ID；可被行级 <see cref="DialogueLine.BackgroundSpriteId"/> 覆盖。</summary>
         public string DefaultBackgroundSpriteId;
 
-        /// <summary>对话使用的 UI 配置 Id（对应 <c>DialogueService</c> 中注册的 <see cref="UIConfig.DialogueConfig"/>）。</summary>
+        /// <summary>对话使用的 UI 配置 Id（对应 <c>DialogueService</c> 中注册的 <see cref="Specs.DialogueConfig"/>）。</summary>
         public string ConfigId;
 
         /// <summary>对话起始行 Id；为空时使用 <c>Lines[0].Id</c>。</summary>

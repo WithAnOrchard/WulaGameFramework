@@ -1,7 +1,8 @@
 using UnityEngine;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao;
-using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.UIConfig;
+using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs;
 // 不 using UIManager 模块；查 UI GameObject 走 EVT_GET_UI_GAMEOBJECT 事件。
 
 namespace EssSystem.Core.Application.SingleManagers.DialogueManager
@@ -30,79 +31,54 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             var pl = config.Panel;
 
             // 根面板（也是主背景）
-            var root = new UIPanelComponent(daoId, "DialoguePanel")
-                .SetPosition(pl.Position.x, pl.Position.y)
-                .SetSize(pl.Width, pl.Height)
-                .SetScale(pl.Scale.x, pl.Scale.y)
-                .SetBackgroundSpriteId(pl.BackgroundSpriteId)
-                .SetBackgroundColor(SpriteAwareTint(pl.BackgroundSpriteId, pl.BackgroundColor))
+            var root = pl.CreateComponent(daoId, "DialoguePanel");
+            // Sprite 设置时强制使用白色色套，避免背景图被 BackgroundColor 染色
+            root.SetBackgroundColor(SpriteAwareTint(pl.BackgroundSpriteId, pl.BackgroundColor))
                 .SetVisible(true);
 
             var refs = new DialogueUIRefs { Root = root, Background = root };
 
-            // 立绘
-            if (config.Portrait != null && config.Portrait.Enabled)
+            // 立绘（始终创建；行级 PortraitSpriteId 提供时显示）
+            if (config.Portrait != null)
             {
-                var pp = config.Portrait;
-                refs.Portrait = new UIPanelComponent($"{daoId}_Portrait", "Portrait")
-                    .SetPosition(pp.Position.x, pp.Position.y)
-                    .SetSize(pp.Width, pp.Height)
-                    .SetBackgroundColor(new Color(0f, 0f, 0f, 0f))
-                    .SetVisible(false); // 行级 PortraitSpriteId 提供时再显示
+                refs.Portrait = config.Portrait.CreateComponent($"{daoId}_Portrait", "Portrait");
+                refs.Portrait.SetVisible(false);
                 root.AddChild(refs.Portrait);
             }
 
-            // 说话者名（UITextEntity 父中心锚点 → 需减去半面板转换为中心相对；同时 2× 超采样）
-            var st = config.SpeakerText;
+            // 说话者名（左下原点 → 中心原点；2× 超采样）
             refs.SpeakerText = BuildSupersampledText(
-                $"{daoId}_Speaker", "Speaker",
-                st.Position.x - pl.Width * 0.5f, st.Position.y - pl.Height * 0.5f,
-                st.Width, st.Height, st.FontSize, st.TextColor, st.Alignment, st.Visible);
+                $"{daoId}_Speaker", "Speaker", config.SpeakerText, pl.Size);
             root.AddChild(refs.SpeakerText);
 
-            // 正文（同上，左下原点 → 中心原点；2× 超采样）
-            var bt = config.BodyText;
+            // 正文（同上）
             refs.BodyText = BuildSupersampledText(
-                $"{daoId}_Body", "Body",
-                bt.Position.x - pl.Width * 0.5f, bt.Position.y - pl.Height * 0.5f,
-                bt.Width, bt.Height, bt.FontSize, bt.TextColor, bt.Alignment, bt.Visible);
+                $"{daoId}_Body", "Body", config.BodyText, pl.Size);
             root.AddChild(refs.BodyText);
 
             // Next 按钮
-            var nb = config.NextButton;
-            refs.NextButton = new UIButtonComponent($"{daoId}_NextBtn", "NextButton", nb.ButtonText)
-                .SetPosition(nb.Position.x, nb.Position.y)
-                .SetSize(nb.Width, nb.Height)
-                .SetButtonSpriteId(nb.ButtonSpriteId)
-                .SetVisible(nb.Visible)
-                .SetInteractable(true);
+            refs.NextButton = config.NextButton.CreateComponent($"{daoId}_NextBtn", "NextButton");
             root.AddChild(refs.NextButton);
 
             // Close 按钮
-            var cb = config.CloseButton;
-            refs.CloseButton = new UIButtonComponent($"{daoId}_CloseBtn", "CloseButton", cb.ButtonText)
-                .SetPosition(cb.Position.x, cb.Position.y)
-                .SetSize(cb.Width, cb.Height)
-                .SetButtonSpriteId(cb.ButtonSpriteId)
-                .SetVisible(cb.Visible)
-                .SetInteractable(cb.Interactable);
+            refs.CloseButton = config.CloseButton.CreateComponent($"{daoId}_CloseBtn", "CloseButton");
             root.AddChild(refs.CloseButton);
 
             // 选项按钮（默认全部隐藏，行有 options 时再显示）
-            // 按钮为 UIButtonComponent，锚点在父左下角 + pivot 中心 → Position 直接使用「左下原点」。
             var op = config.Options;
             var maxOpts = Mathf.Max(1, op.MaxOptions);
+            var tmpl = op.ButtonTemplate;
+            var btnH = tmpl.Size.y;
             refs.OptionButtons = new UIButtonComponent[maxOpts];
             for (var i = 0; i < maxOpts; i++)
             {
                 var x = op.FirstButtonOffset.x;
-                var y = op.FirstButtonOffset.y - i * (op.ButtonHeight + op.Spacing);
-                var btn = new UIButtonComponent($"{daoId}_Opt_{i}", $"Option_{i}", string.Empty)
-                    .SetPosition(x, y)
-                    .SetSize(op.ButtonWidth, op.ButtonHeight)
-                    .SetButtonSpriteId(op.ButtonSpriteId)
-                    .SetVisible(false)
-                    .SetInteractable(false);
+                var y = op.FirstButtonOffset.y - i * (btnH + op.Spacing);
+                var btn = tmpl.CreateComponent($"{daoId}_Opt_{i}", $"Option_{i}");
+                btn.SetText(string.Empty)
+                   .SetPosition(x, y)
+                   .SetVisible(false)
+                   .SetInteractable(false);
                 refs.OptionButtons[i] = btn;
                 root.AddChild(btn);
             }
@@ -169,28 +145,28 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             string.IsNullOrEmpty(spriteId) ? fallback : Color.white;
 
         /// <summary>
-        /// 构造一个应用了文本超采样的 <see cref="UITextComponent"/>：
+        /// 用 <see cref="UITextSpec"/> 构造一个应用了文本超采样的 <see cref="UITextComponent"/>。
         /// FontSize × N、Size × N、Scale × (1/N)，最终视觉大小不变但字体清晰度显著提升。
+        /// 自动把 spec 中的「左下原点 + 组件中心」位置转换成 UITextEntity 的「父中心相对」坐标。
         /// 参 <c>Assets/Agent.md §5「文本清晰度」</c>。
         /// </summary>
         private static UITextComponent BuildSupersampledText(
-            string id, string name,
-            float centerX, float centerY,
-            float width, float height,
-            int fontSize, Color color, TextAnchor alignment,
-            bool visible)
+            string id, string name, UITextSpec spec, Vector2 panelSize)
         {
             var n = TextSupersample;
             var inv = 1f / n;
+            // 左下原点 → 父中心原点（UITextEntity 的锚点在父中心）
+            var cx = spec.Position.x - panelSize.x * 0.5f;
+            var cy = spec.Position.y - panelSize.y * 0.5f;
             var t = new UITextComponent(id, name)
-                .SetPosition(centerX, centerY)              // Position 不放大（视觉中心不变）
-                .SetSize(width * n, height * n)             // Rect 放大 N 倍
-                .SetFontSize(Mathf.Max(1, Mathf.RoundToInt(fontSize * n)))
-                .SetColor(color)
-                .SetAlignment(alignment)
+                .SetPosition(cx, cy)                                            // Position 不放大（视觉中心不变）
+                .SetSize(spec.Size.x * n, spec.Size.y * n)                       // Rect 放大 N 倍
+                .SetFontSize(Mathf.Max(1, Mathf.RoundToInt(spec.FontSize * n)))
+                .SetColor(spec.TextColor)
+                .SetAlignment(spec.Alignment)
                 .SetText(string.Empty)
-                .SetScale(inv, inv);                        // 整体缩小 1/N → 视觉与原始一致
-            t.SetVisible(visible);
+                .SetScale(inv, inv);                                             // 整体缩小 1/N → 视觉与原始一致
+            t.SetVisible(spec.Visible);
             return t;
         }
     }

@@ -5,7 +5,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao;
-using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.UIConfig;
+using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs;
 
 namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 {
@@ -251,7 +251,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>注册对话。args: [Dialogue]</summary>
         [Event(EVT_REGISTER_DIALOGUE)]
-        public List<object> RegisterDialogueEvent(List<object> args)
+        public List<object> HandleRegisterDialogue(List<object> args)
         {
             if (args == null || args.Count < 1 || args[0] is not Dialogue d)
                 return ResultCode.Fail("参数错误：需要 [Dialogue]");
@@ -261,7 +261,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>注册对话配置。args: [DialogueConfig]</summary>
         [Event(EVT_REGISTER_CONFIG)]
-        public List<object> RegisterConfigEvent(List<object> args)
+        public List<object> HandleRegisterConfig(List<object> args)
         {
             if (args == null || args.Count < 1 || args[0] is not DialogueConfig c)
                 return ResultCode.Fail("参数错误：需要 [DialogueConfig]");
@@ -271,7 +271,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>推进。args: 无</summary>
         [Event(EVT_ADVANCE)]
-        public List<object> AdvanceEvent(List<object> args)
+        public List<object> HandleAdvance(List<object> args)
         {
             if (!IsActive) return ResultCode.Fail("没有活动对话");
             Advance();
@@ -280,7 +280,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>选择选项。args: [int index]</summary>
         [Event(EVT_SELECT_OPTION)]
-        public List<object> SelectOptionEvent(List<object> args)
+        public List<object> HandleSelectOption(List<object> args)
         {
             if (args == null || args.Count < 1) return ResultCode.Fail("缺 index 参数");
             try
@@ -295,7 +295,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>结束会话。args: 无</summary>
         [Event(EVT_END)]
-        public List<object> EndEvent(List<object> args)
+        public List<object> HandleEnd(List<object> args)
         {
             EndDialogue();
             return ResultCode.Ok("ended");
@@ -303,7 +303,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>查询当前会话。返回 [dialogueId, lineId, configId]，无活动会话返回 Fail。</summary>
         [Event(EVT_QUERY_CURRENT)]
-        public List<object> QueryCurrentEvent(List<object> args)
+        public List<object> HandleQueryCurrent(List<object> args)
         {
             if (!IsActive) return ResultCode.Fail("无活动对话");
             var ok = ResultCode.Ok();

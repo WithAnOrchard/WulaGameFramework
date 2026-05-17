@@ -4,7 +4,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao;
-using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.UIConfig;
+using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 // §4.1 跨模块调用走 bare-string 协议，不 using UIManager 命名空间。
 

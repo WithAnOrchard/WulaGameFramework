@@ -18,14 +18,14 @@ DialogueManager/
 ├── DialogueService.cs          状态机 + 持久化 + 6 个 [Event] handler + 3 个广播
 ├── Agent.md                    本文档
 ├── UI/
-│   ├── DialogueUIBuilder.cs    纯静态：BuildPanelTree / ApplyLine
+│   ├── DialogueUIBuilder.cs    纯静态：BuildPanelTree / ApplyLine；使用共享 Specs
 │   └── DialogueUIRefs.cs       UI 子组件引用集合
 └── Dao/
     ├── Dialogue.cs             一段对话（含 List<DialogueLine>）
     ├── DialogueLine.cs         一行（说话者+文本+选项+背景/立绘覆盖）
     ├── DialogueOption.cs       选项（事件名/回调/跳转）
-    └── UIConfig/
-        └── DialogueConfig.cs   UI 配置（含 PanelLayout / TextLayout / PortraitLayout / NextButtonLayout / OptionsLayout / CloseButtonLayout 子类）
+    └── Specs/
+        └── DialogueConfig.cs   UI 配置：使用 UIManager 共享 `UIPanelSpec` / `UITextSpec` / `UIButtonSpec`；嵌套 `OptionsLayout` 描述选项按钮列表堆叠
 ```
 
 ## 数据分类（持久化）
@@ -164,19 +164,22 @@ public List<object> OnQuestAccepted(string evt, List<object> args)
 ### 3. 自定义对话框 UI（背景/位置）
 
 ```csharp
-using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.UIConfig;
+using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs;
+using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 
 var cfg = new DialogueConfig("Romance", "情节对话")
-    .WithPanel(new DialogueConfig.PanelLayout()
+    .WithPanel(new UIPanelSpec()
         .WithSize(1100f, 280f)
         .WithPosition(960f, 220f)
         .WithBackgroundId("dialog_box_pink")            // 用 ResourceManager 注册的 Sprite Id
         .WithBackgroundColor(new Color(1f, 0.92f, 0.95f, 0.95f)))
-    .WithBody(new DialogueConfig.TextLayout(960f, 140f, 0f, 20f, 22, TextAnchor.UpperLeft))
-    .WithSpeaker(new DialogueConfig.TextLayout(360f, 36f, -340f, 130f, 24, TextAnchor.MiddleLeft));
+    .WithBody(new UITextSpec(960f, 140f, 0f, 20f, 22, TextAnchor.UpperLeft))
+    .WithSpeaker(new UITextSpec(360f, 36f, -340f, 130f, 24, TextAnchor.MiddleLeft));
 
 DialogueService.Instance.RegisterConfig(cfg);
 ```
+
+> **Specs 共享**：面板 / 文本 / 按钮 子组件都使用 UIManager 提供的 `UIPanelSpec` / `UITextSpec` / `UIButtonSpec`，与 Inventory 模块保持一致。仅 `OptionsLayout`（选项按钮堆叠列表）为 Dialogue 独有。
 
 ## 与其他模块的协作
 
