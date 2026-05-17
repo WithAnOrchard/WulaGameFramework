@@ -419,10 +419,26 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                     if (cap is ITickableCapability tickable)
                         tickable.Tick(deltaTime);
 
-                // 位置同步到显示层（仅 Dynamic）—— 直接用缓存的 Transform（Unity 原生类型，非跨模块耦合）
+                // 位置同步（仅 Dynamic）—— 双向策略：
+                //  • 宿主有 Dynamic Rigidbody2D（受 Unity 物理重力 / 碰撞驱动）→ 物理权威，
+                //    反向把 transform.position 同步回 WorldPosition，让逻辑层（AI / Brain）感知最新位置。
+                //    若仍写 transform.position = WorldPosition，会每帧覆盖物理位移，
+                //    制造出"生物悬浮不掉落"的 bug。
+                //  • 宿主无 Rigidbody 或为 Kinematic（如 Bat 飞行 / 装饰）→ 逻辑权威，
+                //    沿用旧路径把 WorldPosition 推到 transform.position。
                 if (e.Kind == EntityKind.Dynamic && e.CharacterRoot != null)
                 {
-                    if (e.CharacterRoot.position != e.WorldPosition) e.CharacterRoot.position = e.WorldPosition;
+                    var rb = e.CharacterRoot.GetComponent<Rigidbody2D>();
+                    if (rb != null && rb.bodyType == RigidbodyType2D.Dynamic)
+                    {
+                        if (e.CharacterRoot.position != e.WorldPosition)
+                            e.WorldPosition = e.CharacterRoot.position;
+                    }
+                    else
+                    {
+                        if (e.CharacterRoot.position != e.WorldPosition)
+                            e.CharacterRoot.position = e.WorldPosition;
+                    }
                 }
             }
         }
