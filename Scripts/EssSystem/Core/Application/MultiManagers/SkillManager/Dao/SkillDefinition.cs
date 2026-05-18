@@ -40,6 +40,14 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         /// <summary>后摇时间（秒）—— 技能释放后的硬直。</summary>
         public float RecoveryTime;
 
+        // ─── 引导施法（Channeling）──────────────────────────
+        /// <summary>引导时间（秒）；&gt; 0 时 <see cref="SkillExecutor"/> 在 Execute 后进入 Channeling 阶段，
+        /// 每 <see cref="ChannelTickInterval"/> 重新执行 <see cref="Effects"/>，直到时长耗尽或被 Interrupt。</summary>
+        public float ChannelTime;
+
+        /// <summary>引导期间效果重复触发的间隔（秒）。&lt;= 0 时退化为 Execute 一次后等满 <see cref="ChannelTime"/>。</summary>
+        public float ChannelTickInterval = 0.5f;
+
         // ─── 目标 ─────────────────────────────────────────────
         /// <summary>目标模式。</summary>
         public SkillTargetMode TargetMode = SkillTargetMode.None;

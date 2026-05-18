@@ -156,6 +156,9 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
             UnityEngine.Vector3 direction = default, UnityEngine.Vector3 position = default)
         {
             if (caster == null || string.IsNullOrEmpty(caster.InstanceId)) return false;
+            // Silence 短路：被沉默 / 眩晕的实体无法施法（眩晕也禁止主动技能）
+            var ctrl = caster.Get<EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities.IControllable>();
+            if (ctrl != null && (ctrl.Silenced || ctrl.Stunned)) return false;
             var inst = GetSkillInstance(caster.InstanceId, skillId);
             if (inst == null || !inst.IsReady) return false;
 
@@ -179,6 +182,9 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
             if (executor.IsActive)
                 _activeExecutors.Add(executor);
+
+            // 连招追踪：成功 Cast 后压入实体历史
+            Runtime.ComboTracker.OnSkillCast(caster, skillId);
 
             return true;
         }

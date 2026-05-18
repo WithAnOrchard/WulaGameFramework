@@ -5,17 +5,18 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
 {
     /// <summary>
     /// 技能执行器 —— 管理单次技能释放的完整生命周期。
-    /// <para>阶段：Idle → Casting（前摇）→ Execute（命中/效果）→ Recovery（后摇）→ Done</para>
+    /// <para>阶段：Idle → Casting（前摇）→ Execute（命中/效果）→ [Channeling（引导，按间隔重复触发效果）] → Recovery（后摇）→ Done</para>
     /// </summary>
     public class SkillExecutor
     {
-        public enum Phase { Idle, Casting, Execute, Recovery, Done }
+        public enum Phase { Idle, Casting, Execute, Channeling, Recovery, Done }
 
         public Phase CurrentPhase { get; private set; } = Phase.Idle;
         public bool IsActive => CurrentPhase != Phase.Idle && CurrentPhase != Phase.Done;
 
         private SkillEffectContext _ctx;
         private float _timer;
+        private float _channelTickTimer;
 
         /// <summary>
         /// 开始执行技能。
@@ -47,6 +48,21 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         {
             if (!IsActive) return;
 
+            // Channeling 是"软计时" —— 内部还要按 ChannelTickInterval 重复触发效果
+            if (CurrentPhase == Phase.Channeling)
+            {
+                _timer -= deltaTime;
+                _channelTickTimer += deltaTime;
+                var interval = _ctx?.Definition?.ChannelTickInterval ?? 0f;
+                if (interval > 0f && _channelTickTimer >= interval)
+                {
+                    _channelTickTimer -= interval;
+                    ApplyEffectChain();
+                }
+                if (_timer <= 0f) EnterRecoveryOrDone();
+                return;
+            }
+
             _timer -= deltaTime;
             if (_timer > 0f) return;
 
@@ -61,10 +77,10 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
             }
         }
 
-        /// <summary>打断当前施法（被击退/眩晕等）。</summary>
+        /// <summary>打断当前施法（被击退/眩晕等）。Casting / Channeling 均可被打断。</summary>
         public void Interrupt()
         {
-            if (CurrentPhase == Phase.Casting)
+            if (CurrentPhase == Phase.Casting || CurrentPhase == Phase.Channeling)
             {
                 CurrentPhase = Phase.Done;
                 _ctx = null;
@@ -82,24 +98,23 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         private void ExecuteEffects()
         {
             CurrentPhase = Phase.Execute;
-
-            // 执行效果链
-            if (_ctx?.Definition?.Effects != null)
-            {
-                foreach (var effect in _ctx.Definition.Effects)
-                {
-                    try { effect.Apply(_ctx); }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogWarning($"[SkillExecutor] 效果执行异常: {e.Message}");
-                    }
-                }
-            }
-
-            // 开始冷却
+            ApplyEffectChain();
             _ctx?.Instance?.StartCooldown();
 
-            // 后摇
+            // 引导施法：Execute 之后进入 Channeling，按间隔反复触发效果
+            if (_ctx?.Definition != null && _ctx.Definition.ChannelTime > 0f)
+            {
+                CurrentPhase = Phase.Channeling;
+                _timer = _ctx.Definition.ChannelTime;
+                _channelTickTimer = 0f;
+                return;
+            }
+
+            EnterRecoveryOrDone();
+        }
+
+        private void EnterRecoveryOrDone()
+        {
             if (_ctx?.Definition != null && _ctx.Definition.RecoveryTime > 0f)
             {
                 CurrentPhase = Phase.Recovery;
@@ -108,6 +123,20 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
             else
             {
                 CurrentPhase = Phase.Done;
+            }
+        }
+
+        /// <summary>执行一次效果链（Execute 阶段调用一次，Channeling 阶段每 tick 复用）。</summary>
+        private void ApplyEffectChain()
+        {
+            if (_ctx?.Definition?.Effects == null) return;
+            foreach (var effect in _ctx.Definition.Effects)
+            {
+                try { effect.Apply(_ctx); }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[SkillExecutor] 效果执行异常: {e.Message}");
+                }
             }
         }
     }
