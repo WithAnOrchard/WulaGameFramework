@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.NpcManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.NpcManager.Dao
 {
     /// <summary>
     /// NPC 配置 —— 定义"这个 NPC 是谁、长什么样、能做什么"的不变数据。

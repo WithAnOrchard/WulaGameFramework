@@ -1,6 +1,6 @@
 using System;
 
-namespace EssSystem.Core.Application.SingleManagers.NpcManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.NpcManager.Dao
 {
     /// <summary>
     /// NPC 互动菜单标志位 —— 决定 InteractionPanel 自动生成的菜单项。

@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.NpcManager
+namespace EssSystem.Core.Application.MultiManagers.NpcManager
 {
     /// <summary>
     /// NPC 门面 —— 配置注册 / 实例化 / 互动路由。

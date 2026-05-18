@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 
-namespace EssSystem.Core.Application.SingleManagers.NpcManager
+namespace EssSystem.Core.Application.MultiManagers.NpcManager
 {
     /// <summary>
     /// NPC 业务服务 —— 持久化 NpcConfig 注册表 + 维护运行时 NpcInstance 集合。

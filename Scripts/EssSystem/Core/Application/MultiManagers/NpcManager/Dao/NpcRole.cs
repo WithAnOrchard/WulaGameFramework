@@ -1,4 +1,4 @@
-namespace EssSystem.Core.Application.SingleManagers.NpcManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.NpcManager.Dao
 {
     /// <summary>
     /// NPC 主要角色定位 —— 决定默认互动菜单的项目集合与业务侧的初始挂接。

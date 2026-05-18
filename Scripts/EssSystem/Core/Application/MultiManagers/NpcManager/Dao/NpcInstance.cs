@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace EssSystem.Core.Application.SingleManagers.NpcManager.Dao
+namespace EssSystem.Core.Application.MultiManagers.NpcManager.Dao
 {
     /// <summary>
     /// NPC 运行时实例 —— 一个 <see cref="NpcConfig"/> 在场景中的具体出现。

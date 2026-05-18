@@ -46,6 +46,8 @@
 | `MultiManagers/MapManager/` | 12 / 13 / 14 | EntityManager（运行时事件 `"CreateEntity"` / `"DestroyEntity"`） | 地图系统总目录；含 `TopDown2D/`（`MapManager` 优先级 12）与 `Voxel3D/`（`Voxel3DMapManager` 13 + `Lighting/VoxelLightingManager` 14） | [MapManager 指南](Application/MultiManagers/MapManager/Agent.md) |
 | `MultiManagers/BuildingManager/` | 14 | EntityManager（DTO + 事件） | 建筑系统：放置/拆除/升级 | [BuildingManager 指南](Application/MultiManagers/BuildingManager/Agent.md) |
 | `MultiManagers/SkillManager/` | 15 | EntityManager（DTO + 事件） | 技能系统：技能定义/释放/Buff/冷却 | [Skill 指南](Application/MultiManagers/SkillManager/Agent.md) |
+| `MultiManagers/NpcManager/` | 17 | DialogueManager / ShopManager（DialogueId / ShopId 反向路由） | NPC 系统：配置注册 / 实例化 / 互动路由（骨架） | [Npc 指南](Application/MultiManagers/NpcManager/Agent.md) |
+| `MultiManagers/FarmManager/` | 18 | InventoryManager（种子 / 产物 bare-string 事件） | 农场系统：农场配置 / 实例 / 作物生长 / 子场景路由（骨架） | [Farm 指南](Application/MultiManagers/FarmManager/Agent.md) |
 
 > **关于 Voxel 子 Manager**：`Voxel3DMapManager` 与 `VoxelLightingManager` 在物理目录上是 `MapManager/Voxel3D/` 的实现子模块，但各自保留独立 `[Manager(N)]` 注解，作为常规 Manager 注册到框架，不在本表顶层重复列出。
 
@@ -79,7 +81,9 @@ Core/
         │   └── Voxel3D/        → Voxel3DMapManager [13]
         │       └── Lighting/   → VoxelLightingManager [14]
         ├── BuildingManager/   [14]
-        └── SkillManager/      [15]
+        ├── SkillManager/      [15]
+        ├── NpcManager/        [17]
+        └── FarmManager/       [18]
 ```
 
 ## 依赖关系图
@@ -137,6 +141,8 @@ ResourceManager(0) ───→ AudioManager(3)
 | `VoxelLightingManager` | 14 | Application/MultiManagers（MapManager 内） | 体素光照 |
 | `DialogueManager` | 15 | Application/SingleManagers | 对话系统 |
 | `SkillManager` | 15 | Application/MultiManagers | 技能系统 |
+| `NpcManager` | 17 | Application/MultiManagers | NPC 系统（骨架） |
+| `FarmManager` | 18 | Application/MultiManagers | 农场系统（骨架） |
 | `DanmuManager` | 50 | 项目扩展 `Manager/` | 弹幕系统（非框架核心） |
 
 数值越小越先 `Awake`（基于 Unity `DefaultExecutionOrder`）。
