@@ -25,6 +25,14 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
         public const string EVT_OPEN_UI  = "OpenDialogueUI";
         public const string EVT_CLOSE_UI = "CloseDialogueUI";
 
+        /// <summary>把一组运行时 <see cref="UnityEngine.Sprite"/> 按 z-order（背→前）层叠贴到头像位 ——
+        /// 实现"角色多部件复合头像"（如 Skin + Eyes + Hair + Head 一起叠出完整脸）。
+        /// 与 Player HUD 单层 <c>TribePlayerHud.AttachHeadSprite</c> 互补；绕过 spriteId 通道，
+        /// 直接传 Sprite 引用，无需依赖 ResourceManager 是否已切片注册。
+        /// <para>data: <c>[Sprite single]</c> 或 <c>[List&lt;Sprite&gt; layers]</c>。返回 Ok / Fail。
+        /// 必须在 <see cref="EVT_OPEN_UI"/> 之后调。重复调用会先清空旧的覆盖层再贴新的。</para></summary>
+        public const string EVT_SET_PORTRAIT_SPRITE = "SetDialoguePortraitSprite";
+
         /// <summary>UI 实体注册时使用的 daoId（全局唯一，单实例足够覆盖典型用法）。</summary>
         private const string DialogueUiId = "__dialogue_ui_root";
 
@@ -75,13 +83,15 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         private void RegisterDefaultConfigIfMissing()
         {
-            if (Service.HasData(DialogueService.CAT_CONFIGS, DefaultConfigId)) return;
+            // 内置默认以代码为准，每次启动覆盖写入持久化 —— 与 CharacterManager.Initialize 同款做法。
+            // 否则升级布局后旧持久化值不会被刷新（业务侧不知道要去 Inspector 右键"重置默认配置"）。
             Service.RegisterConfig(new DialogueConfig(DefaultConfigId, "默认对话框配置"));
         }
 
         private void RegisterDebugDialogueIfMissing()
         {
-            if (Service.HasData(DialogueService.CAT_DIALOGUES, DebugDialogueId)) return;
+            // 同上：每次启动覆盖。DebugDialogue 是开发期工具，不应被旧持久化锁死。
+            Service.RemoveData(DialogueService.CAT_DIALOGUES, DebugDialogueId);
 
             var d = new Dialogue(DebugDialogueId, "调试对话")
                 .WithConfig(DefaultConfigId)
@@ -153,6 +163,65 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             Service.EndDialogue();
             HideUi();
             return ResultCode.Ok("closed");
+        }
+
+        /// <summary>把一组 Sprite 层叠贴到头像位（参 EVT_SET_PORTRAIT_SPRITE 文档）。
+        /// 调用时机：必须在 EVT_OPEN_UI 之后；UI 已重建出 Portrait 子节点。
+        /// 重复调用会先清掉旧覆盖层。</summary>
+        [Event(EVT_SET_PORTRAIT_SPRITE)]
+        public List<object> SetPortraitSprite(List<object> data)
+        {
+            if (data == null || data.Count < 1) return ResultCode.Fail("参数错误：需要 [Sprite | List<Sprite>]");
+
+            // 兼容单 Sprite 与 List<Sprite>
+            List<Sprite> layers = null;
+            if (data[0] is Sprite single) layers = new List<Sprite> { single };
+            else if (data[0] is List<Sprite> list) layers = list;
+            else if (data[0] is IEnumerable<Sprite> enumerable) layers = new List<Sprite>(enumerable);
+            if (layers == null) return ResultCode.Fail("参数错误：data[0] 必须是 Sprite 或 List<Sprite>");
+
+            if (_refs?.Portrait == null) return ResultCode.Fail("Portrait 尚未构建（先 OpenDialogueUI）");
+            var portraitGo = QueryUIGameObject(_refs.Portrait.Id);
+            if (portraitGo == null) return ResultCode.Fail("Portrait UI GameObject 未找到");
+            var baseImage = portraitGo.GetComponent<UnityEngine.UI.Image>();
+            if (baseImage == null) return ResultCode.Fail("Portrait 节点缺少 Image");
+
+            // 1) 清掉之前 SetPortraitSprite 创建的覆盖层（命名前缀 "_PortraitLayer_"）
+            for (var i = portraitGo.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = portraitGo.transform.GetChild(i);
+                if (child != null && child.name.StartsWith("_PortraitLayer_"))
+                    Destroy(child.gameObject);
+            }
+
+            // 2) 第 0 层 → 主 Image（复用 Portrait 自身），后续层 → 子 Image 叠在同 rect 上
+            for (var i = 0; i < layers.Count; i++)
+            {
+                var sprite = layers[i];
+                if (sprite == null) continue;
+                if (i == 0)
+                {
+                    baseImage.sprite = sprite;
+                    baseImage.color = Color.white;
+                    baseImage.preserveAspect = true;
+                }
+                else
+                {
+                    var layerGo = new GameObject($"_PortraitLayer_{i}");
+                    layerGo.transform.SetParent(portraitGo.transform, false);
+                    var rt = layerGo.AddComponent<RectTransform>();
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.offsetMin = Vector2.zero;
+                    rt.offsetMax = Vector2.zero;
+                    var img = layerGo.AddComponent<UnityEngine.UI.Image>();
+                    img.sprite = sprite;
+                    img.color = Color.white;
+                    img.preserveAspect = true;
+                    img.raycastTarget = false;
+                }
+            }
+            return ResultCode.Ok($"portrait set ({layers.Count} layers)");
         }
 
         private void HideUi()

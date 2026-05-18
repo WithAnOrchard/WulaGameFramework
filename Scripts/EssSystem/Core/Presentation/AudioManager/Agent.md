@@ -96,6 +96,41 @@ Presentation/AudioManager/
 - **返回**: `null`
 - **副作用**: 等价于 `PlaySFX("Sound/AppleUse")`
 
+### 命令类（位置循环音 / 环境音）
+
+> 适用场景：营火、流水、机械、风车等持续环境音。**业务侧不要自己 `AddComponent<AudioSource>`** —— 走以下两个事件，由 AudioManager 持有 `AudioSource` 注册表，自动按 `AudioListener`（主相机）距离做线性衰减，并随 `SFXVolume` 同步音量。
+
+#### `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX` — 在指定 Transform 挂 3D 循环音
+- **常量**: `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX` = `"PlayPositionalLoopSFX"`
+- **参数**: `[string clipPath, Transform anchor, float minDistance?=1.5, float maxDistance?=12, float volumeScale?=1]`
+  - `clipPath`：走 `ResourceManager.GetAudioClip` 加载（命中缓存）
+  - `anchor`：音源挂载节点；anchor.gameObject 销毁时音源同时销毁
+  - `minDistance` / `maxDistance`：Linear rolloff 范围（< minDistance 满音量，> maxDistance 完全静音）
+  - `volumeScale`：相对 `SFXVolume` 的倍率
+- **返回**: `Ok(string handleId)` / `Fail(msg)`，handleId 用于后续 Stop
+- **副作用**:
+  - 在 `anchor` 上 `AddComponent<AudioSource>` 并 `Play()`，配置 `spatialBlend=1` + `Linear rolloff` + `dopplerLevel=0`
+  - 把 (handleId, src, volumeScale) 写入 `_positionalSources` 注册表
+  - 后续 `EVT_SET_SFX_VOLUME` 会自动遍历注册表刷新 volume
+- **示例**:
+  ```csharp
+  var r = EventProcessor.Instance.TriggerEventMethod(
+      "PlayPositionalLoopSFX",
+      new List<object> { "Sound/feuer", transform, 1.5f, 12f, 1f });
+  string handle = ResultCode.IsOk(r) && r.Count >= 2 ? r[1] as string : null;
+  ```
+
+#### `AudioManager.EVT_STOP_POSITIONAL_SFX` — 停止位置循环音
+- **常量**: `AudioManager.EVT_STOP_POSITIONAL_SFX` = `"StopPositionalSFX"`
+- **参数**: `[string handleId]`（来自 `EVT_PLAY_POSITIONAL_LOOP_SFX` 的返回）
+- **返回**: `Ok(handleId)` / `Fail("handleId 未注册: ...")`
+- **副作用**: `Stop()` + `Destroy(AudioSource)` + 移出注册表。anchor.gameObject 已被 Unity 销毁时本调用安全（注册表 entry 仍清理）
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      "StopPositionalSFX", new List<object> { handle });
+  ```
+
 ### 命令类（音量设置）
 
 > 三档音量都会写入 `AudioService` 持久化分类 `Settings`，下次启动自动恢复。

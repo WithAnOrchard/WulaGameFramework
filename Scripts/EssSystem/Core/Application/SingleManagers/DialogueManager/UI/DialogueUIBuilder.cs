@@ -22,7 +22,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
         /// FontSize × N + Size × N + Scale × (1/N)：让字体以 N× 分辨率栅格化再缩小渲染，
         /// 显著降低 uGUI Text 在 1080p+ 屏幕上的模糊感。建议整数倍（2×/3×）。
         /// </summary>
-        private const float TextSupersample = 2f;
+        private const float TextSupersample = 6f;
 
         /// <summary>构建完整对话 UI 面板树。</summary>
         public static (UIPanelComponent panel, DialogueUIRefs refs)
@@ -38,11 +38,12 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
             var refs = new DialogueUIRefs { Root = root, Background = root };
 
-            // 立绘（始终创建；行级 PortraitSpriteId 提供时显示）
+            // 立绘头像框：始终显示（无 sprite 时显示框色作为视觉占位）
             if (config.Portrait != null)
             {
                 refs.Portrait = config.Portrait.CreateComponent($"{daoId}_Portrait", "Portrait");
-                refs.Portrait.SetVisible(false);
+                refs.PortraitFrameColor = config.Portrait.BackgroundColor;
+                refs.Portrait.SetVisible(true);
                 root.AddChild(refs.Portrait);
             }
 
@@ -65,22 +66,39 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             root.AddChild(refs.CloseButton);
 
             // 选项按钮（默认全部隐藏，行有 options 时再显示）
+            // 每个按钮 + 一个超采样 UIText 覆盖层 —— 按钮自身 Text 留空（uGUI 内置 Text 模糊），
+            // 文字渲染交给同位置同尺寸的 UITextComponent，享受 ApplySupersample 的高分辨率 raster。
             var op = config.Options;
             var maxOpts = Mathf.Max(1, op.MaxOptions);
             var tmpl = op.ButtonTemplate;
             var btnH = tmpl.Size.y;
             refs.OptionButtons = new UIButtonComponent[maxOpts];
+            refs.OptionTexts   = new UITextComponent[maxOpts];
             for (var i = 0; i < maxOpts; i++)
             {
                 var x = op.FirstButtonOffset.x;
                 var y = op.FirstButtonOffset.y - i * (btnH + op.Spacing);
                 var btn = tmpl.CreateComponent($"{daoId}_Opt_{i}", $"Option_{i}");
-                btn.SetText(string.Empty)
+                btn.SetText(string.Empty)            // 让内置 Text 留白，避免与覆盖层重叠
                    .SetPosition(x, y)
                    .SetVisible(false)
                    .SetInteractable(false);
                 refs.OptionButtons[i] = btn;
                 root.AddChild(btn);
+
+                // 超采样文字覆盖层 —— 与按钮同心同尺寸（白字、居中）
+                var label = BuildSupersampledRaw(
+                    $"{daoId}_OptText_{i}", $"Option_{i}_Text",
+                    centerX: x - pl.Size.x * 0.5f,        // BL 原点 → 中心原点
+                    centerY: y - pl.Size.y * 0.5f,
+                    width: tmpl.Size.x,
+                    height: tmpl.Size.y,
+                    fontSize: 18,                          // UIButtonSpec 没有 FontSize 字段，固定 18 即可
+                    color: Color.white,
+                    align: TextAnchor.MiddleCenter);
+                label.SetVisible(false);
+                refs.OptionTexts[i] = label;
+                root.AddChild(label);
             }
 
             return (root, refs);
@@ -102,16 +120,13 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             if (refs.SpeakerText != null) refs.SpeakerText.Text = line.Speaker ?? string.Empty;
             if (refs.BodyText    != null) refs.BodyText.Text    = line.Text ?? string.Empty;
 
-            // 立绘
+            // 立绘头像框：始终显示。有 sprite → 设头像并 tint=white（不染色）；无 sprite → 显原框色
             if (refs.Portrait != null)
             {
+                refs.Portrait.SetVisible(true);
                 var hasPortrait = !string.IsNullOrEmpty(line.PortraitSpriteId);
-                refs.Portrait.SetVisible(hasPortrait);
-                if (hasPortrait)
-                {
-                    refs.Portrait.BackgroundSpriteId = line.PortraitSpriteId;
-                    refs.Portrait.BackgroundColor = Color.white;
-                }
+                refs.Portrait.BackgroundSpriteId = hasPortrait ? line.PortraitSpriteId : string.Empty;
+                refs.Portrait.BackgroundColor = hasPortrait ? Color.white : refs.PortraitFrameColor;
             }
 
             // Next vs Options 互斥（行有选项时同时隐藏正文避免重叠）
@@ -128,14 +143,16 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
                 {
                     var btn = refs.OptionButtons[i];
                     if (btn == null) continue;
-                    if (i < optCount)
+                    var hasOpt = i < optCount;
+                    // 按钮自身 Text 留空（避免与超采样覆盖层重叠模糊）；文字写到 OptionTexts 的覆盖层上
+                    btn.Text = string.Empty;
+                    btn.SetVisible(hasOpt).SetInteractable(hasOpt);
+
+                    var label = refs.OptionTexts != null && i < refs.OptionTexts.Length ? refs.OptionTexts[i] : null;
+                    if (label != null)
                     {
-                        btn.Text = line.Options[i].Text ?? string.Empty;
-                        btn.SetVisible(true).SetInteractable(true);
-                    }
-                    else
-                    {
-                        btn.SetVisible(false).SetInteractable(false);
+                        if (hasOpt) label.Text = line.Options[i].Text ?? string.Empty;
+                        label.SetVisible(hasOpt);
                     }
                 }
             }
@@ -167,6 +184,26 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
                 .SetText(string.Empty)
                 .SetScale(inv, inv);                                             // 整体缩小 1/N → 视觉与原始一致
             t.SetVisible(spec.Visible);
+            return t;
+        }
+
+        /// <summary>构造超采样 <see cref="UITextComponent"/>（不依赖 spec）—— 给选项按钮文本覆盖层用。
+        /// 入参 centerX/centerY 已是「父中心原点」，无需再转换。</summary>
+        private static UITextComponent BuildSupersampledRaw(
+            string id, string name,
+            float centerX, float centerY, float width, float height,
+            int fontSize, Color color, TextAnchor align)
+        {
+            var n = TextSupersample;
+            var inv = 1f / n;
+            var t = new UITextComponent(id, name)
+                .SetPosition(centerX, centerY)
+                .SetSize(width * n, height * n)
+                .SetFontSize(Mathf.Max(1, Mathf.RoundToInt(fontSize * n)))
+                .SetColor(color)
+                .SetAlignment(align)
+                .SetText(string.Empty)
+                .SetScale(inv, inv);
             return t;
         }
     }

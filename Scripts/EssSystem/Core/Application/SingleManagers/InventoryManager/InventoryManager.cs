@@ -474,6 +474,26 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         }
 
         /// <summary>
+        /// 默认快捷栏使用行为：消耗品按 1~9 即扣 1 份。
+        /// <para>走 <see cref="InventoryService.EVT_REMOVE"/>，由 Service 在成功时触发 <c>PlayItemUseSFX</c>。</para>
+        /// 业务侧（治疗 / Buff / 投掷物等）仍可订阅 <see cref="EVT_HOTBAR_USE"/> 追加自定义效果。
+        /// args: [string inventoryId, int slotIndex, InventoryItem item|null]
+        /// </summary>
+        [EventListener(EVT_HOTBAR_USE)]
+        public List<object> OnHotbarUse(string evt, List<object> args)
+        {
+            if (args == null || args.Count < 3) return null;
+            var inventoryId = args[0] as string;
+            var item = args[2] as InventoryItem;
+            if (string.IsNullOrEmpty(inventoryId) || item == null) return null;
+            if (item.Type != InventoryItemType.Consumable) return null;
+
+            EventProcessor.Instance?.TriggerEvent(InventoryService.EVT_REMOVE,
+                new List<object> { inventoryId, item.Id, 1 });
+            return null;
+        }
+
+        /// <summary>
         /// 监听 <see cref="InventoryService.EVT_CHANGED"/>，对已打开 UI 的容器原地刷新 slot 显示。
         /// args: [inventoryId, op, itemId, amount]
         /// </summary>

@@ -27,23 +27,28 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs
         /// <summary>展示名 / 调试名。</summary>
         public string DisplayName;
 
-        /// <summary>主面板（背景 + 整体尺寸/位置）。默认 960×240，置于 1920×1080 底部居中偏上。</summary>
+        /// <summary>主面板（背景 + 整体尺寸/位置）。默认 960×240，置于 1920×1080 底部居中偏上。
+        /// y=250 让对话框抬离屏幕底部 130px（中心 250 - 半高 120 = 屏底距离 130），不挡 HUD。
+        /// 透明度 0.55 让游戏画面隐约可见，避免对话窗口压迫感。</summary>
         public UIPanelSpec Panel = new UIPanelSpec()
             .WithSize(960f, 240f)
-            .WithPosition(960f, 180f)
-            .WithBackgroundColor(new Color(0.06f, 0.07f, 0.12f, 0.94f));
+            .WithPosition(960f, 250f)
+            .WithBackgroundColor(new Color(0.05f, 0.06f, 0.10f, 0.55f));
 
-        /// <summary>说话者名（左下原点；中心位置 (440, 30)）。</summary>
-        public UITextSpec SpeakerText = new UITextSpec(240f, 210f, 440f, 30f, 22, TextAnchor.MiddleLeft);
+        /// <summary>说话者名 —— 立绘右侧顶部（左下原点；中心位置 (320, 195)）。白字。</summary>
+        public UITextSpec SpeakerText = new UITextSpec(400f, 36f, 320f, 195f, 24, TextAnchor.MiddleLeft)
+            .WithTextColor(Color.white);
 
-        /// <summary>正文（左下原点；中心位置 (820, 145)）。</summary>
-        public UITextSpec BodyText = new UITextSpec(480f, 95f, 820f, 145f, 18, TextAnchor.UpperLeft);
+        /// <summary>正文 —— 占据立绘下方的主体区域（左下原点；中心位置 (490, 75)）。白字。</summary>
+        public UITextSpec BodyText = new UITextSpec(880f, 110f, 490f, 75f, 18, TextAnchor.UpperLeft)
+            .WithTextColor(Color.white);
 
-        /// <summary>立绘面板（始终创建；行级 <c>PortraitSpriteId</c> 为空时隐藏）。左下原点。</summary>
+        /// <summary>立绘头像框 —— 对话框左上角（左下原点；中心位置 (60, 180)）。
+        /// 始终可见作为视觉占位；行级 <c>PortraitSpriteId</c> 提供时把头像贴进框里。</summary>
         public UIPanelSpec Portrait = new UIPanelSpec()
-            .WithSize(160f, 160f)
-            .WithPosition(90f, 120f)
-            .WithBackgroundColor(new Color(0f, 0f, 0f, 0f));
+            .WithSize(96f, 96f)
+            .WithPosition(60f, 180f)
+            .WithBackgroundColor(new Color(0.20f, 0.18f, 0.26f, 0.95f));
 
         /// <summary>"下一句" 按钮（无选项时显示）。左下原点。</summary>
         public UIButtonSpec NextButton = new UIButtonSpec(886f, 32f, 100f, 40f)
@@ -88,14 +93,16 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs
             public int MaxOptions = 4;
 
             /// <summary>按钮间垂直间距。</summary>
-            public float Spacing = 3f;
+            public float Spacing = 4f;
 
-            /// <summary>第一个选项按钮中心位置（左下原点）。默认贴合 panel 960×240 底部。</summary>
-            public Vector2 FirstButtonOffset = new Vector2(480f, 105f);
+            /// <summary>第一个选项按钮中心位置（左下原点）。
+            /// <para>居中堆叠 + 紧贴底部：x = 480（panel 960 居中），y = 120；
+            /// 4 × (高 30 + 间距 4) → 中心序列 120/86/52/18，最后一个底边距离 panel 底 3px。</para></summary>
+            public Vector2 FirstButtonOffset = new Vector2(480f, 120f);
 
             /// <summary>所有选项按钮共用的外观模板（Size / Sprite / Color / FontSize 等）。</summary>
             public UIButtonSpec ButtonTemplate = new UIButtonSpec()
-                .WithSize(380f, 26f)
+                .WithSize(440f, 30f)
                 .WithColor(new Color(0.18f, 0.18f, 0.28f, 0.95f))
                 .WithVisible(false)
                 .WithInteractable(false);

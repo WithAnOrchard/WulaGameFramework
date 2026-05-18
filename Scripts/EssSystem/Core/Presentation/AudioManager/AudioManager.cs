@@ -27,6 +27,13 @@ namespace EssSystem.Core.Presentation.AudioManager
         public const string EVT_PLAY_ATTACK_SFX   = "PlayAttackSFX";
         public const string EVT_PLAY_UI_SFX       = "PlayUISFX";
         public const string EVT_PLAY_ITEM_USE_SFX = "PlayItemUseSFX";
+        /// <summary>在指定 Transform 上挂一个 3D 循环 SFX 源。
+        /// args: [clipPath, Transform anchor, float minDist?=1.5, float maxDist?=12, float volumeScale?=1]
+        /// 返回: Ok(handleId:string) / Fail。</summary>
+        public const string EVT_PLAY_POSITIONAL_LOOP_SFX = "PlayPositionalLoopSFX";
+        /// <summary>停止并释放由 <see cref="EVT_PLAY_POSITIONAL_LOOP_SFX"/> 创建的循环音源。
+        /// args: [handleId:string]。</summary>
+        public const string EVT_STOP_POSITIONAL_SFX = "StopPositionalSFX";
 
         // ─── 便捷音效路径常量
         private const string SFX_DAMAGE   = "Sound/Bump";
@@ -48,6 +55,12 @@ namespace EssSystem.Core.Presentation.AudioManager
         private List<AudioSource> _sfxPool;
         private int _sfxPoolIndex;
         private Coroutine _bgmFadeCoroutine;
+
+        /// <summary>位置循环音注册表 —— handle 关联 (AudioSource, volumeScale)，便于
+        /// SFXVolume 变化时同步刷新，以及 Stop 时找回 source 销毁。</summary>
+        private readonly Dictionary<string, (AudioSource Src, float Scale)> _positionalSources
+            = new Dictionary<string, (AudioSource, float)>();
+        private int _positionalIdCounter;
 
         // ─── 初始化 ────────────────────────────────────────────────────
 
@@ -149,8 +162,57 @@ namespace EssSystem.Core.Presentation.AudioManager
         /// <summary>当前 SFX 音量 (0..1)</summary>
         public float SFXVolume => _sfxVolume;
 
-        /// <summary>设置 SFX 音量</summary>
-        public void SetSFXVolume(float volume) => _sfxVolume = Mathf.Clamp01(volume);
+        /// <summary>设置 SFX 音量 —— 同步刷新所有位置循环音的实际音量。</summary>
+        public void SetSFXVolume(float volume)
+        {
+            _sfxVolume = Mathf.Clamp01(volume);
+            // 一次性 SFX 在 PlaySFX 时取值即可；位置循环音持久存在，需主动刷新
+            foreach (var kv in _positionalSources)
+                if (kv.Value.Src != null) kv.Value.Src.volume = _sfxVolume * kv.Value.Scale;
+        }
+
+        // ─── 位置循环音（环境音源：营火 / 流水 / 机械等）─────────────────
+
+        /// <summary>
+        /// 在指定 Transform 上挂一个 3D 循环音源，由 Unity 按 AudioListener 距离做线性衰减。
+        /// </summary>
+        /// <param name="anchor">挂载节点（GameObject 销毁时音源同时销毁）。</param>
+        /// <param name="volumeScale">相对 SFXVolume 的倍率（默认 1）。</param>
+        /// <returns>handle id，用于后续 <see cref="StopPositionalSFX"/>。失败返回 null。</returns>
+        public string PlayPositionalLoopSFX(string clipPath, Transform anchor,
+            float minDistance = 1.5f, float maxDistance = 12f, float volumeScale = 1f)
+        {
+            if (anchor == null) { LogWarning($"PlayPositionalLoopSFX: anchor 为空 ({clipPath})"); return null; }
+            var clip = LoadAudioClip(clipPath);
+            if (clip == null) return null;
+
+            var src = anchor.gameObject.AddComponent<AudioSource>();
+            src.clip = clip;
+            src.loop = true;
+            src.playOnAwake = false;
+            src.spatialBlend = 1f;
+            src.rolloffMode = AudioRolloffMode.Linear;
+            src.minDistance = Mathf.Max(0.01f, minDistance);
+            src.maxDistance = Mathf.Max(src.minDistance + 0.1f, maxDistance);
+            src.dopplerLevel = 0f;
+            src.spread = 0f;
+            src.volume = _sfxVolume * volumeScale;
+            src.Play();
+
+            var id = $"pos_sfx_{++_positionalIdCounter}";
+            _positionalSources[id] = (src, volumeScale);
+            return id;
+        }
+
+        /// <summary>停止并销毁由 <see cref="PlayPositionalLoopSFX"/> 创建的音源。</summary>
+        public bool StopPositionalSFX(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (!_positionalSources.TryGetValue(id, out var entry)) return false;
+            if (entry.Src != null) { entry.Src.Stop(); Destroy(entry.Src); }
+            _positionalSources.Remove(id);
+            return true;
+        }
 
         /// <summary>设置主音量（同时影响 BGM 和 SFX）</summary>
         public void SetMasterVolume(float volume) => AudioListener.volume = Mathf.Clamp01(volume);
@@ -319,5 +381,26 @@ namespace EssSystem.Core.Presentation.AudioManager
 
         [Event(EVT_PLAY_ITEM_USE_SFX)]
         public List<object> OnPlayItemUseSFX(List<object> data) { PlayItemUseSFX(); return null; }
+
+        [Event(EVT_PLAY_POSITIONAL_LOOP_SFX)]
+        public List<object> OnPlayPositionalLoopSFX(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("参数：[clipPath, Transform anchor, minDist?, maxDist?, volumeScale?]");
+            var path = data[0] as string;
+            var anchor = data[1] as Transform;
+            var minD = data.Count >= 3 && data[2] is float a ? a : 1.5f;
+            var maxD = data.Count >= 4 && data[3] is float b ? b : 12f;
+            var vol  = data.Count >= 5 && data[4] is float c ? c : 1f;
+            var id = PlayPositionalLoopSFX(path, anchor, minD, maxD, vol);
+            return id != null ? ResultCode.Ok(id) : ResultCode.Fail("位置音源创建失败");
+        }
+
+        [Event(EVT_STOP_POSITIONAL_SFX)]
+        public List<object> OnStopPositionalSFX(List<object> data)
+        {
+            if (data == null || data.Count < 1 || !(data[0] is string id))
+                return ResultCode.Fail("参数：[handleId]");
+            return StopPositionalSFX(id) ? ResultCode.Ok(id) : ResultCode.Fail($"handleId 未注册: {id}");
+        }
     }
 }
