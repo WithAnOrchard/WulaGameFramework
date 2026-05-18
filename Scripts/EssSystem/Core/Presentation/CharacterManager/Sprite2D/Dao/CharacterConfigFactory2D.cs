@@ -59,5 +59,75 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
                 CharacterService.Instance.RegisterConfig(cfg);
             return cfg;
         }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        //  Sheet-Based Creature —— 单部件，Idle + Walk 两动作，4 行 × N 列方向式 sheet
+        // ═══════════════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// 生成"sheet 式生物"角色配置 —— 单部件 Body，含 Idle / Walk 两个动作，
+        /// 每个动作走 <see cref="UnityEngine.Resources.LoadAll{T}"/> 加载整张 sub-sprite sheet，
+        /// 按朝向（左 / 右）挑选不同行的帧序列。
+        /// <para>典型场景：Tribe 动物 / 怪物的 4 行 × 4 列 spritesheet（行 = 朝向，列 = 帧）。</para>
+        /// </summary>
+        /// <param name="configId">注册 ID。</param>
+        /// <param name="displayName">显示名。</param>
+        /// <param name="idleResourcePath"><c>Resources.LoadAll&lt;Sprite&gt;</c> 路径（Idle sheet，不含扩展名）。</param>
+        /// <param name="walkResourcePath">Walk sheet 路径；为空则与 Idle 共用一张 sheet。</param>
+        /// <param name="frameRate">每秒帧数（FPS）。</param>
+        /// <param name="leftFrameIndices">面朝左时在 sub-sprite 列表中取的帧索引（如 4×4 sheet 的 [4,5,6,7]）。</param>
+        /// <param name="rightFrameIndices">面朝右时的帧索引（如 [8,9,10,11]）。</param>
+        /// <param name="visualScale">部件 LocalScale 统一倍率（覆盖默认 1）。</param>
+        /// <param name="visualYOffset">部件 LocalPosition.y（"BottomCenter pivot 补偿"用，对齐脚下）。</param>
+        public static CharacterConfig MakeSheetCreature(string configId, string displayName,
+            string idleResourcePath, string walkResourcePath,
+            float frameRate = 10f,
+            int[] leftFrameIndices = null, int[] rightFrameIndices = null,
+            float visualScale = 1f, float visualYOffset = 0f)
+        {
+            var walkPath = string.IsNullOrEmpty(walkResourcePath) ? idleResourcePath : walkResourcePath;
+            var idle = new CharacterActionConfig("Idle")
+                .WithSheet(idleResourcePath)
+                .WithFrameRate(frameRate)
+                .WithLoop(true);
+            var walk = new CharacterActionConfig("Walk")
+                .WithSheet(walkPath)
+                .WithFrameRate(frameRate)
+                .WithLoop(true);
+            if (leftFrameIndices != null && leftFrameIndices.Length > 0)
+            {
+                idle.WithDirectionalFrames(-1, leftFrameIndices);
+                walk.WithDirectionalFrames(-1, leftFrameIndices);
+            }
+            if (rightFrameIndices != null && rightFrameIndices.Length > 0)
+            {
+                idle.WithDirectionalFrames(+1, rightFrameIndices);
+                walk.WithDirectionalFrames(+1, rightFrameIndices);
+            }
+
+            var bodyPart = new CharacterPartConfig("Body", CharacterPartType.Dynamic)
+                .WithLocalScale(UnityEngine.Vector3.one * UnityEngine.Mathf.Max(0.0001f, visualScale))
+                .WithLocalPosition(new UnityEngine.Vector3(0f, visualYOffset, 0f))
+                .WithSortingOrder(0)
+                .WithDynamic("Idle", idle, walk);
+
+            return new CharacterConfig(configId, displayName ?? configId)
+                .WithRenderMode(CharacterRenderMode.Sprite2D)
+                .WithPart(bodyPart);
+        }
+
+        /// <summary>一键注册 sheet 式生物（幂等：同 ID 已注册时直接覆盖）。</summary>
+        public static CharacterConfig RegisterSheetCreature(string configId, string displayName,
+            string idleResourcePath, string walkResourcePath,
+            float frameRate = 10f,
+            int[] leftFrameIndices = null, int[] rightFrameIndices = null,
+            float visualScale = 1f, float visualYOffset = 0f)
+        {
+            var cfg = MakeSheetCreature(configId, displayName, idleResourcePath, walkResourcePath,
+                frameRate, leftFrameIndices, rightFrameIndices, visualScale, visualYOffset);
+            if (CharacterService.Instance != null)
+                CharacterService.Instance.RegisterConfig(cfg);
+            return cfg;
+        }
     }
 }

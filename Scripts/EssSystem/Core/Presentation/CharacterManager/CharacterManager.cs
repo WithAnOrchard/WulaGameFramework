@@ -39,6 +39,15 @@ namespace EssSystem.Core.Presentation.CharacterManager
         public const string EVT_TRIGGER_ATTACK         = "TriggerCharacterAttack";
         /// <summary>设置 Character 面朝（翻转 localScale.x）。data: [instanceId, facingRight(bool)].</summary>
         public const string EVT_SET_FACING             = "SetCharacterFacing";
+        /// <summary>设置 Character 朝向（sheet 模式下挑选方向变体帧）。data: [instanceId, direction(int -1/0/+1)].</summary>
+        public const string EVT_SET_DIRECTION          = "SetCharacterDirection";
+
+        /// <summary>查询某个角色配置/实例某个部件某个动作某帧的 Sprite Id（典型：取头像）。
+        /// <para>data: [string configIdOrInstanceId, string partId, string actionName?="Idle", int frameIndex?=0]</para>
+        /// <para>返回 <c>Ok(string spriteId)</c> / <c>Fail(msg)</c>。spriteId 可直接喂给
+        /// UIPanelComponent.BackgroundSpriteId 或任何走 ResourceManager.GetResource 的 sprite 槽。</para>
+        /// <para>用途示例：DialogueLine.PortraitSpriteId = 调本事件 → 拿到 NPC 头像贴图。</para></summary>
+        public const string EVT_GET_PART_SPRITE_ID     = "GetCharacterPartSpriteId";
 
         // ============================================================
         // Inspector
@@ -203,6 +212,63 @@ namespace EssSystem.Core.Presentation.CharacterManager
             var right = data.Count > 1 && data[1] is bool b && b;
             return Service.SetFacingRight(instanceId, right)
                 ? ResultCode.Ok(instanceId) : ResultCode.Fail($"SetFacing 失败: {instanceId}");
+        }
+
+        [Event(EVT_SET_DIRECTION)]
+        public List<object> SetDirection(List<object> data)
+        {
+            if (!RequireService(out var fail)) return fail;
+            if (!TryGetString(data, 0, out var instanceId, out fail)) return fail;
+            var direction = data.Count > 1 && data[1] is int d ? d : 1;
+            return Service.SetDirection(instanceId, direction)
+                ? ResultCode.Ok(instanceId) : ResultCode.Fail($"SetDirection 失败: {instanceId}");
+        }
+
+        [Event(EVT_GET_PART_SPRITE_ID)]
+        public List<object> GetPartSpriteId(List<object> data)
+        {
+            if (!RequireService(out var fail)) return fail;
+            if (!TryGetString(data, 0, out var key, out fail)) return fail;
+            if (!TryGetString(data, 1, out var partId, out fail)) return fail;
+            var actionName = data.Count > 2 && data[2] is string a && !string.IsNullOrEmpty(a) ? a : "Idle";
+            var frameIndex = data.Count > 3 && data[3] is int fi ? fi : 0;
+
+            // 优先按 configId 查；找不到再当 instanceId 反查 Config
+            var config = Service.GetConfig(key);
+            if (config == null)
+            {
+                var ch = Service.GetCharacter(key);
+                config = ch?.Config;
+            }
+            if (config == null) return ResultCode.Fail($"找不到 Config 也不是已存在 Instance: {key}");
+
+            // 找 part
+            CharacterPartConfig part = null;
+            if (config.Parts != null)
+            {
+                for (var i = 0; i < config.Parts.Count; i++)
+                    if (config.Parts[i] != null && config.Parts[i].PartId == partId) { part = config.Parts[i]; break; }
+            }
+            if (part == null) return ResultCode.Fail($"Config {config.ConfigId} 没有 partId={partId}");
+
+            // 静态部件 → 直接返回 StaticSpriteId（actionName/frameIndex 忽略）
+            if (part.PartType == CharacterPartType.Static)
+            {
+                if (string.IsNullOrEmpty(part.StaticSpriteId))
+                    return ResultCode.Fail($"Static part {partId} 没有 StaticSpriteId");
+                return ResultCode.Ok(part.StaticSpriteId);
+            }
+
+            // 动态部件 → 查动作 → 取帧
+            var action = part.GetAction(actionName);
+            if (action == null) return ResultCode.Fail($"part {partId} 没有动作 {actionName}");
+            if (action.SpriteIds == null || action.SpriteIds.Count == 0)
+                return ResultCode.Fail($"动作 {actionName} 没有 SpriteIds");
+            var idx = Mathf.Clamp(frameIndex, 0, action.SpriteIds.Count - 1);
+            var spriteId = action.SpriteIds[idx];
+            return string.IsNullOrEmpty(spriteId)
+                ? ResultCode.Fail($"动作 {actionName} 第 {idx} 帧 spriteId 为空")
+                : ResultCode.Ok(spriteId);
         }
 
         // ============================================================

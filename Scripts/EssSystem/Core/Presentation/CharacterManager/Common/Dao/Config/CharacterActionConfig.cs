@@ -15,8 +15,32 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
         /// <summary>动作名称，部件内唯一（例如 "Idle" / "Walk" / "Attack"）。</summary>
         public string ActionName = "Idle";
 
-        /// <summary>构成该动作的帧序列（按 <see cref="EssSystem.EssManager.ResourceManager"/> 注册的 Sprite Id）。</summary>
+        /// <summary>构成该动作的帧序列（按 <see cref="EssSystem.EssManager.ResourceManager"/> 注册的 Sprite Id）。
+        /// 与 <see cref="SheetResourcePath"/> 二选一；优先使用 SheetResourcePath（若非空）。</summary>
         public List<string> SpriteIds = new List<string>();
+
+        // ─── 2D Sprite Sheet 模式（与 SpriteIds 二选一） ─────────────────────
+        /// <summary>
+        /// 2D 子图 spritesheet 资源路径 —— 用 <c>Resources.LoadAll&lt;Sprite&gt;(path)</c> 一次性加载所有子图。
+        /// <para>典型用法：4 行 × 4 列方向式 sheet（行 = 朝向，列 = 帧）。
+        /// 配合 <see cref="DirectionalFrameIndices"/> 按朝向挑选具体帧；
+        /// 不配方向数据时退回到 <see cref="SheetFrameIndices"/> 默认序列。</para>
+        /// </summary>
+        public string SheetResourcePath = string.Empty;
+
+        /// <summary>
+        /// 默认帧索引（在 sub-sprite 列表中的偏移）。<see cref="SheetResourcePath"/> 非空且
+        /// 当前 direction 未命中 <see cref="DirectionalFrameIndices"/> 时使用。
+        /// 空数组 = 顺序播放所有 sub-sprite。
+        /// </summary>
+        public int[] SheetFrameIndices;
+
+        /// <summary>
+        /// 按朝向区分的帧索引：键 = 朝向 sign（-1 / +1），值 = 在 sub-sprite 列表中的索引序列。
+        /// 仅在 <see cref="SheetResourcePath"/> 非空时生效。
+        /// <para>典型 4×4 sheet：<c>{ {-1, new[]{4,5,6,7}}, {+1, new[]{8,9,10,11}} }</c></para>
+        /// </summary>
+        public Dictionary<int, int[]> DirectionalFrameIndices;
 
         /// <summary>每秒播放帧数（FPS）。</summary>
         public float FrameRate = 12f;
@@ -61,6 +85,25 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
         public CharacterActionConfig WithSprites(params string[] spriteIds)
         {
             SpriteIds = new List<string>(spriteIds ?? Array.Empty<string>());
+            return this;
+        }
+
+        /// <summary>
+        /// 2D Sheet 模式（与 <see cref="WithSprites"/> 二选一）：指定 <c>Resources.LoadAll&lt;Sprite&gt;</c>
+        /// 路径 + 默认帧索引序列。<paramref name="defaultFrameIndices"/>=null 时表示"顺序播放所有 sub-sprite"。
+        /// </summary>
+        public CharacterActionConfig WithSheet(string resourcePath, int[] defaultFrameIndices = null)
+        {
+            SheetResourcePath = resourcePath ?? string.Empty;
+            SheetFrameIndices = defaultFrameIndices;
+            return this;
+        }
+
+        /// <summary>注册一组朝向 → 帧索引映射（典型 +1/-1 横版双向；可扩展 0/+1/-1 三向等）。</summary>
+        public CharacterActionConfig WithDirectionalFrames(int direction, params int[] frameIndices)
+        {
+            if (DirectionalFrameIndices == null) DirectionalFrameIndices = new Dictionary<int, int[]>();
+            DirectionalFrameIndices[direction] = frameIndices ?? Array.Empty<int>();
             return this;
         }
 

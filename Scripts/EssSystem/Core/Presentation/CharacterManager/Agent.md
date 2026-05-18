@@ -36,7 +36,7 @@ Presentation/CharacterManager/
 │
 ├── Sprite2D/                  纯 2D Sprite 帧序列实现
 │   ├── Dao/
-│   │   ├── CharacterConfigFactory2D.cs    工厂（partial，含 MakeSimpleMonster / MakeLayered 等）
+│   │   ├── CharacterConfigFactory2D.cs    工厂（partial，含 MakeSimpleMonster / MakeLayered / MakeSheetCreature 等）
 │   │   ├── CharacterVariantPools.cs       变体池（颜色/装饰组合）
 │   │   ├── DefaultCharacterConfigs.cs     Warrior / Mage 等内置示例
 │   │   └── DefaultTreeCharacterConfigs.cs 树系列 8 份示例
@@ -162,6 +162,12 @@ public enum CharacterRenderMode
 - **返回**: `ResultCode.Ok(instanceId)` / `ResultCode.Fail`
 - **副作用**: 翻转 `View.transform.localScale.x`
 
+#### `CharacterManager.EVT_SET_DIRECTION` — 设置朝向（sheet 模式选行）
+- **常量**: `CharacterManager.EVT_SET_DIRECTION` = `"SetCharacterDirection"`
+- **参数**: `[string instanceId, int direction]`（-1 / 0 / +1）
+- **返回**: `ResultCode.Ok(instanceId)` / `ResultCode.Fail`
+- **副作用**: 广播到所有 `CharacterPartView2D`，命中 `CharacterActionConfig.DirectionalFrameIndices` 时即时切换帧序列。**不**翻转 localScale —— 与 `EVT_SET_FACING` 正交。
+
 ### 广播类
 
 #### `CharacterService.EVT_FRAME_EVENT` — 角色动画帧事件
@@ -211,6 +217,17 @@ public enum CharacterRenderMode
 CharacterConfigFactory.RegisterSimpleMonster("slime_green", "slime_green");
 CharacterConfigFactory.RegisterLayered("goblin",
     ("Body","goblin_body",0), ("Armor","goblin_armor",1));
+
+// 2D Sheet 模式（4 行 × N 列方向式 spritesheet）—— Tribe 生物典型路径
+CharacterConfigFactory.RegisterSheetCreature(
+    configId: "tribe_cow", displayName: "奶牛",
+    idleResourcePath: "Tribe/Common/Entity/Cow_idle (20x16)",
+    walkResourcePath: "Tribe/Common/Entity/Cow_walk (20x16)",
+    frameRate: 1f / 0.15f,
+    leftFrameIndices: new[] { 4, 5, 6, 7 },     // 行 1（面朝左）
+    rightFrameIndices: new[] { 8, 9, 10, 11 },  // 行 2（面朝右）
+    visualScale: 10f, visualYOffset: 0f);
+// 运行时 SetDirection(±1) 即切换 left / right 行的帧序列。
 
 // 3D FBX 模式（来自 Prefab3D/Dao/CharacterConfigFactory3D.cs）
 CharacterConfigFactory.RegisterFBXModel("zombie", "Models/Characters3D/zombie",

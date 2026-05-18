@@ -231,6 +231,18 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
                 transform.localScale = new Vector3(target, s.y, s.z);
         }
 
+        /// <summary>设置朝向 sign（-1 / 0 / +1），广播到所有 <see cref="CharacterPartView2D"/>。
+        /// <para>用途：sheet 模式下按朝向切换帧序列（行 = 朝向）。不影响 <see cref="SetFacingRight"/> 的视觉翻转。</para>
+        /// <para>3D / Static 部件忽略此调用。</para></summary>
+        public void SetDirection(int direction)
+        {
+            foreach (var kv in _parts)
+            {
+                if (kv.Value is CharacterPartView2D v2d)
+                    v2d.SetDirection(direction);
+            }
+        }
+
         #endregion
     }
 }

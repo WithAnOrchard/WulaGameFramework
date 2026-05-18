@@ -205,6 +205,16 @@ namespace EssSystem.Core.Presentation.CharacterManager
             return true;
         }
 
+        /// <summary>设置 Character 朝向（sheet 模式下挑选方向变体帧）。
+        /// 不影响视觉翻转（与 <see cref="SetFacingRight"/> 正交）。</summary>
+        public bool SetDirection(string instanceId, int direction)
+        {
+            var c = GetCharacter(instanceId);
+            if (c == null || c.View == null) return false;
+            c.View.SetDirection(direction);
+            return true;
+        }
+
         #endregion
 
         // ─────────────────────────────────────────────────────────────
