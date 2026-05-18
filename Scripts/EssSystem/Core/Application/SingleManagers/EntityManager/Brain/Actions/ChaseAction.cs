@@ -83,9 +83,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
             if (distX > attackRange * 0.8f)
             {
                 var dirX = diffX > 0f ? 1f : -1f;
-                var pos = selfPos;
-                pos.x += dirX * _speed * deltaTime;
-                ctx.Self.WorldPosition = pos;
+                BrainMoveHelper.ApplyMove(ctx.Self, new Vector2(dirX, 0f), _speed, deltaTime);
 
                 ctx.FacingDirection = dirX > 0f ? 1 : -1;
                 ctx.IsMoving = true;
@@ -93,7 +91,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
             }
             else
             {
-                // 在攻击范围内，面朝目标但不移动
+                // 在攻击范围内，面朝目标但不移动 —— 显式刹车（清掉 rb.velocity.x）
+                BrainMoveHelper.ApplyMove(ctx.Self, Vector2.zero, 0f, deltaTime);
                 ctx.FacingDirection = diffX >= 0f ? 1 : -1;
                 ctx.IsMoving = false;
                 ctx.IsRunning = false;
@@ -104,6 +103,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
 
         public void OnExit(BrainContext ctx)
         {
+            BrainMoveHelper.ApplyMove(ctx.Self, Vector2.zero, 0f, 0f);
             ctx.IsMoving = false;
             ctx.IsRunning = false;
         }

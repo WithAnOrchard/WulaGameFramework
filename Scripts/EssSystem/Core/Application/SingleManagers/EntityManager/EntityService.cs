@@ -38,6 +38,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         /// 导致 <see cref="CreateEntity"/> 命中重复并跳过 EVT_CREATE_CHARACTER → 没有 GameObject。</summary>
         protected override bool IsTransientCategory(string category) => category == CAT_INSTANCES;
 
+        /// <summary>SuppressHitSFX=true 的 instanceId 集合 —— TryDamage 跳过通用 PlayDamageSFX。</summary>
+        private readonly HashSet<string> _silentDamageEntities = new HashSet<string>();
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -193,7 +196,17 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             ApplyColliderLocal(host, definition.Collider);
 
             // 使用链式 fluent API（参 Entity.cs 末尾 Fluent API 注释）
-            if (definition.CanMove)       entity.CanMove(definition.MoveSpeed);
+            // 移动能力：宿主有 Dynamic Rigidbody2D 时挂物理实现（写 rb.velocity），
+            // 否则挂逻辑实现（直写 WorldPosition）。详见 BrainMoveHelper 注释——
+            // Dynamic 实体的 Tick 同步会反向覆盖 WorldPosition，所以必须走 rb.velocity。
+            if (definition.CanMove)
+            {
+                var hostRb = host.GetComponent<Rigidbody2D>();
+                if (hostRb != null && hostRb.bodyType == RigidbodyType2D.Dynamic)
+                    entity.Add<IMovable>(new Rigidbody2DMoverComponent(hostRb, definition.MoveSpeed, sideScroller: true));
+                else
+                    entity.CanMove(definition.MoveSpeed);
+            }
             if (definition.CanBeAttacked)
             {
                 entity.CanBeAttacked(definition.MaxHp);
@@ -209,19 +222,32 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 if (rb != null) entity.CanKnockback(rb, definition.KnockbackForce, definition.KnockbackDuration);
             }
 
+            if (definition.SuppressHitSFX) _silentDamageEntities.Add(instanceId);
+
             SetData(CAT_INSTANCES, instanceId, entity);
             AttachEntityHandle(host, entity);
             Log($"注册场景 Entity 实例: {instanceId}", Color.green);
             return entity;
         }
 
-        /// <summary>给承载 GameObject 带上 <see cref="EntityHandle"/> 并绑定。已存在则重绑。</summary>
-        internal static void AttachEntityHandle(GameObject host, Entity entity)
+        /// <summary>给承载 GameObject 带上 <see cref="EntityHandle"/> 并绑定。已存在则重绑。
+        /// <para>同时把 Entity 写进 <see cref="CAT_INSTANCES"/> 注册表（idempotent），让 EVT_DAMAGE_ENTITY
+        /// 这类按 InstanceId 查表的事件能正确路由 —— 否则像 TribePlayer 这种自己 new Entity
+        /// 又只调本方法的玩法就会"不可被攻击"（handle 拿得到 entity，但 DamageEntity 找不到实例）。</para>
+        /// </summary>
+        public static void AttachEntityHandle(GameObject host, Entity entity)
         {
             if (host == null || entity == null) return;
             var handle = host.GetComponent<EntityHandle>();
             if (handle == null) handle = host.AddComponent<EntityHandle>();
             handle.Bind(entity.InstanceId, entity);
+
+            // 兜底注册：业务方可能直接 new Entity + AttachEntityHandle（不走 CreateSceneEntity）
+            if (HasInstance && !string.IsNullOrEmpty(entity.InstanceId)
+                && !Instance.HasData(CAT_INSTANCES, entity.InstanceId))
+            {
+                Instance.SetData(CAT_INSTANCES, entity.InstanceId, entity);
+            }
         }
 
         /// <summary>从 <paramref name="config"/> 解析本次创建用的 CharacterConfig ID —— variants 非空则随机挑一个。</summary>
@@ -332,6 +358,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
             // E4: 通过 RemoveData 走标准路径，transient 自然跳过写盘。
             RemoveData(CAT_INSTANCES, instanceId);
+            _silentDamageEntities.Remove(instanceId);
 
             Log($"销毁 Entity 实例: {instanceId}", Color.yellow);
             return true;
@@ -379,9 +406,10 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 // 触发击退效果
                 target.Get<IKnockbackEffect>()?.OnKnockback(sourcePos);
 
-                // 播放受伤音效
+                // 播放受伤音效（采集类实体可通过 SuppressHitSFX 抑制 → 由业务自播专属音效，避免双响）
                 // §4.1 跨模块 AudioManager 走 bare-string
-                EventProcessor.Instance?.TriggerEventMethod("PlayDamageSFX", null);
+                if (!_silentDamageEntities.Contains(target.InstanceId))
+                    EventProcessor.Instance?.TriggerEventMethod("PlayDamageSFX", null);
             }
 
             return dealt;

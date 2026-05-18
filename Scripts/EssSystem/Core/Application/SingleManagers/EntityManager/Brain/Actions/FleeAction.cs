@@ -61,11 +61,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
             // 已到安全距离
             if (distX >= _safeDistance) return BrainStatus.Success;
 
-            // 远离方向移动（仅 X 轴）
+            // 远离方向移动（仅 X 轴）—— 走 BrainMoveHelper 路由 Dynamic rb / 逻辑两条路径
             var dirX = diffX >= 0f ? 1f : -1f;
-            var pos = selfPos;
-            pos.x += dirX * _speed * deltaTime;
-            ctx.Self.WorldPosition = pos;
+            BrainMoveHelper.ApplyMove(ctx.Self, new Vector2(dirX, 0f), _speed, deltaTime);
 
             // 写入运动状态供动画层读取
             ctx.FacingDirection = dirX >= 0f ? 1 : -1;
@@ -77,6 +75,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
 
         public void OnExit(BrainContext ctx)
         {
+            BrainMoveHelper.ApplyMove(ctx.Self, Vector2.zero, 0f, 0f);
             ctx.IsMoving = false;
             ctx.IsRunning = false;
         }

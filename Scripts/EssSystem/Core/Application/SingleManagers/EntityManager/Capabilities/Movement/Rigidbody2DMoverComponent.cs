@@ -26,6 +26,10 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         /// <summary>本帧是否处于冲刺状态（由外部置位，例如按住 Shift）。</summary>
         public bool Sprinting { get; set; }
 
+        /// <summary>速度倍率（Buff 用，&lt;1 减速 / &gt;1 加速；缺省 1）。
+        /// 与 <see cref="SprintMultiplier"/> 串联相乘 —— Slow Buff 不会取消冲刺加成。</summary>
+        public float SpeedMultiplier { get; set; } = 1f;
+
         /// <summary>是否启用横版模式：仅 X 受输入驱动，Y 由 Rigidbody2D 重力决定。</summary>
         public bool SideScroller { get; set; }
 
@@ -49,7 +53,17 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         public void Move(Vector3 direction, float deltaTime)
         {
             if (_rb == null) return;
-            var speed = MoveSpeed * (Sprinting ? Mathf.Max(1f, SprintMultiplier) : 1f);
+            // Stun 短路：当前帧不接受输入，但保留重力 Y（避免眩晕中悬停）
+            var ctrl = _owner != null ? _owner.Get<IControllable>() : null;
+            if (ctrl != null && ctrl.Stunned)
+            {
+                _rb.velocity = new Vector2(0f, _rb.velocity.y);
+                if (_owner != null) _owner.WorldPosition = _rb.position;
+                return;
+            }
+            var speed = MoveSpeed
+                        * (Sprinting ? Mathf.Max(1f, SprintMultiplier) : 1f)
+                        * Mathf.Max(0f, SpeedMultiplier);
             var dir = direction.sqrMagnitude > 1f ? direction.normalized : direction;
             _rb.velocity = SideScroller
                 ? new Vector2(dir.x * speed, _rb.velocity.y)

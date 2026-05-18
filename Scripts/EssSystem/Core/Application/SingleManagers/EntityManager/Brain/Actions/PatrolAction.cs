@@ -56,10 +56,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
                 }
             }
 
-            // 移动
-            var pos = ctx.Self.WorldPosition;
-            pos.x += _direction * _speed * deltaTime;
-            ctx.Self.WorldPosition = pos;
+            // 移动 —— 走 BrainMoveHelper：Dynamic Rigidbody2D 写 rb.velocity，其它直写 WorldPosition
+            BrainMoveHelper.ApplyMove(ctx.Self, new Vector2(_direction, 0f), _speed, deltaTime);
 
             // 写入运动状态供动画层读取
             ctx.FacingDirection = _direction;
@@ -71,6 +69,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
 
         public void OnExit(BrainContext ctx)
         {
+            // 归零速度：避免 Dynamic rb 在切换到下一个 Action 前残留滑行
+            BrainMoveHelper.ApplyMove(ctx.Self, Vector2.zero, 0f, 0f);
             ctx.IsMoving = false;
         }
     }

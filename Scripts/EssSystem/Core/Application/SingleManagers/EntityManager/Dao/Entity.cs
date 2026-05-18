@@ -198,6 +198,15 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
             return this;
         }
 
+        /// <summary>赋予可交互能力 —— 玩家靠近 <paramref name="radius"/> 内显头顶 <paramref name="promptLabel"/>，
+        /// 按 <paramref name="interactKey"/> 触发 <paramref name="onInteract"/>。
+        /// <para>典型用例：NPC 对话、工作台 / 篝火制作、宝箱、传送门。</para></summary>
+        public Entity CanInteract(float radius, string promptLabel, Action onInteract, KeyCode interactKey = KeyCode.F)
+        {
+            Add<IInteractable>(new InteractableComponent(radius, promptLabel, interactKey, onInteract));
+            return this;
+        }
+
         /// <summary>接触伤害（铁丝网类）—— 周期 <see cref="Physics2D.OverlapCircle"/> 扫描造成伤害。</summary>
         public Entity CanDamageOnContact(float damagePerTick, float radius,
             float tickInterval = 1f, string damageType = "ContactDamage", LayerMask layerMask = default)

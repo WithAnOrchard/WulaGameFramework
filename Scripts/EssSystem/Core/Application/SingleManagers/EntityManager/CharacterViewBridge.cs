@@ -24,6 +24,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         private const string CREATE       = "CreateCharacter";
         private const string DESTROY      = "DestroyCharacter";
         private const string SET_FACING   = "SetCharacterFacing";
+        private const string SET_DIRECTION= "SetCharacterDirection";
         private const string LOCOMOTION   = "PlayCharacterLocomotion";
         private const string ATTACK       = "TriggerCharacterAttack";
         private const string PLAY_ACTION  = "PlayCharacterAction";
@@ -68,6 +69,13 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         public static void SetFacing(string instanceId, bool facingRight)
         {
             Dispatch(SET_FACING, instanceId, facingRight);
+        }
+
+        /// <summary>设置朝向 sign（-1 / 0 / +1）—— sheet 模式下挑选方向变体帧。
+        /// 与 <see cref="SetFacing"/> 正交：本调用不翻转 localScale，只切换 sub-sprite 序列。</summary>
+        public static void SetDirection(string instanceId, int direction)
+        {
+            Dispatch(SET_DIRECTION, instanceId, direction);
         }
 
         /// <summary>分发运动状态（idle / walk / airborne）。</summary>

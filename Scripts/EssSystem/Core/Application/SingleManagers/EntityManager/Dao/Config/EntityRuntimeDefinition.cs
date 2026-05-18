@@ -18,6 +18,12 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config
         public float AttackCooldown = 0.6f;
         public Action<string> Died;
 
+        [Header("Audio")]
+        [Tooltip("受伤时是否抑制框架的通用受击音效（PlayDamageSFX）。\n" +
+                 "采集类实体（树木 / 矿石）通常会自播专属音效（如 harvest），\n" +
+                 "此时设为 true 避免双响。")]
+        public bool SuppressHitSFX = false;
+
         [Header("Flash Effect")]
         [Tooltip("是否启用受伤闪烁效果")]
         public bool EnableFlashEffect = true;

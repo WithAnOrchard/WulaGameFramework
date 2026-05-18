@@ -52,12 +52,11 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
 
             if (dist <= _stopDistance) return BrainStatus.Success;
 
-            // 移动
-            var step = _speed * deltaTime;
-            if (step >= dist)
-                self.WorldPosition = targetPos;
-            else
-                self.WorldPosition = currentPos + diff.normalized * step;
+            // 移动 —— 走 BrainMoveHelper 路由（Dynamic rb 写 rb.velocity，否则直写 WorldPosition）
+            // 注：物理路径下不做 step >= dist 的截断（由距离判定下一帧 Success），
+            //     避免对 Dynamic rb 强写位置造成穿透/抖动
+            var dirN = dist > 1e-4f ? (Vector2)(diff / dist) : Vector2.zero;
+            BrainMoveHelper.ApplyMove(self, dirN, _speed, deltaTime);
 
             // 写入运动状态供动画层读取
             ctx.FacingDirection = diff.x >= 0f ? 1 : -1;
@@ -68,6 +67,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions
 
         public void OnExit(BrainContext ctx)
         {
+            BrainMoveHelper.ApplyMove(ctx.Self, Vector2.zero, 0f, 0f);
             ctx.IsMoving = false;
         }
 

@@ -14,6 +14,13 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         public float MaxHp { get; protected set; }
         public bool IsDead => CurrentHp <= 0f;
 
+        /// <summary>
+        /// 入伤减免（0..1）—— 由 Buff / 装备 / 状态外部写入；
+        /// <see cref="TakeDamage"/> 在结算前以 <c>amount * (1 - DamageReduction)</c> 缩减。
+        /// 主要用途：临时强化（如"巨大化"）、护盾、护甲百分比减伤。
+        /// </summary>
+        public float DamageReduction { get; set; }
+
         public event Action<Entity, Entity, float, string> Damaged;
         public event Action<Entity, Entity> Died;
 
@@ -32,13 +39,30 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         {
             if (IsDead || amount <= 0f) return 0f;
 
+            // 入伤减免：先按 DamageReduction 缩减，再按当前血量裁剪。
             // IInvulnerable 由上层（EntityService.TryDamage）拦截；这里做兜底 assert。
-            var dealt = Mathf.Min(CurrentHp, amount);
+            var reduced = amount * Mathf.Clamp01(1f - DamageReduction);
+            if (reduced <= 0f) return 0f;
+            var dealt = Mathf.Min(CurrentHp, reduced);
             CurrentHp -= dealt;
             Damaged?.Invoke(_owner, source, dealt, damageType);
 
             if (IsDead) Died?.Invoke(_owner, source);
             return dealt;
+        }
+
+        /// <summary>
+        /// 调整最大血量（Buff / 等级提升用）。
+        /// <list type="bullet">
+        /// <item><paramref name="refill"/>=true：把 CurrentHp 也置为 newMax（"巨大化"语义）。</item>
+        /// <item>=false：只截断超过新上限的当前血（缩血时不爆血）。</item>
+        /// </list>
+        /// </summary>
+        public virtual void SetMaxHp(float newMax, bool refill)
+        {
+            newMax = Mathf.Max(1f, newMax);
+            MaxHp = newMax;
+            CurrentHp = refill ? newMax : Mathf.Min(CurrentHp, newMax);
         }
 
         public virtual float Heal(float amount, Entity source = null)
