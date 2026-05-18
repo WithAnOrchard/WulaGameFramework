@@ -381,7 +381,7 @@
   - 风格与 InventoryUI / DialogueUI 一致
 
 - **影响范围**:
-  - 新增框架：`SingleManagers/NpcManager/`
+  - 新增框架：`MultiManagers/NpcManager/`
     - `NpcManager.cs / NpcService.cs`
     - `Dao/NpcConfig / NpcInstance / NpcRole / NpcInteractionFlags`
     - `UI/NpcInteractionUIBuilder.cs`
@@ -851,7 +851,7 @@
 - **背景**: 在开始新一轮 Tribe 设计前，记录当前已完成的整理工作作为基线。
 - **方案**: 上一轮重构已落盘的核心结构：
   - `Demo/Tribe/` 物理布局：`Player/Component/`、`Enemy/`、`Resource/`、`Background/`
-  - 骷髅已并入 `TribeCreature` + `TribeCreaturePresets.Skeleton()`，无独立类
+  - 骷髅已并入 `TribeCreature` + `Skeleton.Preset()`，无独立类
   - `Resources/Tribe/Items/` 220 张图按 9 个功能子目录分类（Weapons / Armor / Accessories / Consumables / Materials / Currency / Tools / Magic / UI）
   - `Resources/Sound/` 统一根目录（feuer.wav 已并入），`ResourceManager` hint 加 `Sound`
   - 玩家编排器 `TribePlayer` + 子组件（Movement / Combat / Hud / Interaction / CameraFollow）

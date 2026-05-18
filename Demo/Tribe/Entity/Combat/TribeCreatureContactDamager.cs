@@ -1,7 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 
-namespace Demo.Tribe.Enemy
+namespace Demo.Tribe.Entities
 {
     /// <summary>
     /// 接触伤害模块 —— OnTriggerStay2D / OnCollisionStay2D 时反查 <see cref="EntityHandle"/>，
@@ -10,7 +10,7 @@ namespace Demo.Tribe.Enemy
     /// <para>需挂在带 <see cref="Collider2D"/> + isTrigger 的同一 GameObject 上。</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public class TribeEnemyContactDamager : MonoBehaviour
+    public class TribeCreatureContactDamager : MonoBehaviour
     {
         [SerializeField, Min(0f)]   private float _contactDamage = 8f;
         [SerializeField, Min(0.1f)] private float _damageCooldown = 1f;
@@ -34,6 +34,11 @@ namespace Demo.Tribe.Enemy
         private void TryHit(Collider2D other)
         {
             if (!Enabled || other == null || Time.time < _nextDamageTime) return;
+
+            // 怪物之间不互相伤害：对方挂了 TribeCreatureContactDamager（即也是怪物）则跳过
+            var otherDamager = other.GetComponentInParent<TribeCreatureContactDamager>();
+            if (otherDamager != null && otherDamager != this) return;
+
             var handle = other.GetComponentInParent<EntityHandle>();
             if (handle == null || !handle.CanBeAttacked) return;
             handle.TakeDamage(_contactDamage, "EnemyContact", transform.position);

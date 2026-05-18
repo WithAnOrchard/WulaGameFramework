@@ -9,6 +9,9 @@ using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
 using EssSystem.Core.Application.SingleManagers.DialogueManager;
+using EssSystem.Core.Application.MultiManagers.NpcManager;
+using EssSystem.Core.Application.MultiManagers.FarmManager;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom.Config;
@@ -17,7 +20,7 @@ using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Runtime;
 using UnityEngine.Tilemaps;
 using Demo.Tribe.Player;
 using Demo.Tribe.Background;
-using Demo.Tribe.Enemy;
+using Demo.Tribe.Entities;
 using Demo.Tribe.Resource;
 using Demo.Tribe.World;
 using Demo.Tribe.World.Presets;
@@ -58,7 +61,7 @@ namespace Demo.Tribe
 
         [Header("Background (视差 + 循环)")]
         [Tooltip("背景图资源根目录（Resources/ 下的相对路径）。里面的所有 Sprite 会按名称顺序作为层加载。")]
-        [SerializeField] private string _backgroundResourceFolder = "Tribe/Background";
+        [SerializeField] private string _backgroundResourceFolder = "Tribe/Forest";
 
         [Tooltip("前景起始索引：i 〈 _foregroundStartIndex 的层 → 玩家后面；≥的层 → 玩家前面。\n" +
                  "例：5 张图 + index=4 → 前 4 尠作背景，最后一张（5.png）作前景。")]
@@ -150,37 +153,37 @@ namespace Demo.Tribe
                 new InventoryItem("tribe_carrot", "胡萝卜")
                     .WithDescription("新鲜的胡萝卜。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/Consumables/carrot")
+                    .WithIcon("Tribe/Common/Items/Consumables/carrot")
                     .WithMaxStack(99)
                     .WithValue(3),
-                new PickableItemDefinition("tribe_carrot_pickable", "tribe_carrot", "胡萝卜", "Tribe/Items/Consumables/carrot", 1));
+                new PickableItemDefinition("tribe_carrot_pickable", "tribe_carrot", "胡萝卜", "Tribe/Common/Items/Consumables/carrot", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_sunflower", "向日葵")
                     .WithDescription("面向太阳盛开的花。")
                     .WithType(InventoryItemType.Material)
-                    .WithIcon("Tribe/Items/Consumables/flower_sunflower")
+                    .WithIcon("Tribe/Common/Items/Consumables/flower_sunflower")
                     .WithMaxStack(99)
                     .WithValue(5),
-                new PickableItemDefinition("tribe_sunflower_pickable", "tribe_sunflower", "向日葵", "Tribe/Items/Consumables/flower_sunflower", 1));
+                new PickableItemDefinition("tribe_sunflower_pickable", "tribe_sunflower", "向日葵", "Tribe/Common/Items/Consumables/flower_sunflower", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_red_mushroom", "红蘑菇")
                     .WithDescription("鲜红色的蘑菇。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/Consumables/mushroom_red")
+                    .WithIcon("Tribe/Common/Items/Consumables/mushroom_red")
                     .WithMaxStack(99)
                     .WithValue(4),
-                new PickableItemDefinition("tribe_red_mushroom_pickable", "tribe_red_mushroom", "红蘑菇", "Tribe/Items/Consumables/mushroom_red", 1));
+                new PickableItemDefinition("tribe_red_mushroom_pickable", "tribe_red_mushroom", "红蘑菇", "Tribe/Common/Items/Consumables/mushroom_red", 1));
 
             RegisterTribeItem(
                 new InventoryItem("tribe_berries", "浆果")
                     .WithDescription("从灌木上采下来的浆果。")
                     .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Items/Consumables/berries_bush")
+                    .WithIcon("Tribe/Common/Items/Consumables/berries_bush")
                     .WithMaxStack(99)
                     .WithValue(2),
-                new PickableItemDefinition("tribe_berries_pickable", "tribe_berries", "浆果", "Tribe/Items/Consumables/berries_bush", 1));
+                new PickableItemDefinition("tribe_berries_pickable", "tribe_berries", "浆果", "Tribe/Common/Items/Consumables/berries_bush", 1));
         }
 
         private static void RegisterTribeItem(InventoryItem item, PickableItemDefinition pickableDefinition)
@@ -535,6 +538,9 @@ namespace Demo.Tribe
             EnsureSubManager<EntityManager>();
             EnsureSubManager<InventoryManager>();
             EnsureSubManager<DialogueManager>();
+            EnsureSubManager<NpcManager>();
+            EnsureSubManager<FarmManager>();
+            EnsureSubManager<SkillManager>();
         }
 
         /// <summary>找/建一个 <typeparamref name="T"/> Manager（在自身或子节点）。</summary>

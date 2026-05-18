@@ -169,6 +169,34 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 - 写自定义数据类必须 `[Serializable]`
 - **绝不**存 `GameObject` / `MonoBehaviour`（不可序列化）
 
+### 7. 引擎组件归属 Manager（**强制规则**）
+
+**Unity 引擎里和"已有 Manager 域"重叠的组件，业务代码一律不得自己 `AddComponent` / 直接构造，而必须走对应 Manager 的事件 API。** 这条等同于 §5（UI 必经 UIManager）的扩展，覆盖音频、角色视觉、动画等更多领域。
+
+**禁区 / 替代路径**
+
+| 禁区 | 反模式 | 必须改走 |
+|---|---|---|
+| **音频** | `gameObject.AddComponent<AudioSource>()` 自播 / 持有 `AudioClip`、自己 `Update` 改 `volume` | `EVT_PLAY_BGM` / `EVT_PLAY_SFX` / `EVT_PLAY_POSITIONAL_LOOP_SFX` 等 AudioManager Event；位置音用 positional loop API，由 AudioManager 持有 AudioSource 注册表，自动同步 SFXVolume |
+| **角色视觉** | `AddComponent<SpriteRenderer>` + 自写 `_frames`/`_currentFrame` 帧动画 / 直接拼贴 sprite sheet | 注册一份 `CharacterConfig`（参 `DefaultCharacterConfigs` / `DefaultTreeCharacterConfigs` / `TribeCampfireCharacterConfig`），通过 `CharacterViewBridge.CreateCharacter` 实例化；动画用 `CharacterActionConfig` + `Sprite2DAnimator` 标准 8 状态机 |
+| **uGUI**（参 §5） | `AddComponent<Canvas/Image/Button/Text/...>` | UIManager DAO 树 + `RegisterUIEntity` |
+| **物品** | `AddComponent<PickableItem>` 自管掉落 | `EVT_REGISTER_PICKABLE_ITEM` + `EVT_SPAWN_PICKABLE_ITEM` |
+| **碰撞 / 实体能力** | 自挂 Collider + 散装 HP/伤害字段 | `EVT_REGISTER_SCENE_ENTITY` + `EntityRuntimeDefinition` 描述能力（`CanMove` / `CanBeAttacked` / `CanAttack` / `EnableKnockbackEffect`），EntityService 装配 `IMovable`/`IDamageable` 等能力 |
+
+**例外**：一次性、不属于任何已有 Manager 域的临时组件可以自挂（如：业务专用的 `MonoBehaviour` 状态控件、特例占位 `SpriteRenderer` 用作 debug 色块、Rigidbody2D 这种纯物理基件）。判定原则：**如果某个域已经有 Manager / Service，就一律走它**。
+
+**为什么**：
+- **统一生命周期**：Manager 持有注册表 → 全局批量修改（音量同步、面朝翻转、热重载）；业务自挂会漏掉 Manager 的副作用。
+- **跨模块零耦合**：业务方只 bare-string 调 Event 协议（§4.1），不再 `using` 引擎细节命名空间。
+- **可替换实现**：今天是 Sprite2D，明天 CharacterManager 切到 Spine / 3D Prefab，业务侧零改动；今天是 manual volume 衰减，明天 AudioManager 接 FMOD，业务侧零改动。
+- **消除配置漂移**：见 2026-05-17 营火事故 —— 业务自挂 `AudioSource` + 自写帧动画，导致 SFXVolume 同步失败、热重载失效；迁回 AudioManager / CharacterManager 后两个 bug 一并消失。
+
+**校验**：`agent_lint.ps1` 会扫 `Demo/` 下的 `AddComponent<AudioSource>` / `AddComponent<Canvas>` / 手写 sprite-sheet 帧循环模式，命中后输出 WARN。新增引擎组件要进 Manager 域时，请同步把禁区写入本表。
+
+**参考迁移**：
+- 营火：`Demo/Tribe/TribeCampfire.cs`（瘦到只剩音频锚点） + `Demo/Tribe/World/Features/TribeCampfireCharacterConfig.cs`（视觉走 CharacterManager） + `AudioManager.PlayPositionalLoopSFX`（音频走 AudioManager）。
+- 树木：`DefaultTreeCharacterConfigs.RegisterAll(Service)` —— 完整的"零自挂"装饰物范式。
+
 ## 当前架构状态（重要历史决策）
 
 | 主题 | 当前状态 |
@@ -366,6 +394,8 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `AudioManager.EVT_PLAY_ATTACK_SFX` | `PlayAttackSFX` | Core/AudioManager | 播放攻击音效（便捷命令） |
 | `AudioManager.EVT_PLAY_UI_SFX` | `PlayUISFX` | Core/AudioManager | 播放 UI 操作音效（便捷命令） |
 | `AudioManager.EVT_PLAY_ITEM_USE_SFX` | `PlayItemUseSFX` | Core/AudioManager | 播放物品使用音效（便捷命令） |
+| `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX` | `PlayPositionalLoopSFX` | Core/AudioManager | 在指定 Transform 挂 3D 循环音源（命令），参数 `[clipPath, Transform anchor, float minDist?=1.5, float maxDist?=12, float volumeScale?=1]` → `Ok(string handleId)`；位置感知音 + Linear rolloff + 自动同步 SFXVolume |
+| `AudioManager.EVT_STOP_POSITIONAL_SFX` | `StopPositionalSFX` | Core/AudioManager | 停止并销毁由 `EVT_PLAY_POSITIONAL_LOOP_SFX` 创建的音源（命令），参数 `[string handleId]` |
 | `CameraManager.EVT_GET_MAIN_CAMERA` | `GetMainCamera` | Core/CameraManager | 取主相机引用（查询），返回 `Ok(Camera)` |
 | `CameraManager.EVT_FOLLOW_TARGET` | `FollowCameraTarget` | Core/CameraManager | 设置跟随目标（命令），参数 `[Transform target, Vector3 offset?]` |
 | `CameraManager.EVT_STOP_FOLLOW` | `StopCameraFollow` | Core/CameraManager | 停止跟随（命令） |

@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
@@ -56,8 +58,6 @@ namespace Demo.Tribe.Player
         private TribePlayerHud _hud;
         private TribePlayerDamageEffect _damageEffect;
 
-        private Vector3 _lastDamageSourcePos;
-
         // ─── 生命周期 ───────────────────────────────────────────
         private void Awake()
         {
@@ -83,9 +83,37 @@ namespace Demo.Tribe.Player
             }
         }
 
+        private void OnEnable()
+        {
+            // 订阅背包变更事件，"add" 到 player 容器即播放拾取音效（pick）。
+            // §4.1 跨模块 bare-string：InventoryService.EVT_CHANGED = "InventoryChanged"
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.AddListener("InventoryChanged", OnInventoryChanged);
+        }
+
+        private void OnDisable()
+        {
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.RemoveListener("InventoryChanged", OnInventoryChanged);
+        }
+
         private void OnDestroy()
         {
             if (_hud != null) _hud.Dispose();
+        }
+
+        /// <summary>InventoryService.EVT_CHANGED 监听 —— args: [inventoryId, op, itemId, amount]。
+        /// 仅当 op="add" 且 inventoryId="player" 时播放拾取音效，避免快捷栏 remove / 内部移动也响。</summary>
+        private List<object> OnInventoryChanged(string evt, List<object> args)
+        {
+            if (args == null || args.Count < 4) return null;
+            var invId = args[0] as string;
+            var op    = args[1] as string;
+            if (invId != "player" || op != "add") return null;
+
+            EventProcessor.Instance?.TriggerEventMethod(
+                "PlaySFX", new List<object> { "Tribe/Common/Sound/pick" });
+            return null;
         }
 
         private void Update()
@@ -104,6 +132,22 @@ namespace Demo.Tribe.Player
             // 击退期间跳过移动输入，避免 Mover.Move 覆盖击退速度
             if (_damageEffect != null && _damageEffect.IsKnockbacking) return;
             _movement.FixedTick();
+            ApplyTribeWorldBoundary();
+        }
+
+        // 部落世界左边界钳制 —— 玩家不能越过 TribeWorldBoundary.LeftLimitX 往左走。
+        // 越界后把 x 拉回边界，同时清掉左向水平速度，避免 Rigidbody 把玩家"撞墙后回弹/卡墙"。
+        private void ApplyTribeWorldBoundary()
+        {
+            var boundary = Demo.Tribe.World.TribeWorldBoundary.Instance;
+            if (boundary == null) return;
+            var p = transform.position;
+            if (p.x >= boundary.LeftLimitX) return;
+            p.x = boundary.LeftLimitX;
+            transform.position = p;
+            var rb = GetComponent<Rigidbody2D>();
+            if (rb != null && rb.velocity.x < 0f)
+                rb.velocity = new Vector2(0f, rb.velocity.y);
         }
         private void LateUpdate()  => _cameraFollow.LateTick();
 
@@ -130,22 +174,37 @@ namespace Demo.Tribe.Player
             if (entity == null) return;
 
             entity.CanBeAttacked(_maxHp)
-                  .OnDamaged(OnEntityDamaged);
-
-            // 闪烁 + 击退仍由 TribePlayerDamageEffect 处理（OnEntityDamaged 回调中触发）
-            // 不挂框架 IFlashEffect / IKnockbackEffect，避免和 TryDamage 自动触发重复
+                  .OnDamaged(OnEntityDamaged)
+                  // 框架 IFlashEffect：用 Sprites/Flash shader 闪整个 Character 所有子 SpriteRenderer，
+                  // 自带 sourcePos 解析（无需依赖 _lastDamageSourcePos），避免单 renderer 闪烁不可见。
+                  .CanFlash(_characterRoot)
+                  // 框架 IKnockbackEffect：默认 KnockbackEffectComponent 走逻辑位移（直写 transform.position）
+                  // 对 dynamic Rigidbody2D 玩家无效 → 装一个 velocity-based 适配器，把 sourcePos 转给
+                  // TribePlayerDamageEffect.ApplyKnockback。这样击退方向永远基于真实攻击者坐标。
+                  .With<IKnockbackEffect>(new PlayerVelocityKnockbackAdapter(_damageEffect));
         }
 
-        /// <summary>IDamageable.Damaged 回调 —— 同步内部 HP 状态 + 强刷 HUD + 触发受伤效果。</summary>
+        /// <summary>IDamageable.Damaged 回调 —— 同步内部 HP 状态 + 强刷 HUD。
+        /// 受伤效果（闪烁 + 击退）已由框架 <c>IFlashEffect</c> / <c>IKnockbackEffect</c> 自动触发，无需手动调用。</summary>
         private void OnEntityDamaged(Entity self, Entity source, float dealt, string damageType)
         {
             var dmg = _movement.Entity?.Get<IDamageable>();
             if (dmg != null) _hp = dmg.CurrentHp;
             PushHudStats(force: true);
+        }
 
-            // 受伤效果（闪烁 + velocity-based 击退）
-            if (_damageEffect != null)
-                _damageEffect.OnDamaged(_lastDamageSourcePos);
+        /// <summary>把框架 <see cref="IKnockbackEffect"/> 协议适配到玩家的 velocity-based 击退实现。
+        /// EntityService.TryDamage 会传入正确解析后的 sourcePos（来自攻击者坐标），解决"绕过 _lastDamageSourcePos"问题。</summary>
+        private sealed class PlayerVelocityKnockbackAdapter : IKnockbackEffect
+        {
+            private readonly TribePlayerDamageEffect _impl;
+            public PlayerVelocityKnockbackAdapter(TribePlayerDamageEffect impl) { _impl = impl; }
+            public void OnAttach(Entity owner) { }
+            public void OnDetach(Entity owner) { }
+            public void OnKnockback(Vector3 damageSource)
+            {
+                if (_impl != null) _impl.ApplyKnockback(damageSource);
+            }
         }
 
         // ─── HUD 推送 ───────────────────────────────────────────
@@ -169,7 +228,6 @@ namespace Demo.Tribe.Player
         {
             var entity = _movement.Entity;
             if (entity == null || !EntityService.HasInstance) return;
-            _lastDamageSourcePos = damageSource;
             EntityService.Instance.TryDamage(entity, damage, source: null,
                 damageType: "EnemyContact", damageSourcePosition: damageSource);
         }

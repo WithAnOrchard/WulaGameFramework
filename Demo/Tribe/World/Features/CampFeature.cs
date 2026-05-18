@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using Demo.Tribe;
 
 namespace Demo.Tribe.World.Features
@@ -22,10 +23,10 @@ namespace Demo.Tribe.World.Features
         public string CampName = "TempCamp";
 
         // ─── 营火 ─────────────────────────────────────────
-        /// <summary>营火 sprite 资源路径（Resources.LoadAll&lt;Sprite&gt;，多帧动画）。</summary>
-        public string CampfireSpritePath = "Tribe/Objects/campfire";
-
-        /// <summary>营火音效路径（走 ResourceManager bare-string EVT_GET_AUDIO_CLIP）。</summary>
+        /// <summary>营火视觉走 CharacterManager —— ConfigId 注册逻辑见
+        /// <see cref="TribeCampfireCharacterConfig"/>。素材 spritesheet
+        /// <c>Resources/Tribe/Objects/campfire.png</c> 切片名 campfire_0~7。</summary>
+        /// <summary>营火音效路径（走 AudioManager bare-string EVT_PLAY_POSITIONAL_LOOP_SFX）。</summary>
         public string CampfireAudioPath = "Sound/feuer";
 
         /// <summary>营火世界缩放（campfire.png 单帧 16x32 @ PPU=100 → 0.16x0.32 单位；
@@ -60,16 +61,30 @@ namespace Demo.Tribe.World.Features
         /// 这样 NPC 武器 / 盾牌不会"穿透"渲染到玩家身上（玩家默认 0~6 在前）。</para></summary>
         public bool NpcUseGatherableSortingLayer = true;
 
-        // ─── 帐篷占位 ──────────────────────────────────────
-        /// <summary>帐篷颜色块色调。</summary>
+        /// <summary>NPC 互动时打开的对话 Id（参 DialogueManager 注册表，默认 DebugDialogue）。</summary>
+        public string NpcDialogueId = "DebugDialogue";
+
+        /// <summary>NPC 互动半径。</summary>
+        public float NpcInteractRadius = 2.5f;
+
+        // ─── 帐篷 ──────────────────────────────────────
+        /// <summary>帐篷 sprite 资源路径（Resources.Load&lt;Sprite&gt;）。</summary>
+        public string TentSpritePath = "Tribe/Common/Buildings/tent";
+
+        /// <summary>帐篷世界缩放倍数（按 sprite 原始尺寸放大）。</summary>
+        public float TentScale = 6f;
+
+        /// <summary>素材缺失时的 fallback 色块色调。</summary>
         public Color TentColor = new Color(0.65f, 0.45f, 0.30f);
 
-        /// <summary>帐篷尺寸（世界单位）。</summary>
-        public Vector2 TentSize = new Vector2(2f, 2f);
+        /// <summary>fallback 色块尺寸（世界单位）。</summary>
+        public Vector2 TentFallbackSize = new Vector2(2f, 2f);
 
-        /// <summary>左 / 右帐篷相对营火中心的 X 偏移。</summary>
-        public float TentLeftOffsetX = -2.5f;
-        public float TentRightOffsetX = 4f;
+        /// <summary>帐篷相对营火中心的 X 偏移。</summary>
+        public float TentOffsetX = -3.5f;
+
+        /// <summary>帐篷在底边贴地基础上的额外 Y 偏移（素材留白 / 视觉微调用，正值往上）。</summary>
+        public float TentYOffset = -0.7f;
 
         public CampFeature() { }
 
@@ -91,15 +106,27 @@ namespace Demo.Tribe.World.Features
             if (ctx.WorldRoot != null) root.transform.SetParent(ctx.WorldRoot, false);
             root.transform.position = basePos;
 
-            BuildTent(root.transform, ctx, TentLeftOffsetX, "🏕️帐篷A");
-            BuildTent(root.transform, ctx, TentRightOffsetX, "🏕️帐篷B");
+            BuildTent(root.transform, ctx, TentOffsetX, "🏕️帐篷");
             BuildCampfire(root.transform, ctx);
             BuildNpc(root.transform, ctx);
+
+            // 部落世界边界：帐篷左侧 8 单位作为初始"地图极限"。
+            // 留出 ~2 座农场（每座宽 3 单位）的预留空间，玩家不会一出生就撞墙。
+            // 建造农场后由 TribeFarmCoordinator 监听 OnFarmSpawned 自动继续向左扩展。
+            var boundary = Demo.Tribe.World.TribeWorldBoundary.EnsureInstance(ctx.WorldRoot);
+            var tentX = basePos.x + TentOffsetX;
+            boundary.SetLeftLimit(tentX - 8f);
+            boundary.SetIndicatorBottomY(ctx.GroundY);
+
+            // 农场协调器：注册默认 FarmConfig / CropConfig，监听 OnFarmSpawned 自动扩边界 + 渲染。
+            // 开发期按 G 键可在边界处生成一座基础农场，验证完整链路。
+            Demo.Tribe.World.TribeFarmCoordinator.EnsureInstance(ctx.WorldRoot);
         }
 
         // ─── 营火 ─────────────────────────────────────────
         private void BuildCampfire(Transform parent, TribeBiomeContext ctx)
         {
+            // 视觉容器：负责定位 + 持有 TribeCampfire（音频锚点）
             var go = new GameObject("Campfire");
             go.transform.SetParent(parent, false);
             // campfire sprite pivot=(0,0) 左下角 → 把节点向左移半个 sprite 宽度（16px @ PPU=100 = 0.16 单位）
@@ -108,45 +135,90 @@ namespace Demo.Tribe.World.Features
             const float ppu = 100f;
             var halfWorldWidth = (spritePixelWidth / ppu) * 0.5f * CampfireScale.x;
             go.transform.localPosition = new Vector3(-halfWorldWidth, CampfireYOffset, 0f);
-            go.transform.localScale = new Vector3(CampfireScale.x, CampfireScale.y, 1f);
 
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sortingOrder = ctx.BaseSortingOrder + 1;
+            // 视觉走 CharacterManager —— Idle 循环动作 + sprite_0..7
+            TribeCampfireCharacterConfig.EnsureRegistered();
+            var charInstanceId = $"TribeCampfire_{go.GetInstanceID()}";
+            var charRoot = CharacterViewBridge.CreateCharacter(
+                TribeCampfireCharacterConfig.ConfigId, charInstanceId,
+                parent: go.transform, worldPosition: go.transform.position);
+            if (charRoot != null)
+            {
+                charRoot.localScale = new Vector3(CampfireScale.x, CampfireScale.y, 1f);
+                // 部件 SortingOrder 写死在 config 里 (=0)；这里整体抬到 ctx.BaseSortingOrder+1
+                foreach (var r in charRoot.GetComponentsInChildren<SpriteRenderer>(true))
+                    r.sortingOrder = ctx.BaseSortingOrder + 1;
+            }
+            else
+            {
+                Debug.LogWarning("[CampFeature] 创建营火 Character 失败 —— 请确认已运行 " +
+                    "Tools/Character/Build Sprite Animator Base Controller 生成 base controller。");
+            }
 
-            // 走 ResourceManager bare-string 协议 + LoadAll 取多帧
-            var frames = LoadSpriteFrames(CampfireSpritePath);
-            var clip   = LoadAudioClipViaEvent(CampfireAudioPath);
-
+            // 音频生命周期挂在容器 GO 上：GO 销毁时 OnDestroy 调 StopPositionalSFX
             var fire = go.AddComponent<TribeCampfire>();
-            fire.Initialize(frames, clip);
+            fire.Initialize(CampfireAudioPath);
+
+            // 互动：以 Entity 能力形式注册（参 EntityManager.IInteractable / Entity.CanInteract）
+            AttachInteractable(
+                go,
+                instanceId: $"TribeCampfire_Interact_{go.GetInstanceID()}",
+                radius: 2.5f,
+                promptLabel: "[F] 制作",
+                onInteract: () =>
+                {
+                    Demo.Tribe.Interaction.TribeCraftingPanel.Toggle();
+                    if (EventProcessor.HasInstance)
+                        EventProcessor.Instance.TriggerEventMethod("PlayUISFX", null);
+                });
         }
 
-        // ─── 帐篷占位（色块 + 标签）────────────────────────
+        // ─── 帐篷 ────────────────────────────────────────
         private void BuildTent(Transform parent, TribeBiomeContext ctx, float offsetX, string label)
         {
             var go = new GameObject($"Tent_{(offsetX < 0f ? "L" : "R")}");
             go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(offsetX, TentSize.y * 0.5f, 0f);
-            go.transform.localScale = new Vector3(TentSize.x, TentSize.y, 1f);
 
+            var sprite = LoadSpriteViaEvent(TentSpritePath);
             var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = PlaceholderSpriteCache.GetWhitePixel();
-            sr.color = TentColor;
             sr.sortingOrder = ctx.BaseSortingOrder;
 
-            var labelGo = new GameObject("Label");
-            labelGo.transform.SetParent(go.transform, false);
-            labelGo.transform.localScale = new Vector3(1f / Mathf.Max(0.01f, TentSize.x),
-                                                       1f / Mathf.Max(0.01f, TentSize.y), 1f);
-            var tm = labelGo.AddComponent<TextMesh>();
-            tm.text = label;
-            tm.characterSize = 0.12f;
-            tm.fontSize = 64;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.color = Color.white;
-            var tmr = labelGo.GetComponent<MeshRenderer>();
-            if (tmr != null) tmr.sortingOrder = ctx.BaseSortingOrder + 1;
+            if (sprite != null)
+            {
+                // 真实 sprite 路径：底边贴地 + 中心对齐 offsetX。
+                // pivot 不可控（取决于 import 设置），用 bounds 反推让脚下 Y = 0。
+                sr.sprite = sprite;
+                go.transform.localScale = Vector3.one * TentScale;
+                // sprite.bounds 已经按 PPU 折算到世界单位（scale=1 时的世界 size）；再乘 TentScale 才是实际可见高度。
+                var height = sprite.bounds.size.y * TentScale;
+                // 让 sprite 底边落到 parent.y（= ctx.GroundY + YOffset）：把 pivot 抬到 (halfHeight + 底边到 pivot 的偏移)。
+                // bounds.center.y 就是 pivot 在世界空间到 sprite 几何中心的有符号距离（已乘 PPU）。
+                // 总公式：localPos.y = halfHeight - boundsCenterY * TentScale + TentYOffset
+                var boundsCenterY = sprite.bounds.center.y * TentScale;
+                go.transform.localPosition = new Vector3(offsetX, height * 0.5f - boundsCenterY + TentYOffset, 0f);
+            }
+            else
+            {
+                // 兜底：素材缺失时退回旧的色块 + 文字标签（保留调试可读性）
+                go.transform.localPosition = new Vector3(offsetX, TentFallbackSize.y * 0.5f + TentYOffset, 0f);
+                go.transform.localScale = new Vector3(TentFallbackSize.x, TentFallbackSize.y, 1f);
+                sr.sprite = PlaceholderSpriteCache.GetWhitePixel();
+                sr.color = TentColor;
+
+                var labelGo = new GameObject("Label");
+                labelGo.transform.SetParent(go.transform, false);
+                labelGo.transform.localScale = new Vector3(1f / Mathf.Max(0.01f, TentFallbackSize.x),
+                                                           1f / Mathf.Max(0.01f, TentFallbackSize.y), 1f);
+                var tm = labelGo.AddComponent<TextMesh>();
+                tm.text = label;
+                tm.characterSize = 0.12f;
+                tm.fontSize = 64;
+                tm.anchor = TextAnchor.MiddleCenter;
+                tm.alignment = TextAlignment.Center;
+                tm.color = Color.white;
+                var tmr = labelGo.GetComponent<MeshRenderer>();
+                if (tmr != null) tmr.sortingOrder = ctx.BaseSortingOrder + 1;
+            }
         }
 
         // ─── NPC（走 CharacterManager 与玩家同款）──────────
@@ -186,6 +258,28 @@ namespace Demo.Tribe.World.Features
                     + "请确认 CharacterManager 已注册该 ConfigId）");
             }
 
+            // 注册一段以本 NPC 为主角的对话（不再走 PortraitSpriteId；头像 OpenDialogueUI 后用
+            // SetDialoguePortraitSprite 直接拷 Character/Head 当前 SpriteRenderer.sprite，与 Player HUD 同款）。
+            var perNpcDialogueId = $"Tribe_Npc_{NpcInstanceId}_Dialogue";
+            RegisterNpcDialogue(perNpcDialogueId, NpcDisplayName);
+
+            // 闭包捕获 characterRoot —— 互动时同步把 NPC head 的 sprite 推到对话框
+            var capturedCharacterRoot = characterRoot;
+            var dialogueId = perNpcDialogueId;
+            AttachInteractable(
+                go,
+                instanceId: $"Npc_{NpcInstanceId}_Interact",
+                radius: NpcInteractRadius,
+                promptLabel: "[F] 对话",
+                onInteract: () =>
+                {
+                    if (!EventProcessor.HasInstance || string.IsNullOrEmpty(dialogueId)) return;
+                    EventProcessor.Instance.TriggerEventMethod(
+                        "OpenDialogueUI", new List<object> { dialogueId });
+                    PushNpcHeadToDialoguePortrait(capturedCharacterRoot);
+                    EventProcessor.Instance.TriggerEventMethod("PlayUISFX", null);
+                });
+
             // 头顶中文名牌
             var labelGo = new GameObject("Name");
             labelGo.transform.SetParent(go.transform, false);
@@ -201,21 +295,92 @@ namespace Demo.Tribe.World.Features
             if (tmr != null) tmr.sortingOrder = ctx.BaseSortingOrder + 10;
         }
 
-        // ─── 资源加载工具 ─────────────────────────────────
-        private static Sprite[] LoadSpriteFrames(string path)
+        // ─── NPC 对话注册 ────────────────────────────────────
+        /// <summary>注册一段以本 NPC 为主角的 demo 对话（不带 PortraitSpriteId）。
+        /// 头像在 F 触发 OpenDialogueUI 之后通过 <c>SetDialoguePortraitSprite</c> 事件
+        /// 直接把 NPC <c>Character/Head/SpriteRenderer.sprite</c> 引用贴上去，
+        /// 与 <see cref="Demo.Tribe.Player.TribePlayerHud.AttachHeadSprite"/> 同款做法。</summary>
+        private static void RegisterNpcDialogue(string dialogueId, string speakerName)
         {
-            if (string.IsNullOrEmpty(path)) return null;
-            // ResourceManager.EVT_GET_SPRITE 仅返单 Sprite；多帧 sprite sheet 用 LoadAll 直接拿。
-            return Resources.LoadAll<Sprite>(path);
+            if (!EventProcessor.HasInstance || string.IsNullOrEmpty(dialogueId)) return;
+
+            var line1 = new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.DialogueLine(
+                            "L1", speakerName, $"你好，旅行者。我是{speakerName}。")
+                        .WithNextLine("L2");
+            var line2 = new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.DialogueLine(
+                            "L2", speakerName, "需要我做点什么？")
+                        .AddOption(new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.DialogueOption("继续探索").WithNextLine("L3"))
+                        .AddOption(new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.DialogueOption("结束对话"));
+            var line3 = new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.DialogueLine(
+                            "L3", speakerName, "祝你好运！");
+
+            var dialogue = new EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Dialogue(dialogueId, $"{speakerName}对话")
+                .AddLine(line1)
+                .AddLine(line2)
+                .AddLine(line3);
+
+            EventProcessor.Instance.TriggerEventMethod(
+                "RegisterDialogue", new List<object> { dialogue });
         }
 
-        private static AudioClip LoadAudioClipViaEvent(string path)
+        /// <summary>从 NPC characterRoot 收集 Skin/Eyes/Hair/Head 四层 SpriteRenderer 的当前 sprite，
+        /// 按 z-order（背→前）打包成一组 Sprite，走 <c>DialogueManager.EVT_SET_PORTRAIT_SPRITE</c>
+        /// 层叠贴到对话框头像位 —— 还原"角色完整脸"（Skin 底面 + Eyes 眼睛 + Hair 头发 + Head 头饰）。</summary>
+        private static readonly string[] PortraitPartLayers = { "Skin", "Eyes", "Hair", "Head" };
+
+        private static void PushNpcHeadToDialoguePortrait(Transform characterRoot)
         {
-            if (string.IsNullOrEmpty(path) || !EventProcessor.HasInstance) return null;
-            // bare-string §4.1：跨模块走 "GetAudioClip"，避免 using ResourceManager 命名空间
-            var r = EventProcessor.Instance.TriggerEventMethod(
-                "GetAudioClip", new List<object> { path });
-            return ResultCode.IsOk(r) && r.Count >= 2 ? r[1] as AudioClip : null;
+            if (!EventProcessor.HasInstance || characterRoot == null) return;
+
+            var sprites = new List<Sprite>(PortraitPartLayers.Length);
+            for (var i = 0; i < PortraitPartLayers.Length; i++)
+            {
+                var partTr = characterRoot.Find(PortraitPartLayers[i]);
+                var renderer = partTr != null ? partTr.GetComponent<SpriteRenderer>() : null;
+                if (renderer != null && renderer.sprite != null)
+                    sprites.Add(renderer.sprite);
+            }
+            if (sprites.Count == 0) return;
+
+            EventProcessor.Instance.TriggerEventMethod(
+                "SetDialoguePortraitSprite", new List<object> { sprites });
         }
+
+        // ─── 互动能力挂载 ──────────────────────────────────
+        /// <summary>把"靠近 + F 互动"作为 <see cref="EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities.IInteractable"/>
+        /// 能力挂到 <paramref name="host"/> 上 —— 与 IDamageable / IFlashEffect 等同走 Entity Capability 体系，
+        /// 由 EntityService.Tick 自动驱动，无需自挂 MonoBehaviour。</summary>
+        private static void AttachInteractable(GameObject host, string instanceId,
+            float radius, string promptLabel, System.Action onInteract)
+        {
+            if (host == null || string.IsNullOrEmpty(instanceId)) return;
+
+            var entity = new Entity
+            {
+                InstanceId = instanceId,
+                ConfigId = "Interactable",
+                Kind = EntityKind.Static,
+                CharacterRoot = host.transform,
+                WorldPosition = host.transform.position,
+            };
+            entity.CanInteract(radius, promptLabel, onInteract);
+            EntityService.AttachEntityHandle(host, entity);
+        }
+
+        // ─── 资源加载工具 ─────────────────────────────────
+        private static Sprite LoadSpriteViaEvent(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+            if (EventProcessor.HasInstance)
+            {
+                // 优先走 ResourceManager 通道（命中缓存 + subfolder hints）
+                var r = EventProcessor.Instance.TriggerEventMethod(
+                    "GetSprite", new List<object> { path });
+                if (ResultCode.IsOk(r) && r.Count >= 2 && r[1] is Sprite s) return s;
+            }
+            // 兜底：直接 Resources.Load
+            return Resources.Load<Sprite>(path);
+        }
+
     }
 }

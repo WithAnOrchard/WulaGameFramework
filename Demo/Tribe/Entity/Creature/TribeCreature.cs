@@ -7,9 +7,10 @@ using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
+using Demo.Tribe;
 using UnityEngine;
 
-namespace Demo.Tribe.Enemy
+namespace Demo.Tribe.Entities
 {
     /// <summary>
     /// 通用部落生物 —— 由 <see cref="TribeCreatureConfig"/> 驱动的可配置实体。
@@ -28,11 +29,14 @@ namespace Demo.Tribe.Enemy
         private TribeCreatureConfig _config;
         private Rigidbody2D _rb;
         private CircleCollider2D _collider;
-        private GameObject _visual;
-        private SpriteRenderer _renderer;
-        private TribeSpriteAnimator _animator;
-        private TribeEnemyHealthUI _healthBar;
-        private TribeEnemyContactDamager _contactDamager;
+        private Transform _characterRoot;          // CharacterViewBridge.CreateCharacter 返回的根
+
+        /// <summary>视觉角色根节点 —— 由 CharacterManager 创建 + 持有 SpriteRenderer 的子节点。
+        /// 业务侧（如 GiantSlimeState）需要直接操作视觉时（缩放 / 染色）读此引用。
+        /// 返回 null 时说明角色尚未创建（Start 前 / 配置缺失）。</summary>
+        public Transform CharacterRoot => _characterRoot;
+        private TribeCreatureHealthUI _healthBar;
+        private TribeCreatureContactDamager _contactDamager;
 
         private string _entityInstanceId;
         private Entity _entity;
@@ -40,12 +44,22 @@ namespace Demo.Tribe.Enemy
         private IBrain _brain;
         private bool _dead;
         private int _sortingOrder;
+        private int _lastDirection;
+        private bool _lastMoving;
 
-        /// <summary>外部生成时设视觉的 sortingOrder。</summary>
+        /// <summary>外部生成时设视觉的 sortingOrder（透传给 Character 子节点的 SpriteRenderer）。</summary>
         public int SortingOrder
         {
             get => _sortingOrder;
-            set { _sortingOrder = value; if (_renderer != null) _renderer.sortingOrder = value; }
+            set { _sortingOrder = value; ApplySortingOrderToCharacter(); }
+        }
+
+        private void ApplySortingOrderToCharacter()
+        {
+            if (_characterRoot == null) return;
+            // Body part 上的 SpriteRenderer —— CharacterPartView2D 创建一个 SR；递归找一个即可
+            var sr = _characterRoot.GetComponentInChildren<SpriteRenderer>(true);
+            if (sr != null) sr.sortingOrder = _sortingOrder;
         }
 
         /// <summary>用配置初始化生物。在 AddComponent 后立即调用（Start 前）。</summary>
@@ -69,29 +83,34 @@ namespace Demo.Tribe.Enemy
                 return;
             }
             ConfigureRigidbody();
-            BuildVisual();
-            BuildAnimator();
+            // 注：视觉走 CharacterManager；在 RegisterEntityAndBrain 之后由 BuildCharacterView 创建
             if (_config.CanAttack)
             {
-                BuildHealthBar();
+                // HealthBar 需要 _entityInstanceId，挪到 RegisterEntityAndBrain 之后
                 BuildContactDamager();
             }
             RegisterEntityAndBrain();
+            BuildCharacterView();
+            if (_config.CanAttack) BuildHealthBar();
         }
 
         private void Update()
         {
-            if (_dead || _config == null) return;
+            if (_dead || _config == null || _brain == null) return;
 
-            // ─── 动画同步 ───
-            if (_animator != null && _brain != null)
+            // ─── 动画同步（CharacterManager 走 CharacterViewBridge） ───
+            if (string.IsNullOrEmpty(_entityInstanceId)) return;
+            var ctx = _brain.Context;
+            if (ctx.FacingDirection != _lastDirection)
             {
-                var ctx = _brain.Context;
-                _animator.SetDirection(ctx.FacingDirection);
-                _animator.SetWalking(ctx.IsMoving);
-                _animator.SetRunning(ctx.IsRunning);
+                _lastDirection = ctx.FacingDirection;
+                CharacterViewBridge.SetDirection(_entityInstanceId, ctx.FacingDirection);
             }
-            _animator?.Tick(Time.deltaTime);
+            if (ctx.IsMoving != _lastMoving)
+            {
+                _lastMoving = ctx.IsMoving;
+                CharacterViewBridge.PlayLocomotion(_entityInstanceId, ctx.IsMoving, grounded: true);
+            }
         }
 
         // ─── 子模块构建 ──────────────────────────────
@@ -102,6 +121,10 @@ namespace Demo.Tribe.Enemy
             _rb.drag = 0f;
             _rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             _rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            // 防止玩家（mass=1）把怪物当肉垫推：调高 mass 让玩家几乎推不动；
+            // 同时让 brain 写 rb.velocity 时不被玩家挤压抹平 → 接触伤害可正常 OnCollisionStay2D 触发。
+            // 注：velocity 直接写不受 mass 影响；只影响 collision resolve / AddForce。
+            _rb.mass = 50f;
 
             var c = RigidbodyConstraints2D.FreezeRotation;
             if (_config.UseGravity && _config.FreezePositionX)
@@ -110,44 +133,45 @@ namespace Demo.Tribe.Enemy
 
             _collider.radius = _config.ColliderRadius;
             _collider.isTrigger = !_config.UseGravity;
+
+            // 物理 layer：怪物之间不碰、怪物不推掉落物（参 TribeCollisionLayers）
+            TribeCollisionLayers.MarkCreature(gameObject);
         }
 
-        private void BuildVisual()
+        /// <summary>通过 <see cref="CharacterViewBridge"/> 创建视觉角色 —— 走框架统一管线。
+        /// <para>所有视觉细节（sheet 路径 / frame rate / scale / Y 偏移 / 方向变体）已在
+        /// <c>TribeCreatureConfig.CharacterConfigId</c> 对应的 CharacterConfig 中预注册。</para></summary>
+        private void BuildCharacterView()
         {
-            var legacySR = GetComponent<SpriteRenderer>();
-            if (legacySR != null) Destroy(legacySR);
-
-            var existing = transform.Find("Visual");
-            _visual = existing != null ? existing.gameObject : new GameObject("Visual");
-            _visual.transform.SetParent(transform, false);
-            _visual.transform.localPosition = new Vector3(0f, _config.VisualYOffset, 0f);
-            _visual.transform.localScale = Vector3.one * _config.VisualScale;
-
-            _renderer = _visual.GetComponent<SpriteRenderer>();
-            if (_renderer == null) _renderer = _visual.AddComponent<SpriteRenderer>();
-            _renderer.sortingOrder = _sortingOrder;
-        }
-
-        private void BuildAnimator()
-        {
-            _animator = _visual.GetComponent<TribeSpriteAnimator>();
-            if (_animator == null) _animator = _visual.AddComponent<TribeSpriteAnimator>();
-            _animator.Setup(_config.IdleResourcePath, _config.WalkResourcePath,
-                _config.FrameTime, _config.Pivot);
-            _animator.LoadFrames();
+            if (string.IsNullOrEmpty(_entityInstanceId)) return;
+            if (string.IsNullOrEmpty(_config.CharacterConfigId))
+            {
+                Debug.LogWarning($"[TribeCreature] {gameObject.name} 未设置 CharacterConfigId，无视觉。");
+                return;
+            }
+            _characterRoot = CharacterViewBridge.CreateCharacter(
+                _config.CharacterConfigId, _entityInstanceId,
+                parent: transform, worldPosition: transform.position);
+            if (_characterRoot != null)
+            {
+                ApplySortingOrderToCharacter();
+                // 立即播一次 Idle + 写初始 Direction，避免首帧黑屏 / 朝向错乱
+                CharacterViewBridge.PlayLocomotion(_entityInstanceId, moving: false, grounded: true);
+                CharacterViewBridge.SetDirection(_entityInstanceId, _lastDirection != 0 ? _lastDirection : 1);
+            }
         }
 
         private void BuildHealthBar()
         {
-            _healthBar = gameObject.GetComponent<TribeEnemyHealthUI>();
-            if (_healthBar == null) _healthBar = gameObject.AddComponent<TribeEnemyHealthUI>();
+            _healthBar = gameObject.GetComponent<TribeCreatureHealthUI>();
+            if (_healthBar == null) _healthBar = gameObject.AddComponent<TribeCreatureHealthUI>();
             _healthBar.Build(_entityInstanceId ?? gameObject.name + "_" + GetInstanceID());
             _healthBar.SetValue(_config.MaxHp, _config.MaxHp);
         }
 
         private void BuildContactDamager()
         {
-            _contactDamager = gameObject.AddComponent<TribeEnemyContactDamager>();
+            _contactDamager = gameObject.AddComponent<TribeCreatureContactDamager>();
             _contactDamager.Configure(_config.ContactDamage, _config.DamageCooldown);
         }
 
@@ -186,6 +210,17 @@ namespace Demo.Tribe.Enemy
 
             _damageable = _entity.Get<IDamageable>();
             if (_damageable != null) _damageable.Damaged += OnDamaged;
+
+            // 跳跃式移动（史莱姆专用）：完全跳过 Brain 巡游 / 追击 / 逃跑，
+            // 改由 TribeSlimeHopBehavior 自驱动。Brain 不挂、_brain 保持 null 即可，
+            // ContactDamage / Flash / Knockback 仍走 Entity 通道，不受影响。
+            if (_config.UseHopMovement)
+            {
+                var hop = gameObject.AddComponent<TribeSlimeHopBehavior>();
+                hop.Configure(_config);
+                hop.BindEntity(_entity);
+                return;
+            }
 
             // 挂载 Brain（替代 IPatrol）
             _entity.CanThink(brain =>
@@ -268,10 +303,16 @@ namespace Demo.Tribe.Enemy
             if (!string.IsNullOrEmpty(_config.DropPickableId) && _config.DropAmount > 0)
             {
                 if (EventProcessor.HasInstance)
-                    EventProcessor.Instance.TriggerEventMethod(
-                        "SpawnPickableItem",
-                        new List<object> { _config.DropPickableId, _config.DropAmount,
-                            transform.position });
+                {
+                    // 注意：事件名是 "InventorySpawnPickableItem"（参 InventoryManager.EVT_SPAWN_PICKABLE_ITEM），
+                    // 旧代码写成 "SpawnPickableItem" 会静默匹配失败 → 怪物从不掉物。这里同步修正。
+                    // 参数顺序：[pickableId, worldPosition, targetInventoryId?, amount?]
+                    var dropResult = EventProcessor.Instance.TriggerEventMethod(
+                        "InventorySpawnPickableItem",
+                        new List<object> { _config.DropPickableId, transform.position, "player", _config.DropAmount });
+                    if (dropResult != null && dropResult.Count >= 2 && dropResult[1] is GameObject dropGo)
+                        TribeCollisionLayers.MarkDrop(dropGo);
+                }
             }
 
             Destroy(gameObject);

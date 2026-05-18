@@ -1,5 +1,5 @@
 using UnityEngine;
-using Demo.Tribe.Enemy;
+using Demo.Tribe.Entities;
 
 namespace Demo.Tribe.World.Features
 {
@@ -11,7 +11,7 @@ namespace Demo.Tribe.World.Features
         /// <summary>显示名（GameObject 名）。</summary>
         public string DisplayName;
 
-        /// <summary>生物配置（来自 <see cref="TribeCreaturePresets"/> 或自定义实例）。</summary>
+        /// <summary>生物配置（来自 <c>Demo/Tribe/Entity/Creatures/</c> 下的 <c>Cow / Slime / Wolf / ...</c> 静态工厂或自定义实例）。</summary>
         public TribeCreatureConfig CreatureConfig;
 
         /// <summary>SortingOrder 偏移（默认 +2，敌人通常压在采集物前）。</summary>

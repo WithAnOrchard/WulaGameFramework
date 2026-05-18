@@ -5,7 +5,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 // §4.1 跨模块 UIManager 走 bare-string，不 using。
 
-namespace Demo.Tribe.Enemy
+namespace Demo.Tribe.Entities
 {
     /// <summary>
     /// 敌人血条 UI —— **完全照抄 <see cref="Demo.Tribe.Player.TribePlayerHud"/> 的红条 + 数值文本结构**：
@@ -17,7 +17,7 @@ namespace Demo.Tribe.Enemy
     /// <para>每帧 LateUpdate 把宿主头顶世界坐标投到屏幕 → 设根 RectTransform.anchoredPosition。</para>
     /// </summary>
     [DisallowMultipleComponent]
-    public class TribeEnemyHealthUI : MonoBehaviour
+    public class TribeCreatureHealthUI : MonoBehaviour
     {
         [Header("Layout")]
         [Tooltip("血条相对宿主的世界空间偏移（投影前叠加）。")]
@@ -55,7 +55,7 @@ namespace Demo.Tribe.Enemy
         public void Build(string instanceId)
         {
             if (IsBuilt) return;
-            if (!EventProcessor.HasInstance) { Debug.LogWarning("[TribeEnemyHealthUI] EventProcessor 未就绪"); return; }
+            if (!EventProcessor.HasInstance) { Debug.LogWarning("[TribeCreatureHealthUI] EventProcessor 未就绪"); return; }
 
             _rootId = $"enemy_hp_{instanceId}_{GetInstanceID()}";
 
@@ -88,7 +88,7 @@ namespace Demo.Tribe.Enemy
                 "RegisterUIEntity", new List<object> { _rootId, _root });
             if (!ResultCode.IsOk(registerResult))
             {
-                Debug.LogWarning($"[TribeEnemyHealthUI] 注册失败: {_rootId}");
+                Debug.LogWarning($"[TribeCreatureHealthUI] 注册失败: {_rootId}");
                 _root = null; _bar = null; _valueText = null; _rootId = null;
                 return;
             }

@@ -264,7 +264,7 @@ MonoBehaviour:
   _cameraOrthographicSize: 7
   _lockCameraY: 1
   _cameraLockY: 0
-  _backgroundResourceFolder: Tribe/Background
+  _backgroundResourceFolder: Tribe/Forest
   _foregroundStartIndex: 4
   _backSortingOrderBase: -100
   _frontSortingOrderBase: 200

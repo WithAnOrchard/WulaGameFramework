@@ -34,10 +34,7 @@ namespace Demo.Tribe.World
                 };
                 tint.Build(ctx);
 
-                // 2) Biome 名称标识牌（在 biome 起点上方 5 格）
-                BuildBiomeLabel(biome, ctx);
-
-                // 3) 业务 Features
+                // 2) 业务 Features
                 var built = 0;
                 foreach (var feature in biome.Features)
                 {
@@ -52,21 +49,5 @@ namespace Demo.Tribe.World
             Debug.Log($"[BiomeRegistry] 全部 biome 构建完成（{biomes.Count} 个 biome / {totalFeatures} 个 feature）");
         }
 
-        /// <summary>在 biome 起点放一个空中文字牌，标记 biome 名（调试 / 占位用）。</summary>
-        private static void BuildBiomeLabel(TribeBiomeConfig biome, TribeBiomeContext ctx)
-        {
-            var go = new GameObject($"BiomeLabel_{biome.Id}");
-            if (ctx.WorldRoot != null) go.transform.SetParent(ctx.WorldRoot, true);
-            go.transform.position = new Vector3(biome.StartX + 1f, ctx.GroundY + 5f, 0f);
-            var tm = go.AddComponent<TextMesh>();
-            tm.text = $"<{biome.DisplayName}>\n{biome.Id}";
-            tm.fontSize = 64;
-            tm.characterSize = 0.2f;
-            tm.alignment = TextAlignment.Center;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.color = biome.GroundTint;
-            var tmr = go.GetComponent<MeshRenderer>();
-            if (tmr != null) tmr.sortingOrder = ctx.BaseSortingOrder + 5;
-        }
     }
 }

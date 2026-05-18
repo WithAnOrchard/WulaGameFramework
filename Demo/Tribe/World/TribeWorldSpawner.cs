@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Demo.Tribe.Enemy;
+using Demo.Tribe.Entities;
 using Demo.Tribe.Player;
 using Demo.Tribe.Resource;
 
@@ -36,7 +36,7 @@ namespace Demo.Tribe
 
             // ─── Enemy 专用
             public int EnemySortingOrderOffset = 2;
-            public Enemy.TribeCreatureConfig CreatureConfig; // 有值时使用通用 TribeCreature
+            public TribeCreatureConfig CreatureConfig; // 有值时使用通用 TribeCreature
 
             // ─── Decoration 专用（颜色块占位 / 实际素材）
             public Color PlaceholderColor = new Color(0.5f, 0.5f, 0.5f, 1f);
@@ -157,8 +157,8 @@ namespace Demo.Tribe
             if (_enemiesRoot != null) go.transform.SetParent(_enemiesRoot, true);
 
             // CreatureConfig 缺省时退回 Skeleton 预设（保持与旧 TribeSkeletonEnemy 行为一致）。
-            var cfg = entry.CreatureConfig ?? Enemy.TribeCreaturePresets.Skeleton();
-            var creature = go.AddComponent<Enemy.TribeCreature>();
+            var cfg = entry.CreatureConfig ?? Skeleton.Preset();
+            var creature = go.AddComponent<TribeCreature>();
             creature.Configure(cfg);
             creature.SortingOrder = _baseSortingOrder + entry.EnemySortingOrderOffset;
         }
@@ -170,7 +170,7 @@ namespace Demo.Tribe
             go.transform.position = position;
             if (_gatherablesRoot != null) go.transform.SetParent(_gatherablesRoot, true);
 
-            var creature = go.AddComponent<Enemy.TribeCreature>();
+            var creature = go.AddComponent<TribeCreature>();
             creature.Configure(entry.CreatureConfig);
             creature.SortingOrder = _baseSortingOrder + entry.EnemySortingOrderOffset;
         }

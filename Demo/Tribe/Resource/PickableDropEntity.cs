@@ -4,6 +4,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 
 namespace Demo.Tribe.Resource
 {
@@ -20,6 +21,7 @@ namespace Demo.Tribe.Resource
 
         private bool _dead;
         private string _entityInstanceId;
+        private IDamageable _damageable;
 
         public void Configure(string pickableId, float maxHp, int dropAmount, string targetInventoryId)
         {
@@ -52,9 +54,12 @@ namespace Demo.Tribe.Resource
         private void DropPickableItem()
         {
             if (!EventProcessor.HasInstance || string.IsNullOrEmpty(_pickableId)) return;
-            EventProcessor.Instance.TriggerEventMethod(
+            var result = EventProcessor.Instance.TriggerEventMethod(
                 "InventorySpawnPickableItem",
                 new List<object> { _pickableId, transform.position + _dropOffset, _targetInventoryId, _dropAmount });
+            // 标 Drop 层：怪物不会推走（参 TribeCollisionLayers）
+            if (result != null && result.Count >= 2 && result[1] is GameObject dropGo)
+                Demo.Tribe.TribeCollisionLayers.MarkDrop(dropGo);
         }
 
         private void RegisterEntity()
@@ -68,6 +73,7 @@ namespace Demo.Tribe.Resource
                 CanMove = false,
                 EnableFlashEffect = false, // 植物不需要闪烁效果
                 EnableKnockbackEffect = false, // 植物不需要击退效果
+                SuppressHitSFX = true, // 采集类实体自播 harvest 音效（参 OnHarvested），抑制框架通用 PlayDamageSFX 避免双响
                 CanBeAttacked = true,
                 MaxHp = _maxHp,
                 CanAttack = false,
@@ -82,6 +88,27 @@ namespace Demo.Tribe.Resource
             EventProcessor.Instance.TriggerEventMethod(
                 EntityManager.EVT_REGISTER_SCENE_ENTITY,
                 new List<object> { _entityInstanceId, gameObject, definition });
+
+            // 受击 → 采集音效（harvest）。订阅 IDamageable.Damaged，每次砍击都响一下。
+            if (EntityService.HasInstance)
+            {
+                var entity = EntityService.Instance.GetEntity(_entityInstanceId);
+                _damageable = entity?.Get<IDamageable>();
+                if (_damageable != null) _damageable.Damaged += OnHarvested;
+            }
+        }
+
+        private void OnHarvested(Entity self, Entity source, float dealt, string damageType)
+        {
+            // §4.1 跨模块 AudioManager 走 bare-string
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod(
+                    "PlaySFX", new List<object> { "Tribe/Common/Sound/harvest" });
+        }
+
+        private void OnDestroy()
+        {
+            if (_damageable != null) _damageable.Damaged -= OnHarvested;
         }
 
         private EntityColliderConfig BuildSpriteBoundsCollider()
