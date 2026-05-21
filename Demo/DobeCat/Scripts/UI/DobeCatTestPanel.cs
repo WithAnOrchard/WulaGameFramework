@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using BiliBiliDanmu;
 using BiliBiliLive;
+using Demo.DobeCat.Network;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager;
@@ -36,6 +38,23 @@ namespace Demo.DobeCat.UI
         private static UITextComponent _detailText;
         private static UITextComponent _logText;
         private static readonly Queue<string> _lines = new Queue<string>();
+
+        // 房间发现客户端（外部注入；可空）
+        private static RoomDiscoveryClient _discovery;
+
+        /// <summary>由 <see cref="DobeCatGameManager"/> 调用，注入房间发现客户端，开启面板内房间列表显示。</summary>
+        public static void AttachDiscovery(RoomDiscoveryClient client)
+        {
+            if (_discovery != null) _discovery.OnRoomsChanged -= HandleRoomsChanged;
+            _discovery = client;
+            if (_discovery != null) _discovery.OnRoomsChanged += HandleRoomsChanged;
+            UpdateDetail();
+        }
+
+        private static void HandleRoomsChanged(IReadOnlyList<RoomDiscoveryClient.RoomInfo> rooms)
+        {
+            UpdateDetail();
+        }
 
         // ─── 公共 API ────────────────────────────────────────────
         public static void Toggle()
@@ -123,19 +142,19 @@ namespace Demo.DobeCat.UI
                 .SetAlignment(TextAnchor.MiddleCenter);
             panel.AddChild(_liveText);
 
-            // 房间详细信息（不需身份码即可获取：标题 / 分区 / 在线 / 开播时间）
+            // 房间详细信息 + 多人房间列表（合并在一块文本里）
             _detailText = new UITextComponent($"{PanelDaoId}_Detail", "Detail", "--")
-                .SetPosition(0f, H * 0.5f - 165f)
-                .SetSize(W - 24f, 130f)
+                .SetPosition(0f, H * 0.5f - 215f)
+                .SetSize(W - 24f, 230f)
                 .SetFontSize(12)
                 .SetColor(new Color(0.85f, 0.85f, 0.95f))
                 .SetAlignment(TextAnchor.UpperLeft);
             panel.AddChild(_detailText);
 
-            // 事件日志区域（占据剩余空间）
+            // 事件日志区域（房间区下面）
             _logText = new UITextComponent($"{PanelDaoId}_Log", "Log", "等待事件...")
-                .SetPosition(0f, -110f)
-                .SetSize(W - 24f, H - 350f)
+                .SetPosition(0f, -180f)
+                .SetSize(W - 24f, H - 440f)
                 .SetFontSize(12)
                 .SetColor(Color.white)
                 .SetAlignment(TextAnchor.UpperLeft);
@@ -181,12 +200,58 @@ namespace Demo.DobeCat.UI
         private static void UpdateDetail()
         {
             if (_detailText == null) return;
-            if (!LiveStatusService.HasInstance || LiveStatusService.Instance.LiveStatus < 0)
+
+            var sb = new StringBuilder(256);
+
+            // 段 1：直播间公开信息（如果有）
+            if (LiveStatusService.HasInstance && LiveStatusService.Instance.LiveStatus >= 0)
             {
-                _detailText.Text = "<尚未获取房间信息>";
-                return;
+                sb.AppendLine(FormatRoomInfo(LiveStatusService.Instance.Info));
             }
-            _detailText.Text = FormatRoomInfo(LiveStatusService.Instance.Info);
+            else
+            {
+                sb.AppendLine("<尚未获取直播房间信息>");
+            }
+
+            // 段 2：联机房间发现状态
+            sb.AppendLine();
+            sb.AppendLine("─── 多人房间 ───");
+            if (_discovery == null)
+            {
+                sb.AppendLine("<RoomDiscovery 未注入>");
+            }
+            else if (string.IsNullOrEmpty(_discovery.ServerBaseUrl))
+            {
+                sb.AppendLine("<未配置发现服务器>");
+            }
+            else
+            {
+                sb.Append("服务: ").AppendLine(_discovery.ServerBaseUrl);
+                sb.Append("自身: ").Append(_discovery.AdvertisedHost).Append(':').Append(_discovery.AdvertisedPort)
+                  .Append("  id=").AppendLine(Truncate(_discovery.RoomId, 18));
+                var rooms = _discovery.LatestRooms;
+                if (rooms == null || rooms.Count == 0)
+                {
+                    sb.AppendLine("在线: 0 个（等心跳…）");
+                }
+                else
+                {
+                    sb.Append("在线: ").Append(rooms.Count).AppendLine(" 个");
+                    int n = Mathf.Min(rooms.Count, 6); // 最多列 6 行
+                    for (int i = 0; i < n; i++)
+                    {
+                        var r = rooms[i];
+                        var marker = r.IsSelf ? "● " : "  ";
+                        sb.Append(marker)
+                          .Append(Truncate(r.Name, 14)).Append(' ')
+                          .Append(r.Host).Append(':').Append(r.Port)
+                          .Append("  ttl=").AppendLine($"{r.TtlRemaining:0}s");
+                    }
+                    if (rooms.Count > n) sb.AppendLine($"  ...（还有 {rooms.Count - n} 个）");
+                }
+            }
+
+            _detailText.Text = sb.ToString();
         }
 
         private static string FormatRoomInfo(LiveRoomInfo info)

@@ -265,6 +265,9 @@ namespace Demo.DobeCat
             _discovery.AdvertisedPort = _netPort;
             _discovery.RoomDisplayName = _roomDiscoveryDisplayName;  // 留空则用设备名
             holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
+
+            // 让测试面板拿到 client 引用，刷新 IP / 房间列表
+            DobeCatTestPanel.AttachDiscovery(_discovery);
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。
