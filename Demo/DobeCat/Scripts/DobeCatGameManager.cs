@@ -57,8 +57,8 @@ namespace Demo.DobeCat
         // 已废弃，仅保留以保持旧场景反序列化兼容（不再使用）
         [SerializeField, HideInInspector] private string _petSpritePath = "";
 
-        [Header("Hotkeys")]
-        [SerializeField] private KeyCode _quitKey = KeyCode.Escape;
+        // 已移除 ESC 退出快捷键（避免误触关闭桌宠）；保留字段仅为旧场景反序列化兼容。
+        [SerializeField, HideInInspector] private KeyCode _quitKey = KeyCode.None;
 
         [Header("BiliBili Danmu — Mode")]
         [Tooltip("弹幕接入模式：\nPolling=零认证（仅文字弹幕，3s 延迟）\nToken=登录 cookie（实时 + 礼物 + SC）\nOpenLive=主播身份码（实时 + 礼物 + SC，仅自己直播间）")]
@@ -167,15 +167,9 @@ namespace Demo.DobeCat
 
         private void Update()
         {
-            // 1) Unity 普通输入：编辑器调试用 / Standalone 下当窗口可聚焦时也能触发
-            var quit = Input.GetKeyDown(_quitKey);
-
-            // 2) 全局热键兜底：click-through 时窗口失去焦点，Unity 收不到键盘 → 用 Win32 GetAsyncKeyState
-            if (!quit && _window != null)
-            {
-                if (_window.IsGlobalEscapePressed() || _window.IsGlobalQuitHotkeyPressed())
-                    quit = true;
-            }
+            // 退出快捷键：仅 Ctrl+Shift+Q（全局，click-through 时也生效）。
+            // 已取消 ESC 退出，避免按 ESC 关闭其它窗口时误关桌宠。
+            var quit = _window != null && _window.IsGlobalQuitHotkeyPressed();
 
             if (quit)
             {
