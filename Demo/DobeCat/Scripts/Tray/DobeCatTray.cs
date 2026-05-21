@@ -33,6 +33,14 @@ namespace Demo.DobeCat.Tray
         public event Action<RoomDiscoveryClient.RoomInfo> OnJoinRoomRequested;
 #pragma warning restore 67
 
+        /// <summary>外部（如桌宠右键）请求弹出托盘菜单。Editor / 非 Win 路径下空操作。</summary>
+        public void RequestShowMenu()
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            _tray?.RequestShowMenu();
+#endif
+        }
+
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         private SystemTray _tray;
         private bool _petVisible = true;
@@ -47,9 +55,6 @@ namespace Demo.DobeCat.Tray
             if (Discovery != null)
                 Discovery.OnRoomsChanged += OnDiscoveryRoomsChanged;
         }
-
-        /// <summary>外部（如桌宠右键）请求弹出托盘菜单。Editor / 非 Win 路径下空操作。</summary>
-        public void RequestShowMenu() => _tray?.RequestShowMenu();
 
         private void OnDestroy()
         {
