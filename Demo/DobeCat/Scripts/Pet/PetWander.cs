@@ -55,8 +55,8 @@ namespace Demo.DobeCat.Pet
         {
             if (dir == 0 || dir == _lastFacing) return;
             _lastFacing = dir;
-            // 同步翻转视觉与角色（双保险：PetView 翻父根，EVT_SET_FACING 走 CharacterManager 官方路径）
-            if (View != null) View.SetFacing(dir);
+            // 仅走 CharacterManager 官方 EVT_SET_FACING（翻 CharacterView.localScale.x）。
+            // 不能再调 PetView.SetFacing（翻父根 localScale.x）—— 父子双翻会相互抵消导致看不到效果。
             if (string.IsNullOrEmpty(CharacterInstanceId) || !EventProcessor.HasInstance) return;
             EventProcessor.Instance.TriggerEventMethod(CharacterManager.EVT_SET_FACING,
                 new List<object> { CharacterInstanceId, dir > 0 });

@@ -54,7 +54,7 @@ namespace Demo.DobeCat.Pet
                 if (Mathf.Abs(axis.x) > 0.01f)
                 {
                     var face = axis.x > 0f ? 1 : -1;
-                    if (View != null) View.SetFacing(face);
+                    // 仅走 EVT_SET_FACING；不能再调 PetView.SetFacing（父子双翻会抵消）
                     if (face != _lastFacing) NotifyFacing(face);
                     _lastFacing = face;
                 }
