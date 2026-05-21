@@ -1,9 +1,9 @@
-using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
+﻿using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using UnityEngine;
 
-namespace Demo.DobeCat.Pet.Ai
+namespace Demo.DobeCat.Game.Pet.Ai
 {
     /// <summary>
     /// 桌宠随机游荡 AI 行为。状态循环：

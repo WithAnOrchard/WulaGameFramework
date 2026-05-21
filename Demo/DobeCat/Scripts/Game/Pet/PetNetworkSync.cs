@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.CharacterManager;
@@ -6,7 +6,7 @@ using EssSystem.Manager.NetworkManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using UnityEngine;
 
-namespace Demo.DobeCat.Pet
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// 桌宠位置网络同步 —— 完全建立在 NetworkManager 的 EVT_BROADCAST + EVT_NET_MESSAGE 之上。

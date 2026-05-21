@@ -1,6 +1,6 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Demo.DobeCat.Pet
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// 桌宠根视觉/命中代理。视觉本体走 <c>EssSystem.Core.Presentation.CharacterManager</c> 注册的角色（挂在子物体上），

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Demo.DobeCat.Platform.Windows
+namespace Demo.DobeCat.Sys.Platform.Windows
 {
     /// <summary>
     /// 启动期"无感"处理：

@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using UnityEngine;
 
-namespace Demo.DobeCat.Pet.Ai
+namespace Demo.DobeCat.Game.Pet.Ai
 {
     /// <summary>
     /// 玩家手动操控 AI 行为 —— 把全局 WASD 轴位映射成移动指令。

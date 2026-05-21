@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using Demo.DobeCat.Network;
-using Demo.DobeCat.Platform.Windows;
+using Demo.DobeCat.Sys.Network;
+using Demo.DobeCat.Sys.Platform.Windows;
 using UnityEngine;
 
-namespace Demo.DobeCat.Tray
+namespace Demo.DobeCat.Sys.Tray
 {
     /// <summary>
     /// DobeCat 桌宠的系统托盘集成器（仅 Windows 编译生效）。
@@ -25,7 +25,7 @@ namespace Demo.DobeCat.Tray
         public RoomDiscoveryClient Discovery;
 
         [Tooltip("可选：桌宠 AI 控制器（注入后启用「AI 开关」菜单切换）。")]
-        public Demo.DobeCat.Pet.PetAiController Ai;
+        public Demo.DobeCat.Game.Pet.PetAiController Ai;
 
         /// <summary>当用户从托盘菜单点击 "加入 xxx 房间" 时触发。
         /// <para>由外部（DobeCatGameManager）订阅，执行：停掉当前 Host → 以 Client 模式连过去。</para>
@@ -108,7 +108,7 @@ namespace Demo.DobeCat.Tray
             }
 
             items.Add(SystemTray.MenuItemDef.Separator());
-            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.UI.DobeCatTestPanel.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.Game.UI.DobeCatTestPanel.Toggle()));
             items.Add(SystemTray.MenuItemDef.Separator());
             items.Add(SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit));
 
@@ -135,7 +135,7 @@ namespace Demo.DobeCat.Tray
             // 重新显示时驱动器接管 → 命中检测会自然把穿透切回正确状态。
             if (!_petVisible)
             {
-                var win = Demo.DobeCat.Platform.Windows.DesktopWindow.Instance;
+                var win = Demo.DobeCat.Sys.Platform.Windows.DesktopWindow.Instance;
                 if (win != null) win.SetClickThrough(true);
             }
         }

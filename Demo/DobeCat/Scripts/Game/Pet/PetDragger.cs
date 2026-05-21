@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using Demo.DobeCat.Platform.Windows;
+using Demo.DobeCat.Sys.Platform.Windows;
 
-namespace Demo.DobeCat.Pet
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// 用鼠标按住桌宠拖拽。

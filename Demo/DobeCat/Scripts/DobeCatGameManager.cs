@@ -9,11 +9,11 @@ using EssSystem.Manager.NetworkManager;
 using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
-using Demo.DobeCat.Platform.Windows;
-using Demo.DobeCat.Pet;
-using Demo.DobeCat.Tray;
-using Demo.DobeCat.UI;
-using Demo.DobeCat.Network;
+using Demo.DobeCat.Sys.Platform.Windows;
+using Demo.DobeCat.Game.Pet;
+using Demo.DobeCat.Sys.Tray;
+using Demo.DobeCat.Game.UI;
+using Demo.DobeCat.Sys.Network;
 
 namespace Demo.DobeCat
 {

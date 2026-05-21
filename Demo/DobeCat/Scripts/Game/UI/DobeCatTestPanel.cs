@@ -1,16 +1,16 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using BiliBiliDanmu;
 using BiliBiliLive;
-using Demo.DobeCat.Network;
+using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using UnityEngine;
 
-namespace Demo.DobeCat.UI
+namespace Demo.DobeCat.Game.UI
 {
     /// <summary>
     /// DobeCat 弹幕测试面板（运行时通过 UIManager 动态注册）。

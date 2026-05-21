@@ -2,7 +2,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace Demo.DobeCat.Platform.Windows
+namespace Demo.DobeCat.Sys.Platform.Windows
 {
     /// <summary>
     /// Win32 P/Invoke 集合：仅在 Windows 独立运行时（非 Editor）参与编译。

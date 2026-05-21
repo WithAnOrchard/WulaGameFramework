@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
@@ -9,7 +9,7 @@ using EssSystem.Core.Base.Util;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace Demo.DobeCat.Network
+namespace Demo.DobeCat.Sys.Network
 {
     /// <summary>
     /// 多人桌宠房间发现客户端 —— 与 <c>tools/data_exchange_server</c> 配合：

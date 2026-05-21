@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
-namespace Demo.DobeCat.Platform.Windows
+namespace Demo.DobeCat.Sys.Platform.Windows
 {
     /// <summary>
     /// Windows 系统托盘图标 —— 纯 Win32 P/Invoke 实现，不依赖 System.Windows.Forms。

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
-using Demo.DobeCat.Pet.Ai;
-using Demo.DobeCat.Platform.Windows;
+using Demo.DobeCat.Game.Pet.Ai;
+using Demo.DobeCat.Sys.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
@@ -11,7 +11,7 @@ using EssSystem.Core.Base.Util;
 using UnityEngine;
 using EM = EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager;
 
-namespace Demo.DobeCat.Pet
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// 桌宠 AI 控制器 —— 把桌宠注册为 EntityManager 的 Entity，挂 BrainComponent，

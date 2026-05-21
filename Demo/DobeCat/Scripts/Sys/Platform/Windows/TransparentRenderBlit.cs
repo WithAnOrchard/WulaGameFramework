@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Demo.DobeCat.Platform.Windows
+namespace Demo.DobeCat.Sys.Platform.Windows
 {
     /// <summary>
     /// 挂在主相机上，<see cref="OnRenderImage"/> 时把渲染结果送进

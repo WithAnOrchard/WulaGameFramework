@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
-using Demo.DobeCat.Platform.Windows;
+using Demo.DobeCat.Sys.Platform.Windows;
 
-namespace Demo.DobeCat.Pet
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// 每帧根据鼠标是否覆盖桌宠，把 <see cref="DesktopWindow.SetClickThrough"/> 切到合适状态。
