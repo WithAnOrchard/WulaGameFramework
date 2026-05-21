@@ -26,7 +26,16 @@ namespace EssSystem.Manager.NetworkManager.Runtime
         public override void Awake()
         {
             EnsureTransport();
+            // 本框架走纯消息广播（EVT_BROADCAST + 自定义 Spawn），不需要 Mirror 的 PlayerPrefab 自动生成机制。
+            // 不关掉 autoCreatePlayer 时，客户端连入会触发 OnServerAddPlayer → "PlayerPrefab is empty" 报错。
+            autoCreatePlayer = false;
             base.Awake();
+        }
+
+        /// <summary>覆盖默认实现：不生成 PlayerPrefab。业务层用 EVT_BROADCAST 自己同步位置 / 创建幽灵。</summary>
+        public override void OnServerAddPlayer(NetworkConnectionToClient conn)
+        {
+            // 故意为空：本框架不强制 PlayerPrefab。
         }
 
         /// <summary>确保挂载了一个非抽象的 Transport。优先复用现有；否则全程序集扫一个 concrete subclass 加上。</summary>
@@ -192,8 +201,9 @@ namespace EssSystem.Manager.NetworkManager.Runtime
         private NetworkRole _lastBroadcastRole = NetworkRole.None;
         private bool _lastBroadcastConnected;
 
-        public virtual void Update()
+        public override void Update()
         {
+            base.Update();
             var role = InferRole();
             var connected = role switch
             {

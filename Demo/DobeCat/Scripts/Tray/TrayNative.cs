@@ -27,6 +27,7 @@ namespace Demo.DobeCat.Tray
         // ── Popup menu ──
         public const uint MF_STRING    = 0x0000;
         public const uint MF_SEPARATOR = 0x0800;
+        public const uint MF_GRAYED    = 0x0001;
         public const uint TPM_RIGHTBUTTON = 0x0002;
         public const uint TPM_RETURNCMD   = 0x0100;
 

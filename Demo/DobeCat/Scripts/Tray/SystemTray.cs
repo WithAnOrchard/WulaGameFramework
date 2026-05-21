@@ -38,14 +38,25 @@ namespace Demo.DobeCat.Tray
 
         public SystemTray AddItem(string text, Action onClick)
         {
-            _items.Add(new MenuItemDef { Text = text, OnClick = onClick });
+            lock (_items) _items.Add(MenuItemDef.Item(text, onClick));
             return this;
         }
 
         public SystemTray AddSeparator()
         {
-            _items.Add(new MenuItemDef { Text = null, OnClick = null });
+            lock (_items) _items.Add(MenuItemDef.Separator());
             return this;
+        }
+
+        /// <summary>原子替换整张菜单。线程安全：可在 Unity 主线程调；下次右键即生效。
+        /// 传入 <c>Text=null</c> 的项 = 分隔符；<c>Enabled=false</c> = 灰色不可点。</summary>
+        public void SetItems(IEnumerable<MenuItemDef> items)
+        {
+            lock (_items)
+            {
+                _items.Clear();
+                if (items != null) _items.AddRange(items);
+            }
         }
 
         public void Start()
@@ -206,7 +217,9 @@ namespace Demo.DobeCat.Tray
                 // 构建菜单
                 var idToAction = new List<Action>(); // index 0 占位（菜单 ID 从 1 开始）
                 idToAction.Add(null);
-                foreach (var def in _items)
+                MenuItemDef[] snapshot;
+                lock (_items) snapshot = _items.ToArray();
+                foreach (var def in snapshot)
                 {
                     if (string.IsNullOrEmpty(def.Text))
                     {
@@ -216,7 +229,9 @@ namespace Demo.DobeCat.Tray
                     {
                         idToAction.Add(def.OnClick);
                         var id = idToAction.Count - 1;
-                        TrayNative.AppendMenu(hMenu, TrayNative.MF_STRING, new IntPtr(id), def.Text);
+                        var flags = TrayNative.MF_STRING;
+                        if (!def.Enabled) flags |= TrayNative.MF_GRAYED;
+                        TrayNative.AppendMenu(hMenu, flags, new IntPtr(id), def.Text);
                     }
                 }
 
@@ -242,10 +257,21 @@ namespace Demo.DobeCat.Tray
             }
         }
 
-        private struct MenuItemDef
+        public struct MenuItemDef
         {
+            /// <summary>显示文本；<c>null</c>/空 = 分隔符。</summary>
             public string Text;
+            /// <summary>点击回调（在 Unity 主线程派发）。分隔符或灰色项可为 <c>null</c>。</summary>
             public Action OnClick;
+            /// <summary><c>false</c> = 灰色不可点。默认（new 出来时）是 <c>false</c>，请用 <see cref="Item"/> 工厂创建。</summary>
+            public bool Enabled;
+
+            public static MenuItemDef Item(string text, Action onClick, bool enabled = true)
+                => new MenuItemDef { Text = text, OnClick = onClick, Enabled = enabled };
+            public static MenuItemDef Separator()
+                => new MenuItemDef { Text = null, OnClick = null, Enabled = false };
+            public static MenuItemDef Disabled(string text)
+                => new MenuItemDef { Text = text, OnClick = null, Enabled = false };
         }
     }
 }
