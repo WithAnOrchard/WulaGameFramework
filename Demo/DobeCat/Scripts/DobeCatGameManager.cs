@@ -220,6 +220,9 @@ namespace Demo.DobeCat
             _pet = new GameObject("DobeCat");
             _pet.transform.SetParent(transform);
             _pet.transform.position = _petSpawnPos;
+            // 必须在 AddComponent<PetView> 之前设 localScale，因为 PetView.Awake 会同步 transform.localScale
+            // 且 Awake 在 AddComponent 当帧立即触发，VisualScale 字段赋值已经晚了
+            _pet.transform.localScale = Vector3.one * Mathf.Max(0.01f, _petScale);
 
             var view = _pet.AddComponent<PetView>();
             view.UseChildRenderers = true;

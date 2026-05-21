@@ -27,7 +27,16 @@ namespace Demo.DobeCat.Pet
             _renderer = GetComponent<SpriteRenderer>();
             _renderer.enabled = false;
             _renderer.sprite = null;
-            transform.localScale = Vector3.one * Mathf.Max(0.01f, VisualScale);
+            // 注意：不在这里改 transform.localScale —— Awake 在 AddComponent 当帧立即触发，
+            // 此时调用方还没来得及配置 VisualScale 字段，会把外部已经设好的 scale 覆盖回 1。
+            // 调用方负责直接 set transform.localScale；本组件只在 SetVisualScale 显式调用时同步。
+        }
+
+        /// <summary>显式应用缩放（外部业务方在 AddComponent 之后调用）。</summary>
+        public void SetVisualScale(float scale)
+        {
+            VisualScale = scale;
+            transform.localScale = Vector3.one * Mathf.Max(0.01f, scale);
         }
 
         /// <summary>设置朝向：+1 右，-1 左。仅翻转 localScale.x。</summary>

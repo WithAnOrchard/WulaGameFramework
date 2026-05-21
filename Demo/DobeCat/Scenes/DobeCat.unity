@@ -153,9 +153,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _cameraOrthoSize: 5
   _autoSpawnPet: 1
-  _petSpritePath: 
-  _petScale: 25
+  _petScale: 150
   _petSpawnPos: {x: 0, y: 0, z: 0}
+  _characterConfigId: Warrior
+  _ghostCharacterConfigId: Mage
+  _wasdMoveSpeed: 4
+  _petSpritePath: 
   _quitKey: 27
   _danmuMode: 1
   _bilibiliAutoConnect: 1
