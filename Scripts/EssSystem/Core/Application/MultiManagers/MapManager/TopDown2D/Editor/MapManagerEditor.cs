@@ -8,7 +8,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
     /// 用 Inspector 当前 Perlin 参数覆盖默认配置，并重建运行时 Map + MapView。
     /// </summary>
     [CustomEditor(typeof(MapManager))]
-    public class MapManagerEditor : Editor
+    public class MapManagerEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

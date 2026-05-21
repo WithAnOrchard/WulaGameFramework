@@ -4,7 +4,7 @@ using UnityEngine;
 namespace EssSystem.Core.Application.SingleManagers.InventoryManager
 {
     [CustomEditor(typeof(InventoryManager))]
-    public class InventoryManagerEditor : Editor
+    public class InventoryManagerEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

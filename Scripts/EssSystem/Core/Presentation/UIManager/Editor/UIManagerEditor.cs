@@ -4,7 +4,7 @@ using UnityEngine;
 namespace EssSystem.Core.Presentation.UIManager
 {
     [CustomEditor(typeof(UIManager))]
-    public class UIManagerEditor : Editor
+    public class UIManagerEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
