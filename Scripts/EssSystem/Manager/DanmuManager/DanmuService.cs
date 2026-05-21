@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -13,44 +14,89 @@ using UnityEngine;
 
 namespace BiliBiliDanmu
 {
+    public enum DanmuMode
+    {
+        /// <summary>/ajax/msg 周期轮询。零认证；仅文字弹幕；约 3s 延迟。任何房间可用。</summary>
+        Polling,
+        /// <summary>SESSDATA cookie + WSS 长连接。需用户登录态；可见所有人 + 礼物 + SC；实时。</summary>
+        Token,
+        /// <summary>主播身份码 + OpenLive。仅自己直播间；可见所有人 + 礼物 + SC；实时。</summary>
+        OpenLive,
+    }
+
     /// <summary>
-    /// B 站直播弹幕业务 Service
+    /// 统一弹幕连接配置。<see cref="Mode"/> 决定走哪条策略，其余字段按需填。
+    /// </summary>
+    public sealed class DanmuConnectConfig
+    {
+        public DanmuMode Mode = DanmuMode.Polling;
+
+        // 通用（Polling/Token）
+        public long RoomId;
+
+        // OpenLive 模式
+        public string IdentityCode = string.Empty;
+        public long AppId = 1651388990835L;
+        public string SignEndpoint = "https://bopen.ceve-market.org/sign";
+        public string StartEndpoint = "https://live-open.biliapi.com/v2/app/start";
+        public float HttpTimeoutSeconds = 5f;
+
+        // Token 模式（SESSDATA cookie 登录态）
+        public string Sessdata = string.Empty;
+        public string BiliJct = string.Empty;
+
+        // Polling 模式
+        public float PollIntervalSeconds = 3f;
+    }
+
+    /// <summary>
+    /// B 站直播弹幕业务 Service —— 单点入口，按 <see cref="DanmuMode"/> 路由到三种策略。
     /// <list type="bullet">
-    /// <item>持有底层 <see cref="OpenDanmakuLoader"/> 长连接 + 共享 <see cref="HttpClient"/></item>
-    /// <item>所有 EVT_* 都是<b>广播</b>（订阅向）：网络回调先走 <see cref="MainThreadDispatcher"/> 切主线程，再 <c>TriggerEvent</c></item>
-    /// <item>JSON 解析走框架自带的 <see cref="MiniJson"/> + <see cref="JsonNode"/>，无外部 Newtonsoft 依赖</item>
+    /// <item>事件常量统一为 <c>EVT_*</c>，业务订阅方<b>无需感知模式</b>。</item>
+    /// <item><b>能力差异</b>：Polling 仅文字；Token / OpenLive 含礼物 + SC 实时推送。</item>
     /// </list>
     /// </summary>
     public class DanmuService : Service<DanmuService>
     {
-        #region 事件名称（全部为广播 / 订阅向）
+        #region 事件常量（全部为广播）
 
-        /// <summary>连接成功（广播）。参数：<c>[long roomId]</c></summary>
         public const string EVT_CONNECTED    = "OnDanmuConnected";
-        /// <summary>连接断开（广播）。参数：<c>[Exception errorOrNull]</c></summary>
         public const string EVT_DISCONNECTED = "OnDanmuDisconnected";
-        /// <summary>普通弹幕（广播）。参数：<c>[string userName, string commentText, long userId]</c></summary>
         public const string EVT_DANMAKU      = "OnDanmuComment";
-        /// <summary>礼物（广播）。参数：<c>[string userName, string giftName, int giftCount, long userId]</c></summary>
         public const string EVT_GIFT         = "OnDanmuGift";
-        /// <summary>原始消息（广播，所有类型）。参数：<c>[DanmakuModel model]</c></summary>
         public const string EVT_RAW          = "OnDanmuRaw";
 
         #endregion
 
-        // ─── 共享 HTTP（避免端口耗尽） ─────────────────────────────
+        // ─── 共享 HTTP ────────────────────────────────────────
         private static readonly HttpClient _httpClient = new HttpClient();
+        // Token 模式专用 HTTP（CookieContainer 自动管理）
+        private static readonly CookieContainer _tokenCookies = new CookieContainer();
+        private static HttpClient _tokenHttp;
+        private static bool _tokenCookiesWarmed;
 
-        // ─── 运行时状态（不参与持久化） ────────────────────────────
-        private OpenDanmakuLoader _loader;
-        private RoomInfo _roomInfo;
+        // ─── 运行时状态 ────────────────────────────────────────
+        private DanmuMode _activeMode;
         private bool _connecting;
+        private long _activeRoomId;
 
-        /// <summary>当前是否已连接（loader 真实在线状态）。</summary>
-        public bool IsConnected => _loader != null && _loader.Connected;
+        // OpenLive
+        private OpenDanmakuLoader _openLoader;
+        private RoomInfo _roomInfo;
+        // Token (anon WSS)
+        private AnonDanmakuLoader _anonLoader;
+        // Polling
+        private CancellationTokenSource _pollCts;
+        private readonly HashSet<string> _pollSeenIds = new HashSet<string>();
+        private readonly Queue<string> _pollSeenIdQueue = new Queue<string>();
 
-        /// <summary>已成功握手得到的房间号；未连接 = 0。</summary>
-        public long RoomId => _roomInfo?.RoomId ?? 0;
+        public bool IsConnected =>
+            (_openLoader != null && _openLoader.Connected) ||
+            (_anonLoader != null && _anonLoader.Connected) ||
+            (_pollCts != null && !_pollCts.IsCancellationRequested);
+
+        public long RoomId => _activeRoomId;
+        public DanmuMode ActiveMode => _activeMode;
 
         protected override void Initialize()
         {
@@ -58,90 +104,336 @@ namespace BiliBiliDanmu
             Log("DanmuService 初始化完成", Color.green);
         }
 
-        // ─── Public API ────────────────────────────────────────────
-        #region Public API
-
-        /// <summary>
-        /// 用身份码 + AppId 发起连接。已连接时直接返回 true。失败仅日志，不抛异常。
-        /// </summary>
-        public async Task<bool> ConnectAsync(string identityCode, long appId,
-            string signEndpoint, string startEndpoint, float httpTimeoutSeconds)
+        // ─── Public API ───────────────────────────────────────
+        public async Task<bool> ConnectAsync(DanmuConnectConfig cfg)
         {
+            if (cfg == null) { LogWarning("ConnectAsync: cfg=null"); return false; }
             if (IsConnected) return true;
             if (_connecting) return false;
             _connecting = true;
             try
             {
-                if (string.IsNullOrEmpty(identityCode))
+                _activeMode = cfg.Mode;
+                switch (cfg.Mode)
                 {
-                    LogWarning("ConnectAsync: 身份码为空");
-                    return false;
+                    case DanmuMode.Polling:  return await ConnectPollingAsync(cfg);
+                    case DanmuMode.Token:    return await ConnectTokenAsync(cfg);
+                    case DanmuMode.OpenLive: return await ConnectOpenLiveAsync(cfg);
+                    default: return false;
                 }
+            }
+            finally { _connecting = false; }
+        }
 
-                // D3: 不再改 _httpClient.Timeout 全局（thread-unsafe 且一旦发过请求后修改会抛异常）。
-                // 改为给本次调用独立的 CancellationTokenSource，每个 HTTP 请求退出 timeout 独立。
-                var timeoutMs = (int)(Mathf.Max(1f, httpTimeoutSeconds) * 1000f);
-                using var cts = new CancellationTokenSource(timeoutMs);
+        public void Disconnect() => DisconnectInternal();
 
-                var info = await GetRoomInfoByCode(identityCode, appId, signEndpoint, startEndpoint, cts.Token);
-                if (info == null)
+        // ─── 模式：Polling ────────────────────────────────────
+        #region Polling
+        private const string AjaxMsgApi = "http://api.live.bilibili.com/ajax/msg";
+        private const int PollMaxIdCache = 200;
+        private bool _pollFirstDone;
+        private float _pollInterval = 3f;
+
+        private Task<bool> ConnectPollingAsync(DanmuConnectConfig cfg)
+        {
+            if (cfg.RoomId <= 0) { LogWarning("Polling: roomId 必须 > 0"); return Task.FromResult(false); }
+            _activeRoomId = cfg.RoomId;
+            _pollInterval = Mathf.Max(1.5f, cfg.PollIntervalSeconds);
+            _pollSeenIds.Clear(); _pollSeenIdQueue.Clear(); _pollFirstDone = false;
+            _pollCts = new CancellationTokenSource();
+
+            Log($"[Polling] 开始轮询 room={cfg.RoomId} 间隔 {_pollInterval}s", Color.cyan);
+            _ = PollLoopAsync(cfg.RoomId, _pollCts.Token);
+            MainThreadDispatcher.Enqueue(() =>
+                EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, new List<object> { cfg.RoomId }));
+            return Task.FromResult(true);
+        }
+
+        private async Task PollLoopAsync(long roomId, CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                try { await PollOnceAsync(roomId, ct); }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex) { LogWarning($"[Polling] 异常: {ex.Message}"); }
+                try { await Task.Delay(TimeSpan.FromSeconds(_pollInterval), ct); }
+                catch (OperationCanceledException) { break; }
+            }
+        }
+
+        private async Task PollOnceAsync(long roomId, CancellationToken ct)
+        {
+            using var resp = await _httpClient.GetAsync($"{AjaxMsgApi}?roomid={roomId}", ct);
+            if (!resp.IsSuccessStatusCode) return;
+            var body = MiniJson.Parse(await resp.Content.ReadAsStringAsync());
+            if (body.Value<int>("code") != 0) return;
+
+            var arr = body["data"]["room"].ToList();
+            if (arr.Count == 0) { _pollFirstDone = true; return; }
+
+            if (!_pollFirstDone)
+            {
+                foreach (var msg in arr)
                 {
-                    LogWarning("ConnectAsync: 获取房间信息失败");
-                    return false;
+                    var id = msg["id_str"].ToString();
+                    if (!string.IsNullOrEmpty(id)) PollMarkSeen(id);
                 }
-                _roomInfo = info;
+                _pollFirstDone = true;
+                return;
+            }
 
-                _loader = new OpenDanmakuLoader(info.Auth, info.Servers, info.GameId);
-                _loader.ReceivedDanmaku += OnLoaderDanmaku;
-                _loader.Disconnected    += OnLoaderDisconnected;
+            foreach (var msg in arr)
+            {
+                var id = msg["id_str"].ToString();
+                if (string.IsNullOrEmpty(id) || _pollSeenIds.Contains(id)) continue;
+                PollMarkSeen(id);
 
-                var ok = await _loader.ConnectAsync();
-                if (!ok)
-                {
-                    LogWarning("ConnectAsync: 长连接握手失败");
-                    DisconnectInternal();
-                    return false;
-                }
-
-                Log($"已连接到房间 {info.RoomId}", Color.cyan);
+                var text = msg["text"].ToString();
+                var uname = msg["nickname"].ToString();
+                var uid = msg.Value<long>("uid");
                 MainThreadDispatcher.Enqueue(() =>
-                    EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED,
-                        new List<object> { (long)info.RoomId }));
+                    EventProcessor.Instance?.TriggerEvent(EVT_DANMAKU,
+                        new List<object> { uname, text, uid }));
+            }
+        }
+
+        private void PollMarkSeen(string id)
+        {
+            if (!_pollSeenIds.Add(id)) return;
+            _pollSeenIdQueue.Enqueue(id);
+            while (_pollSeenIdQueue.Count > PollMaxIdCache)
+                _pollSeenIds.Remove(_pollSeenIdQueue.Dequeue());
+        }
+        #endregion
+
+        // ─── 模式：Token (SESSDATA + WSS) ──────────────────────
+        #region Token
+        private const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+        private const string DanmuInfoApi = "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo";
+        private const string RoomInfoApi  = "https://api.live.bilibili.com/room/v1/Room/get_info";
+        private const string BuvidApi     = "https://api.bilibili.com/x/frontend/finger/spi";
+        private const string NavApi       = "https://api.bilibili.com/x/web-interface/nav";
+        private const string HomePage     = "https://www.bilibili.com";
+        private long _tokenUid;
+
+        private static HttpClient EnsureTokenHttp()
+        {
+            if (_tokenHttp != null) return _tokenHttp;
+            var handler = new HttpClientHandler
+            {
+                CookieContainer = _tokenCookies,
+                UseCookies = true,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            };
+            _tokenHttp = new HttpClient(handler);
+            _tokenHttp.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
+            _tokenHttp.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
+            _tokenHttp.DefaultRequestHeaders.Add("Accept-Language", "zh-CN,zh;q=0.9");
+            return _tokenHttp;
+        }
+
+        private async Task<bool> ConnectTokenAsync(DanmuConnectConfig cfg)
+        {
+            if (cfg.RoomId <= 0) { LogWarning("Token: roomId 必须 > 0"); return false; }
+            try
+            {
+                var http = EnsureTokenHttp();
+                await EnsureTokenCookiesAsync(http, cfg);
+
+                // 解析真实房间号
+                var realRoomId = await ResolveRealRoomIdAsync(http, cfg.RoomId);
+                if (realRoomId <= 0) realRoomId = cfg.RoomId;
+
+                // WBI 签名拉 token
+                var signedQuery = await WbiSigner.SignQueryAsync(http, new Dictionary<string, string>
+                {
+                    { "id", realRoomId.ToString() }, { "type", "0" }
+                });
+                using var req = new HttpRequestMessage(HttpMethod.Get, $"{DanmuInfoApi}?{signedQuery}");
+                req.Headers.Referrer = new Uri($"https://live.bilibili.com/{realRoomId}");
+                req.Headers.Add("Origin", "https://live.bilibili.com");
+                using var resp = await http.SendAsync(req);
+                resp.EnsureSuccessStatusCode();
+                var json = await resp.Content.ReadAsStringAsync();
+                var body = MiniJson.Parse(json);
+                var code = body.Value<int>("code");
+                if (code != 0)
+                {
+                    LogWarning($"[Token] getDanmuInfo code={code} msg={body["message"]}");
+                    return false;
+                }
+
+                var data = body["data"];
+                var wsToken = data["token"].ToString();
+                var hostList = data["host_list"].ToList();
+                if (string.IsNullOrEmpty(wsToken) || hostList.Count == 0)
+                {
+                    LogWarning("[Token] token/host_list 为空");
+                    return false;
+                }
+                var first = hostList[0];
+                var host = first["host"].ToString();
+                var wssPort = first.Value<int>("wss_port");
+                if (wssPort <= 0) wssPort = 443;
+
+                _anonLoader = new AnonDanmakuLoader(realRoomId, wsToken, host, wssPort, _tokenUid);
+                _anonLoader.ReceivedDanmaku += OnAnonLoaderDanmaku;
+                _anonLoader.Disconnected += OnAnonLoaderDisconnected;
+                var ok = await _anonLoader.ConnectAsync();
+                if (!ok) { LogWarning("[Token] WSS 握手失败"); return false; }
+
+                _activeRoomId = realRoomId;
+                Log($"[Token] 已连接 room={realRoomId} via {host}:{wssPort} (uid={_tokenUid})", Color.cyan);
+                MainThreadDispatcher.Enqueue(() =>
+                    EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, new List<object> { realRoomId }));
                 return true;
             }
             catch (Exception ex)
             {
-                LogWarning($"ConnectAsync 异常: {ex.Message}");
-                DisconnectInternal();
+                LogWarning($"[Token] ConnectAsync 异常: {ex.Message}");
                 return false;
-            }
-            finally
-            {
-                _connecting = false;
             }
         }
 
-        /// <summary>主动断开（幂等）。</summary>
-        public void Disconnect() => DisconnectInternal();
-
-        #endregion
-
-        // ─── Loader 回调（后台线程） ───────────────────────────────
-        #region Loader Callbacks
-
-        private void OnLoaderDanmaku(object sender, ReceivedDanmakuArgs e)
+        private async Task EnsureTokenCookiesAsync(HttpClient http, DanmuConnectConfig cfg)
         {
-            var dm = e?.Danmaku;
-            if (dm == null) return;
+            if (_tokenCookiesWarmed) return;
+            // 注入用户 cookie
+            if (!string.IsNullOrEmpty(cfg.Sessdata))
+            {
+                _tokenCookies.Add(new Cookie("SESSDATA", cfg.Sessdata.Trim(), "/", ".bilibili.com"));
+            }
+            if (!string.IsNullOrEmpty(cfg.BiliJct))
+            {
+                _tokenCookies.Add(new Cookie("bili_jct", cfg.BiliJct.Trim(), "/", ".bilibili.com"));
+            }
+            // 预热主站 cookie
+            try { using var _ = await http.GetAsync(HomePage); } catch { }
 
-            // 切主线程后再 TriggerEvent，避免事件订阅者触碰 Unity API 时崩
+            // 已登录 → 用 nav 拿 uid
+            if (!string.IsNullOrEmpty(cfg.Sessdata))
+            {
+                try
+                {
+                    using var r = await http.GetAsync(NavApi);
+                    if (r.IsSuccessStatusCode)
+                    {
+                        var nav = MiniJson.Parse(await r.Content.ReadAsStringAsync());
+                        if (nav.Value<int>("code") == 0)
+                        {
+                            _tokenUid = nav["data"].Value<long>("mid");
+                            Log($"[Token] SESSDATA 登录成功 uid={_tokenUid} uname={nav["data"]["uname"]}", Color.green);
+                        }
+                    }
+                }
+                catch (Exception ex) { LogWarning($"[Token] nav 异常: {ex.Message}"); }
+            }
+            // 补 buvid3
+            try
+            {
+                using var r = await http.GetAsync(BuvidApi);
+                if (r.IsSuccessStatusCode)
+                {
+                    var b = MiniJson.Parse(await r.Content.ReadAsStringAsync());
+                    if (b.Value<int>("code") == 0)
+                    {
+                        var b3 = b["data"]["b_3"].ToString();
+                        if (!string.IsNullOrEmpty(b3))
+                            _tokenCookies.Add(new Cookie("buvid3", b3, "/", ".bilibili.com"));
+                    }
+                }
+            }
+            catch (Exception ex) { LogWarning($"[Token] buvid3 异常: {ex.Message}"); }
+
+            _tokenCookiesWarmed = true;
+        }
+
+        private async Task<long> ResolveRealRoomIdAsync(HttpClient http, long roomId)
+        {
+            try
+            {
+                using var resp = await http.GetAsync($"{RoomInfoApi}?room_id={roomId}");
+                if (!resp.IsSuccessStatusCode) return roomId;
+                var body = MiniJson.Parse(await resp.Content.ReadAsStringAsync());
+                if (body.Value<int>("code") != 0) return roomId;
+                var real = body["data"].Value<long>("room_id");
+                return real > 0 ? real : roomId;
+            }
+            catch { return roomId; }
+        }
+
+        private void OnAnonLoaderDanmaku(object sender, AnonDanmuMessage msg)
+        {
+            if (msg == null) return;
             MainThreadDispatcher.Enqueue(() =>
             {
                 var ep = EventProcessor.Instance;
                 if (ep == null) return;
+                switch (msg.Type)
+                {
+                    case AnonDanmuMsgType.Comment:
+                        ep.TriggerEvent(EVT_DANMAKU, new List<object> { msg.UserName, msg.Text, msg.UserId });
+                        break;
+                    case AnonDanmuMsgType.Gift:
+                        ep.TriggerEvent(EVT_GIFT, new List<object> { msg.UserName, msg.GiftName, msg.GiftCount, msg.UserId });
+                        break;
+                    // SuperChat 暂不映射到基础事件
+                }
+            });
+        }
 
+        private void OnAnonLoaderDisconnected(object sender, Exception err)
+        {
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                Log("[Token] WSS 断开" + (err == null ? string.Empty : $": {err.Message}"), Color.yellow);
+                EventProcessor.Instance?.TriggerEvent(EVT_DISCONNECTED, new List<object> { err });
+            });
+        }
+        #endregion
+
+        // ─── 模式：OpenLive ────────────────────────────────────
+        #region OpenLive
+        private async Task<bool> ConnectOpenLiveAsync(DanmuConnectConfig cfg)
+        {
+            if (string.IsNullOrEmpty(cfg.IdentityCode)) { LogWarning("[OpenLive] 身份码为空"); return false; }
+            try
+            {
+                var timeoutMs = (int)(Mathf.Max(1f, cfg.HttpTimeoutSeconds) * 1000f);
+                using var cts = new CancellationTokenSource(timeoutMs);
+                var info = await GetRoomInfoByCode(cfg.IdentityCode, cfg.AppId, cfg.SignEndpoint, cfg.StartEndpoint, cts.Token);
+                if (info == null) { LogWarning("[OpenLive] 获取房间信息失败"); return false; }
+                _roomInfo = info;
+
+                _openLoader = new OpenDanmakuLoader(info.Auth, info.Servers, info.GameId);
+                _openLoader.ReceivedDanmaku += OnOpenLoaderDanmaku;
+                _openLoader.Disconnected    += OnOpenLoaderDisconnected;
+                var ok = await _openLoader.ConnectAsync();
+                if (!ok) { LogWarning("[OpenLive] 长连接握手失败"); DisconnectInternal(); return false; }
+
+                _activeRoomId = info.RoomId;
+                Log($"[OpenLive] 已连接 room={info.RoomId}", Color.cyan);
+                MainThreadDispatcher.Enqueue(() =>
+                    EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, new List<object> { (long)info.RoomId }));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"[OpenLive] ConnectAsync 异常: {ex.Message}");
+                DisconnectInternal();
+                return false;
+            }
+        }
+
+        private void OnOpenLoaderDanmaku(object sender, ReceivedDanmakuArgs e)
+        {
+            var dm = e?.Danmaku;
+            if (dm == null) return;
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                var ep = EventProcessor.Instance;
+                if (ep == null) return;
                 ep.TriggerEvent(EVT_RAW, new List<object> { dm });
-
                 switch (dm.MsgType)
                 {
                     case MsgTypeEnum.Comment:
@@ -156,75 +448,32 @@ namespace BiliBiliDanmu
             });
         }
 
-        private void OnLoaderDisconnected(object sender, DisconnectEvtArgs e)
+        private void OnOpenLoaderDisconnected(object sender, DisconnectEvtArgs e)
         {
             var err = e?.Error;
             MainThreadDispatcher.Enqueue(() =>
             {
-                Log("长连接断开" + (err == null ? string.Empty : $": {err.Message}"), Color.yellow);
+                Log("[OpenLive] 长连接断开" + (err == null ? string.Empty : $": {err.Message}"), Color.yellow);
                 EventProcessor.Instance?.TriggerEvent(EVT_DISCONNECTED, new List<object> { err });
             });
         }
 
-        #endregion
-
-        // ─── 内部 ──────────────────────────────────────────────────
-        #region Internal
-
-        private void DisconnectInternal()
-        {
-            if (_loader != null)
-            {
-                try
-                {
-                    _loader.ReceivedDanmaku -= OnLoaderDanmaku;
-                    _loader.Disconnected    -= OnLoaderDisconnected;
-                    _loader.Disconnect();
-                    _loader.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    LogWarning($"DisconnectInternal 异常: {ex.Message}");
-                }
-                _loader = null;
-            }
-            _roomInfo = null;
-        }
-
-        /// <summary>
-        /// 用身份码换取房间号 + websocket 鉴权信息。
-        /// 两步：签名代理 → biliapi <c>/v2/app/start</c>。JSON 全部走 <see cref="MiniJson"/>。
-        /// </summary>
         private async Task<RoomInfo> GetRoomInfoByCode(string code, long appId,
             string signEndpoint, string startEndpoint, CancellationToken ct)
         {
             try
             {
-                if (string.IsNullOrEmpty(code)) return null;
-
-                // 请求体：{"code":"xxx","app_id":1651388990835}
                 var paramJson = MiniJson.Serialize(new Dictionary<string, object>
                 {
-                    { "code", code },
-                    { "app_id", appId },
+                    { "code", code }, { "app_id", appId },
                 });
-
-                // ① 拿签名头 · D3：传入 ct 在 timeout 时取消
                 var signResp = await _httpClient.PostAsync(signEndpoint,
                     new StringContent(paramJson, Encoding.UTF8, "application/json"), ct);
-                if (!signResp.IsSuccessStatusCode)
-                {
-                    LogWarning("签名服务器离线");
-                    return null;
-                }
+                if (!signResp.IsSuccessStatusCode) { LogWarning("签名服务器离线"); return null; }
                 var signNode = MiniJson.Parse(await signResp.Content.ReadAsStringAsync());
                 if (!(signNode.Raw is Dictionary<string, object> signDict))
-                {
-                    LogWarning("签名响应不是 JSON 对象");
-                    return null;
-                }
+                { LogWarning("签名响应不是 JSON 对象"); return null; }
 
-                // ② 用签名调 biliapi /v2/app/start
                 var req = new HttpRequestMessage(HttpMethod.Post, startEndpoint);
                 req.Content = new StringContent(paramJson, Encoding.UTF8, "application/json");
                 req.Content.Headers.Remove("Content-Type");
@@ -233,44 +482,25 @@ namespace BiliBiliDanmu
                     req.Headers.Add(kv.Key, kv.Value?.ToString() ?? string.Empty);
                 req.Headers.Add("Accept", "application/json");
 
-                // D3: 传入 ct
                 var resp = await _httpClient.SendAsync(req, ct);
-                if (!resp.IsSuccessStatusCode)
-                {
-                    LogWarning("B 站直播中心离线");
-                    return null;
-                }
-
-                // 响应示例：{code:0, data:{anchor_info:{room_id}, websocket_info:{auth_body, wss_link:[]}, game_info:{game_id}}}
+                if (!resp.IsSuccessStatusCode) { LogWarning("B 站直播中心离线"); return null; }
                 var body = MiniJson.Parse(await resp.Content.ReadAsStringAsync());
                 var apiCode = body.Value<int>("code");
-                if (apiCode != 0)
-                {
-                    LogWarning($"B 站返回错误 code={apiCode}, msg={body["message"]}");
-                    return null;
-                }
+                if (apiCode != 0) { LogWarning($"B 站返回 code={apiCode} msg={body["message"]}"); return null; }
 
                 var data = body["data"];
                 var roomId = data["anchor_info"].Value<int>("room_id");
-                var auth   = data["websocket_info"]["auth_body"].ToString();
+                var auth = data["websocket_info"]["auth_body"].ToString();
                 if (roomId <= 0 || string.IsNullOrEmpty(auth)) return null;
-
                 var wssNodes = data["websocket_info"]["wss_link"].ToList();
                 var servers = new string[wssNodes.Count];
                 for (var i = 0; i < wssNodes.Count; i++) servers[i] = wssNodes[i].ToString();
-
                 var gameId = data["game_info"]["game_id"].ToString();
-
                 return new RoomInfo { Auth = auth, Servers = servers, RoomId = roomId, GameId = gameId };
             }
-            catch (Exception ex)
-            {
-                LogWarning($"GetRoomInfoByCode 异常: {ex.Message}");
-                return null;
-            }
+            catch (Exception ex) { LogWarning($"GetRoomInfoByCode 异常: {ex.Message}"); return null; }
         }
 
-        /// <summary>仅内部用的握手结果；不持久化。</summary>
         private sealed class RoomInfo
         {
             public string Auth;
@@ -278,7 +508,47 @@ namespace BiliBiliDanmu
             public int RoomId;
             public string GameId;
         }
-
         #endregion
+
+        // ─── 公共销毁 ──────────────────────────────────────────
+        private void DisconnectInternal()
+        {
+            // Polling
+            if (_pollCts != null)
+            {
+                try { _pollCts.Cancel(); _pollCts.Dispose(); } catch { }
+                _pollCts = null;
+                MainThreadDispatcher.Enqueue(() =>
+                    EventProcessor.Instance?.TriggerEvent(EVT_DISCONNECTED, new List<object> { (Exception)null }));
+            }
+            // Token
+            if (_anonLoader != null)
+            {
+                try
+                {
+                    _anonLoader.ReceivedDanmaku -= OnAnonLoaderDanmaku;
+                    _anonLoader.Disconnected -= OnAnonLoaderDisconnected;
+                    _anonLoader.Disconnect();
+                    _anonLoader.Dispose();
+                }
+                catch { }
+                _anonLoader = null;
+            }
+            // OpenLive
+            if (_openLoader != null)
+            {
+                try
+                {
+                    _openLoader.ReceivedDanmaku -= OnOpenLoaderDanmaku;
+                    _openLoader.Disconnected -= OnOpenLoaderDisconnected;
+                    _openLoader.Disconnect();
+                    _openLoader.Dispose();
+                }
+                catch (Exception ex) { LogWarning($"DisconnectInternal 异常: {ex.Message}"); }
+                _openLoader = null;
+            }
+            _roomInfo = null;
+            _activeRoomId = 0;
+        }
     }
 }
