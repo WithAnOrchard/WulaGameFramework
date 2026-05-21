@@ -256,12 +256,15 @@ namespace Demo.DobeCat
 
             var holder = new GameObject(nameof(RoomDiscoveryClient));
             holder.transform.SetParent(transform);
+            // 先关掉 GameObject，避免 AddComponent 立即触发 OnEnable → 协程用默认 localhost 发出第一次心跳
+            holder.SetActive(false);
             _discovery = holder.AddComponent<RoomDiscoveryClient>();
             _discovery.ServerBaseUrl = _roomDiscoveryServerUrl;
             _discovery.CollectionName = _roomDiscoveryCollection;
             _discovery.AdvertisedHost = _roomDiscoveryAdvertisedHost; // 留空则自动检测 LAN IP
             _discovery.AdvertisedPort = _netPort;
             _discovery.RoomDisplayName = _roomDiscoveryDisplayName;  // 留空则用设备名
+            holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。
