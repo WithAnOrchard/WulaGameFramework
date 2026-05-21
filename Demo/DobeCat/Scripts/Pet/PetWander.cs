@@ -42,11 +42,24 @@ namespace Demo.DobeCat.Pet
             EnterIdle();
         }
 
+        private int _lastFacing;
+
         private void NotifyLocomotion(bool moving)
         {
             if (string.IsNullOrEmpty(CharacterInstanceId) || !EventProcessor.HasInstance) return;
             EventProcessor.Instance.TriggerEventMethod(CharacterManager.EVT_PLAY_LOCOMOTION,
                 new List<object> { CharacterInstanceId, moving, true });
+        }
+
+        private void NotifyFacing(int dir)
+        {
+            if (dir == 0 || dir == _lastFacing) return;
+            _lastFacing = dir;
+            // 同步翻转视觉与角色（双保险：PetView 翻父根，EVT_SET_FACING 走 CharacterManager 官方路径）
+            if (View != null) View.SetFacing(dir);
+            if (string.IsNullOrEmpty(CharacterInstanceId) || !EventProcessor.HasInstance) return;
+            EventProcessor.Instance.TriggerEventMethod(CharacterManager.EVT_SET_FACING,
+                new List<object> { CharacterInstanceId, dir > 0 });
         }
 
         private void Update()
@@ -71,7 +84,8 @@ namespace Demo.DobeCat.Pet
             }
             var step = MoveSpeed * Time.deltaTime;
             transform.position = pos + (Vector3)(dir.normalized * Mathf.Min(step, dist));
-            if (View != null) View.SetFacing(dir.x >= 0f ? 1 : -1);
+            // 死区：只有横向位移明显时才翻转，避免上下走时反复抖动
+            if (Mathf.Abs(dir.x) > 0.05f) NotifyFacing(dir.x >= 0f ? 1 : -1);
         }
 
         private void EnterIdle()
