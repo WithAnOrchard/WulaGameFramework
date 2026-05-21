@@ -76,6 +76,22 @@ namespace EssSystem.Core.Base.Event
         // C-E6: 共享空参数 List，避免每次 invoke 都 new。只读、不允许外部修改。
         private static readonly List<object> _emptyData = new();
 
+        /// <summary>静默事件集 —— 命中此集合的事件名在 TriggerEvent / TriggerEventMethod 中不打 "触发事件" / "没监听器" 日志。
+        /// <para>用于高频网络/坐标同步等会刷屏的事件。注册：<c>EventProcessor.Instance.SilenceEvent(name)</c>。</para></summary>
+        private readonly HashSet<string> _silentEvents = new();
+
+        /// <summary>把指定事件加入静默集；之后该事件不再产生 "触发事件 / 没监听器" 日志（仍正常分派）。</summary>
+        public void SilenceEvent(string eventName)
+        {
+            if (!string.IsNullOrEmpty(eventName)) _silentEvents.Add(eventName);
+        }
+
+        /// <summary>从静默集移除指定事件，恢复日志输出。</summary>
+        public void UnsilenceEvent(string eventName)
+        {
+            if (!string.IsNullOrEmpty(eventName)) _silentEvents.Remove(eventName);
+        }
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -158,11 +174,13 @@ namespace EssSystem.Core.Base.Event
             // 广播 fire-and-forget 没人订阅是合法状态。调用方可用 HasListener 显式检查。
             if (!_eventListeners.TryGetValue(eventName, out var registeredListeners) || registeredListeners.Count == 0)
             {
-                Log($"事件 {eventName} 没有监听器（静默跳过）", Color.gray);
+                if (!_silentEvents.Contains(eventName))
+                    Log($"事件 {eventName} 没有监听器（静默跳过）", Color.gray);
                 return _emptyData;
             }
 
-            Log($"触发事件: {eventName}", Color.magenta);
+            if (!_silentEvents.Contains(eventName))
+                Log($"触发事件: {eventName}", Color.magenta);
 
             // A-E1: 从 ListPool 租用拷贝 代替每次 ToList。
             var listenersSnapshot = ListPool<EventDelegate>.Rent();
