@@ -95,7 +95,7 @@ namespace Demo.DobeCat
         [Tooltip("启用房间发现：每个客户端启动时自动作为 Host 上报到中心服务器，\n其他玩家可在系统托盘里看到房间列表并加入。")]
         [SerializeField] private bool _roomDiscoveryEnabled = true;
         [Tooltip("数据收发器 Base URL（运行 tools/data_exchange_server/server.py）。")]
-        [SerializeField] private string _roomDiscoveryServerUrl = "http://localhost:8765";
+        [SerializeField] private string _roomDiscoveryServerUrl = "http://154.12.90.249:8765";
         [Tooltip("集合名（同名集合内的房间互相可见）。")]
         [SerializeField] private string _roomDiscoveryCollection = "rooms";
         [Tooltip("公布给他人加入的 Mirror Host 地址。留空 = 自动选本机首个非环回 IPv4。")]
