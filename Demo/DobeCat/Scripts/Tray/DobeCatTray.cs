@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using Demo.DobeCat.Network;
 using UnityEngine;
 
 namespace Demo.DobeCat.Tray
@@ -5,7 +8,7 @@ namespace Demo.DobeCat.Tray
     /// <summary>
     /// DobeCat 桌宠的系统托盘集成器（仅 Windows 编译生效）。
     /// <list type="bullet">
-    /// <item>右键菜单：显示 / 隐藏、重置位置、置顶切换、退出</item>
+    /// <item>右键菜单：显示 / 隐藏、重置位置、加入房间动态列表、退出</item>
     /// <item>双击：切换显示 / 隐藏</item>
     /// </list>
     /// </summary>
@@ -17,6 +20,16 @@ namespace Demo.DobeCat.Tray
         [Tooltip("重置位置时回到的世界坐标（默认 0,0,0）。")]
         public Vector3 ResetPosition = Vector3.zero;
 
+        [Tooltip("可选：房间发现客户端（注入后启用「加入房间」动态菜单）。")]
+        public RoomDiscoveryClient Discovery;
+
+        /// <summary>当用户从托盘菜单点击 "加入 xxx 房间" 时触发。
+        /// <para>由外部（DobeCatGameManager）订阅，执行：停掉当前 Host → 以 Client 模式连过去。</para>
+        /// <para>注：仅 Standalone Windows 真实触发；Editor / 非 Windows 下保留声明以便订阅方编译通过。</para></summary>
+#pragma warning disable 67 // Editor / 非 Windows 路径不会 invoke 此事件
+        public event Action<RoomDiscoveryClient.RoomInfo> OnJoinRoomRequested;
+#pragma warning restore 67
+
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         private SystemTray _tray;
         private bool _petVisible = true;
@@ -24,13 +37,63 @@ namespace Demo.DobeCat.Tray
         private void Start()
         {
             _tray = new SystemTray { Tooltip = "DobeCat 桌宠" };
-            _tray.AddItem("显示 / 隐藏", TogglePetVisible);
-            _tray.AddItem("重置位置", ResetPetPosition);
-            _tray.AddItem("弹幕测试面板", () => Demo.DobeCat.UI.DobeCatTestPanel.Toggle());
-            _tray.AddSeparator();
-            _tray.AddItem("退出 (Ctrl+Shift+Q)", Quit);
             _tray.OnDoubleClick += TogglePetVisible;
+            RebuildMenu(); // 初始填一份（房间区为空提示）
             _tray.Start();
+
+            if (Discovery != null)
+                Discovery.OnRoomsChanged += OnDiscoveryRoomsChanged;
+        }
+
+        private void OnDestroy()
+        {
+            if (Discovery != null)
+                Discovery.OnRoomsChanged -= OnDiscoveryRoomsChanged;
+            try { _tray?.Dispose(); } catch { /* swallow */ }
+        }
+
+        private void OnDiscoveryRoomsChanged(IReadOnlyList<RoomDiscoveryClient.RoomInfo> rooms)
+        {
+            // 在 Unity 主线程触发（UnityWebRequest 回调在主线程），直接 SetItems
+            RebuildMenu();
+        }
+
+        private void RebuildMenu()
+        {
+            if (_tray == null) return;
+            var items = new List<SystemTray.MenuItemDef>
+            {
+                SystemTray.MenuItemDef.Item("显示 / 隐藏", TogglePetVisible),
+                SystemTray.MenuItemDef.Item("重置位置", ResetPetPosition),
+                SystemTray.MenuItemDef.Separator(),
+            };
+
+            // 房间区
+            if (Discovery == null || Discovery.LatestRooms == null || Discovery.LatestRooms.Count == 0)
+            {
+                items.Add(SystemTray.MenuItemDef.Disabled("（暂无在线房间）"));
+            }
+            else
+            {
+                items.Add(SystemTray.MenuItemDef.Disabled("─ 加入房间 ─"));
+                foreach (var r in Discovery.LatestRooms)
+                {
+                    var captured = r;
+                    var label = captured.IsSelf
+                        ? $"● 我的房间: {captured.Name} ({captured.Host}:{captured.Port})"
+                        : $"加入: {captured.Name} ({captured.Host}:{captured.Port})";
+                    items.Add(SystemTray.MenuItemDef.Item(label,
+                        () => OnJoinRoomRequested?.Invoke(captured),
+                        enabled: !captured.IsSelf));
+                }
+            }
+
+            items.Add(SystemTray.MenuItemDef.Separator());
+            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.UI.DobeCatTestPanel.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Separator());
+            items.Add(SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit));
+
+            _tray.SetItems(items);
         }
 
         private void Update()
@@ -39,7 +102,6 @@ namespace Demo.DobeCat.Tray
         }
 
         private void OnApplicationQuit() => _tray?.Dispose();
-        private void OnDestroy() => _tray?.Dispose();
 
         // ── 菜单回调（在 Unity 主线程执行） ──
 

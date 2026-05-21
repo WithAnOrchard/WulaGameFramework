@@ -11,6 +11,7 @@ using Demo.DobeCat.Window;
 using Demo.DobeCat.Pet;
 using Demo.DobeCat.Tray;
 using Demo.DobeCat.UI;
+using Demo.DobeCat.Network;
 
 namespace Demo.DobeCat
 {
@@ -90,12 +91,25 @@ namespace Demo.DobeCat
         [SerializeField] private string _netServerAddress = "localhost";
         [SerializeField] private ushort _netPort = 7777;
 
+        [Header("Room Discovery (data_exchange_server)")]
+        [Tooltip("启用房间发现：每个客户端启动时自动作为 Host 上报到中心服务器，\n其他玩家可在系统托盘里看到房间列表并加入。")]
+        [SerializeField] private bool _roomDiscoveryEnabled = true;
+        [Tooltip("数据收发器 Base URL（运行 tools/data_exchange_server/server.py）。")]
+        [SerializeField] private string _roomDiscoveryServerUrl = "http://localhost:8765";
+        [Tooltip("集合名（同名集合内的房间互相可见）。")]
+        [SerializeField] private string _roomDiscoveryCollection = "rooms";
+        [Tooltip("公布给他人加入的 Mirror Host 地址。留空 = 自动选本机首个非环回 IPv4。")]
+        [SerializeField] private string _roomDiscoveryAdvertisedHost = "";
+        [Tooltip("展示给他人的房间名。留空 = 设备名。")]
+        [SerializeField] private string _roomDiscoveryDisplayName = "";
+
         [Header("Test Panel")]
         [Tooltip("启动时自动打开 DobeCatTestPanel，方便调试。生产环境改 false。")]
         [SerializeField] private bool _autoOpenTestPanel = true;
 
         private DesktopWindow _window;
         private GameObject _pet;
+        private RoomDiscoveryClient _discovery;
 
         protected override void Awake()
         {
@@ -109,12 +123,20 @@ namespace Demo.DobeCat
 
         private void Start()
         {
+            // 房间发现开启时强制以 Host 启动，确保自己能被别人加入
+            if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
+            {
+                Debug.Log($"[DobeCatGameManager] 房间发现已启用 → 覆盖 NetMode {_netMode} → Host");
+                _netMode = NetworkRole.Host;
+            }
+
             if (_autoSpawnPet) SpawnPet();
-            EnsureTray();
             EnsureFrameworkManagers();
             TryAutoConnectDanmu();
             TryStartLivePolling();
             TryAutoStartNetwork();
+            EnsureRoomDiscovery();
+            EnsureTray(); // 必须晚于 EnsureRoomDiscovery，否则 Tray 拿不到 _discovery
 
 
             if (_autoOpenTestPanel)
@@ -222,6 +244,50 @@ namespace Demo.DobeCat
             }
             tray.PetRoot = _pet;
             tray.ResetPosition = _petSpawnPos;
+            tray.Discovery = _discovery;
+            tray.OnJoinRoomRequested -= HandleJoinRoom; // 防重复订阅
+            tray.OnJoinRoomRequested += HandleJoinRoom;
+        }
+
+        private void EnsureRoomDiscovery()
+        {
+            if (!_roomDiscoveryEnabled) return;
+            if (_discovery != null) return;
+
+            var holder = new GameObject(nameof(RoomDiscoveryClient));
+            holder.transform.SetParent(transform);
+            _discovery = holder.AddComponent<RoomDiscoveryClient>();
+            _discovery.ServerBaseUrl = _roomDiscoveryServerUrl;
+            _discovery.CollectionName = _roomDiscoveryCollection;
+            _discovery.AdvertisedHost = _roomDiscoveryAdvertisedHost; // 留空则自动检测 LAN IP
+            _discovery.AdvertisedPort = _netPort;
+            _discovery.RoomDisplayName = _roomDiscoveryDisplayName;  // 留空则用设备名
+        }
+
+        /// <summary>用户从托盘点了"加入 xxx 房间"。
+        /// <para>停掉本机当前 Host → 切到 Client 模式连过去。PetNetworkSync 会自动开始同步。</para></summary>
+        private void HandleJoinRoom(RoomDiscoveryClient.RoomInfo room)
+        {
+            if (room == null || string.IsNullOrEmpty(room.Host) || room.Port <= 0)
+            {
+                Debug.LogWarning($"[DobeCatGameManager] 拒绝加入：房间信息无效 {room?.Id}");
+                return;
+            }
+            Debug.Log($"[DobeCatGameManager] 加入房间 {room.Name} → {room.Host}:{room.Port}");
+
+            // 1) 关掉自己（Host 或 Client 都先 Disconnect 一次，幂等）
+            EventProcessor.Instance.TriggerEventMethod(NetMgr.EVT_DISCONNECT, new List<object>());
+
+            // 2) 切换为 Client 角色，连接到目标 Host
+            _netMode = NetworkRole.Client;
+            _netServerAddress = room.Host;
+            _netPort = (ushort)room.Port;
+
+            EventProcessor.Instance.TriggerEventMethod(NetMgr.EVT_CLIENT_CONNECT,
+                new List<object> { room.Host, (ushort)room.Port });
+
+            // 3) 通知 RoomDiscovery：自己不再是 Host，就别再上报房间了
+            if (_discovery != null) _discovery.enabled = false;
         }
 
         /// <summary>托底创建所需 Manager 单例（SingletonMono 会自动创建 GameObject）。</summary>
