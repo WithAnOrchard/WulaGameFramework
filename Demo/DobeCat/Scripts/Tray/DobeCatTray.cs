@@ -23,8 +23,8 @@ namespace Demo.DobeCat.Tray
         [Tooltip("可选：房间发现客户端（注入后启用「加入房间」动态菜单）。")]
         public RoomDiscoveryClient Discovery;
 
-        [Tooltip("可选：WASD 控制器（注入后启用「控制角色」菜单切换）。")]
-        public Demo.DobeCat.Pet.PetWasdController Wasd;
+        [Tooltip("可选：桌宠 AI 控制器（注入后启用「AI 开关」菜单切换）。")]
+        public Demo.DobeCat.Pet.PetAiController Ai;
 
         /// <summary>当用户从托盘菜单点击 "加入 xxx 房间" 时触发。
         /// <para>由外部（DobeCatGameManager）订阅，执行：停掉当前 Host → 以 Client 模式连过去。</para>
@@ -78,11 +78,11 @@ namespace Demo.DobeCat.Tray
                 SystemTray.MenuItemDef.Item("重置位置", ResetPetPosition),
             };
 
-            // WASD 控制开关（注入了控制器才显示）
-            if (Wasd != null)
+            // AI 总开关（包含 PlayerControl 与 Wander 两个 Consideration）
+            if (Ai != null)
             {
-                var label = Wasd.ControlEnabled ? "✔ 控制角色 (WASD)" : "  控制角色 (WASD)";
-                items.Add(SystemTray.MenuItemDef.Item(label, ToggleWasdControl));
+                var label = Ai.AiEnabled ? "✔ AI / 玩家控制" : "  AI / 玩家控制";
+                items.Add(SystemTray.MenuItemDef.Item(label, ToggleAi));
             }
             items.Add(SystemTray.MenuItemDef.Separator());
 
@@ -145,10 +145,10 @@ namespace Demo.DobeCat.Tray
             PetRoot.transform.position = ResetPosition;
         }
 
-        private void ToggleWasdControl()
+        private void ToggleAi()
         {
-            if (Wasd == null) return;
-            Wasd.SetEnabled(!Wasd.ControlEnabled);
+            if (Ai == null) return;
+            Ai.SetAiEnabled(!Ai.AiEnabled);
             RebuildMenu(); // 刷新菜单的 ✔ 标记
         }
 

@@ -153,7 +153,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _cameraOrthoSize: 5
   _autoSpawnPet: 1
-  _petScale: 150
+  _petScale: 5
   _petSpawnPos: {x: 0, y: 0, z: 0}
   _characterConfigId: Warrior
   _ghostCharacterConfigId: Mage

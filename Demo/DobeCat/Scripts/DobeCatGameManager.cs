@@ -51,7 +51,7 @@ namespace Demo.DobeCat
         [Tooltip("远端幽灵桌宠使用的 ConfigId（与本机区分，默认 'Mage'）。")]
         [SerializeField] private string _ghostCharacterConfigId = "Mage";
 
-        [Tooltip("WASD 移动速度（仅 PetWasdController 启用时生效）。")]
+        [Tooltip("桌宠移动速度（IMovable.MoveSpeed；玩家 WASD 与 wander 共用）。")]
         [SerializeField, Min(0.1f)] private float _wasdMoveSpeed = 4f;
 
         // 已废弃，仅保留以保持旧场景反序列化兼容（不再使用）
@@ -228,41 +228,30 @@ namespace Demo.DobeCat
             view.UseChildRenderers = true;
             view.VisualScale = _petScale;
 
-            // CharacterManager 必须就绪：EnsureFrameworkManagers 已在 Start 早期触发了 _ = CharMgr.Instance
+            // EntityManager + CharacterManager 必须就绪
             const string charInstanceId = "DobeCatLocal";
             if (!CharacterService.HasInstance)
             {
                 Debug.LogError("[DobeCatGameManager] CharacterService 未就绪，无法生成桌宠");
                 return;
             }
-            CharacterService.Instance.CreateCharacter(
-                configId:      _characterConfigId,
-                instanceId:    charInstanceId,
-                parent:        _pet.transform,
-                worldPosition: _petSpawnPos);
-            EventProcessor.Instance.TriggerEventMethod(CharMgr.EVT_PLAY_LOCOMOTION,
-                new List<object> { charInstanceId, false, true });
-            Debug.Log($"[DobeCatGameManager] 桌宠使用 CharacterManager 角色 configId={_characterConfigId}");
 
-            var wander = _pet.AddComponent<PetWander>();
-            wander.View = view;
-            wander.CharacterInstanceId = charInstanceId;
+            // 玩家/AI 双系统：PetAiController 内部用 EntityManager BrainComponent，
+            // PlayerControl Consideration（WASD 按下时 Score=1）压过 Wander Consideration（Score=0.2）
+            var ai = _pet.AddComponent<PetAiController>();
+            ai.MoveSpeed = _wasdMoveSpeed;
+            ai.CharacterInstanceId = charInstanceId;
+            ai.CharacterConfigId = _characterConfigId;
+            ai.AiEnabled = true;
+            ai.Initialize(_petSpawnPos);
 
             var dragger = _pet.AddComponent<PetDragger>();
             dragger.View = view;
-            dragger.Wander = wander;
+            dragger.Ai = ai;
 
             var ctd = _pet.AddComponent<PetClickThroughDriver>();
             ctd.View = view;
             ctd.Dragger = dragger;
-
-            // WASD 控制器（默认开启；可通过托盘菜单切换关闭以恢复 wander）
-            var wasd = _pet.AddComponent<PetWasdController>();
-            wasd.View = view;
-            wasd.Wander = wander;
-            wasd.MoveSpeed = _wasdMoveSpeed;
-            wasd.CharacterInstanceId = charInstanceId ?? string.Empty;
-            wasd.SetEnabled(true); // 同时暂停 wander
 
             // 联网同步：每节点广播本机桌宠位置，收到陌生 peer 自动生成幽灵跟随
             var sync = _pet.AddComponent<PetNetworkSync>();
@@ -285,7 +274,7 @@ namespace Demo.DobeCat
             tray.PetRoot = _pet;
             tray.ResetPosition = _petSpawnPos;
             tray.Discovery = _discovery;
-            tray.Wasd = _pet != null ? _pet.GetComponent<PetWasdController>() : null;
+            tray.Ai = _pet != null ? _pet.GetComponent<PetAiController>() : null;
             tray.OnJoinRoomRequested -= HandleJoinRoom; // 防重复订阅
             tray.OnJoinRoomRequested += HandleJoinRoom;
 
@@ -355,6 +344,7 @@ namespace Demo.DobeCat
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
             _ = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
+            _ = EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager.Instance; // EntityManager 提供 Brain / Capabilities
         }
 
         private void TryAutoStartNetwork()

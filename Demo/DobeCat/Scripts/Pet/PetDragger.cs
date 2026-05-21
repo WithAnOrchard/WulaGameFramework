@@ -10,7 +10,7 @@ namespace Demo.DobeCat.Pet
     public class PetDragger : MonoBehaviour
     {
         public PetView View;
-        public PetWander Wander;
+        public PetAiController Ai;
 
         [Tooltip("按下到识别为拖拽的最小屏幕像素阈值。")]
         public float DragThresholdPixels = 4f;
@@ -38,19 +38,22 @@ namespace Demo.DobeCat.Pet
                     if (!IsDragging && Vector2.Distance(Input.mousePosition, _downScreen) >= DragThresholdPixels)
                     {
                         IsDragging = true;
-                        if (Wander != null) Wander.Paused = true;
+                        if (Ai != null) Ai.SetPaused(true);
                     }
                     if (IsDragging)
                     {
                         var w = ScreenToWorld(Input.mousePosition) + _grabOffset;
                         w.z = 0f;
                         transform.position = w;
+                        // EntityService.Tick 会把 CharacterRoot.position 赋为 entity.WorldPosition，
+                        // 拖拽期间同步写回，避免下一帧被带回原位置。
+                        if (Ai != null && Ai.Entity != null) Ai.Entity.WorldPosition = w;
                     }
                 }
             }
             else if (Input.GetMouseButtonUp(0))
             {
-                if (IsDragging && Wander != null) Wander.Paused = false;
+                if (IsDragging && Ai != null) Ai.SetPaused(false);
                 IsDragging = false;
                 _grabOffset = Vector3.zero;
                 _downScreen = Vector2.zero;
