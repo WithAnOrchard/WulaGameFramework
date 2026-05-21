@@ -154,7 +154,7 @@ MonoBehaviour:
   _cameraOrthoSize: 5
   _autoSpawnPet: 1
   _petSpritePath: 
-  _petScale: 5
+  _petScale: 25
   _petSpawnPos: {x: 0, y: 0, z: 0}
   _quitKey: 27
   _danmuMode: 1
