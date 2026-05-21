@@ -1,8 +1,8 @@
-#if UNITY_STANDALONE_WIN
+﻿#if UNITY_STANDALONE_WIN
 using System;
 using System.Runtime.InteropServices;
 
-namespace Demo.DobeCat.Tray
+namespace Demo.DobeCat.Platform.Windows
 {
     /// <summary>系统托盘相关 Win32 P/Invoke 集合。</summary>
     internal static class TrayNative

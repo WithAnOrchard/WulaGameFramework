@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using EssSystem.Core.Base;
 using EssSystem.Core.Presentation.UIManager;
 using BiliBiliDanmu;
@@ -9,7 +9,7 @@ using EssSystem.Manager.NetworkManager;
 using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
-using Demo.DobeCat.Window;
+using Demo.DobeCat.Platform.Windows;
 using Demo.DobeCat.Pet;
 using Demo.DobeCat.Tray;
 using Demo.DobeCat.UI;

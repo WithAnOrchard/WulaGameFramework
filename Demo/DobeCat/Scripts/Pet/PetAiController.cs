@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Demo.DobeCat.Pet.Ai;
-using Demo.DobeCat.Window;
+using Demo.DobeCat.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;

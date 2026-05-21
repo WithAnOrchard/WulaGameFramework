@@ -1,11 +1,11 @@
-#if !UNITY_EDITOR
+﻿#if !UNITY_EDITOR
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace Demo.DobeCat.Window
+namespace Demo.DobeCat.Platform.Windows
 {
     /// <summary>
     /// 启动期"无感"处理：

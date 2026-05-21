@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Demo.DobeCat.Network;
+using Demo.DobeCat.Platform.Windows;
 using UnityEngine;
 
 namespace Demo.DobeCat.Tray
@@ -134,7 +135,7 @@ namespace Demo.DobeCat.Tray
             // 重新显示时驱动器接管 → 命中检测会自然把穿透切回正确状态。
             if (!_petVisible)
             {
-                var win = Demo.DobeCat.Window.DesktopWindow.Instance;
+                var win = Demo.DobeCat.Platform.Windows.DesktopWindow.Instance;
                 if (win != null) win.SetClickThrough(true);
             }
         }

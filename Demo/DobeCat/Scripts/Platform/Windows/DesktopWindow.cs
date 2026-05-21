@@ -1,9 +1,9 @@
-using UnityEngine;
+﻿using UnityEngine;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using System;
 #endif
 
-namespace Demo.DobeCat.Window
+namespace Demo.DobeCat.Platform.Windows
 {
     /// <summary>
     /// 桌面宠物窗口能力封装。
