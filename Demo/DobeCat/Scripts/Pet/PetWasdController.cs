@@ -47,6 +47,9 @@ namespace Demo.DobeCat.Pet
 
             var moving = axis.sqrMagnitude > 1e-3f;
 
+            // wasd 刚接管这一帧，wander 在期间可能改过角色朝向 —— 清掉本机的去重缓存
+            if (moving && !_wasMoving) _lastFacing = 0;
+
             // 并存调度：WASD 按下才暂停 wander；松开后让 wander 接管
             if (Wander != null && Wander.Paused != moving) Wander.Paused = moving;
 
