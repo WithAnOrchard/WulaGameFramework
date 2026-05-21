@@ -62,14 +62,14 @@ namespace Demo.DobeCat
         [SerializeField, Min(1.5f)] private float _pollIntervalSeconds = 3f;
 
         [Header("BiliBili Danmu — Token 模式 cookie")]
-        [Tooltip("浏览器 DevTools 复制的 SESSDATA。\n⚠️ 安全：等同登录密码，不要 commit 到公开仓库。")]
+        [Tooltip("【SESSDATA】= B 站登录 cookie，等同账号密码。\n\n如何获取：\n  1. 浏览器登录 https://www.bilibili.com\n  2. F12 → Application → Cookies → bilibili.com\n  3. 找名为 SESSDATA 的那一行，复制其 Value（一段 URL-encoded 长串）\n\n⚠️ 安全：泄露后他人可以登录你的账号；不要 commit 到公开仓库。")]
         [TextArea(2, 4)]
         [SerializeField] private string _sessdata = "dff5c774%2C1794564158%2C6d18c%2A51CjA2jc857610MMUb9emwlp5TWnnIVV9FlCCgkOzmxmqWEJdznmr9zN44-sIJzbbUjX4SVnZtUTd6SlNBUjhfVVNwRzlua2FBb0x0Q05UTlhRZHBzWFF4ZEtUM0d1OHJfV2FSWll3N2x5X0NoQ2pTeWo5bkRkWnBRLVNzVDhXQWtMZkRoSmJ0UGt3IIEC";
-        [Tooltip("可选 bili_jct，仅发弹幕/打赏需要。")]
+        [Tooltip("【bili_jct (CSRF Token)】= B 站防 CSRF 令牌，仅做主动写操作（发弹幕、送礼、点赞）时需要。\n\n如何获取：与 SESSDATA 同位置（F12 → Cookies → bilibili.com），找 bili_jct 复制 Value。\n\n纯接收弹幕（订阅 Polling/Token 模式）留空即可。")]
         [SerializeField] private string _biliJct = string.Empty;
 
         [Header("BiliBili Danmu — OpenLive 模式（主播身份码）")]
-        [Tooltip("主播身份码（B 站直播姬「开放平台」面板获取）。")]
+        [Tooltip("【主播身份码 (Identity Code)】= B 站官方开放平台给主播的鉴权码，仅自己能用。\n\n如何获取：\n  1. 打开 B 站直播姬\n  2. 顶部菜单「设置 → 开放平台」\n  3. 复制「身份码」字段（短码，约 13 位）\n\n用途：OpenLive 模式连自己的直播间（无需 SESSDATA cookie，但只能连自己）。")]
         [SerializeField] private string _bilibiliIdentityCode = string.Empty;
         [SerializeField] private long _bilibiliAppId = 1651388990835L;
         [SerializeField] private string _bilibiliSignEndpoint = "https://bopen.ceve-market.org/sign";
