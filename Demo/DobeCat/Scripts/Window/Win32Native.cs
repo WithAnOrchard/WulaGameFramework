@@ -105,6 +105,10 @@ namespace Demo.DobeCat.Window
         public const int VK_CONTROL = 0x11;
         public const int VK_SHIFT   = 0x10;
         public const int VK_Q       = 0x51;
+        public const int VK_W       = 0x57;
+        public const int VK_A       = 0x41;
+        public const int VK_S       = 0x53;
+        public const int VK_D       = 0x44;
     }
 }
 #endif

@@ -23,6 +23,9 @@ namespace Demo.DobeCat.Tray
         [Tooltip("可选：房间发现客户端（注入后启用「加入房间」动态菜单）。")]
         public RoomDiscoveryClient Discovery;
 
+        [Tooltip("可选：WASD 控制器（注入后启用「控制角色」菜单切换）。")]
+        public Demo.DobeCat.Pet.PetWasdController Wasd;
+
         /// <summary>当用户从托盘菜单点击 "加入 xxx 房间" 时触发。
         /// <para>由外部（DobeCatGameManager）订阅，执行：停掉当前 Host → 以 Client 模式连过去。</para>
         /// <para>注：仅 Standalone Windows 真实触发；Editor / 非 Windows 下保留声明以便订阅方编译通过。</para></summary>
@@ -65,8 +68,15 @@ namespace Demo.DobeCat.Tray
             {
                 SystemTray.MenuItemDef.Item("显示 / 隐藏", TogglePetVisible),
                 SystemTray.MenuItemDef.Item("重置位置", ResetPetPosition),
-                SystemTray.MenuItemDef.Separator(),
             };
+
+            // WASD 控制开关（注入了控制器才显示）
+            if (Wasd != null)
+            {
+                var label = Wasd.ControlEnabled ? "✔ 控制角色 (WASD)" : "  控制角色 (WASD)";
+                items.Add(SystemTray.MenuItemDef.Item(label, ToggleWasdControl));
+            }
+            items.Add(SystemTray.MenuItemDef.Separator());
 
             // 房间区
             if (Discovery == null || Discovery.LatestRooms == null || Discovery.LatestRooms.Count == 0)
@@ -116,6 +126,13 @@ namespace Demo.DobeCat.Tray
         {
             if (PetRoot == null) return;
             PetRoot.transform.position = ResetPosition;
+        }
+
+        private void ToggleWasdControl()
+        {
+            if (Wasd == null) return;
+            Wasd.SetEnabled(!Wasd.ControlEnabled);
+            RebuildMenu(); // 刷新菜单的 ✔ 标记
         }
 
         private void Quit()

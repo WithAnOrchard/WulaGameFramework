@@ -107,6 +107,23 @@ namespace Demo.DobeCat.Window
 #endif
         }
 
+        /// <summary>全局 WASD 输入轴：x=D-A, y=W-S。click-through 失去焦点时也能读到。</summary>
+        public Vector2 GetGlobalWasdAxis()
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var w = (Win32Native.GetAsyncKeyState(Win32Native.VK_W) & 0x8000) != 0;
+            var a = (Win32Native.GetAsyncKeyState(Win32Native.VK_A) & 0x8000) != 0;
+            var s = (Win32Native.GetAsyncKeyState(Win32Native.VK_S) & 0x8000) != 0;
+            var d = (Win32Native.GetAsyncKeyState(Win32Native.VK_D) & 0x8000) != 0;
+#else
+            var w = Input.GetKey(KeyCode.W);
+            var a = Input.GetKey(KeyCode.A);
+            var s = Input.GetKey(KeyCode.S);
+            var d = Input.GetKey(KeyCode.D);
+#endif
+            return new Vector2((d ? 1f : 0f) - (a ? 1f : 0f), (w ? 1f : 0f) - (s ? 1f : 0f));
+        }
+
         /// <summary>读取当前鼠标在屏幕坐标系的位置（无视 Unity 焦点；穿透时也能读取）。</summary>
         public Vector2 GetGlobalCursorScreenPos()
         {

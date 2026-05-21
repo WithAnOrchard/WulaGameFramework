@@ -6,7 +6,9 @@ using BiliBiliLive;
 using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
 using EssSystem.Manager.NetworkManager;
+using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
+using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
 using Demo.DobeCat.Window;
 using Demo.DobeCat.Pet;
 using Demo.DobeCat.Tray;
@@ -45,6 +47,15 @@ namespace Demo.DobeCat
 
         [Tooltip("桌宠生成位置（世界坐标）。")]
         [SerializeField] private Vector3 _petSpawnPos = Vector3.zero;
+
+        [Tooltip("使用 CharacterManager 默认角色（Warrior 等）替代占位猫贴图。")]
+        [SerializeField] private bool _useCharacterModel = true;
+
+        [Tooltip("CharacterManager 注册的 ConfigId（默认 'Warrior'，需先跑过角色 sheet 切片工具）。")]
+        [SerializeField] private string _characterConfigId = "Warrior";
+
+        [Tooltip("WASD 移动速度（仅 PetWasdController 启用时生效）。")]
+        [SerializeField, Min(0.1f)] private float _wasdMoveSpeed = 4f;
 
         [Header("Hotkeys")]
         [SerializeField] private KeyCode _quitKey = KeyCode.Escape;
@@ -130,8 +141,9 @@ namespace Demo.DobeCat
                 _netMode = NetworkRole.Host;
             }
 
-            if (_autoSpawnPet) SpawnPet();
+            // CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
             EnsureFrameworkManagers();
+            if (_autoSpawnPet) SpawnPet();
             TryAutoConnectDanmu();
             TryStartLivePolling();
             TryAutoStartNetwork();
@@ -210,8 +222,40 @@ namespace Demo.DobeCat
             _pet.transform.position = _petSpawnPos;
 
             var view = _pet.AddComponent<PetView>();
-            view.SpriteResourcePath = _petSpritePath;
-            view.VisualScale = _petScale;
+            string charInstanceId = null;
+
+            if (_useCharacterModel)
+            {
+                // 走 CharacterManager：根 GO 上的 PetView 只做命中盒 & 朝向翻转，视觉由子 Character 提供
+                view.UseChildRenderers = true;
+                view.VisualScale = _petScale;
+
+                charInstanceId = "DobeCatLocal";
+                if (CharacterService.HasInstance)
+                {
+                    // 直接调 Service 拿到 Character 实例（也能走 EVT_CREATE_CHARACTER，但这里需要回引）
+                    CharacterService.Instance.CreateCharacter(
+                        configId:     _characterConfigId,
+                        instanceId:   charInstanceId,
+                        parent:       _pet.transform,
+                        worldPosition: _petSpawnPos);
+                    // 进入 Idle 循环
+                    EventProcessor.Instance.TriggerEventMethod(CharMgr.EVT_PLAY_LOCOMOTION,
+                        new List<object> { charInstanceId, false, true });
+                    Debug.Log($"[DobeCatGameManager] 桌宠使用 CharacterManager 角色 configId={_characterConfigId}");
+                }
+                else
+                {
+                    Debug.LogWarning("[DobeCatGameManager] CharacterService 未就绪，退化为占位贴图");
+                    view.UseChildRenderers = false;
+                    view.SpriteResourcePath = _petSpritePath;
+                }
+            }
+            else
+            {
+                view.SpriteResourcePath = _petSpritePath;
+                view.VisualScale = _petScale;
+            }
 
             var wander = _pet.AddComponent<PetWander>();
             wander.View = view;
@@ -223,6 +267,14 @@ namespace Demo.DobeCat
             var ctd = _pet.AddComponent<PetClickThroughDriver>();
             ctd.View = view;
             ctd.Dragger = dragger;
+
+            // WASD 控制器（默认关闭，由托盘菜单切换）
+            var wasd = _pet.AddComponent<PetWasdController>();
+            wasd.View = view;
+            wasd.Wander = wander;
+            wasd.MoveSpeed = _wasdMoveSpeed;
+            wasd.CharacterInstanceId = charInstanceId ?? string.Empty;
+            wasd.ControlEnabled = false;
 
             // 联网同步：每节点广播本机桌宠位置，收到陌生 peer 自动生成幽灵跟随
             var sync = _pet.AddComponent<PetNetworkSync>();
@@ -245,6 +297,7 @@ namespace Demo.DobeCat
             tray.PetRoot = _pet;
             tray.ResetPosition = _petSpawnPos;
             tray.Discovery = _discovery;
+            tray.Wasd = _pet != null ? _pet.GetComponent<PetWasdController>() : null;
             tray.OnJoinRoomRequested -= HandleJoinRoom; // 防重复订阅
             tray.OnJoinRoomRequested += HandleJoinRoom;
         }
@@ -303,7 +356,8 @@ namespace Demo.DobeCat
             _ = UIManager.Instance;
             _ = DanmuManager.Instance;
             _ = LiveStatusManager.Instance;
-            _ = NetMgr.Instance; // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
+            _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
+            _ = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
         }
 
         private void TryAutoStartNetwork()

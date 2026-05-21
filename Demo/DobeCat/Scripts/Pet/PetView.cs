@@ -23,6 +23,10 @@ namespace Demo.DobeCat.Pet
         [Tooltip("占位圆贴图分辨率。")]
         public int PlaceholderPixels = 128;
 
+        [Tooltip("使用子物体的 Renderer 组合作为视觉与命中盒（CharacterManager 角色挂在子物体时打开）。\n" +
+                 "开启后：本组件的 SpriteRenderer 关闭，不生成占位图；WorldBounds 取所有子 Renderer 的并集。")]
+        public bool UseChildRenderers = false;
+
         private SpriteRenderer _renderer;
         private int _facing = 1;
 
@@ -31,6 +35,13 @@ namespace Demo.DobeCat.Pet
             _renderer = GetComponent<SpriteRenderer>();
             _renderer.sortingOrder = 100;
             transform.localScale = Vector3.one * Mathf.Max(0.01f, VisualScale);
+
+            if (UseChildRenderers)
+            {
+                _renderer.enabled = false;
+                _renderer.sprite = null;
+                return;
+            }
 
             var sprite = LoadOrFallback();
             _renderer.sprite = sprite;
@@ -46,8 +57,30 @@ namespace Demo.DobeCat.Pet
             transform.localScale = s;
         }
 
-        /// <summary>桌宠的世界包围盒（屏幕坐标命中测试用）。</summary>
-        public Bounds WorldBounds => _renderer != null ? _renderer.bounds : new Bounds(transform.position, Vector3.one);
+        /// <summary>桌宠的世界包围盒（屏幕坐标命中测试用）。
+        /// <para>子渲染器模式：每帧扫一次（角色帧切换会改 sprite 大小，但每帧重算成本可忽略）。</para></summary>
+        public Bounds WorldBounds
+        {
+            get
+            {
+                if (UseChildRenderers)
+                {
+                    Bounds? acc = null;
+                    var rs = GetComponentsInChildren<Renderer>(false);
+                    for (var i = 0; i < rs.Length; i++)
+                    {
+                        var r = rs[i];
+                        if (r == _renderer) continue;
+                        if (!r.enabled) continue;
+                        var b = r.bounds;
+                        if (b.size.sqrMagnitude < 1e-6f) continue;
+                        if (acc == null) acc = b; else { var bb = acc.Value; bb.Encapsulate(b); acc = bb; }
+                    }
+                    return acc ?? new Bounds(transform.position, Vector3.one * 0.5f);
+                }
+                return _renderer != null ? _renderer.bounds : new Bounds(transform.position, Vector3.one);
+            }
+        }
 
         // ──────────────────────────────────────────────────────
 
