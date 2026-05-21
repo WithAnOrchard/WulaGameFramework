@@ -154,14 +154,14 @@ MonoBehaviour:
   _cameraOrthoSize: 5
   _autoSpawnPet: 1
   _petSpritePath: 
-  _petScale: 1
+  _petScale: 5
   _petSpawnPos: {x: 0, y: 0, z: 0}
   _quitKey: 27
   _danmuMode: 1
   _bilibiliAutoConnect: 1
   _danmuRoomId: 0
   _pollIntervalSeconds: 3
-  _sessdata: dff5c774%2C1794564158%2C6d18c%2A51CjA2jc857610MMUb9emwlp5TWnnIVV9FlCCgkOzmxmqWEJdznmr9zN44-sIJzbbUjX4SVnZtUTd6SlNBUjhfVVNwRzlua2FBb0x0Q05UTlhRZHBzWFF4ZEtUM0d1OHJfV2FSWll3N2x5X0NoQ2pTeWo5bkRkWnBRLVNzVDhXQWtMZkRoSmJ0UGt3IIEC
+  _sessdata: a67fb418%2C1794910051%2C6e825%2A51CjBiYrKiFvR6KczUckmN94XgcOw5ipd_Z-jZRrKYe2Hqvr316nDLKQtC5X7dSeCN4w0SVmx3X2xRMXRHbExtTUNQTVl1dG04TzVHSi1Rd0c4YUxwOUcyMVhxYUE0bm9JOU4zRHhCNVhoNVR2dUhmQzcyM1Zqc3lhSGFuQWZiUElRN3Y4dEJmX3h3IIEC
   _biliJct: 
   _bilibiliIdentityCode: 
   _bilibiliAppId: 1651388990835
@@ -174,6 +174,11 @@ MonoBehaviour:
   _netMode: 2
   _netServerAddress: localhost
   _netPort: 7777
+  _roomDiscoveryEnabled: 1
+  _roomDiscoveryServerUrl: http://154.12.90.249:8765
+  _roomDiscoveryCollection: rooms
+  _roomDiscoveryAdvertisedHost: 
+  _roomDiscoveryDisplayName: 
   _autoOpenTestPanel: 1
 --- !u!4 &1509259083
 Transform:

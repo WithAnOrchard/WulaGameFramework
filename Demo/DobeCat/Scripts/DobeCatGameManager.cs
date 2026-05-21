@@ -39,8 +39,8 @@ namespace Demo.DobeCat
         [Tooltip("自动生成一只占位桌宠。")]
         [SerializeField] private bool _autoSpawnPet = true;
 
-        [Tooltip("桌宠视觉缩放（影响整个 Character 根）。")]
-        [SerializeField] private float _petScale = 1f;
+        [Tooltip("桌宠视觉缩放（影响整个 Character 根）。默认 5x。")]
+        [SerializeField] private float _petScale = 5f;
 
         [Tooltip("桌宠生成位置（世界坐标）。")]
         [SerializeField] private Vector3 _petSpawnPos = Vector3.zero;
