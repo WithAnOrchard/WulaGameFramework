@@ -288,6 +288,15 @@ namespace Demo.DobeCat
             tray.Wasd = _pet != null ? _pet.GetComponent<PetWasdController>() : null;
             tray.OnJoinRoomRequested -= HandleJoinRoom; // 防重复订阅
             tray.OnJoinRoomRequested += HandleJoinRoom;
+
+            // 桌宠右键 → 调起托盘菜单（与右下角图标一致）
+            if (_pet != null)
+            {
+                var rc = _pet.GetComponent<PetRightClick>();
+                if (rc == null) rc = _pet.AddComponent<PetRightClick>();
+                rc.View = _pet.GetComponent<PetView>();
+                rc.Tray = tray;
+            }
         }
 
         private void EnsureRoomDiscovery()

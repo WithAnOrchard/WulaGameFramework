@@ -48,6 +48,9 @@ namespace Demo.DobeCat.Tray
                 Discovery.OnRoomsChanged += OnDiscoveryRoomsChanged;
         }
 
+        /// <summary>外部（如桌宠右键）请求弹出托盘菜单。Editor / 非 Win 路径下空操作。</summary>
+        public void RequestShowMenu() => _tray?.RequestShowMenu();
+
         private void OnDestroy()
         {
             if (Discovery != null)

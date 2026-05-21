@@ -59,6 +59,13 @@ namespace Demo.DobeCat.Tray
             }
         }
 
+        /// <summary>外部（如桌宠右键）请求弹出托盘右键菜单。线程安全，菜单会在 tray 线程跑 TrackPopupMenu。</summary>
+        public void RequestShowMenu()
+        {
+            if (_hWnd == IntPtr.Zero) return;
+            TrayNative.PostMessage(_hWnd, TrayNative.WM_USER_SHOW_MENU, IntPtr.Zero, IntPtr.Zero);
+        }
+
         public void Start()
         {
             if (_thread != null) return;
@@ -194,6 +201,12 @@ namespace Demo.DobeCat.Tray
                             _mainThreadQueue.Enqueue(OnDoubleClick);
                         return IntPtr.Zero;
                     }
+                }
+                else if (msg == TrayNative.WM_USER_SHOW_MENU)
+                {
+                    // 来自外部线程的弹菜单请求（如桌宠右键）→ 在 tray 线程上执行 TrackPopupMenu
+                    ShowContextMenu();
+                    return IntPtr.Zero;
                 }
                 else if (msg == TrayNative.WM_DESTROY)
                 {

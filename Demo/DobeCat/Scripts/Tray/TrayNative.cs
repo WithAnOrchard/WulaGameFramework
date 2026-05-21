@@ -19,6 +19,8 @@ namespace Demo.DobeCat.Tray
         // ── Window messages ──
         public const uint WM_USER         = 0x0400;
         public const uint WM_TRAYICON     = WM_USER + 1;
+        /// <summary>外部请求托盘窗口弹出右键菜单（在光标处）。</summary>
+        public const uint WM_USER_SHOW_MENU = WM_USER + 2;
         public const uint WM_DESTROY      = 0x0002;
         public const uint WM_LBUTTONUP    = 0x0202;
         public const uint WM_LBUTTONDBLCLK= 0x0203;
