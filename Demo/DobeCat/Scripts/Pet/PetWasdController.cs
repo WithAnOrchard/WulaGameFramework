@@ -7,11 +7,11 @@ using UnityEngine;
 namespace Demo.DobeCat.Pet
 {
     /// <summary>
-    /// 桌宠 WASD 移动控制器（可由托盘菜单切换）。
+    /// 桌宠 WASD 移动控制器。并存模式：
     /// <list type="bullet">
-    /// <item>开启时暂停 <see cref="PetWander"/>，根据 <see cref="DesktopWindow.GetGlobalWasdAxis"/> 直接移动 transform。</item>
-    /// <item>关闭时恢复 wander。</item>
-    /// <item>朝向变化通过 <see cref="PetView.SetFacing"/> + CharacterManager.EVT_SET_FACING 同步给角色。</item>
+    /// <item><b>WASD 按下</b> → 接管移动，暂停 <see cref="PetWander"/>。</item>
+    /// <item><b>WASD 松开</b> → 恢复 wander，角色自动随机游荡。</item>
+    /// <item><b>ControlEnabled = false</b> → 完全禁用（托盘菜单切换用，不走这里）。</item>
     /// </list>
     /// </summary>
     public class PetWasdController : MonoBehaviour
@@ -34,8 +34,7 @@ namespace Demo.DobeCat.Pet
         public void SetEnabled(bool enabled)
         {
             ControlEnabled = enabled;
-            if (Wander != null) Wander.Paused = enabled; // 开启 WASD 时暂停 wander
-            if (!enabled) NotifyLocomotion(false);
+            if (!enabled && Wander != null) Wander.Paused = false; // 禁用后强制恢复 wander
         }
 
         private void Update()
@@ -47,6 +46,10 @@ namespace Demo.DobeCat.Pet
             if (axis.sqrMagnitude > 1f) axis.Normalize();
 
             var moving = axis.sqrMagnitude > 1e-3f;
+
+            // 并存调度：WASD 按下才暂停 wander；松开后让 wander 接管
+            if (Wander != null && Wander.Paused != moving) Wander.Paused = moving;
+
             if (moving)
             {
                 var delta = (Vector3)(axis * MoveSpeed * Time.deltaTime);
@@ -54,16 +57,14 @@ namespace Demo.DobeCat.Pet
                 if (Mathf.Abs(axis.x) > 0.01f)
                 {
                     var face = axis.x > 0f ? 1 : -1;
-                    // 仅走 EVT_SET_FACING；不能再调 PetView.SetFacing（父子双翻会抵消）
                     if (face != _lastFacing) NotifyFacing(face);
                     _lastFacing = face;
                 }
             }
-            if (moving != _wasMoving)
-            {
-                NotifyLocomotion(moving);
-                _wasMoving = moving;
-            }
+            // locomotion 动画只在 WASD 接管期间主动驱动；松开时交由 wander 发 EVT_PLAY_LOCOMOTION(false)
+            if (moving && !_wasMoving) NotifyLocomotion(true);
+            else if (!moving && _wasMoving) NotifyLocomotion(false);
+            _wasMoving = moving;
         }
 
         private void NotifyLocomotion(bool moving)
