@@ -47,29 +47,28 @@ FarmManager/
 | `FarmService.CAT_CROP_CONFIGS` = `"CropConfigs"` | 已注册 `CropConfig`（按 Id） |
 | `FarmService.CAT_INSTANCES`    = `"FarmInstances"` | 运行时 `FarmInstance`（按 InstanceId） |
 
-## 计划事件（M1 实施时新增）
+## Event API
 
-> 当前骨架阶段尚未声明 `EVT_*` 常量。落地时按以下分组注册（保持 bare-string §4.1）：
+### 命令事件（业务方 -> FarmManager）
 
-**配置注册**
-- `RegisterFarmConfig` / `RegisterCropConfig` — 业务启动时灌入模板
+通过 `EventProcessor.Instance.TriggerEventMethod(EVT_*, args)` 调用。
 
-**实例生命周期**
-- `SpawnFarm` — `[configId, worldPosition, instanceId?]` → 实例化 FarmInstance + 扣建造材料
-- `DespawnFarm` — `[instanceId]` → 销毁实例（保留槽位作物丢弃规则待定）
-- `UpgradeFarm` — `[instanceId]` → 检查 BuildCost、扣材料、累加 Rows/Cols、解锁作物
+- `EVT_REGISTER_FARM_CONFIG` = `"RegisterFarmConfig"` -- 参数 `[FarmConfig]` -- 注册一份农场模板
+- `EVT_REGISTER_CROP_CONFIG` = `"RegisterCropConfig"` -- 参数 `[CropConfig]` -- 注册一份作物模板
+- `EVT_SPAWN_FARM` = `"SpawnFarm"` -- 参数 `[string configId, Vector3 worldPosition, string instanceId?]` -- 实例化一座农场（重复 instanceId 直接返回已有实例，不重建）
 
-**种植循环**
-- `PlantCrop` — `[instanceId, slotIndex, cropConfigId]` → 扣种子物品 + 设 Slot.Stage=Seed
-- `WaterCrop` — `[instanceId, slotIndex]` → Slot.Watered=true（加速生长，规则待定）
-- `HarvestCrop` — `[instanceId, slotIndex]` → 入产物到 InventoryManager + 清空槽位
+### 广播事件（FarmService -> 业务方）
 
-**子场景路由**
-- `EnterFarm` — `[instanceId]` → 通过 SceneInstanceManager 切到内部场景；记录 ActiveSceneInstanceId
-- `ExitFarm` — `[instanceId]` → 离开子场景
+通过 `[EventListener(FarmService.EVT_*)]` 订阅。
 
-**广播事件**（业务侧订阅扩展世界边界等）
-- `OnFarmSpawned` / `OnFarmUpgraded` / `OnCropMatured` / `OnCropHarvested`
+- `EVT_ON_FARM_SPAWNED` = `"OnFarmSpawned"` -- 参数 `[string instanceId, FarmInstance instance]` -- 农场实例化成功；Tribe / CampFeature 订阅它来扩展世界边界 / 创建视觉 / 挂 IInteractable
+
+### 计划中（尚未实现）
+
+**实例生命周期**：`DespawnFarm` / `UpgradeFarm`
+**种植循环**：`PlantCrop` / `WaterCrop` / `HarvestCrop`
+**子场景路由**：`EnterFarm` / `ExitFarm`
+**广播扩展**：`OnFarmUpgraded` / `OnCropMatured` / `OnCropHarvested`
 
 ## 与上游模块的解耦
 

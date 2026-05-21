@@ -71,6 +71,13 @@ DialogueManager/
 - **返回**: `ResultCode.Ok("closed")`
 - **副作用**: 调 `DialogueService.EndDialogue` 清状态；广播 `DialogueService.EVT_ENDED`；UI 仅隐藏（缓存复用），下次 Open 不重建
 
+#### `DialogueManager.EVT_SET_PORTRAIT_SPRITE` — 直接贴 Sprite 头像（多层叠加）
+- **常量**: `DialogueManager.EVT_SET_PORTRAIT_SPRITE` = `"SetDialoguePortraitSprite"`
+- **参数**: `[Sprite single]` 或 `[List<Sprite> layers]`
+- **返回**: `ResultCode.Ok` / `ResultCode.Fail`
+- **副作用**: 在 UI Portrait 子节点下创建覆盖层 Image 显示传入的 Sprite；多个 Sprite 按顺序叠加。**必须**在 `EVT_OPEN_UI` 之后调；重复调用先清旧层再贴新的
+- **用途**: 不依赖 ResourceManager 注册即可贴头像（典型：CharacterManager.EVT_GET_PART_SPRITE_ID 拿到的 spriteId 转 Sprite 后直接贴）
+
 #### `DialogueService.EVT_REGISTER_DIALOGUE` — 注册对话
 - **常量**: `DialogueService.EVT_REGISTER_DIALOGUE` = `"RegisterDialogue"`
 - **参数**: `[Dialogue]`

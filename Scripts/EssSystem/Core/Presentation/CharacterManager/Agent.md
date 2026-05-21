@@ -168,6 +168,15 @@ public enum CharacterRenderMode
 - **返回**: `ResultCode.Ok(instanceId)` / `ResultCode.Fail`
 - **副作用**: 广播到所有 `CharacterPartView2D`，命中 `CharacterActionConfig.DirectionalFrameIndices` 时即时切换帧序列。**不**翻转 localScale —— 与 `EVT_SET_FACING` 正交。
 
+### 命令类（查询）
+
+#### `CharacterManager.EVT_GET_PART_SPRITE_ID` — 查询某个 Part 当前帧的 spriteId
+- **常量**: `CharacterManager.EVT_GET_PART_SPRITE_ID` = `"GetCharacterPartSpriteId"`
+- **参数**: `[string instanceId, string partId, string actionName?, int frameIndex?]`
+- **返回**: `ResultCode.Ok(string spriteId)` / `ResultCode.Fail(msg)`
+- **副作用**: 无（只读查询）。返回的 spriteId 可直接喂给 `UIPanelComponent.BackgroundSpriteId` 或任何走 `ResourceManager.GetResource` 的 sprite 槽
+- **典型用途**: `DialogueLine.PortraitSpriteId` 用本事件 → 拿到 NPC 头像贴图（与 `DialogueManager.EVT_SET_PORTRAIT_SPRITE` 配对）
+
 ### 广播类
 
 #### `CharacterService.EVT_FRAME_EVENT` — 角色动画帧事件

@@ -461,6 +461,29 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `DialogueService.EVT_STARTED` | `OnDialogueStarted` | Core/DialogueManager | 对话启动**广播**，参数 `[string dialogueId, string configId]` |
 | `DialogueService.EVT_LINE_CHANGED` | `OnDialogueLineChanged` | Core/DialogueManager | 当前行切换**广播**，参数 `[string dialogueId, string lineId]` |
 | `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
+| `DialogueManager.EVT_SET_PORTRAIT_SPRITE` | `SetDialoguePortraitSprite` | Core/DialogueManager | 直接贴 Sprite 头像层（命令），参数 `[Sprite single]` 或 `[List<Sprite> layers]` |
+| `CharacterManager.EVT_SET_DIRECTION` | `SetCharacterDirection` | Core/CharacterManager | 设置朝向 sheet 选行（命令），参数 `[string instanceId, int direction]` |
+| `CharacterManager.EVT_GET_PART_SPRITE_ID` | `GetCharacterPartSpriteId` | Core/CharacterManager | 查询某个 Part 当前帧的 spriteId（查询），参数 `[string instanceId, string partId, string actionName?, int frameIndex?]` |
+| `FarmManager.EVT_REGISTER_FARM_CONFIG` | `RegisterFarmConfig` | Core/FarmManager | 注册农场模板（命令），参数 `[FarmConfig]` |
+| `FarmManager.EVT_REGISTER_CROP_CONFIG` | `RegisterCropConfig` | Core/FarmManager | 注册作物模板（命令），参数 `[CropConfig]` |
+| `FarmManager.EVT_SPAWN_FARM` | `SpawnFarm` | Core/FarmManager | 实例化一座农场（命令），参数 `[string configId, Vector3 worldPosition, string instanceId?]` |
+| `FarmService.EVT_ON_FARM_SPAWNED` | `OnFarmSpawned` | Core/FarmManager | 农场实例化成功**广播**，参数 `[string instanceId, FarmInstance instance]` |
+| `NetworkManager.EVT_HOST_START` | `NetHostStart` | Manager/NetworkManager | 启动主机 Server+本地 Client（命令），参数 `[ushort? port]` |
+| `NetworkManager.EVT_SERVER_START` | `NetServerStart` | Manager/NetworkManager | 启动纯专用服务器（命令），参数 `[ushort? port]` |
+| `NetworkManager.EVT_CLIENT_CONNECT` | `NetClientConnect` | Manager/NetworkManager | 连接到指定服务器（命令），参数 `[string address, ushort? port]` |
+| `NetworkManager.EVT_DISCONNECT` | `NetDisconnect` | Manager/NetworkManager | 停止当前角色（命令），无参 |
+| `NetworkManager.EVT_SEND_TO_SERVER` | `NetSendToServer` | Manager/NetworkManager | Client→Server 发消息（命令），参数 `[string topic, object payload]` |
+| `NetworkManager.EVT_SEND_TO_ALL` | `NetSendToAll` | Manager/NetworkManager | Server→所有 Client 广播（命令），参数 `[string topic, object payload]` |
+| `NetworkManager.EVT_SEND_TO_PEER` | `NetSendToPeer` | Manager/NetworkManager | Server→指定 Client 单播（命令），参数 `[int connectionId, string topic, object payload]` |
+| `NetworkManager.EVT_BROADCAST` | `NetBroadcast` | Manager/NetworkManager | 对等广播：任意节点调用全员收到（命令），参数 `[string topic, object payload]` |
+| `NetworkService.EVT_NET_STATUS_CHANGED` | `OnNetworkStatusChanged` | Manager/NetworkManager | 网络状态变化**广播**，参数 `[NetworkRole role, bool connected]` |
+| `NetworkService.EVT_PEER_JOINED` | `OnNetworkPeerJoined` | Manager/NetworkManager | 远端连入**广播**（仅 Server），参数 `[int connectionId]` |
+| `NetworkService.EVT_PEER_LEFT` | `OnNetworkPeerLeft` | Manager/NetworkManager | 远端离开**广播**（仅 Server），参数 `[int connectionId]` |
+| `NetworkService.EVT_NET_MESSAGE` | `OnNetworkMessage` | Manager/NetworkManager | 收到网络消息**广播**，参数 `[int senderConnectionId, string topic, string payloadJson]` |
+| `NetworkService.EVT_NET_ERROR` | `OnNetworkError` | Manager/NetworkManager | 网络错误**广播**，参数 `[string source, string message]` |
+| `LiveStatusService.EVT_LIVE_STARTED` | `OnLiveStarted` | Manager/LiveStatusManager | 直播开播**广播**（边沿），参数 `[long roomId, string title, LiveRoomInfo info]` |
+| `LiveStatusService.EVT_LIVE_ENDED` | `OnLiveEnded` | Manager/LiveStatusManager | 直播下播**广播**（边沿），参数 `[long roomId, string title, LiveRoomInfo info]` |
+| `LiveStatusService.EVT_STATUS_POLLED` | `OnLiveStatusPolled` | Manager/LiveStatusManager | 每次轮询都触发**广播**，参数 `[long roomId, int liveStatus, string title, LiveRoomInfo info]` |
 
 > ℹ️ **几乎无 Event 的模块**：`MapManager` 当前以纯 C# API 为主（`MapService.Instance.XXX`），目前不暴露 `EVT_*`。`CharacterManager` 已有完整 Event API（10 个 `EVT_*` 常量），跨模块调用统一经 `CharacterViewBridge` 收口。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 
