@@ -39,23 +39,23 @@ namespace Demo.DobeCat
         [Tooltip("自动生成一只占位桌宠。")]
         [SerializeField] private bool _autoSpawnPet = true;
 
-        [Tooltip("桌宠占位贴图的 Resources 路径，留空走程序生成。")]
-        [SerializeField] private string _petSpritePath = "";
-
-        [Tooltip("桌宠视觉缩放。")]
+        [Tooltip("桌宠视觉缩放（影响整个 Character 根）。")]
         [SerializeField] private float _petScale = 1f;
 
         [Tooltip("桌宠生成位置（世界坐标）。")]
         [SerializeField] private Vector3 _petSpawnPos = Vector3.zero;
 
-        [Tooltip("使用 CharacterManager 默认角色（Warrior 等）替代占位猫贴图。")]
-        [SerializeField] private bool _useCharacterModel = true;
-
-        [Tooltip("CharacterManager 注册的 ConfigId（默认 'Warrior'，需先跑过角色 sheet 切片工具）。")]
+        [Tooltip("CharacterManager 注册的 ConfigId（默认 'Warrior'，可改 'Mage' / 'SmallTreeChar_1' 等）。")]
         [SerializeField] private string _characterConfigId = "Warrior";
+
+        [Tooltip("远端幽灵桌宠使用的 ConfigId（与本机区分，默认 'Mage'）。")]
+        [SerializeField] private string _ghostCharacterConfigId = "Mage";
 
         [Tooltip("WASD 移动速度（仅 PetWasdController 启用时生效）。")]
         [SerializeField, Min(0.1f)] private float _wasdMoveSpeed = 4f;
+
+        // 已废弃，仅保留以保持旧场景反序列化兼容（不再使用）
+        [SerializeField, HideInInspector] private string _petSpritePath = "";
 
         [Header("Hotkeys")]
         [SerializeField] private KeyCode _quitKey = KeyCode.Escape;
@@ -222,40 +222,24 @@ namespace Demo.DobeCat
             _pet.transform.position = _petSpawnPos;
 
             var view = _pet.AddComponent<PetView>();
-            string charInstanceId = null;
+            view.UseChildRenderers = true;
+            view.VisualScale = _petScale;
 
-            if (_useCharacterModel)
+            // CharacterManager 必须就绪：EnsureFrameworkManagers 已在 Start 早期触发了 _ = CharMgr.Instance
+            const string charInstanceId = "DobeCatLocal";
+            if (!CharacterService.HasInstance)
             {
-                // 走 CharacterManager：根 GO 上的 PetView 只做命中盒 & 朝向翻转，视觉由子 Character 提供
-                view.UseChildRenderers = true;
-                view.VisualScale = _petScale;
-
-                charInstanceId = "DobeCatLocal";
-                if (CharacterService.HasInstance)
-                {
-                    // 直接调 Service 拿到 Character 实例（也能走 EVT_CREATE_CHARACTER，但这里需要回引）
-                    CharacterService.Instance.CreateCharacter(
-                        configId:     _characterConfigId,
-                        instanceId:   charInstanceId,
-                        parent:       _pet.transform,
-                        worldPosition: _petSpawnPos);
-                    // 进入 Idle 循环
-                    EventProcessor.Instance.TriggerEventMethod(CharMgr.EVT_PLAY_LOCOMOTION,
-                        new List<object> { charInstanceId, false, true });
-                    Debug.Log($"[DobeCatGameManager] 桌宠使用 CharacterManager 角色 configId={_characterConfigId}");
-                }
-                else
-                {
-                    Debug.LogWarning("[DobeCatGameManager] CharacterService 未就绪，退化为占位贴图");
-                    view.UseChildRenderers = false;
-                    view.SpriteResourcePath = _petSpritePath;
-                }
+                Debug.LogError("[DobeCatGameManager] CharacterService 未就绪，无法生成桌宠");
+                return;
             }
-            else
-            {
-                view.SpriteResourcePath = _petSpritePath;
-                view.VisualScale = _petScale;
-            }
+            CharacterService.Instance.CreateCharacter(
+                configId:      _characterConfigId,
+                instanceId:    charInstanceId,
+                parent:        _pet.transform,
+                worldPosition: _petSpawnPos);
+            EventProcessor.Instance.TriggerEventMethod(CharMgr.EVT_PLAY_LOCOMOTION,
+                new List<object> { charInstanceId, false, true });
+            Debug.Log($"[DobeCatGameManager] 桌宠使用 CharacterManager 角色 configId={_characterConfigId}");
 
             var wander = _pet.AddComponent<PetWander>();
             wander.View = view;
@@ -279,7 +263,7 @@ namespace Demo.DobeCat
             // 联网同步：每节点广播本机桌宠位置，收到陌生 peer 自动生成幽灵跟随
             var sync = _pet.AddComponent<PetNetworkSync>();
             sync.LocalPet = _pet.transform;
-            sync.GhostSpritePath = _petSpritePath;
+            sync.GhostCharacterConfigId = _ghostCharacterConfigId;
             sync.GhostScale = _petScale;
 
             Debug.Log("[DobeCatGameManager] 占位桌宠已生成");

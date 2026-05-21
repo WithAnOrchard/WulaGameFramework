@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
+using EssSystem.Core.Presentation.CharacterManager;
 using EssSystem.Manager.NetworkManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using UnityEngine;
@@ -22,14 +23,15 @@ namespace Demo.DobeCat.Pet
         [Tooltip("本地桌宠 Transform —— 由 DobeCatGameManager 注入。")]
         public Transform LocalPet;
 
-        [Tooltip("幽灵桌宠的 Sprite 资源路径，默认与本机一致。")]
-        public string GhostSpritePath = "DobeCat/cat_idle";
+        [Tooltip("幽灵桌宠使用的 CharacterManager ConfigId（与本机区分，默认 Mage）。")]
+        public string GhostCharacterConfigId = "Mage";
+
+        // 兼容字段（DobeCatGameManager 旧赋值不再使用，保留避免编译错）
+        [System.NonSerialized] public string GhostSpritePath;
+        [System.NonSerialized] public Color GhostTint;
 
         [Tooltip("幽灵桌宠视觉缩放。")]
         public float GhostScale = 1f;
-
-        [Tooltip("幽灵桌宠颜色（与本机区分）。")]
-        public Color GhostTint = new Color(0.7f, 0.85f, 1f, 1f);
 
         [Tooltip("位置广播间隔（秒）。100ms = 0.1。")]
         [Min(0.05f)] public float BroadcastInterval = 0.1f;
@@ -152,9 +154,26 @@ namespace Demo.DobeCat.Pet
             go.transform.position = pos;
 
             var view = go.AddComponent<PetView>();
-            view.SpriteResourcePath = GhostSpritePath;
+            view.UseChildRenderers = true;
             view.VisualScale = GhostScale;
-            view.PlaceholderColor = GhostTint; // 与本机区分
+
+            // 用 CharacterManager 创建一只可视化角色，instanceId 用 peerId 保唯一
+            if (CharacterService.HasInstance && !string.IsNullOrEmpty(GhostCharacterConfigId))
+            {
+                var ghostInstanceId = $"DobeCatGhost_{peerId}";
+                CharacterService.Instance.CreateCharacter(
+                    configId:      GhostCharacterConfigId,
+                    instanceId:    ghostInstanceId,
+                    parent:        go.transform,
+                    worldPosition: pos);
+                EventProcessor.Instance.TriggerEventMethod(
+                    EssSystem.Core.Presentation.CharacterManager.CharacterManager.EVT_PLAY_LOCOMOTION,
+                    new List<object> { ghostInstanceId, false, true });
+            }
+            else
+            {
+                Debug.LogWarning($"[PetNetworkSync] CharacterService 未就绪，无法创建幽灵角色 peer={peerId}");
+            }
 
             return new GhostEntry { Go = go, Tr = go.transform, TargetPos = pos, LastSeenTime = Time.unscaledTime };
         }
