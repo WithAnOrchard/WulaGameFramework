@@ -23,8 +23,8 @@ namespace Demo.DobeCat.Network
     {
         // ── Inspector / 调用方注入 ─────────────────────────────
 
-        [Tooltip("数据收发器的 Base URL，例如 http://192.168.1.10:8765")]
-        public string ServerBaseUrl = "http://localhost:8765";
+        [Tooltip("数据收发器的 Base URL，例如 http://192.168.1.10:8765。留空则禁用收发。")]
+        public string ServerBaseUrl = "";
 
         [Tooltip("集合名（同集合的房间互相能看到）。")]
         public string CollectionName = "rooms";
