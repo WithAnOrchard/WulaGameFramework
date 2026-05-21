@@ -128,6 +128,15 @@ namespace Demo.DobeCat.Tray
             if (PetRoot == null) return;
             _petVisible = !_petVisible;
             PetRoot.SetActive(_petVisible);
+
+            // 隐藏后 PetClickThroughDriver.Update 不会再运行；窗口可能停留在"不穿透"状态
+            // 导致桌面点击全部被 Unity 窗口吞掉。这里强制把窗口切回穿透。
+            // 重新显示时驱动器接管 → 命中检测会自然把穿透切回正确状态。
+            if (!_petVisible)
+            {
+                var win = Demo.DobeCat.Window.DesktopWindow.Instance;
+                if (win != null) win.SetClickThrough(true);
+            }
         }
 
         private void ResetPetPosition()
