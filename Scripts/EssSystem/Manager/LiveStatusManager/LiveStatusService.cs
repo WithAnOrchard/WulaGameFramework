@@ -57,6 +57,10 @@ namespace BiliBiliLive
         {
             base.Initialize();
             Log("LiveStatusService 初始化完成", Color.green);
+
+            // 高频心跳事件加入静默集，避免每次轮询都刷一条 "[EventProcessor] 触发事件" 日志
+            if (EssSystem.Core.Base.Event.EventProcessor.HasInstance)
+                EssSystem.Core.Base.Event.EventProcessor.Instance.SilenceEvent(EVT_STATUS_POLLED);
         }
 
         // ─── Public API ────────────────────────────────────────────
