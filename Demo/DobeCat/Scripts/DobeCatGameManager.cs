@@ -256,13 +256,13 @@ namespace Demo.DobeCat
             ctd.View = view;
             ctd.Dragger = dragger;
 
-            // WASD 控制器（默认关闭，由托盘菜单切换）
+            // WASD 控制器（默认开启；可通过托盘菜单切换关闭以恢复 wander）
             var wasd = _pet.AddComponent<PetWasdController>();
             wasd.View = view;
             wasd.Wander = wander;
             wasd.MoveSpeed = _wasdMoveSpeed;
             wasd.CharacterInstanceId = charInstanceId ?? string.Empty;
-            wasd.ControlEnabled = false;
+            wasd.SetEnabled(true); // 同时暂停 wander
 
             // 联网同步：每节点广播本机桌宠位置，收到陌生 peer 自动生成幽灵跟随
             var sync = _pet.AddComponent<PetNetworkSync>();
