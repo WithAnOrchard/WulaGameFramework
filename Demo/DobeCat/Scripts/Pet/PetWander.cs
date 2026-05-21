@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Presentation.CharacterManager;
 using UnityEngine;
 
 namespace Demo.DobeCat.Pet
@@ -24,6 +27,9 @@ namespace Demo.DobeCat.Pet
 
         public PetView View;
 
+        [Tooltip("关联的 CharacterManager 实例 ID（留空 = 不切换 Idle/Walk 动画）。")]
+        public string CharacterInstanceId = "";
+
         private enum State { Idle, Walk }
         private State _state;
         private float _stateTimer;
@@ -34,6 +40,13 @@ namespace Demo.DobeCat.Pet
         private void Start()
         {
             EnterIdle();
+        }
+
+        private void NotifyLocomotion(bool moving)
+        {
+            if (string.IsNullOrEmpty(CharacterInstanceId) || !EventProcessor.HasInstance) return;
+            EventProcessor.Instance.TriggerEventMethod(CharacterManager.EVT_PLAY_LOCOMOTION,
+                new List<object> { CharacterInstanceId, moving, true });
         }
 
         private void Update()
@@ -65,6 +78,7 @@ namespace Demo.DobeCat.Pet
         {
             _state = State.Idle;
             _stateTimer = Random.Range(IdleMin, IdleMax);
+            NotifyLocomotion(false);
         }
 
         private void EnterWalk()
@@ -72,6 +86,7 @@ namespace Demo.DobeCat.Pet
             _state = State.Walk;
             _stateTimer = WalkMax;
             _target = PickRandomScreenTarget();
+            NotifyLocomotion(true);
         }
 
         /// <summary>在主相机视口内挑一个随机点（保留 10% 边距）。</summary>

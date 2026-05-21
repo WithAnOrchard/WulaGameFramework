@@ -246,6 +246,7 @@ namespace Demo.DobeCat
 
             var wander = _pet.AddComponent<PetWander>();
             wander.View = view;
+            wander.CharacterInstanceId = charInstanceId;
 
             var dragger = _pet.AddComponent<PetDragger>();
             dragger.View = view;
