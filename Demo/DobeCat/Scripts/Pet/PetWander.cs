@@ -55,16 +55,29 @@ namespace Demo.DobeCat.Pet
         {
             if (dir == 0 || dir == _lastFacing) return;
             _lastFacing = dir;
-            // 仅走 CharacterManager 官方 EVT_SET_FACING（翻 CharacterView.localScale.x）。
-            // 不能再调 PetView.SetFacing（翻父根 localScale.x）—— 父子双翻会相互抵消导致看不到效果。
             if (string.IsNullOrEmpty(CharacterInstanceId) || !EventProcessor.HasInstance) return;
             EventProcessor.Instance.TriggerEventMethod(CharacterManager.EVT_SET_FACING,
                 new List<object> { CharacterInstanceId, dir > 0 });
         }
 
+        private bool _wasPaused;
+
         private void Update()
         {
-            if (Paused) return;
+            if (Paused)
+            {
+                _wasPaused = true;
+                return;
+            }
+            if (_wasPaused)
+            {
+                // 刚从外部（如 PetWasdController）暂停中恢复 —— 清掉去重缓存，
+                // 强制下一帧重新广播 facing / locomotion，否则 wasd 留下的视觉状态会错开。
+                _wasPaused = false;
+                _lastFacing = 0;
+                // 同时 reset locomotion 状态，让下一次 EnterIdle/EnterWalk 一定发事件
+                NotifyLocomotion(_state == State.Walk);
+            }
             _stateTimer -= Time.deltaTime;
             if (_state == State.Idle)
             {
