@@ -17,9 +17,14 @@ namespace Demo.DobeCat.Game.UI
     /// </summary>
     public class LoginScreen : MonoBehaviour
     {
-        // 窗口尺寸（DPI=100% 的逻辑像素；高 DPI 系统会自动适配）
+        // 窗口尺寸 —— 对齐 SkipSplash.LaunchWidth/Height（启动期已按这个尺寸预排版）。
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        private static int WinW => SkipSplash.LaunchWidth;
+        private static int WinH => SkipSplash.LaunchHeight;
+#else
         private const int WinW = 460;
         private const int WinH = 360;
+#endif
 
         /// <summary>登录方式（下拉项）。当前只支持 BiliBili Cookie，预留扩展位。</summary>
         private static readonly string[] LoginMethods =
