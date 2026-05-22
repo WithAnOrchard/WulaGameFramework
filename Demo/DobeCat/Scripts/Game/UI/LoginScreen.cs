@@ -74,15 +74,38 @@ namespace Demo.DobeCat.Game.UI
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         private static void ApplyLoginWindowStyle()
         {
-            // 主要工作已在 SkipSplash.PrelayoutLoginWindow 阶段完成（尺寸、无边框、WS_EX_LAYERED + DWM 玻璃帧）。
-            // 这里只负责把还隐藏着的窗口显示出来。重复调用 Screen.SetResolution / SetWindowPos
-            // 会触发 D3D11 swapchain 重建，可能丢掉 alpha 通道（→ 登录后整窗白屏），所以一概不做。
             try
             {
+                // SkipSplash 启动时把主窗口隐藏；先 SetResolution 再显示，可避免一帧旧尺寸闪烁。
+                Screen.SetResolution(WinW, WinH, FullScreenMode.Windowed);
+
                 var hwnd = SkipSplash.HiddenHwnd;
-                if (hwnd != IntPtr.Zero) SkipSplash.ShowMainWindow(hwnd);
+                if (hwnd == IntPtr.Zero) hwnd = Win32Native.GetActiveWindow();
+                if (hwnd == IntPtr.Zero) hwnd = Win32Native.GetForegroundWindow();
+                if (hwnd == IntPtr.Zero) return;
+
+                // 去除标题栏 / 边框 / 系统菜单 / 最大最小化按钮，但保留 WS_POPUP 让窗口可见。
+                var style = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_STYLE);
+                style &= ~(Win32Native.WS_CAPTION
+                           | Win32Native.WS_THICKFRAME
+                           | Win32Native.WS_SYSMENU
+                           | Win32Native.WS_MINIMIZEBOX
+                           | Win32Native.WS_MAXIMIZEBOX);
+                style |= Win32Native.WS_POPUP | Win32Native.WS_VISIBLE;
+                Win32Native.SetWindowLong(hwnd, Win32Native.GWL_STYLE, style);
+
+                // 居中到主屏
+                var sw = Display.main.systemWidth;
+                var sh = Display.main.systemHeight;
+                var x = Mathf.Max(0, (sw - WinW) / 2);
+                var y = Mathf.Max(0, (sh - WinH) / 2);
+                Win32Native.SetWindowPos(hwnd, IntPtr.Zero,
+                    x, y, WinW, WinH,
+                    Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW | Win32Native.SWP_NOZORDER);
+
+                SkipSplash.ShowMainWindow(hwnd);
             }
-            catch { /* ignore */ }
+            catch { /* 失败不致命，IMGUI 仍能在默认 Standalone 窗口里渲染 */ }
         }
 #endif
 
