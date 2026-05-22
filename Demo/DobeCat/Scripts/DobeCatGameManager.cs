@@ -10,6 +10,7 @@ using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
 using Demo.DobeCat.Sys.Platform.Windows;
+using Demo.DobeCat.Game.Auth;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Sys.Tray;
 using Demo.DobeCat.Game.UI;
@@ -128,20 +129,46 @@ namespace Demo.DobeCat
             // 桌宠窗口 click-through 时失去焦点；若 Unity 暂停 Update，托盘菜单点击 / 主线程查询会全卡死
             Application.runInBackground = true;
             EnsureCamera();
-            EnsureWindow();
+            // 注意：EnsureWindow 推迟到登录完成后再执行 —— 否则透明 + click-through 会让登录界面不可见 / 不可点。
             Debug.Log("[DobeCatGameManager] 框架 Manager 初始化完成（runInBackground=true）");
         }
 
         private void Start()
         {
-            // 房间发现开启时强制以 Host 启动，确保自己能被别人加入
+            if (AuthSession.IsAuthenticated)
+            {
+                Debug.Log("[DobeCatGameManager] 检测到本机已登录 token，跳过登录界面");
+                RunAfterLogin();
+            }
+            else
+            {
+                ShowLoginScreen();
+            }
+        }
+
+        private void ShowLoginScreen()
+        {
+            var holder = new GameObject(nameof(LoginScreen));
+            holder.transform.SetParent(transform);
+            var login = holder.AddComponent<LoginScreen>();
+            login.OnLoginComplete = RunAfterLogin;
+            Debug.Log("[DobeCatGameManager] 等待用户登录...");
+        }
+
+        /// <summary>登录通过后的初始化序列 —— 桌宠窗口、网络、托盘、面板全在这里串起来。</summary>
+        private void RunAfterLogin()
+        {
+            // 1) 桌宠窗口（透明 / 置顶 / click-through）
+            EnsureWindow();
+
+            // 2) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
             {
                 Debug.Log($"[DobeCatGameManager] 房间发现已启用 → 覆盖 NetMode {_netMode} → Host");
                 _netMode = NetworkRole.Host;
             }
 
-            // CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
+            // 3) CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
             EnsureFrameworkManagers();
             if (_autoSpawnPet) SpawnPet();
             TryAutoConnectDanmu();
@@ -149,7 +176,6 @@ namespace Demo.DobeCat
             TryAutoStartNetwork();
             EnsureRoomDiscovery();
             EnsureTray(); // 必须晚于 EnsureRoomDiscovery，否则 Tray 拿不到 _discovery
-
 
             if (_autoOpenTestPanel)
             {
