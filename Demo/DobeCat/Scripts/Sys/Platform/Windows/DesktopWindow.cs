@@ -69,6 +69,29 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         //  Public API
         // ──────────────────────────────────────────────────────
 
+        /// <summary>
+        /// 切换 WS_EX_TOOLWINDOW 标志。<br/>
+        /// <paramref name="enabled"/>=true（桌宠模式）→ 从 Alt+Tab 切换列表 + 任务栏隐藏；<br/>
+        /// false（登录模式）→ 让 Alt+Tab / 任务栏看见，方便用户切走查文档再切回来。<br/>
+        /// 注：Windows 改 WS_EX_TOOLWINDOW 后任务栏不会自动刷新，必须 ShowWindow Hide+Show 强刷。
+        /// </summary>
+        public void SetToolWindow(bool enabled)
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            if (_hwnd == IntPtr.Zero) return;
+            var ex = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE);
+            var has = (ex & Win32Native.WS_EX_TOOLWINDOW) != 0;
+            if (has == enabled) return;
+            if (enabled) ex |= Win32Native.WS_EX_TOOLWINDOW;
+            else         ex &= ~Win32Native.WS_EX_TOOLWINDOW;
+            // ShowWindow(SW_HIDE) 再 SetWindowLong 再 SW_SHOW，是任务栏刷新这个标志的标准套路。
+            Win32Native.ShowWindow(_hwnd, Win32Native.SW_HIDE);
+            Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE, ex);
+            _baseExStyle = ex;
+            Win32Native.ShowWindow(_hwnd, Win32Native.SW_SHOWNA);
+#endif
+        }
+
         /// <summary>切换鼠标穿透状态。<paramref name="through"/>=true 时点击穿过窗口到下层桌面。</summary>
         public void SetClickThrough(bool through)
         {
@@ -185,9 +208,13 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             style |= Win32Native.WS_POPUP;
             Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_STYLE, style);
 
-            // 2) 扩展样式：layered（透明）+ topmost + toolwindow
+            // 2) 扩展样式：layered（透明）+ topmost。
+            //    注意：登录阶段故意 *不* 加 WS_EX_TOOLWINDOW —— 这样 Alt+Tab 和任务栏能看到窗口，
+            //    用户切走查 SESSDATA 文档再切回来不会丢窗口。登录完成后由 SetToolWindow(true) 把它
+            //    切成桌宠模式（隐藏出 Alt+Tab / 任务栏）。
             var ex = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE);
-            ex |= Win32Native.WS_EX_LAYERED | Win32Native.WS_EX_TOOLWINDOW;
+            ex |= Win32Native.WS_EX_LAYERED;
+            ex &= ~Win32Native.WS_EX_TOOLWINDOW;
             if (_topmost) ex |= Win32Native.WS_EX_TOPMOST;
             Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE, ex);
             _baseExStyle = ex;

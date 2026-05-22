@@ -187,6 +187,10 @@ namespace Demo.DobeCat
         /// <summary>登录通过后的初始化序列 —— 桌宠、网络、托盘、面板全在这里串起来。窗口在 Awake 已建。</summary>
         private void RunAfterLogin()
         {
+            // 0) 切桌宠模式：开启 WS_EX_TOOLWINDOW，从 Alt+Tab / 任务栏隐藏
+            //    （登录期故意不开，方便用户切走查 SESSDATA 文档再切回）
+            if (_window != null) _window.SetToolWindow(true);
+
             // 1) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
             {
