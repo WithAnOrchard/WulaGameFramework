@@ -19,10 +19,6 @@ namespace Demo.DobeCat.Sys.Platform.Windows
     {
         public static IntPtr HiddenHwnd { get; private set; }
 
-        /// <summary>启动期窗口预设尺寸（与 <c>LoginScreen</c> 保持一致；登录后 <c>DesktopWindow</c> 会再次撑满工作区）。</summary>
-        public const int LaunchWidth  = 460;
-        public const int LaunchHeight = 360;
-
 #if UNITY_STANDALONE_WIN
         [DllImport("user32.dll")] private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         private const int SW_HIDE = 0;
@@ -41,9 +37,9 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                 {
                     HiddenHwnd = hwnd;
                     ShowWindow(hwnd, SW_HIDE);
-                    // 趁窗口还没显示，把它的尺寸/样式调成登录界面的样子，
-                    // 否则 splash 结束后 Unity 会以 PlayerSettings 默认分辨率短暂闪一帧黑色全屏。
-                    PrelayoutLoginWindow(hwnd);
+                    // 仅隐藏窗口避免 splash 结束后默认全屏黑闪；不再 Win32 强行 resize 到登录尺寸 —
+                    // DesktopWindow.Awake 早于第一帧渲染，会接管整体的样式 + LAYERED + DWM 玻璃帧。
+                    // 登录界面以 IMGUI 浮层渲染在透明全屏窗里，无需独立的 Win32 子窗口。
                 }
             }
             catch { /* 进程信息查询失败也无所谓，continue */ }
@@ -78,46 +74,6 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             ShowWindow(hwnd, SW_SHOWNA);
         }
 
-        // ── PrelayoutLoginWindow 用到的 Win32 ───────────────────
-        [DllImport("user32.dll")] private static extern int GetSystemMetrics(int nIndex);
-        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]  private static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
-        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]  private static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
-        [DllImport("user32.dll", SetLastError = true)]
-        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-        private const int  GWL_STYLE        = -16;
-        private const uint WS_POPUP         = 0x80000000;
-        private const uint WS_CAPTION       = 0x00C00000;
-        private const uint WS_THICKFRAME    = 0x00040000;
-        private const uint WS_SYSMENU       = 0x00080000;
-        private const uint WS_MINIMIZEBOX   = 0x00020000;
-        private const uint WS_MAXIMIZEBOX   = 0x00010000;
-        private const uint SWP_NOZORDER     = 0x0004;
-        private const uint SWP_NOACTIVATE   = 0x0010;
-        private const uint SWP_FRAMECHANGED = 0x0020;
-        private const int  SM_CXSCREEN      = 0;
-        private const int  SM_CYSCREEN      = 1;
-
-        /// <summary>窗口仍隐藏时，把它的尺寸 / 样式预先调成登录界面的样子，避免 splash 结束后闪烁。</summary>
-        private static void PrelayoutLoginWindow(IntPtr hwnd)
-        {
-            try
-            {
-                var style = GetWindowLong(hwnd, GWL_STYLE);
-                style &= ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
-                style |= WS_POPUP;
-                SetWindowLong(hwnd, GWL_STYLE, style);
-
-                var sw = GetSystemMetrics(SM_CXSCREEN);
-                var sh = GetSystemMetrics(SM_CYSCREEN);
-                var x = System.Math.Max(0, (sw - LaunchWidth)  / 2);
-                var y = System.Math.Max(0, (sh - LaunchHeight) / 2);
-                // 不带 SWP_SHOWWINDOW —— 仅调整尺寸 / 样式，让 LoginScreen 决定显示时机。
-                SetWindowPos(hwnd, IntPtr.Zero, x, y, LaunchWidth, LaunchHeight,
-                    SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
-            }
-            catch { /* 兜底：失败也不阻断启动，LoginScreen.Awake 还会再尝试一次 */ }
-        }
 #endif
     }
 }

@@ -1,30 +1,22 @@
 using System;
 using Demo.DobeCat.Game.Auth;
 using UnityEngine;
-#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-using Demo.DobeCat.Sys.Platform.Windows;
-#endif
 
 namespace Demo.DobeCat.Game.UI
 {
     /// <summary>
-    /// 启动期登录界面 —— M1 IMGUI 实现。
+    /// 启动期登录界面 —— IMGUI 浮层实现。
     /// <list type="bullet">
     /// <item>仅含「登录方式下拉」+「Token 输入框」+「登录」按钮。</item>
-    /// <item>窗口本身缩成登录框尺寸 + 无边框（Standalone Win 通过 Win32 修整 HWND）。</item>
-    /// <item>登录通过后回调 <see cref="OnLoginComplete"/>，由 <c>DesktopWindow</c> 重新撑满工作区。</item>
+    /// <item>渲染在 <c>DesktopWindow</c> 的全屏透明窗口里，登录卡片自身约 460×360 居中（无独立 Win32 子窗口）。</item>
+    /// <item>登录通过后回调 <see cref="OnLoginComplete"/>，由 <c>DobeCatGameManager.RunAfterLogin</c> 继续后续初始化。</item>
     /// </list>
     /// </summary>
     public class LoginScreen : MonoBehaviour
     {
-        // 窗口尺寸 —— 对齐 SkipSplash.LaunchWidth/Height（启动期已按这个尺寸预排版）。
-#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-        private static int WinW => SkipSplash.LaunchWidth;
-        private static int WinH => SkipSplash.LaunchHeight;
-#else
-        private const int WinW = 460;
-        private const int WinH = 360;
-#endif
+        // 登录卡片尺寸（在屏幕中央渲染，周围保持透明，桌面可见）
+        private const int CardW = 460;
+        private const int CardH = 360;
 
         /// <summary>登录方式（下拉项）。当前只支持 BiliBili Cookie，预留扩展位。</summary>
         private static readonly string[] LoginMethods =
@@ -61,22 +53,7 @@ namespace Demo.DobeCat.Game.UI
         private void Awake()
         {
             _token = AuthSession.Token ?? string.Empty;
-
-#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            // 窗口的去边框 + 居中 + 缩到登录尺寸 已经在 SkipSplash.PrelayoutLoginWindow 完成。
-            // 这里只把仍隐藏着的窗口显示出来即可。
-            // 故意不调 Screen.SetResolution —— 反复调用会让 D3D11 swapchain 在小→全屏切换时
-            // 与 OS 窗口尺寸不匹配（登录后整窗白屏的根因之一）。
-            try
-            {
-                if (SkipSplash.HiddenHwnd != IntPtr.Zero) SkipSplash.ShowMainWindow(SkipSplash.HiddenHwnd);
-            }
-            catch { /* ignore */ }
-#else
-            // Editor / 非 Win：用 Unity API 调小 Game/Player 窗口便于预览
-            try { Screen.SetResolution(WinW, WinH, FullScreenMode.Windowed); }
-            catch { /* ignore */ }
-#endif
+            // 不再修改 Win32 窗口尺寸/样式 —— 由 DesktopWindow 统一掌管，登录界面只是这个窗口里的一块 IMGUI 卡片。
         }
 
         private void EnsureStyles()
@@ -139,11 +116,15 @@ namespace Demo.DobeCat.Game.UI
         {
             EnsureStyles();
 
-            // 把整窗都涂成深色（无边框 → 没有原生背景）
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _bgTex);
+            // 居中绘制登录卡片：周围保持透明，桌宠透明窗会让 DWM 透出桌面。
+            var card = new Rect(
+                (Screen.width  - CardW) * 0.5f,
+                (Screen.height - CardH) * 0.5f,
+                CardW, CardH);
+            GUI.DrawTexture(card, _bgTex);
 
             const float pad = 18f;
-            var area = new Rect(pad, pad, Screen.width - pad * 2f, Screen.height - pad * 2f);
+            var area = new Rect(card.x + pad, card.y + pad, card.width - pad * 2f, card.height - pad * 2f);
             GUILayout.BeginArea(area);
 
             GUILayout.Label("DobeCat 登录", _titleStyle);

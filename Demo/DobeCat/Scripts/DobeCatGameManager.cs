@@ -129,7 +129,10 @@ namespace Demo.DobeCat
             // 桌宠窗口 click-through 时失去焦点；若 Unity 暂停 Update，托盘菜单点击 / 主线程查询会全卡死
             Application.runInBackground = true;
             EnsureCamera();
-            // 注意：EnsureWindow 推迟到登录完成后再执行 —— 否则透明 + click-through 会让登录界面不可见 / 不可点。
+            // 桌宠窗口必须在第一次渲染前就建好（WS_EX_LAYERED + DWM 玻璃帧），
+            // 否则 D3D11 swapchain 按非透明路径锁死，登录后 alpha 通道救不回 → 整窗白屏。
+            // 登录界面以 IMGUI 浮层渲染在这个全屏透明窗里，不再占独立 Win32 窗口。
+            EnsureWindow();
             Debug.Log("[DobeCatGameManager] 框架 Manager 初始化完成（runInBackground=true）");
         }
 
@@ -155,20 +158,17 @@ namespace Demo.DobeCat
             Debug.Log("[DobeCatGameManager] 等待用户登录...");
         }
 
-        /// <summary>登录通过后的初始化序列 —— 桌宠窗口、网络、托盘、面板全在这里串起来。</summary>
+        /// <summary>登录通过后的初始化序列 —— 桌宠、网络、托盘、面板全在这里串起来。窗口在 Awake 已建。</summary>
         private void RunAfterLogin()
         {
-            // 1) 桌宠窗口（透明 / 置顶 / click-through）
-            EnsureWindow();
-
-            // 2) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
+            // 1) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
             {
                 Debug.Log($"[DobeCatGameManager] 房间发现已启用 → 覆盖 NetMode {_netMode} → Host");
                 _netMode = NetworkRole.Host;
             }
 
-            // 3) CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
+            // 2) CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
             EnsureFrameworkManagers();
             if (_autoSpawnPet) SpawnPet();
             TryAutoConnectDanmu();
