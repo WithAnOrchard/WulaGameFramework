@@ -63,51 +63,21 @@ namespace Demo.DobeCat.Game.UI
             _token = AuthSession.Token ?? string.Empty;
 
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            ApplyLoginWindowStyle();
+            // 窗口的去边框 + 居中 + 缩到登录尺寸 已经在 SkipSplash.PrelayoutLoginWindow 完成。
+            // 这里只把仍隐藏着的窗口显示出来即可。
+            // 故意不调 Screen.SetResolution —— 反复调用会让 D3D11 swapchain 在小→全屏切换时
+            // 与 OS 窗口尺寸不匹配（登录后整窗白屏的根因之一）。
+            try
+            {
+                if (SkipSplash.HiddenHwnd != IntPtr.Zero) SkipSplash.ShowMainWindow(SkipSplash.HiddenHwnd);
+            }
+            catch { /* ignore */ }
 #else
             // Editor / 非 Win：用 Unity API 调小 Game/Player 窗口便于预览
             try { Screen.SetResolution(WinW, WinH, FullScreenMode.Windowed); }
             catch { /* ignore */ }
 #endif
         }
-
-#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-        private static void ApplyLoginWindowStyle()
-        {
-            try
-            {
-                // SkipSplash 启动时把主窗口隐藏；先 SetResolution 再显示，可避免一帧旧尺寸闪烁。
-                Screen.SetResolution(WinW, WinH, FullScreenMode.Windowed);
-
-                var hwnd = SkipSplash.HiddenHwnd;
-                if (hwnd == IntPtr.Zero) hwnd = Win32Native.GetActiveWindow();
-                if (hwnd == IntPtr.Zero) hwnd = Win32Native.GetForegroundWindow();
-                if (hwnd == IntPtr.Zero) return;
-
-                // 去除标题栏 / 边框 / 系统菜单 / 最大最小化按钮，但保留 WS_POPUP 让窗口可见。
-                var style = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_STYLE);
-                style &= ~(Win32Native.WS_CAPTION
-                           | Win32Native.WS_THICKFRAME
-                           | Win32Native.WS_SYSMENU
-                           | Win32Native.WS_MINIMIZEBOX
-                           | Win32Native.WS_MAXIMIZEBOX);
-                style |= Win32Native.WS_POPUP | Win32Native.WS_VISIBLE;
-                Win32Native.SetWindowLong(hwnd, Win32Native.GWL_STYLE, style);
-
-                // 居中到主屏
-                var sw = Display.main.systemWidth;
-                var sh = Display.main.systemHeight;
-                var x = Mathf.Max(0, (sw - WinW) / 2);
-                var y = Mathf.Max(0, (sh - WinH) / 2);
-                Win32Native.SetWindowPos(hwnd, IntPtr.Zero,
-                    x, y, WinW, WinH,
-                    Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW | Win32Native.SWP_NOZORDER);
-
-                SkipSplash.ShowMainWindow(hwnd);
-            }
-            catch { /* 失败不致命，IMGUI 仍能在默认 Standalone 窗口里渲染 */ }
-        }
-#endif
 
         private void EnsureStyles()
         {

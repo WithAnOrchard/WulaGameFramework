@@ -203,15 +203,18 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             Win32Native.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
 
             // 4) 占满主屏 WorkArea
+            //    顺序很关键：先让 Unity 把 D3D11 swapchain 调成新分辨率，
+            //    再用 Win32 把 OS 窗口拉到对应尺寸。反过来会出现 swapchain 小尺寸 + 窗口大尺寸
+            //    的不匹配，DWM 玻璃帧用旧 swapchain 合成出残留 / 白色边缘（登录→桌宠切换的白屏根因）。
             if (_fullscreenWorkArea)
             {
                 var w = Display.main.systemWidth;
                 var h = Display.main.systemHeight;
+                Screen.SetResolution(w, h, FullScreenMode.Windowed, Screen.currentResolution.refreshRate);
                 Win32Native.SetWindowPos(_hwnd,
                     _topmost ? Win32Native.HWND_TOPMOST : Win32Native.HWND_NOTOPMOST,
                     0, 0, w, h,
                     Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW);
-                Screen.SetResolution(w, h, FullScreenMode.Windowed, Screen.currentResolution.refreshRate);
             }
             else if (_topmost)
             {
@@ -219,7 +222,7 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                     Win32Native.SWP_NOMOVE | Win32Native.SWP_NOSIZE | Win32Native.SWP_FRAMECHANGED);
             }
 
-            // 5) 透明属性已应用，把启动期间被 SkipSplash 隐藏的窗口显示出来
+            // 5) 透明属性已应用，把启动期间被 SkipSplash 隐藏的窗口显示出来（幂等）
             SkipSplash.ShowMainWindow(_hwnd);
 
             Debug.Log("[DesktopWindow] 桌宠窗口模式已激活（透明 / 无边框 / 置顶 / Toolwindow）");
