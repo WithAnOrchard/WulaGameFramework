@@ -222,10 +222,7 @@ namespace Demo.DobeCat
             cam.orthographic = true;
             cam.orthographicSize = Mathf.Max(0.1f, _cameraOrthoSize);
             cam.clearFlags = CameraClearFlags.SolidColor;
-            // 登录期间 cam 背景保持不透明深色：window 已经是 WS_EX_LAYERED + DWM 玻璃帧，
-            // backbuffer alpha=0 的像素会被 DWM 透成桌面 —— IMGUI 登录界面如果没有铺满，
-            // 漏出的部分就会变透明。等 DesktopWindow.ApplyTransparentClearColor 接管后再切到 ColorKey 绿。
-            cam.backgroundColor = new Color(0.10f, 0.11f, 0.13f, 1f);
+            var c = cam.backgroundColor; c.a = 0f; cam.backgroundColor = c;
             cam.transform.position = new Vector3(0f, 0f, -10f);
         }
 
