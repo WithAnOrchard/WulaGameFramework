@@ -1,22 +1,22 @@
 using System;
 using Demo.DobeCat.Game.Auth;
 using UnityEngine;
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+using Demo.DobeCat.Sys.Platform.Windows;
+#endif
 
 namespace Demo.DobeCat.Game.UI
 {
     /// <summary>
-    /// 启动期登录界面 —— IMGUI 浮层实现。
+    /// 启动期登录界面 —— IMGUI 实现。
     /// <list type="bullet">
     /// <item>仅含「登录方式下拉」+「Token 输入框」+「登录」按钮。</item>
-    /// <item>渲染在 <c>DesktopWindow</c> 的全屏透明窗口里，登录卡片自身约 460×360 居中（无独立 Win32 子窗口）。</item>
-    /// <item>登录通过后回调 <see cref="OnLoginComplete"/>，由 <c>DobeCatGameManager.RunAfterLogin</c> 继续后续初始化。</item>
+    /// <item>窗口本身被 <c>SkipSplash.PrelayoutLoginWindow</c> 压成 460×360 无边框 + WS_EX_LAYERED + DWM 玻璃帧，IMGUI 铺满整窗。</item>
+    /// <item>登录通过后回调 <see cref="OnLoginComplete"/>，<c>DesktopWindow</c> 接管把窗口扩成全屏透明 + 启用 ColorKey 后处理。</item>
     /// </list>
     /// </summary>
     public class LoginScreen : MonoBehaviour
     {
-        // 登录卡片尺寸（在屏幕中央渲染，周围保持透明，桌面可见）
-        private const int CardW = 460;
-        private const int CardH = 360;
 
         /// <summary>登录方式（下拉项）。当前只支持 BiliBili Cookie，预留扩展位。</summary>
         private static readonly string[] LoginMethods =
@@ -53,7 +53,12 @@ namespace Demo.DobeCat.Game.UI
         private void Awake()
         {
             _token = AuthSession.Token ?? string.Empty;
-            // 不再修改 Win32 窗口尺寸/样式 —— 由 DesktopWindow 统一掌管，登录界面只是这个窗口里的一块 IMGUI 卡片。
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            // SkipSplash 已经把窗口压成 460x360 + LAYERED + DWM 玻璃帧，但还隐藏着。
+            // 等 IMGUI 第一次 OnGUI 把不透明背景画上去（backbuffer alpha=1）再 show，避免一帧透明闪烁。
+            // 直接 show 也 OK，DWM 会用 backbuffer 的现有内容，第一帧可能是相机底色。
+            if (SkipSplash.HiddenHwnd != IntPtr.Zero) SkipSplash.ShowMainWindow(SkipSplash.HiddenHwnd);
+#endif
         }
 
         private void EnsureStyles()
@@ -116,15 +121,11 @@ namespace Demo.DobeCat.Game.UI
         {
             EnsureStyles();
 
-            // 居中绘制登录卡片：周围保持透明，桌宠透明窗会让 DWM 透出桌面。
-            var card = new Rect(
-                (Screen.width  - CardW) * 0.5f,
-                (Screen.height - CardH) * 0.5f,
-                CardW, CardH);
-            GUI.DrawTexture(card, _bgTex);
+            // 窗口本身已经是 460×360 登录尺寸，整窗铺满深色背景。
+            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _bgTex);
 
             const float pad = 18f;
-            var area = new Rect(card.x + pad, card.y + pad, card.width - pad * 2f, card.height - pad * 2f);
+            var area = new Rect(pad, pad, Screen.width - pad * 2f, Screen.height - pad * 2f);
             GUILayout.BeginArea(area);
 
             GUILayout.Label("DobeCat 登录", _titleStyle);
