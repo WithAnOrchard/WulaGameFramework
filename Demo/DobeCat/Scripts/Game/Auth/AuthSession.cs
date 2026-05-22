@@ -13,12 +13,18 @@ namespace Demo.DobeCat.Game.Auth
     /// </summary>
     public static class AuthSession
     {
-        private const string PrefKey = "DobeCat.AuthToken";
+        private const string PrefKey     = "DobeCat.AuthToken";
+        private const string PrefUname   = "DobeCat.AuthUname";
+        private const string PrefMid     = "DobeCat.AuthMid";
 
         /// <summary>当前 token；未登录时为空串。</summary>
         public static string Token { get; private set; }
+        /// <summary>登录用户昵称（B 站 uname）。</summary>
+        public static string Nickname { get; private set; }
+        /// <summary>登录用户 mid（B 站用户唯一 id）。</summary>
+        public static long Mid { get; private set; }
 
-        /// <summary>是否已登录（token 非空）。</summary>
+        /// <summary>是否已登录（token 非空）。注意：不代表 token 仍然有效，需要再走一次 <see cref="BilibiliAuthValidator"/>。</summary>
         public static bool IsAuthenticated => !string.IsNullOrEmpty(Token);
 
         /// <summary>登录成功时触发（不论是启动期自动还是用户手动）。</summary>
@@ -26,15 +32,23 @@ namespace Demo.DobeCat.Game.Auth
 
         static AuthSession()
         {
-            Token = PlayerPrefs.GetString(PrefKey, string.Empty);
+            Token    = PlayerPrefs.GetString(PrefKey,   string.Empty);
+            Nickname = PlayerPrefs.GetString(PrefUname, string.Empty);
+            // PlayerPrefs 不存 long，用 string 存
+            long.TryParse(PlayerPrefs.GetString(PrefMid, "0"), out var mid);
+            Mid = mid;
         }
 
-        /// <summary>设置 token 并持久化；空串视为无效，不触发事件。</summary>
-        public static bool Login(string token)
+        /// <summary>设置 token + 用户信息并持久化；空 token 视为无效，不触发事件。</summary>
+        public static bool Login(string token, string nickname, long mid)
         {
             if (string.IsNullOrWhiteSpace(token)) return false;
-            Token = token.Trim();
-            PlayerPrefs.SetString(PrefKey, Token);
+            Token    = token.Trim();
+            Nickname = nickname ?? string.Empty;
+            Mid      = mid;
+            PlayerPrefs.SetString(PrefKey,   Token);
+            PlayerPrefs.SetString(PrefUname, Nickname);
+            PlayerPrefs.SetString(PrefMid,   Mid.ToString());
             PlayerPrefs.Save();
             try { OnLogin?.Invoke(); } catch { /* swallow */ }
             return true;
@@ -44,7 +58,11 @@ namespace Demo.DobeCat.Game.Auth
         public static void Logout()
         {
             Token = string.Empty;
+            Nickname = string.Empty;
+            Mid = 0;
             PlayerPrefs.DeleteKey(PrefKey);
+            PlayerPrefs.DeleteKey(PrefUname);
+            PlayerPrefs.DeleteKey(PrefMid);
             PlayerPrefs.Save();
         }
     }

@@ -140,13 +140,39 @@ namespace Demo.DobeCat
         {
             if (AuthSession.IsAuthenticated)
             {
-                Debug.Log("[DobeCatGameManager] 检测到本机已登录 token，跳过登录界面");
-                RunAfterLogin();
+                Debug.Log("[DobeCatGameManager] 检测到本机已登录 token，重新校验中...");
+                StartCoroutine(RevalidateCachedTokenThenRun());
             }
             else
             {
                 ShowLoginScreen();
             }
+        }
+
+        /// <summary>
+        /// 启动期重新校验缓存的 SESSDATA：通过则直接进入游戏；失败则清掉缓存改走登录界面。
+        /// 防止 token 已过期但本地还残留的情况下"假登录"放人进游戏。
+        /// </summary>
+        private System.Collections.IEnumerator RevalidateCachedTokenThenRun()
+        {
+            var passed = false;
+            yield return BilibiliAuthValidator.Validate(
+                AuthSession.Token,
+                onSuccess: (uname, mid) =>
+                {
+                    passed = true;
+                    // 顺带刷新昵称 / mid（B 站这边可能改昵称）
+                    AuthSession.Login(AuthSession.Token, uname, mid);
+                    Debug.Log($"[DobeCatGameManager] 缓存 token 校验通过：uname={uname}, mid={mid}");
+                },
+                onFail: msg =>
+                {
+                    Debug.LogWarning($"[DobeCatGameManager] 缓存 token 校验失败：{msg}，清除缓存并回到登录界面");
+                    AuthSession.Logout();
+                });
+
+            if (passed) RunAfterLogin();
+            else        ShowLoginScreen();
         }
 
         private void ShowLoginScreen()

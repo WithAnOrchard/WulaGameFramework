@@ -41,6 +41,7 @@ namespace Demo.DobeCat.Game.UI
         private bool _methodOpen;
         private string _token = string.Empty;
         private string _error;
+        private bool _validating; // 验证中禁用按钮 + 显示提示
 
         // 样式（懒构建）
         private GUIStyle _bgStyle;
@@ -190,10 +191,13 @@ namespace Demo.DobeCat.Game.UI
             GUILayout.Space(10);
 
             // 4) 登录按钮（唯一动作按钮）
-            if (GUILayout.Button("登 录", _primaryBtnStyle, GUILayout.Height(40)))
+            GUI.enabled = !_validating;
+            var label = _validating ? "验证中..." : "登 录";
+            if (GUILayout.Button(label, _primaryBtnStyle, GUILayout.Height(40)))
             {
                 TryLogin();
             }
+            GUI.enabled = true;
 
             if (!string.IsNullOrEmpty(_error))
             {
@@ -241,7 +245,39 @@ namespace Demo.DobeCat.Game.UI
 
         private void TryLogin()
         {
-            if (!AuthSession.Login(_token))
+            if (_validating) return;
+            if (string.IsNullOrWhiteSpace(_token))
+            {
+                _error = "Token 不能为空。";
+                return;
+            }
+            // 测试 / 占位 Token 模式跳过 B 站验证（仅本地调试）
+            if (_method == 2)
+            {
+                FinishLogin(_token, "本地调试", 0L);
+                return;
+            }
+            _error = null;
+            _validating = true;
+            StartCoroutine(BilibiliAuthValidator.Validate(
+                _token,
+                onSuccess: (uname, mid) =>
+                {
+                    _validating = false;
+                    Debug.Log($"[LoginScreen] B 站验证通过：uname={uname}, mid={mid}");
+                    FinishLogin(_token, uname, mid);
+                },
+                onFail: msg =>
+                {
+                    _validating = false;
+                    _error = msg;
+                    Debug.LogWarning($"[LoginScreen] B 站验证失败：{msg}");
+                }));
+        }
+
+        private void FinishLogin(string token, string uname, long mid)
+        {
+            if (!AuthSession.Login(token, uname, mid))
             {
                 _error = "Token 不能为空。";
                 return;
