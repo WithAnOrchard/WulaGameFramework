@@ -41,14 +41,14 @@ namespace Demo.DobeCat.Sys.Network
         [Tooltip("公布给其他玩家的 Mirror Host 端口。")]
         public ushort AdvertisedPort = 7777;
 
-        [Tooltip("心跳间隔（秒）。建议 < TTL/2。")]
-        [Min(1f)] public float HeartbeatIntervalSeconds = 10f;
+        [Tooltip("心跳间隔（秒）。建议 < TTL/2。默认 3s 让新房间更快被其他客户端看到。")]
+        [Min(1f)] public float HeartbeatIntervalSeconds = 3f;
 
-        [Tooltip("条目 TTL（秒）。")]
-        [Min(5f)] public float ItemTtlSeconds = 30f;
+        [Tooltip("条目 TTL（秒）。心跳间隔 3s 时 TTL 15s 容忍 ~4 次失败而不被踢。")]
+        [Min(5f)] public float ItemTtlSeconds = 15f;
 
-        [Tooltip("拉取列表间隔（秒）。")]
-        [Min(1f)] public float ListIntervalSeconds = 5f;
+        [Tooltip("拉取列表间隔（秒）。默认 1.5s 让上线/下线的房间快速进出菜单。")]
+        [Min(0.5f)] public float ListIntervalSeconds = 1.5f;
 
         [Tooltip("HTTP 请求超时（秒）。")]
         [Min(1f)] public float HttpTimeoutSeconds = 5f;
@@ -78,6 +78,7 @@ namespace Demo.DobeCat.Sys.Network
         private Coroutine _heartbeatCo;
         private Coroutine _listCo;
         private bool _registered;
+        private bool _forceListPull; // RefreshNow 设 true，ListLoop 下一次循环立刻 PullList 不等
 
         // ── 生命周期 ───────────────────────────────────────────
 
@@ -172,9 +173,19 @@ namespace Demo.DobeCat.Sys.Network
             while (true)
             {
                 yield return PullList();
-                yield return new WaitForSeconds(ListIntervalSeconds);
+                // 用累计计时而不是 WaitForSeconds，便于 RefreshNow 中途打断
+                var t = 0f;
+                while (t < ListIntervalSeconds && !_forceListPull)
+                {
+                    yield return null;
+                    t += Time.unscaledDeltaTime;
+                }
+                _forceListPull = false;
             }
         }
+
+        /// <summary>外部触发立即拉一次列表（无视 ListIntervalSeconds），用于托盘菜单弹出 / 用户手动刷新。</summary>
+        public void RefreshNow() => _forceListPull = true;
 
         private IEnumerator PullList()
         {
