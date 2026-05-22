@@ -84,35 +84,68 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         [DllImport("user32.dll", EntryPoint = "SetWindowLong")]  private static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+        [DllImport("Dwmapi.dll")]
+        private static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMarInset);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MARGINS
+        {
+            public int cxLeftWidth;
+            public int cxRightWidth;
+            public int cyTopHeight;
+            public int cyBottomHeight;
+        }
 
         private const int  GWL_STYLE        = -16;
+        private const int  GWL_EXSTYLE      = -20;
         private const uint WS_POPUP         = 0x80000000;
         private const uint WS_CAPTION       = 0x00C00000;
         private const uint WS_THICKFRAME    = 0x00040000;
         private const uint WS_SYSMENU       = 0x00080000;
         private const uint WS_MINIMIZEBOX   = 0x00020000;
         private const uint WS_MAXIMIZEBOX   = 0x00010000;
+        private const uint WS_EX_LAYERED    = 0x00080000;
+        private const uint WS_EX_TOOLWINDOW = 0x00000080;
         private const uint SWP_NOZORDER     = 0x0004;
         private const uint SWP_NOACTIVATE   = 0x0010;
         private const uint SWP_FRAMECHANGED = 0x0020;
         private const int  SM_CXSCREEN      = 0;
         private const int  SM_CYSCREEN      = 1;
 
-        /// <summary>窗口仍隐藏时，把它的尺寸 / 样式预先调成登录界面的样子，避免 splash 结束后闪烁。</summary>
+        /// <summary>
+        /// 窗口仍隐藏时，把它的尺寸 / 样式预先调成登录界面的样子，并启用 DWM 玻璃帧 + 分层窗口
+        /// —— 必须在第一帧渲染前完成，否则 D3D11 swapchain 会按"非透明"创建，
+        /// 之后再加 WS_EX_LAYERED 也救不回来 backbuffer 的 per-pixel alpha（表现为登录后整窗白屏）。
+        /// </summary>
         private static void PrelayoutLoginWindow(IntPtr hwnd)
         {
             try
             {
+                // 1) 主样式：去边框 + WS_POPUP
                 var style = GetWindowLong(hwnd, GWL_STYLE);
                 style &= ~(WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
                 style |= WS_POPUP;
                 SetWindowLong(hwnd, GWL_STYLE, style);
 
+                // 2) 扩展样式：分层窗口 + 工具窗口（不出现在任务栏 / Alt-Tab）
+                var ex = GetWindowLong(hwnd, GWL_EXSTYLE);
+                ex |= WS_EX_LAYERED | WS_EX_TOOLWINDOW;
+                SetWindowLong(hwnd, GWL_EXSTYLE, ex);
+
+                // 3) DWM 玻璃帧 —— 让整个 client area 按 backbuffer per-pixel alpha 合成。
+                //    在第一帧之前调用，确保 swapchain 创建时就支持 alpha。
+                var margins = new MARGINS
+                {
+                    cxLeftWidth = -1, cxRightWidth = -1,
+                    cyTopHeight = -1, cyBottomHeight = -1,
+                };
+                DwmExtendFrameIntoClientArea(hwnd, ref margins);
+
+                // 4) 居中 + 调成登录尺寸（不带 SWP_SHOWWINDOW，仍由 LoginScreen 决定显示时机）
                 var sw = GetSystemMetrics(SM_CXSCREEN);
                 var sh = GetSystemMetrics(SM_CYSCREEN);
                 var x = System.Math.Max(0, (sw - LaunchWidth)  / 2);
                 var y = System.Math.Max(0, (sh - LaunchHeight) / 2);
-                // 不带 SWP_SHOWWINDOW —— 仅调整尺寸 / 样式，让 LoginScreen 决定显示时机。
                 SetWindowPos(hwnd, IntPtr.Zero, x, y, LaunchWidth, LaunchHeight,
                     SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
             }
