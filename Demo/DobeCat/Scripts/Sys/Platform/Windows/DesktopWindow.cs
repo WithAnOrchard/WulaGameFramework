@@ -54,10 +54,9 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             Instance = this;
 
             ApplyTransparentClearColor();
-        }
-
-        private void Start()
-        {
+            // 必须在第一次 OnRenderImage 之前完成窗口样式（特别是 WS_EX_LAYERED + DWM 玻璃帧），
+            // 否则 D3D11 swapchain 创建时按"非分层窗口"路径走，backbuffer alpha 通道会被丢弃 →
+            // 登录后整窗白屏。原本写在 Start() 里，登录态延迟 AddComponent 的场景下会晚一帧。
             ApplyDesktopWindow();
         }
 
