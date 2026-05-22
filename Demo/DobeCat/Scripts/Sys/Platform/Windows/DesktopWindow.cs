@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using System;
 #endif
@@ -168,13 +169,24 @@ namespace Demo.DobeCat.Sys.Platform.Windows
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
             _hwnd = Win32Native.GetActiveWindow();
             if (_hwnd == IntPtr.Zero) _hwnd = Win32Native.GetForegroundWindow();
+            if (_hwnd == IntPtr.Zero) _hwnd = SkipSplash.HiddenHwnd;
             if (_hwnd == IntPtr.Zero)
             {
                 Debug.LogWarning("[DesktopWindow] 无法获取 HWND");
                 return;
             }
 
-            // 1) 主样式：去标题栏 / 边框 / 系统菜单
+            // 1) 先让 Unity 把 D3D11 swapchain 切到全屏分辨率（Screen.SetResolution 是 end-of-frame 异步生效，
+            //    且会顺手把 HWND 重新设成 Unity 自己偏好的 standard windowed 样式 → 必须放在最前，
+            //    后续 SetWindowLong/Dwm 才不会被 Unity 覆盖掉，否则会出现登录后整窗白屏）。
+            var w = _fullscreenWorkArea ? Display.main.systemWidth  : Screen.width;
+            var h = _fullscreenWorkArea ? Display.main.systemHeight : Screen.height;
+            if (_fullscreenWorkArea)
+            {
+                Screen.SetResolution(w, h, FullScreenMode.Windowed, Screen.currentResolution.refreshRate);
+            }
+
+            // 2) 主样式：去标题栏 / 边框 / 系统菜单
             var style = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_STYLE);
             style &= ~(Win32Native.WS_CAPTION
                        | Win32Native.WS_THICKFRAME
@@ -184,14 +196,14 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             style |= Win32Native.WS_POPUP;
             Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_STYLE, style);
 
-            // 2) 扩展样式：layered（透明）+ topmost + toolwindow（不出现在 alt-tab/任务栏）
+            // 3) 扩展样式：layered（透明）+ topmost + toolwindow（不出现在 alt-tab/任务栏）
             var ex = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE);
             ex |= Win32Native.WS_EX_LAYERED | Win32Native.WS_EX_TOOLWINDOW;
             if (_topmost) ex |= Win32Native.WS_EX_TOPMOST;
             Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE, ex);
             _baseExStyle = ex;
 
-            // 3) 让 DWM 把整个客户区当作"扩展玻璃帧"，按 backbuffer 的 per-pixel alpha 合成。
+            // 4) 让 DWM 把整个客户区当作"扩展玻璃帧"，按 backbuffer 的 per-pixel alpha 合成。
             //    backbuffer alpha 由 TransparentRenderBlit 后处理 shader 写入（颜色键的像素 → α=0）。
             //    不调 SetLayeredWindowAttributes —— 那会强制全窗口统一 alpha 覆盖 DWM 路径。
             var margins = new Win32Native.MARGINS
@@ -201,15 +213,9 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             };
             Win32Native.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
 
-            // 4) 占满主屏 WorkArea
-            //    顺序很关键：先让 Unity 把 D3D11 swapchain 调成新分辨率，
-            //    再用 Win32 把 OS 窗口拉到对应尺寸。反过来会出现 swapchain 小尺寸 + 窗口大尺寸
-            //    的不匹配，DWM 玻璃帧用旧 swapchain 合成出残留 / 白色边缘（登录→桌宠切换的白屏根因）。
+            // 5) Win32 调整窗口位置 / 大小（与 Unity 端 swapchain 对齐）
             if (_fullscreenWorkArea)
             {
-                var w = Display.main.systemWidth;
-                var h = Display.main.systemHeight;
-                Screen.SetResolution(w, h, FullScreenMode.Windowed, Screen.currentResolution.refreshRate);
                 Win32Native.SetWindowPos(_hwnd,
                     _topmost ? Win32Native.HWND_TOPMOST : Win32Native.HWND_NOTOPMOST,
                     0, 0, w, h,
@@ -221,14 +227,71 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                     Win32Native.SWP_NOMOVE | Win32Native.SWP_NOSIZE | Win32Native.SWP_FRAMECHANGED);
             }
 
-            // 5) 透明属性已应用，把启动期间被 SkipSplash 隐藏的窗口显示出来（幂等）
+            // 6) 透明属性已应用，把启动期间被 SkipSplash 隐藏的窗口显示出来（幂等）
             SkipSplash.ShowMainWindow(_hwnd);
+
+            // 7) Screen.SetResolution 在 end-of-frame 才真正生效，那一刻 Unity 会再走一次"恢复 standard windowed
+            //    样式"的逻辑，把我们 2~4 步的 SetWindowLong / Dwm 全冲掉。补一帧延迟，把样式重新糊一遍。
+            StartCoroutine(ReassertStylesNextFrame());
 
             Debug.Log("[DesktopWindow] 桌宠窗口模式已激活（透明 / 无边框 / 置顶 / Toolwindow）");
 #else
             Debug.Log("[DesktopWindow] 非 Standalone Windows，跳过窗口设置（Editor 调试模式）");
 #endif
         }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        /// <summary>
+        /// 等 Screen.SetResolution 在 end-of-frame 生效之后，再把 WS_POPUP / WS_EX_LAYERED / DWM 玻璃帧
+        /// 重新写一遍 —— Unity 内部 SetResolution 会把 HWND 拉回 standard windowed 样式，
+        /// 这一步是补救。两帧 + 一次 EndOfFrame 兜底，覆盖 Unity 不同版本的延迟时机。
+        /// </summary>
+        private IEnumerator ReassertStylesNextFrame()
+        {
+            yield return null;
+            ReassertStyles();
+            yield return new WaitForEndOfFrame();
+            ReassertStyles();
+            yield return null;
+            ReassertStyles();
+        }
+
+        private void ReassertStyles()
+        {
+            if (_hwnd == IntPtr.Zero) return;
+
+            var style = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_STYLE);
+            style &= ~(Win32Native.WS_CAPTION
+                       | Win32Native.WS_THICKFRAME
+                       | Win32Native.WS_SYSMENU
+                       | Win32Native.WS_MINIMIZEBOX
+                       | Win32Native.WS_MAXIMIZEBOX);
+            style |= Win32Native.WS_POPUP;
+            Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_STYLE, style);
+
+            var ex = Win32Native.GetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE);
+            ex |= Win32Native.WS_EX_LAYERED | Win32Native.WS_EX_TOOLWINDOW;
+            if (_topmost) ex |= Win32Native.WS_EX_TOPMOST;
+            Win32Native.SetWindowLong(_hwnd, Win32Native.GWL_EXSTYLE, ex);
+
+            var margins = new Win32Native.MARGINS
+            {
+                cxLeftWidth = -1, cxRightWidth = -1,
+                cyTopHeight = -1, cyBottomHeight = -1,
+            };
+            Win32Native.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
+
+            if (_fullscreenWorkArea)
+            {
+                var w = Display.main.systemWidth;
+                var h = Display.main.systemHeight;
+                Win32Native.SetWindowPos(_hwnd,
+                    _topmost ? Win32Native.HWND_TOPMOST : Win32Native.HWND_NOTOPMOST,
+                    0, 0, w, h,
+                    Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW | Win32Native.SWP_NOACTIVATE);
+            }
+        }
+#endif
     }
 #pragma warning restore 0414
 }
