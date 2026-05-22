@@ -1,5 +1,6 @@
 using System;
 using Demo.DobeCat.Game.Auth;
+using Demo.DobeCat.Sys.Platform.Windows;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.UI
@@ -48,12 +49,34 @@ namespace Demo.DobeCat.Game.UI
         private GUIStyle _errorStyle;
         private GUIStyle _dropdownBtnStyle;
         private GUIStyle _primaryBtnStyle;
+        private GUIStyle _closeBtnStyle;
         private Texture2D _bgTex;
+        // 卡片矩形 —— OnGUI 算一次，Update 复用做点击穿透 hit-test
+        private Rect _cardRect;
 
         private void Awake()
         {
             _token = AuthSession.Token ?? string.Empty;
             // 不再修改 Win32 窗口尺寸/样式 —— 由 DesktopWindow 统一掌管，登录界面只是这个窗口里的一块 IMGUI 卡片。
+        }
+
+        /// <summary>
+        /// 鼠标在卡片矩形外时打开窗口点击穿透，让用户可以正常操作桌面 / 任务栏；
+        /// 一旦移到卡片上立刻关穿透，保证卡片自身的下拉、输入框、按钮能交互。
+        /// 桌宠窗口默认是 LAYERED + topmost 全屏，不做穿透切换的话整张桌面都被它吞掉点击。
+        /// </summary>
+        private void Update()
+        {
+            var dw = DesktopWindow.Instance;
+            if (dw == null) return;
+            if (_cardRect.width <= 0f) { dw.SetClickThrough(true); return; }
+
+            var mx = Input.mousePosition.x;
+            // Input.mousePosition 原点在左下，IMGUI / _cardRect 在左上 —— 翻转 Y
+            var my = Screen.height - Input.mousePosition.y;
+            var inside = mx >= _cardRect.xMin && mx <= _cardRect.xMax
+                      && my >= _cardRect.yMin && my <= _cardRect.yMax;
+            dw.SetClickThrough(!inside);
         }
 
         private void EnsureStyles()
@@ -110,6 +133,17 @@ namespace Demo.DobeCat.Game.UI
                     fontStyle = FontStyle.Bold,
                 };
             }
+            if (_closeBtnStyle == null)
+            {
+                _closeBtnStyle = new GUIStyle(GUI.skin.button)
+                {
+                    fontSize  = 14,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter,
+                    padding   = new RectOffset(0, 0, 0, 0),
+                    normal    = { textColor = new Color(0.85f, 0.85f, 0.85f) },
+                };
+            }
         }
 
         private void OnGUI()
@@ -117,14 +151,24 @@ namespace Demo.DobeCat.Game.UI
             EnsureStyles();
 
             // 居中绘制登录卡片：周围保持透明，桌宠透明窗会让 DWM 透出桌面。
-            var card = new Rect(
+            _cardRect = new Rect(
                 (Screen.width  - CardW) * 0.5f,
                 (Screen.height - CardH) * 0.5f,
                 CardW, CardH);
-            GUI.DrawTexture(card, _bgTex);
+            GUI.DrawTexture(_cardRect, _bgTex);
+
+            // 右上角关闭按钮（×）—— 唯一退出途径，避免桌面被卡片遮挡时无法关闭
+            var closeRect = new Rect(_cardRect.xMax - 32f, _cardRect.y + 6f, 26f, 22f);
+            if (GUI.Button(closeRect, "×", _closeBtnStyle))
+            {
+                Application.Quit();
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.isPlaying = false;
+#endif
+            }
 
             const float pad = 18f;
-            var area = new Rect(card.x + pad, card.y + pad, card.width - pad * 2f, card.height - pad * 2f);
+            var area = new Rect(_cardRect.x + pad, _cardRect.y + pad + 6f, _cardRect.width - pad * 2f, _cardRect.height - pad * 2f - 6f);
             GUILayout.BeginArea(area);
 
             GUILayout.Label("DobeCat 登录", _titleStyle);
@@ -209,6 +253,9 @@ namespace Demo.DobeCat.Game.UI
         private void OnDestroy()
         {
             if (_bgTex != null) Destroy(_bgTex);
+            // 关穿透交还给 PetClickThroughDriver，避免登录完成瞬间桌宠还没注入就丢一帧"全穿透"
+            var dw = DesktopWindow.Instance;
+            if (dw != null) dw.SetClickThrough(false);
         }
     }
 }
