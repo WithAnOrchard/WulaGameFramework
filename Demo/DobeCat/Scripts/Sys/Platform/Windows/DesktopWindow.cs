@@ -28,8 +28,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                  "默认纯绿 #00FF00（避免猫咪 / 桌面常见色误伤）。")]
         [SerializeField] private Color _colorKey = new Color(0f, 1f, 0f, 1f);
 
-        [Tooltip("ColorKey 容差（shader 中相邻像素抗锯齿边缘吃掉用）。")]
-        [Range(0f, 0.5f)] [SerializeField] private float _colorKeyMargin = 0.01f;
+        [Tooltip("ColorKey 溢色抑制强度（shader spill suppression 灵敏度）。\n0=不修边（残留绿边）；0.1≈足以吃掉反走样边缘；越大越激进，过大可能误伤偏绿的 sprite 像素。")]
+        [Range(0f, 0.5f)] [SerializeField] private float _colorKeyMargin = 0.1f;
 
         [Tooltip("启动时自动给主相机挂 TransparentRenderBlit 后处理（Built-in 管线）。")]
         [SerializeField] private bool _autoAttachBlit = true;
