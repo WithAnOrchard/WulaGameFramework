@@ -12,7 +12,8 @@ namespace Demo.DobeCat.Game.Shop
     /// </summary>
     public static class DobeCatShopSetup
     {
-        public const string SHOP_SEED_STORE = "shop_seed_store";
+        public const string SHOP_SEED_STORE    = "shop_seed_store";
+        public const string SHOP_PREMIUM_STORE = "shop_premium_store";
 
         public static bool IsRegistered { get; private set; }
 
@@ -21,14 +22,27 @@ namespace Demo.DobeCat.Game.Shop
             if (IsRegistered) return;
             IsRegistered = true;
 
-            // 1. 注册金币物品模板
+            // 1. 注册货币物品模板（作为 Inventory 中的一种道具存储）
             ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
             {
                 new InventoryItem
                 {
                     Id           = ShopService.CURRENCY_GOLD,
                     Name         = "金币",
-                    Description  = "通用货币，用于购买种子和道具。",
+                    Description  = "B 站电池礼物兑换，用于购买高价值内容。",
+                    Type         = InventoryItemType.Misc,
+                    Value        = 1,
+                    MaxStack     = 9999,
+                    IconSpriteId = ""
+                }
+            });
+            ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
+            {
+                new InventoryItem
+                {
+                    Id           = ShopService.CURRENCY_SILVER,
+                    Name         = "银币",
+                    Description  = "陪伴时长 / 弹幕奖励货币，用于购买日常消耗品。",
                     Type         = InventoryItemType.Misc,
                     Value        = 1,
                     MaxStack     = 9999,
@@ -39,17 +53,21 @@ namespace Demo.DobeCat.Game.Shop
             // 2. 注册货币条目
             ep.TriggerEventMethod(ShopManager.EVT_REGISTER_CURRENCY, new List<object>
             {
-                new CurrencyEntry { Id = ShopService.CURRENCY_GOLD, DisplayName = "金币" }
+                new CurrencyEntry { Id = ShopService.CURRENCY_GOLD,   DisplayName = "金币" }
+            });
+            ep.TriggerEventMethod(ShopManager.EVT_REGISTER_CURRENCY, new List<object>
+            {
+                new CurrencyEntry { Id = ShopService.CURRENCY_SILVER, DisplayName = "银币" }
             });
 
-            // 3. 注册种子商店（BuyMarkupRatio=1.0 = 直接按 BasePrice）
+            // 3. 注册种子商店（银币商店：日常消耗品）
             ep.TriggerEventMethod(ShopManager.EVT_REGISTER_SHOP, new List<object>
             {
                 new ShopConfig
                 {
                     Id          = SHOP_SEED_STORE,
-                    DisplayName = "种子商店",
-                    CurrencyId  = ShopService.CURRENCY_GOLD,
+                    DisplayName = "🪙 银币商店（种子/日常）",
+                    CurrencyId  = ShopService.CURRENCY_SILVER,
                     Policy      = new ShopPolicy { BuyMarkupRatio = 1.0f },
                     Stock       = new List<ShopStock>
                     {
@@ -77,9 +95,31 @@ namespace Demo.DobeCat.Game.Shop
                 }
             });
 
-            // 4. 初始化玩家钱包（100 金，幂等）
+            // 4. 注册金币商店（高价值内容，仅能通过电池礼物获得金币购买）
+            ep.TriggerEventMethod(ShopManager.EVT_REGISTER_SHOP, new List<object>
+            {
+                new ShopConfig
+                {
+                    Id          = SHOP_PREMIUM_STORE,
+                    DisplayName = "💎 金币商店（稀有/限定）",
+                    CurrencyId  = ShopService.CURRENCY_GOLD,
+                    Policy      = new ShopPolicy { BuyMarkupRatio = 1.0f },
+                    Stock       = new List<ShopStock>
+                    {
+                        new ShopStock { ItemId = "premium_hat_festival",   BasePrice =  50, Stock = -1 },
+                        new ShopStock { ItemId = "premium_food_sushi",     BasePrice =  30, Stock = -1 },
+                        new ShopStock { ItemId = "premium_food_cake",      BasePrice =  60, Stock = -1 },
+                        new ShopStock { ItemId = "premium_action_pack",    BasePrice = 100, Stock = -1 },
+                        new ShopStock { ItemId = "premium_celebrate_fx",   BasePrice = 150, Stock = -1 },
+                    }
+                }
+            });
+
+            // 5. 初始化玩家钱包：50 银 / 0 金（金币必须通过电池礼物赚取，InitWallet 幂等不重置现有余额）
             ep.TriggerEventMethod(ShopManager.EVT_INIT_WALLET, new List<object>
-                { "player", ShopService.CURRENCY_GOLD, 100 });
+                { "player", ShopService.CURRENCY_SILVER, 50 });
+            ep.TriggerEventMethod(ShopManager.EVT_INIT_WALLET, new List<object>
+                { "player", ShopService.CURRENCY_GOLD,    0  });
         }
     }
 }

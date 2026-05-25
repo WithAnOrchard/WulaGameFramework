@@ -26,8 +26,14 @@ namespace Demo.DobeCat.Game.Shop
         private UITextComponent    _balanceDao;
         private UITextComponent    _msgDao;
         private UIScrollViewEntity _itemsEntity;
+        private UIButtonComponent  _tabSilverDao;
+        private UIButtonComponent  _tabGoldDao;
         private float              _msgTimer;
         private bool               _initialized;
+
+        // 当前选中的商店（默认银币店）
+        private string _currentShopId     = DobeCatShopSetup.SHOP_SEED_STORE;
+        private string _currentCurrencyId = ShopService.CURRENCY_SILVER;
 
         // ─── 颜色 ───────────────────────────────────────────────────────────
         private static readonly Color CB   = new Color(0.11f, 0.12f, 0.15f, 0.97f);
@@ -39,6 +45,8 @@ namespace Demo.DobeCat.Game.Shop
         private static readonly Color CSB  = new Color(0.08f, 0.09f, 0.11f, 1.00f);
         private static readonly Color CRow = new Color(0.16f, 0.17f, 0.21f, 1.00f);
         private static readonly Color CBuy = new Color(0.15f, 0.40f, 0.80f, 1.00f);
+        private static readonly Color CTabOn  = new Color(0.30f, 0.32f, 0.40f, 1.00f); // 选中 Tab
+        private static readonly Color CTabOff = new Color(0.13f, 0.14f, 0.18f, 1.00f); // 未选中 Tab
 
         private void Awake() { Instance = this; }
 
@@ -83,24 +91,32 @@ namespace Demo.DobeCat.Game.Shop
                 .SetBackgroundColor(CB).SetSize(PW, PH)
                 .SetPosition(PW / 2f + 60f, 1080f - PH / 2f - 40f);
 
-            // ── 标题栏 ──
+            // ── 标题栏：[银币Tab][金币Tab][余额][×] ──
             var titleBar = new UIPanelComponent("shop-titlebar")
                 .SetBackgroundColor(CH).SetSize(PW, 44f)
                 .SetPosition(PW / 2f, PH - 22f);
             root.AddChild(titleBar);
 
-            titleBar.AddChild(new UITextComponent("shop-title", text: "种子商店")
-                .SetSize(220f, 44f).SetPosition(122f, 22f)
-                .SetColor(CTM).SetFontSize(14).SetAlignment(TextAnchor.MiddleLeft));
+            // Tab 1：银币商店（10..118，宽 110）
+            _tabSilverDao = new UIButtonComponent("shop-tab-silver", text: "🪙 银币商店")
+                .SetSize(110f, 36f).SetPosition(65f, 22f).SetButtonColor(CTabOn);
+            titleBar.AddChild(_tabSilverDao);
 
-            _balanceDao = new UITextComponent("shop-balance", text: "金币: --")
-                .SetSize(88f, 44f).SetPosition(276f, 22f)
+            // Tab 2：金币商店（124..234，宽 110）
+            _tabGoldDao = new UIButtonComponent("shop-tab-gold", text: "💎 金币商店")
+                .SetSize(110f, 36f).SetPosition(179f, 22f).SetButtonColor(CTabOff);
+            titleBar.AddChild(_tabGoldDao);
+
+            // 余额（240..318，宽 78）
+            _balanceDao = new UITextComponent("shop-balance", text: "银币: --")
+                .SetSize(78f, 44f).SetPosition(279f, 22f)
                 .SetColor(new Color(1f, 0.85f, 0.2f)).SetFontSize(12)
                 .SetAlignment(TextAnchor.MiddleRight);
             titleBar.AddChild(_balanceDao);
 
+            // × 关闭（322..360，宽 38）
             var closeXDao = new UIButtonComponent("shop-close-x", text: "×")
-                .SetSize(40f, 44f).SetPosition(340f, 22f).SetButtonColor(CX);
+                .SetSize(38f, 44f).SetPosition(341f, 22f).SetButtonColor(CX);
             titleBar.AddChild(closeXDao);
 
             // ── 分割线 ──
@@ -143,6 +159,8 @@ namespace Demo.DobeCat.Game.Shop
             // 回调
             closeXDao.OnClick   += _ => _rootEntity.gameObject.SetActive(false);
             closeBtnDao.OnClick += _ => _rootEntity.gameObject.SetActive(false);
+            _tabSilverDao.OnClick += _ => SwitchTab(DobeCatShopSetup.SHOP_SEED_STORE,    ShopService.CURRENCY_SILVER);
+            _tabGoldDao.OnClick   += _ => SwitchTab(DobeCatShopSetup.SHOP_PREMIUM_STORE, ShopService.CURRENCY_GOLD);
 
             // ScrollView 实体
             _itemsEntity = UIService.Instance.GetUIEntity("shop-items-sv") as UIScrollViewEntity;
@@ -167,19 +185,20 @@ namespace Demo.DobeCat.Game.Shop
             }
             _itemsEntity.ClearContent();
 
-            // 刷新余额
+            // 刷新余额（跟随当前货币）
             if (EventProcessor.HasInstance && _balanceDao != null)
             {
                 var balRes = EventProcessor.Instance.TriggerEventMethod(
-                    ShopManager.EVT_GET_WALLET, new List<object> { "player", ShopService.CURRENCY_GOLD });
+                    ShopManager.EVT_GET_WALLET, new List<object> { "player", _currentCurrencyId });
                 int bal = ResultCode.IsOk(balRes) && balRes.Count >= 2
                     ? System.Convert.ToInt32(balRes[1]) : 0;
-                _balanceDao.Text = $"金币: {bal}";
+                var label = _currentCurrencyId == ShopService.CURRENCY_SILVER ? "银币" : "金币";
+                _balanceDao.Text = $"{label}: {bal}";
             }
 
             var shopSvc = ShopService.Instance;
             if (shopSvc == null) { AddInfoRow("商店未初始化"); return; }
-            var shop = shopSvc.GetShop(DobeCatShopSetup.SHOP_SEED_STORE);
+            var shop = shopSvc.GetShop(_currentShopId);
             if (shop == null) { AddInfoRow("商店未注册"); return; }
 
             var invSvc = InventoryService.Instance;
@@ -259,11 +278,24 @@ namespace Demo.DobeCat.Game.Shop
             t.fontSize = 12; t.color = CTS; t.alignment = TextAnchor.MiddleCenter; t.raycastTarget = false;
         }
 
+        private void SwitchTab(string shopId, string currencyId)
+        {
+            if (_currentShopId == shopId) return;
+            _currentShopId     = shopId;
+            _currentCurrencyId = currencyId;
+            // 高亮选中 Tab
+            var img1 = UIService.Instance.GetUIEntity("shop-tab-silver")?.GetComponent<Image>();
+            var img2 = UIService.Instance.GetUIEntity("shop-tab-gold")?.GetComponent<Image>();
+            if (img1 != null) img1.color = currencyId == ShopService.CURRENCY_SILVER ? CTabOn : CTabOff;
+            if (img2 != null) img2.color = currencyId == ShopService.CURRENCY_GOLD   ? CTabOn : CTabOff;
+            Rebuild();
+        }
+
         private void BuyItem(string itemId, string displayName)
         {
             if (!EventProcessor.HasInstance) return;
             var res = EventProcessor.Instance.TriggerEventMethod(ShopManager.EVT_BUY_ITEM,
-                new List<object> { DobeCatShopSetup.SHOP_SEED_STORE, itemId, 1, "player" });
+                new List<object> { _currentShopId, itemId, 1, "player" });
             var ok = ResultCode.IsOk(res);
             if (_msgDao != null)
             {
