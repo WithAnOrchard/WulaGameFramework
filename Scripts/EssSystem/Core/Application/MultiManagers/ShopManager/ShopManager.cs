@@ -18,6 +18,7 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
         public const string EVT_BUY_ITEM          = ShopService.EVT_BUY_ITEM;
         public const string EVT_INIT_WALLET       = ShopService.EVT_INIT_WALLET;
         public const string EVT_GET_WALLET        = ShopService.EVT_GET_WALLET;
+        public const string EVT_ADD_WALLET        = ShopService.EVT_ADD_WALLET;
 
         public ShopService Service => ShopService.Instance;
 
@@ -92,6 +93,18 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
             if (data == null || data.Count < 2) return ResultCode.Fail("参数错误：需要 [playerId, currencyId]");
             var balance = Service.GetWalletBalance(data[0] as string, data[1] as string);
             return ResultCode.Ok(balance);
+        }
+
+        [Event(EVT_ADD_WALLET)]
+        public List<object> HandleAddWallet(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("ShopService 未初始化");
+            if (data == null || data.Count < 3) return ResultCode.Fail("参数错误：需要 [playerId, currencyId, amount]");
+            var playerId   = data[0] as string;
+            var currencyId = data[1] as string;
+            var amount     = System.Convert.ToInt32(data[2]);
+            var err = Service.AddWalletBalance(playerId, currencyId, amount);
+            return err == null ? ResultCode.Ok() : ResultCode.Fail(err);
         }
     }
 }

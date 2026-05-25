@@ -494,6 +494,8 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ShopService.EVT_BUY_ITEM` | `ShopBuy` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
 | `ShopService.EVT_INIT_WALLET` | `ShopInitWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
 | `ShopService.EVT_GET_WALLET` | `ShopGetWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
+| `ShopManager.EVT_ADD_WALLET` | `ShopAddWallet` | Core/ShopManager | 充値钱包（命令），参数 `[playerId, currencyId, amount]` |
+| `ShopService.EVT_ADD_WALLET` | `ShopAddWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
 | `NetworkManager.EVT_HOST_START` | `NetHostStart` | Manager/NetworkManager | 启动主机 Server+本地 Client（命令），参数 `[ushort? port]` |
 | `NetworkManager.EVT_SERVER_START` | `NetServerStart` | Manager/NetworkManager | 启动纯专用服务器（命令），参数 `[ushort? port]` |
 | `NetworkManager.EVT_CLIENT_CONNECT` | `NetClientConnect` | Manager/NetworkManager | 连接到指定服务器（命令），参数 `[string address, ushort? port]` |

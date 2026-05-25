@@ -28,12 +28,28 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
         public const string EVT_BUY_ITEM          = "ShopBuy";
         public const string EVT_INIT_WALLET       = "ShopInitWallet";
         public const string EVT_GET_WALLET        = "ShopGetWallet";
+        public const string EVT_ADD_WALLET        = "ShopAddWallet";
 
         #endregion
 
-        public const string CURRENCY_GOLD = "gold";
+        public const string CURRENCY_GOLD   = "gold";
+        public const string CURRENCY_SILVER = "silver";
 
         public static string WalletId(string playerId) => $"wallet_{playerId}";
+
+        /// <summary>向玩家钱包充值（幂等地确保 wallet Inventory 存在后 Add）。</summary>
+        public string AddWalletBalance(string playerId, string currencyId, int amount)
+        {
+            if (!EventProcessor.HasInstance) return "EventProcessor 未就绪";
+            if (string.IsNullOrEmpty(playerId) || string.IsNullOrEmpty(currencyId)) return "参数不完整";
+            if (amount <= 0) return null;
+            var walletId = WalletId(playerId);
+            var ep = EventProcessor.Instance;
+            ep.TriggerEventMethod("InventoryCreate", new List<object> { walletId, $"{playerId}钱包", 9999 });
+            ep.TriggerEventMethod("InventoryAdd",    new List<object> { walletId, currencyId, amount });
+            Log($"充值: {walletId} +{amount} {currencyId}", Color.green);
+            return null;
+        }
 
         protected override void Initialize()
         {

@@ -200,6 +200,11 @@ namespace Demo.DobeCat
             syncHolder.transform.SetParent(transform);
             var sync = syncHolder.AddComponent<PlayerDataSync>();
             sync.ServerBaseUrl = _roomDiscoveryServerUrl;
+
+            // 直播经济：陪伴时长 / 弹幕 → 银币；礼物 → 金币
+            var econHolder = new GameObject("LiveEconomy");
+            econHolder.transform.SetParent(transform);
+            econHolder.AddComponent<LiveEconomyController>();
         }
 
         private System.Collections.IEnumerator SuppressAutoHotbar()

@@ -58,7 +58,10 @@ CHA 折扣  = max(0, (CHA - 10) * 0.01)        // 每点 CHA -1%
 | `ShopManager.EVT_BUY_ITEM` | `"ShopBuy"` | `[shopId, itemId, amount?, playerId?]` | `Ok("购买成功")` / `Fail(msg)` |
 | `ShopManager.EVT_INIT_WALLET` | `"ShopInitWallet"` | `[playerId, currencyId, amount]` | `Ok()` / `Fail(msg)` |
 | `ShopManager.EVT_GET_WALLET` | `"ShopGetWallet"` | `[playerId, currencyId]` | `Ok(amount)` / `Fail(msg)` |
+| `ShopManager.EVT_ADD_WALLET` | `"ShopAddWallet"` | `[playerId, currencyId, amount]` | `Ok()` / `Fail(msg)` |
 
 ### 计划中（尚未实现）
 
-`EVT_ADD_WALLET`（充值）/ `OpenShop` / `CloseShop` / `ShopSellItem` — M4 实施时新增。
+`OpenShop` / `CloseShop` / `ShopSellItem` — M4 实施时新增。
+
+货币常量：`ShopService.CURRENCY_GOLD = "gold"` / `ShopService.CURRENCY_SILVER = "silver"`
