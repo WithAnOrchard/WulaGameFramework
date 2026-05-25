@@ -92,6 +92,18 @@ namespace Demo.DobeCat.Sys.Tray
                 ? "✔ 窗口捕捉模式 (OBS)" : "  窗口捕捉模式 (OBS)";
             items.Add(SystemTray.MenuItemDef.Item(captureLabel, ToggleWindowCaptureMode));
 
+            // 背景层开关
+            var bgVisible = Demo.DobeCat.Game.Pet.PetBackgroundLayer.Instance?.Visible ?? false;
+            var bgLabel = bgVisible ? "✔ 显示背景" : "  显示背景";
+            items.Add(SystemTray.MenuItemDef.Item(bgLabel, ToggleBackground));
+
+            // 桌宠大小预设（在托盘里以文字标记当前挡位）
+            var curScale = Demo.DobeCat.Game.Pet.PetScaleController.Instance?.ScaleFactor ?? 1f;
+            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 0.5f, "桌宠大小 50%"),  () => SetScale(0.5f)));
+            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.0f, "桌宠大小 100%"), () => SetScale(1.0f)));
+            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.5f, "桌宠大小 150%"), () => SetScale(1.5f)));
+            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 2.0f, "桌宠大小 200%"), () => SetScale(2.0f)));
+
             items.Add(SystemTray.MenuItemDef.Separator());
 
             // 房间区
@@ -163,6 +175,24 @@ namespace Demo.DobeCat.Sys.Tray
             Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetWindowCaptureMode(next);
             RebuildMenu();
         }
+
+        private void ToggleBackground()
+        {
+            var bg = Demo.DobeCat.Game.Pet.PetBackgroundLayer.Instance;
+            if (bg == null) return;
+            bg.SetVisible(!bg.Visible);
+            RebuildMenu();
+        }
+
+        private void SetScale(float factor)
+        {
+            Demo.DobeCat.Game.Pet.PetScaleController.Instance?.SetScale(factor);
+            RebuildMenu();
+        }
+
+        /// <summary>根据当前值是否匹配目标档位决定显示 ✔ 还是空格。</summary>
+        private static string Mark(float current, float target, string text)
+            => Mathf.Approximately(current, target) ? $"✔ {text}" : $"  {text}";
 
         private void Quit()
         {

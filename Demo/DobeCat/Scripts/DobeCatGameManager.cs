@@ -349,6 +349,13 @@ namespace Demo.DobeCat
             sync.GhostCharacterConfigId = _ghostCharacterConfigId;
             sync.GhostScale = _petScale;
 
+            // 背景层（默认隐藏；托盘菜单可切换）
+            var bg = _pet.AddComponent<PetBackgroundLayer>();
+            bg.SetVisible(false);
+
+            // 缩放控制器（读取 PlayerPrefs 恢复上次大小）
+            _pet.AddComponent<PetScaleController>();
+
             Debug.Log("[DobeCatGameManager] 占位桌宠已生成");
         }
 
