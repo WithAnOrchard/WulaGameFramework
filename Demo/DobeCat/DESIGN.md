@@ -16,15 +16,15 @@
 | 桌宠展示 | Sheet 动画 / 方向翻转 / 多套动作 | 🔧 |
 | AI 行为 | Utility AI 游荡 / 玩家控制 / Needs 驱动行为 | 🔧 |
 | 用户互动 | 拖拽 / 右键菜单 / 撸猫 / 投喂 / 对话气泡 | 🔧 |
-| 陪伴功能 | 番茄钟 / 久坐提醒 / 整点报时 / 天气播报 | 🔲 |
+| 陪伴功能 | 番茄钟 / 久坐提醒 / 整点报时 / 天气播报 | ✅ |
 | 内容系统 | 背包 / 商店 / 农场 / 装扮 / 好感度 | 🔧 |
 | 联网功能 | 多人房间 / 桌宠幽灵同步 / 云存档 | ✅ |
 | 直播互动 | B 站弹幕 / 礼物 / 开播检测 | ✅ |
-| 动态 / 投稿提醒 | 主播发动态或上传视频时全员桌宠提醒 | 🔲 |
-| 系统集成 | 托盘菜单 / 登录验证 / 开机自启 | 🔧 |
-| OBS 捕捉模式 | 窗口化切换 / 可被直播软件采集 | 🔲 |
-| 分层显示 | 背景层 / 猫咪层独立控制 / 窗口缩放 | 🔲 |
-| 直播经济系统 | 银币（陪伴+弹幕）/ 金币（电池礼物）/ 双商店 | 🔲 |
+| 动态 / 投稿提醒 | 主播发动态或上传视频时全员弹出提醒 | ✅ |
+| 系统集成 | 托盘菜单 / 登录验证 / 开机自启 | ✅ |
+| OBS 捕捉模式 | 窗口化切换 / 可被直播软件采集 | ✅ |
+| 分层显示 | 背景层 / 猫咪层独立控制 / 窗口缩放 | ✅ |
+| 直播经济系统 | 银币（陪伴 弹幕）/ 金币（电池礼物）/ 双商店 | ✅ |
 
 ---
 
@@ -52,8 +52,8 @@
 | 子功能 | 状态 |
 |---|:---:|
 | 桌面叠加模式 | ✅ |
-| 窗口捕捉模式（托盘切换）| 🔲 |
-| OBS Game Capture 透明背景 | 🔲 |
+| 窗口捕捉模式（托盘切换）| ✅ |
+| OBS Game Capture 透明背景 | ✅ |
 
 ---
 
@@ -83,10 +83,10 @@
 
 | 子功能 | 状态 |
 |---|:---:|
-| 背景层 / 猫咪层分离渲染 | 🔲 |
-| 右键设置关闭背景 | 🔲 |
-| 窗口 / 桌宠整体缩放 | 🔲 |
-| 缩放值持久化 | 🔲 |
+| 背景层 / 猫咪层分离渲染 | ✅ |
+| 右键设置关闭背景 | ✅ |
+| 窗口 / 桌宠整体缩放 | ✅ |
+| 缩放值持久化 | ✅ |
 
 ---
 
@@ -109,8 +109,8 @@
 | 隐藏任务栏 / Alt+Tab | ✅ | `WS_EX_TOOLWINDOW` |
 | 全屏叠加层（桌宠在窗口内移动）| ✅ | 登录后切换到主屏 WorkArea 大小 |
 | 鼠标点击穿透（矩形包围盒）| ✅ | `WS_EX_TRANSPARENT` 动态开关 |
-| 鼠标点击穿透（像素级 alpha）| 🔲 | Sprite.texture.GetPixel 精确检测 |
-| 多显示器边界感知 | 🔲 | `SPI_GETWORKAREA` 获取实际工作区 |
+| 鼠标点击穿透（像素级 alpha）| ✅ | Sprite.texture.GetPixel 精确检测 |
+| 多显示器边界感知 | ✅ | `SPI_GETWORKAREA` 获取实际工作区 |
 
 ### 2.2 帧率策略
 
@@ -121,7 +121,7 @@
 | 空闲（无互动）| 10 fps | 无鼠标输入 + AI 处于 Idle 状态 |
 | 活跃（有互动）| 60 fps | 鼠标悬停 / WASD / 拖拽 / 动画播放 |
 
-- **状态** 🔲 待开发：调用 `Application.targetFrameRate` 动态切换。
+- **状态** ✅ 已实现：`PetFrameRateController` — 空闲(>5s)→10fps / 活跃→60fps。
 
 ---
 
@@ -182,18 +182,19 @@ Consideration(评分函数) → BrainComponent(调度) → IBrainAction(执行)
 |---|---|---|:---:|
 | `PlayerControl` | WASD 有输入 → 1.0，否则 0 | `PetPlayerControlAction` | ✅ |
 | `Wander` | 固定基线 0.2 | `PetWanderAction` | ✅ |
+| `Sleep` | Energy < 0.2 → 评分随 Energy 降低升高 | `PetSleepAction` | ✅ |
+| `BoredomWander` | Boredom > 0.6 → 评分随 Boredom 升高 | `PetWanderAction`（快节奏） | ✅ |
+| `IdleVariant` | 每 30s 触发一次 | `PetIdleVariantAction` | ✅ |
+| `Eat` | Hunger > 0.7 → 从 player 背包消耗猫粮 | `EatAction` | ✅ |
+| `ReactToCursor` | 光标在 2.5 世界单位内 → 分数随距离升高 | `PetCursorReactAction` | ✅ |
 
-### 4.3 待实现 Consideration（🔲）
+### 4.3 已完整实现所有 Consideration ✅
 
-| Consideration | 评分逻辑 | 对应 Action |
-|---|---|---|
-| `Sleep` | Energy < 0.2 → 评分随 Energy 降低升高 | `SleepAction` |
-| `Eat` | Hunger > 0.7 → 走向食盆 | `EatAction` |
-| `Play` | Boredom > 0.6 → 追逐玩具 | `PlayAction` |
-| `ReactToCursor` | 鼠标在附近 → 盯着看 / 扑过去 | `CursorReactAction` |
-| `Idle_Variant` | 静止超过 N 秒 → 随机变体动作 | `IdleVariantAction` |
+| Consideration | 评分逻辑 | 对应 Action | 状态 |
+|---|---|---|:---:|
+| `Play` | Boredom > 0.6 → 追逐玩具 | `PetPlayAction` | ✅ |
 
-### 4.4 Needs 系统（🔲 待开发）
+### 4.4 Needs 系统（✅ 已实现）
 
 桌宠有 4 个需求值（0~1），随时间自动增长，由对应 Action 消耗。
 
@@ -204,14 +205,14 @@ Consideration(评分函数) → BrainComponent(调度) → IBrainAction(执行)
 | `Mood`（心情）| 由互动降低 | 无明显行为变化 | 撸猫 / 投喂 恢复 |
 | `Boredom`（无聊）| 0.008 / 分钟 | 随机玩耍行为 | 触发 Play Action |
 
-### 4.5 传感器（🔲 待开发）
+### 4.5 传感器（✅ 已实现）
 
-| Sensor | 感知内容 | 实现方式 |
-|---|---|---|
-| `MouseSensor` | 鼠标世界坐标 | `Win32Native.GetCursorPos` → Camera.ScreenToWorldPoint |
-| `BoundsSensor` | 屏幕边界碰撞 | 世界坐标 vs 屏幕边缘换算 |
-| `IdleTimeSensor` | 用户键鼠空闲时长 | `GetLastInputInfo` Win32 API |
-| `ForegroundSensor` | 前台窗口标题 | `GetForegroundWindow` + `GetWindowText` |
+| Sensor | 感知内容 | 实现方式 | 状态 |
+|---|---|---|:---:|
+| `MouseSensor` | 鼠标世界坐标 | `Win32Native.GetCursorPos` → Camera.ScreenToWorldPoint | ✅ 内联于 ReactToCursor |
+| `BoundsSensor` | 屏幕边界碰撞 | 世界坐标 vs 视口换算，LateUpdate 钳制 | ✅ `BoundsSensor.cs` |
+| `IdleTimeSensor` | 用户键鼠空闲时长 | `GetLastInputInfo` Win32 API | ✅ 内联于 PetCompanionReminder/PetFrameRateController |
+| `ForegroundSensor` | 前台窗口标题/全屏检测 | `GetForegroundWindow` + `GetWindowText` | ✅ `ForegroundSensor.cs` |
 
 ---
 
@@ -221,12 +222,12 @@ Consideration(评分函数) → BrainComponent(调度) → IBrainAction(执行)
 |---|:---:|---|:---:|
 | 拖拽移动 | 鼠标左键按住 + 拖动 | 桌宠跟随鼠标移动，AI 暂停 | ✅ |
 | 右键菜单 | 鼠标右键点击桌宠 | 弹出托盘菜单 | ✅ |
-| 点击互动 | 鼠标单击桌宠 | 播放表情动画 + 触发叫声音效 | 🔲 |
-| 撸猫（长按）| 鼠标按住 > 1s | 好感度 +1/s，播放呼噜音效 | 🔲 |
-| 投喂 | 从背包拖拽食物到桌宠 | 消耗食物，Hunger 降低，好感度增加 | 🔲 |
-| 对话气泡 | 桌宠主动 / 用户触发 | 头顶弹出文字气泡（3s 自动消失）| 🔲 |
+| 点击互动 | 鼠标单击桌宠 | 随机气泡反应 | ✅ |
+| 撸猫（长按）| 鼠标按住 > 1s | 好感度 +2/s，气泡反应 | ✅ |
+| 投喂 | 托盘菜单「喂食」→ 消耗猫粮 | Hunger -0.4，好感度 +5，气泡感谢 | ✅ |
+| 对话气泡 | 桌宠主动 / 用户触发 | 头顶弹出文字气泡（3s 自动消失）| ✅ |
 
-### 5.1 好感度系统（🔲 待开发）
+### 5.1 好感度系统（🔧 基础实现）
 
 - 好感度（0~100），通过撸猫、投喂、每日签到、完成陪伴任务等方式积累。
 - **等级解锁内容**：
@@ -247,14 +248,14 @@ Consideration(评分函数) → BrainComponent(调度) → IBrainAction(执行)
 
 | 功能 | 触发条件 | 桌宠行为 | 状态 |
 |---|---|---|:---:|
-| 番茄钟 | 用户在托盘菜单启动 | 倒计时结束后撒花 + 气泡庆祝 | 🔲 |
-| 久坐提醒 | 键鼠活跃时长 > 45 分钟 | 气泡："该起来活动了！" | 🔲 |
-| 喝水提醒 | 每 60 分钟一次 | 气泡："记得喝水～" | 🔲 |
-| 整点报时 | 每小时整点 | 气泡播报当前时间 | 🔲 |
-| 自定义闹钟 | 用户在托盘菜单设置 | 时间到后气泡提醒 | 🔲 |
-| 天气播报 | 每日启动 / 用户请求 | 气泡播报今日天气（接外部 API）| 🔲 |
-| 深夜劝睡 | 当前时间 > 23:00 | 气泡："主人早点休息哦～" | 🔲 |
-| 专注鼓励 | 用户连续工作 > 30 分钟 | 气泡："你好棒，继续加油！" | 🔲 |
+| 番茄钟 | 用户在托盘菜单启动 | 倒计时结束后气泡庆祝；休息结束再提醒 | ✅ |
+| 久坐提醒 | 键鼠活跃时长 > 45 分钟 | 气泡："该起来活动了！" | ✅ |
+| 喝水提醒 | 每 60 分钟一次 | 气泡："记得喝水～" | ✅ |
+| 整点报时 | 每小时整点 | 气泡播报当前时间 | ✅ |
+| 自定义闹钟 | 用户在托盘菜单设置 | 时间到后气泡提醒 | ✅ |
+| 天气播报 | 每日启动，每 6h 刷新 | 气泡播报今日天气（OpenWeatherMap）| ✅ |
+| 深夜劝睡 | 当前时间 > 23:00 | 气泡："主人早点休息哦～" | ✅ |
+| 专注鼓励 | 用户连续工作 > 30 分钟 | 气泡："你好棒，继续加油！" | ✅ |
 
 ---
 
@@ -277,9 +278,9 @@ Consideration(评分函数) → BrainComponent(调度) → IBrainAction(执行)
 - WASD 控制桌宠走进农场触发游戏上下文，Hotbar 自动显示。
 - 农作物配置由 `DobeCatCropSetup` 注册（生长时间、收益等）。
 
-### 8.4 对话库（🔲 待开发）
+### 8.4 对话库（✅ 已实现）
 
-对话内容由 **DialogueManager** 驱动，每条对话包含文本 + 触发条件。
+对话内容由 **DialogueManager** 驱动，所有文本集中存储在 `DobeCatDialogueContent.cs`，对话内容设计参见原描述。
 
 **对话分类**
 
@@ -357,13 +358,13 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 | 子功能 | 状态 |
 |---|:---:|
 | 货币基础（ShopManager CURRENCY_GOLD）| ✅ |
-| CURRENCY_SILVER 注册 | 🔲 |
-| 陪伴计时 → 银币产出 | 🔲 |
-| 弹幕 → 银币产出 | 🔲 |
-| 电池礼物 → 金币兑换 | 🔲 |
-| 银币商店 UI | 🔲 |
-| 金币商店 UI | 🔲 |
-| 货币余额持久化 | 🔲 |
+| CURRENCY_SILVER 注册 | ✅ |
+| 陪伴计时 → 银币产出 | ✅ |
+| 弹幕 → 银币产出 | ✅ |
+| 电池礼物 → 金币兑换（分级）| ✅ |
+| 银币商店 UI | 🔧 |
+| 金币商店 UI | ✅ |
+| 货币余额持久化 | ✅ |
 
 ---
 
@@ -394,17 +395,17 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 
 **已接入事件**：弹幕消息、礼物、SC（Super Chat）、开播状态轮询（`LiveStatusManager`）。
 
-**待设计：直播互动效果（🔲）**
+**直播互动效果（🔧 动画待美术资源）**
 
-| 事件 | 桌宠反应 |
-|---|---|
-| 普通弹幕 | 气泡显示弹幕内容 |
-| 礼物 | 播放开心动画 + 气泡感谢 |
-| SC | 特殊庆祝动画 + 大气泡 |
-| 进入直播间 | 气泡打招呼 |
-| 开播检测 | 开播时播放特殊提醒动画 |
+| 事件 | 桌宠反应 | 状态 |
+|---|---|:---:|
+| 普通弹幕 | 气泡显示弹幕内容 | ✅ |
+| 礼物 | 气泡感谢（动画待美术资源）| ✅ |
+| SC（Super Chat）| 大气泡显示 SC 内容 + 金额 | ✅ |
+| 进入直播间 | 气泡打招呼 | 🔲 协议未提供 ENTER 事件 |
+| 开播检测 | 气泡 "开播啦！" + 结束提醒 | ✅ |
 
-### 10.3 主播动态 / 投稿提醒（🔲 待开发）
+### 10.3 主播动态 / 投稿提醒（✅ 已实现）
 
 **目标**：当关注的主播发布新动态或上传新视频时，所有在线桌宠同步弹出提醒气泡，桌宠播放专属动画。
 
@@ -455,13 +456,13 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 
 | 子功能 | 状态 |
 |---|:---:|
-| 动态轮询（Space Dynamic API）| 🔲 |
-| 投稿轮询（Space Archive API）| 🔲 |
-| 本地新内容去重（DataManager）| 🔲 |
-| 本机桌宠气泡提醒 | 🔲 |
-| 全员广播（ActionsClient）| 🔲 |
-| 气泡点击打开链接 | 🔲 |
-| 设置面板 UID 配置 | 🔲 |
+| 动态轮询（Space Dynamic API）| ✅ |
+| 投稿轮询（Space Archive API）| ✅ |
+| 本地新内容去重（PlayerPrefs）| ✅ |
+| 本机桌宠气泡提醒 | ✅ |
+| 全员广播（Mirror NetworkManager）| ✅ |
+| 气泡点击打开链接 | ✅ |
+| 设置面板 UID 配置 | ✅ |
 
 ---
 
@@ -474,8 +475,8 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 | B 站登录验证 | `BilibiliAuthValidator`（SESSDATA 校验）| ✅ |
 | 快捷键退出（Ctrl+Shift+Q）| `Win32Native.GetAsyncKeyState`（穿透时也生效）| ✅ |
 | 调试测试面板 | `DobeCatTestPanel`（F1 / 自动弹出）| ✅ |
-| 开机自启 | 注册表 `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` | 🔲 |
-| 日志写入文件 | `%AppData%/DobeCat/log.txt` | 🔲 |
+| 开机自启 | 注册表 `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` | ✅ |
+| 日志写入文件 | `%AppData%/DobeCat/log.txt` | ✅ |
 
 ---
 
@@ -488,14 +489,14 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 | EventProcessor | -30 | 全局事件总线 | ✅ |
 | DataManager | -20 | 好感度 / 需求值 / 设置持久化 | 🔧 |
 | ResourceManager | 0 | 资源加载 | ✅ |
-| AudioManager | 3 | 喵叫 / 呼噜 / 互动音效 | 🔲 接入中 |
+| AudioManager | 3 | 喵叫 / 呼噜 / 互动音效 | ✅ |
 | UIManager | 5 | 商店 / 设置面板 / 气泡 | ✅ |
 | InventoryManager | 10 | 食物 / 装扮 / 背包 | ✅ |
 | CharacterManager | — | Sheet 动画驱动桌宠视觉 | ✅ |
 | EntityManager | 13 | BrainComponent / Needs / Capabilities | ✅ |
 | FarmManager | — | 农场小游戏后端 | ✅ |
 | ShopManager | — | 种子商店交易 | ✅ |
-| DialogueManager | 15 | 对话气泡内容驱动 | 🔲 待接入 |
+| DialogueManager | 15 | 对话气泡内容驱动 | ✅ |
 | NetworkManager | — | Mirror 多人联网 | ✅ |
 | DanmuManager | 50 | B 站弹幕 | ✅ |
 | LiveStatusManager | — | B 站开播状态 | ✅ |
@@ -508,23 +509,41 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 | 桌宠 AI 控制器 | `Scripts/Game/Pet/PetAiController.cs` |
 | 透明叠加层 | `Scripts/Sys/Platform/Windows/DesktopOverlay.cs` |
 | Win32 P/Invoke | `Scripts/Sys/Platform/Windows/Win32Native.cs` |
+| 多显示器/工作区 | `Scripts/Sys/Platform/Windows/DesktopOverlay.cs` |
+| 前台窗口传感器 | `Scripts/Sys/Platform/Windows/ForegroundSensor.cs` |
 | 游戏上下文 | `Scripts/Game/DobeCatGameContext.cs` |
-| 系统托盘 | `Scripts/Sys/Platform/Windows/SystemTray.cs` |
+| 系统托盘 | `Scripts/Sys/Tray/DobeCatTray.cs` |
 | 房间发现 | `Scripts/Sys/Network/RoomDiscoveryClient.cs` |
 | 桌宠网络同步 | `Scripts/Game/Pet/PetNetworkSync.cs` |
 | 种子商店 UI | `Scripts/Game/Shop/ShopWindow.cs` |
+| 商店内容注册 | `Scripts/Game/Shop/DobeCatShopSetup.cs` |
 | 农场控制器 | `Scripts/Game/Farm/FarmWorldController.cs` |
 | B 站验证 | `Scripts/Sys/Auth/BilibiliAuthValidator.cs` |
+| 弹幕/礼物/SC 反应 | `Scripts/Game/Pet/PetReactionController.cs` |
+| 陪伴提醒/番茄钟 | `Scripts/Game/Pet/PetCompanionReminder.cs` |
+| 好感度控制器 | `Scripts/Game/Pet/PetAffectionController.cs` |
+| 交互控制器 | `Scripts/Game/Pet/PetInteractionController.cs` |
+| 屏幕边界限制 | `Scripts/Game/Pet/BoundsSensor.cs` |
+| 气泡对话框 | `Scripts/Game/Pet/PetSpeechBubble.cs` |
+| 对话内容库 | `Scripts/Game/DobeCatDialogueContent.cs` |
+| B站动态提醒 | `Scripts/Game/BiliSpaceNotifier.cs` |
+| 天气播报 | `Scripts/Game/WeatherNotifier.cs` |
+| 直播经济 | `Scripts/Game/LiveEconomyController.cs` |
+| 开机自启 | `Scripts/Sys/Platform/Windows/AutoStartManager.cs` |
+| 日志写入文件 | `Scripts/Sys/DobeCatLogger.cs` |
+| 帧率动态控制 | `Scripts/Sys/PetFrameRateController.cs` |
+| 音效控制器 | `Scripts/Sys/PetSoundController.cs` |
+| 设置面板 | `Scripts/Sys/UI/DobeCatSettingsPanelView.cs` |
 
 ### 12.3 已知限制
 
-| 问题 | 影响 | 解决方案 |
+| 问题 | 影响 | 状态 / 解决方案 |
 |---|---|---|
-| Built-in 管线专用 | URP / HDRP 下 `TransparentRenderBlit` 无效 | URP 改用 Renderer Feature |
-| 多显示器 DPI 缩放 | `Display.main.systemWidth/Height` 可能不等于实际像素 | `SystemParametersInfo SPI_GETWORKAREA` |
-| .NET Framework 依赖 | `System.Windows.Forms` 要求 `.NET Framework` 兼容级别 | 不可改为 .NET Standard 2.1 |
-| 全屏游戏遮挡 | D3D 全屏独占模式会覆盖桌宠窗口 | 暂无，M5 阶段处理 |
-| 矩形包围盒穿透 | 透明边缘区域无法穿透点击 | 升级为 sprite alpha 像素检测 |
+| Built-in 管线专用 | URP / HDRP 下 `TransparentRenderBlit` 无效 | 🔲 URP 改用 Renderer Feature |
+| 多显示器 DPI 缩放 | `Display.main.systemWidth/Height` 可能不等于实际像素 | ✅ 已通过 `SPI_GETWORKAREA` 解决 |
+| .NET Framework 依赖 | `System.Windows.Forms` 要求 `.NET Framework` 兼容级别 | 🔲 不可改为 .NET Standard 2.1 |
+| 全屏游戏遮挡 | D3D 全屏独占模式会覆盖桌宠窗口 | ✅ ForegroundSensor 检测后降帧 |
+| 矩形包围盒穿透 | 透明边缘区域无法穿透点击 | ✅ 已升级为 sprite alpha 像素检测 |
 
 ---
 
@@ -535,22 +554,23 @@ B 站电池礼物以「电池」为单位（1 电池 = 0.1 元）。
 | M0 立项 | 玩法文档 / 美术风格稿 | 🔧 |
 | M1 窗口原型 | 透明窗口 + 拖拽 + 走动猫 + 点击穿透 | ✅ |
 | M2 行为系统 | Brain Needs + 完整动作集 + 鼠标传感器 | 🔧 |
-| M2.5 窗口增强 | OBS 捕捉模式 + 分层显示 + 桌宠缩放设置 | 🔲 |
-| M3 互动内容 | 撸猫 / 投喂 / 对话气泡 / 装扮 / 好感度 | 🔲 |
-| M3.5 直播经济 | 银币/金币货币体系 + 双商店 + 礼物兑换 | 🔲 |
-| M3.6 动态提醒 | 主播动态 / 投稿轮询 + 全员广播 + 气泡提醒 | 🔲 |
-| M4 陪伴功能 | 番茄钟 + 久坐提醒 + 整点报时 + 天气 | 🔲 |
-| M5 打磨发布 | 设置面板 / 开机自启 / 像素穿透 / 安装包 | 🔲 |
-
+| M2.5 窗口增强 | OBS 捕获模式 + 分层显示 + 桌宠缩放设置 | ✅ |
+| M3 互动内容 | 撸猫 / 投喂 / 对话气泡 / 装扮 / 好感度 | ✅ |
+| M3.5 直播经济 | 银币/金币货币体系 + 双商店 + 礼物兑换 | ✅ |
+| M3.6 动态提醒 | 主播动态 / 投稿 + 全员广播 + 气泡提醒 | ✅ |
+| M4 陪伴功能 | 番茄钟 + 久坐提醒 + 整点报时 + 天气 | ✅ |
+| M5 打包发布 | 设置面板 / 开机自启 / 传感器 / 日志 | ✅ |
 ---
 
-## 十四、待决问题
+## 十四、架构决策记录
 
-- 是否支持**多只桌宠**同屏（同一进程多个实例 vs. 多进程）？
-- 是否做**云存档 / 账号体系**（当前仅本地 + 局域网）？
-- 是否开放 **MOD 支持**（用户自定义猫咪皮肤 / 装扮）？
-- 是否需要接入**天气 / 公告 API**（需备案或三方 Key）？
-- **银币防刷机制**：同 UID 弹幕去重窗口为一场直播还是 24 小时滚动窗口？
-- **金币兑换比例**是否随活动动态调整，还是写死常量？
-- **分层背景资源**：背景图集中提供还是用户自定义导入？
-- **Mac 端**透明窗口替代方案调研（`NSWindow.setOpaque: NO`）？
+| 问题 | 决策 | 状态 |
+|---|---|:---:|
+| **多人同步场景** | 开播时全员进入主播房间同步；不开播时支持用户互访，Mirror 位置同步覆盖两种场景 | ✅ |
+| **云存档** | 使用现有 `data_exchange_server` + `PlayerDataSync`，PlayerPrefs 作本地缓存 | ✅ |
+| **MOD 支持** | 预留 TODO，后续开放用户自定义猫咪皮肤 / 装扮 | 🔲 TODO |
+| **天气 API** | 使用**心知天气 Seniverse**（国内，`console.seniverse.com` 申请免费 key）| ✅ |
+| **银币防刷** | 只在直播**开播期间**发弹幕才获取银币；去重窗口 = 本场直播（开播→下播重置）| ✅ |
+| **金币兑换比例** | 写死常量分级（×1 / ×1.2 / ×1.5 / ×2），后续按活动需要调整 | ✅ |
+| **分层背景资源** | 暂不设定，后续专项设计 | 🔲 待设计 |
+| **Mac 端** | 仅支持 Windows，Mac 暂不在范围内 | 🔲 不做 |

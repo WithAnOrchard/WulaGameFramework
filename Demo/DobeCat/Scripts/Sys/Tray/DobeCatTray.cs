@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Demo.DobeCat.Sys.Network;
 using Demo.DobeCat.Sys.Platform.Windows;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
+using EssSystem.Core.Base.Event;
 using UnityEngine;
 
 namespace Demo.DobeCat.Sys.Tray
@@ -127,13 +129,62 @@ namespace Demo.DobeCat.Sys.Tray
             }
 
             items.Add(SystemTray.MenuItemDef.Separator());
+            items.Add(SystemTray.MenuItemDef.Item("喂食 (猫粮)", FeedPet));
+            var reminder = Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance;
+            if (reminder != null && reminder.PomodoroActive)
+                items.Add(SystemTray.MenuItemDef.Item("⏹ 取消番茄钟",
+                    () => Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StopPomodoro()));
+            else
+                items.Add(SystemTray.MenuItemDef.Item("🍅 启动番茄钟 (25min)",
+                    () => Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StartPomodoro()));
+            // 自定义闹钟（格式：先复制 "HH:mm 备注" 到剪贴板再点击）
+            if (reminder != null)
+            {
+                items.Add(SystemTray.MenuItemDef.Item(
+                    $"⏰ 闹钟: {reminder.GetAlarmsDisplay()}  [粘贴时间设置]",
+                    SetAlarmFromClipboard));
+                if (reminder.GetAlarmsDisplay() != "无闹钟")
+                    items.Add(SystemTray.MenuItemDef.Item("❌ 清除所有闹钟",
+                        () => { reminder.ClearAlarms(); RebuildMenu(); }));
+            }
             items.Add(SystemTray.MenuItemDef.Item("农场", () => Demo.DobeCat.Game.Farm.FarmWorldController.ToggleVisibility()));
             items.Add(SystemTray.MenuItemDef.Item("商店", () => Demo.DobeCat.Game.Shop.ShopWindow.Instance?.Toggle()));
             items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Item("⚙ 设置", () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanel.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Separator());
+            var autoLabel = Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.IsEnabled
+                ? "✔ 开机自启" : "  开机自启";
+            items.Add(SystemTray.MenuItemDef.Item(autoLabel,
+                () => Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.Toggle()));
             items.Add(SystemTray.MenuItemDef.Separator());
             items.Add(SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit));
 
             _tray.SetItems(items);
+        }
+
+        private void FeedPet()
+        {
+            if (!EventProcessor.HasInstance) return;
+            var ep = EventProcessor.Instance;
+
+            // Try to consume 1 cat_food from player inventory
+            var res = ep.TriggerEventMethod("InventoryRemove",
+                new List<object> { "player", Demo.DobeCat.Game.Shop.DobeCatShopSetup.FOOD_CAT_FOOD, 1 });
+            if (!EssSystem.Core.Base.Util.ResultCode.IsOk(res))
+            {
+                Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show("没有猫粮了……", 2.5f);
+                return;
+            }
+
+            // Reduce Hunger on the pet entity
+            var needs = Ai?.Entity?.Get<INeeds>();
+            needs?.Add("Hunger", -0.4f);
+
+            // Add affection
+            Demo.DobeCat.Game.Pet.PetAffectionController.Instance?.Add(5f);
+
+            // Show bubble
+            Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show("谢谢喂食！ >\'ω\'<", 3f);
         }
 
         private void Update()
@@ -167,6 +218,23 @@ namespace Demo.DobeCat.Sys.Tray
             if (Ai == null) return;
             Ai.SetAiEnabled(!Ai.AiEnabled);
             RebuildMenu(); // 刷新菜单的 ✔ 标记
+        }
+
+        private void SetAlarmFromClipboard()
+        {
+            var r = Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance;
+            if (r == null) return;
+            var text = GUIUtility.systemCopyBuffer?.Trim();
+            if (r.AddAlarmFromString(text))
+            {
+                Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show($"闹钟已设置：{text}", 3f);
+                RebuildMenu();
+            }
+            else
+            {
+                Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show(
+                    "格式错误！请先复制 \"HH:mm 备注\" 再点击", 4f);
+            }
         }
 
         private void ToggleWindowCaptureMode()

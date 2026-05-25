@@ -15,6 +15,9 @@ namespace Demo.DobeCat.Game.Shop
         public const string SHOP_SEED_STORE    = "shop_seed_store";
         public const string SHOP_PREMIUM_STORE = "shop_premium_store";
 
+        public const string FOOD_CAT_FOOD  = "cat_food";
+        public const string FOOD_DRIED_FISH = "dried_fish";
+
         public static bool IsRegistered { get; private set; }
 
         public static void RegisterAll(EventProcessor ep)
@@ -49,6 +52,49 @@ namespace Demo.DobeCat.Game.Shop
                     IconSpriteId = ""
                 }
             });
+
+            // ── 食物模板 ──────────────────────────────────────────────────────
+            ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
+            {
+                new InventoryItem
+                {
+                    Id          = FOOD_CAT_FOOD,
+                    Name        = "猫粮",
+                    Description = "均衡营养猫粮，让桌宠恢复饥饿。",
+                    Type        = InventoryItemType.Consumable,
+                    Value       = 20,
+                    MaxStack    = 99,
+                }
+            });
+            ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
+            {
+                new InventoryItem
+                {
+                    Id          = FOOD_DRIED_FISH,
+                    Name        = "小鱼干",
+                    Description = "桌宠最爱！让桌宠快速恢复饥饿并提升心情。",
+                    Type        = InventoryItemType.Consumable,
+                    Value       = 30,
+                    MaxStack    = 99,
+                }
+            });
+
+            // ── 金币商店道具模板 ──────────────────────────────────────────────
+            foreach (var (id, name, desc) in new (string, string, string)[]
+            {
+                ("premium_hat_festival",  "节日帽子",     "限定节日主题帽子装扮。"),
+                ("premium_food_sushi",    "寿司",         "高档食物，能大幅恢复饥饿并提升好感度。"),
+                ("premium_food_cake",     "生日蛋糕",     "特别食物，好感度 +10。"),
+                ("premium_action_pack",   "动作扩展包",   "解锁全新 Idle 变体动作。"),
+                ("premium_celebrate_fx",  "庆祝特效",     "专属庆祝粒子特效。"),
+            })
+            {
+                ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
+                {
+                    new InventoryItem { Id = id, Name = name, Description = desc,
+                        Type = InventoryItemType.Misc, Value = 1, MaxStack = 10 }
+                });
+            }
 
             // 2. 注册货币条目
             ep.TriggerEventMethod(ShopManager.EVT_REGISTER_CURRENCY, new List<object>
@@ -91,6 +137,9 @@ namespace Demo.DobeCat.Game.Shop
                         new ShopStock { ItemId = "seed_strawberry",     BasePrice = 25, Stock = -1 },
                         new ShopStock { ItemId = "seed_blueberry",      BasePrice = 25, Stock = -1 },
                         new ShopStock { ItemId = "seed_grape",          BasePrice = 35, Stock = -1 },
+                        // ── 食物（宠物饥饿恢复）────────────────────────
+                        new ShopStock { ItemId = FOOD_CAT_FOOD,  BasePrice = 20, Stock = -1 },
+                        new ShopStock { ItemId = FOOD_DRIED_FISH, BasePrice = 30, Stock = -1 },
                     }
                 }
             });

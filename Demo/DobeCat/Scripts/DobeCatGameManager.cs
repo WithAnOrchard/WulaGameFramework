@@ -17,6 +17,8 @@ using Demo.DobeCat.Game.Farm;
 using Demo.DobeCat.Game.Shop;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys.Network;
+using Demo.DobeCat.Sys;
+using Demo.DobeCat.Sys.Platform.Windows;
 
 namespace Demo.DobeCat
 {
@@ -134,6 +136,11 @@ namespace Demo.DobeCat
         protected override void Awake()
         {
             base.Awake();
+            // 尽早关闭 VSync 并设定目标帧率，否则登录画面会受 QualitySettings.vSyncCount 限速
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = 60;
+            // 日志写入文件 — 尽早挂载，捕获完整启动日志
+            gameObject.AddComponent<DobeCatLogger>();
             Application.runInBackground = true;
             Screen.SetResolution(460, 400, false);
             EnsureCamera();
@@ -165,6 +172,7 @@ namespace Demo.DobeCat
 
             // 2) CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
             EnsureFrameworkManagers();
+            DobeCatDialogueContent.EnsureRegistered(); // 注册所有对话内容
             if (_autoSpawnPet) SpawnPet();
             TryAutoConnectDanmu();
             TryStartLivePolling();
@@ -205,6 +213,16 @@ namespace Demo.DobeCat
             var econHolder = new GameObject("LiveEconomy");
             econHolder.transform.SetParent(transform);
             econHolder.AddComponent<LiveEconomyController>();
+
+            // B站动态 / 投稿提醒（§10.3）— UID 在 Inspector 配置
+            var notifierHolder = new GameObject("BiliSpaceNotifier");
+            notifierHolder.transform.SetParent(transform);
+            notifierHolder.AddComponent<BiliSpaceNotifier>();
+
+            // 天气播报（§7）— API key 在 Inspector 或 PlayerPrefs "WeatherApiKey" 配置
+            var weatherHolder = new GameObject("WeatherNotifier");
+            weatherHolder.transform.SetParent(transform);
+            weatherHolder.AddComponent<WeatherNotifier>();
         }
 
         private System.Collections.IEnumerator SuppressAutoHotbar()
@@ -361,6 +379,27 @@ namespace Demo.DobeCat
             // 缩放控制器（读取 PlayerPrefs 恢复上次大小）
             _pet.AddComponent<PetScaleController>();
 
+            // 对话气泡 + 直播弹幕/礼物反应（§10.2）+ 陪伴提醒（§7）
+            _pet.AddComponent<PetSpeechBubble>();
+            _pet.AddComponent<PetReactionController>();
+            _pet.AddComponent<PetCompanionReminder>();
+
+            // 好感度 + 左键点击/长按撸猫互动（§5.1 / §6）
+            _pet.AddComponent<PetAffectionController>();
+            _pet.AddComponent<PetInteractionController>();
+
+            // 帧率控制器：空闲 10fps / 活跃 60fps（§2.2）
+            gameObject.AddComponent<PetFrameRateController>();
+
+            // 音效控制器（§12.1 AudioManager）
+            gameObject.AddComponent<PetSoundController>();
+
+            // 前台窗口传感器（§4.5 ForegroundSensor）
+            gameObject.AddComponent<ForegroundSensor>();
+
+            // 屏幕边界限制（§4.5 BoundsSensor）
+            _pet.AddComponent<BoundsSensor>();
+
             Debug.Log("[DobeCatGameManager] 占位桌宠已生成");
         }
 
@@ -465,6 +504,8 @@ namespace Demo.DobeCat
         {
             // 访问 Instance 以触发 SingletonMono 自动创建
             _ = UIManager.Instance;
+            _ = EssSystem.Core.Presentation.AudioManager.AudioManager.Instance;
+            _ = EssSystem.Core.Application.SingleManagers.DialogueManager.DialogueManager.Instance;
             _ = EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.Instance; // OpenInventoryUI / CloseInventoryUI / RegisterItem
             _ = DanmuManager.Instance;
             _ = LiveStatusManager.Instance;

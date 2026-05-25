@@ -29,6 +29,12 @@ namespace Demo.DobeCat.Game.Pet
         [Tooltip("命中边界向外膨胀的像素值（避免边缘抖动）。")]
         public float HitPaddingPixels = 4f;
 
+        [Tooltip("启用精灵像素级 alpha 穿透检测（需纹理开启 Read/Write）；关闭则仅用矩形包围盒。")]
+        public bool UseAlphaHitTest = true;
+
+        [Tooltip("低于此 alpha 视为透明区域（点击穿透）。")]
+        [Range(0.01f, 1f)] public float AlphaThreshold = 0.1f;
+
         // 缓存，避免每帧 GC
         private PointerEventData _uiPointerData;
         private readonly RaycastList _uiRaycastResults = new RaycastList();
@@ -84,12 +90,52 @@ namespace Demo.DobeCat.Game.Pet
             if (cam == null) return false;
             var z = Mathf.Abs(cam.transform.position.z);
             var world = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, z));
+
+            // AABB 层：先快速排除明显远离的属场外点
             var b = View.WorldBounds;
-            // 转 padding（像素 → 世界单位）
-            var pxToWorld = (cam.orthographic ? cam.orthographicSize * 2f / Screen.height : 0f);
+            var pxToWorld = cam.orthographic ? cam.orthographicSize * 2f / Screen.height : 0f;
             var pad = HitPaddingPixels * pxToWorld;
             b.Expand(new Vector3(pad * 2f, pad * 2f, 0f));
-            return b.Contains(new Vector3(world.x, world.y, b.center.z));
+            if (!b.Contains(new Vector3(world.x, world.y, b.center.z))) return false;
+
+            // 像素层：查找子节点中第一个有效的 SpriteRenderer，采样 alpha
+            if (!UseAlphaHitTest) return true;
+            return AlphaHitTest(world) ?? true; // 纹理不可读时退化为包围盒
+        }
+
+        /// <returns>返回像素 alpha 是否超阈値；纹理不可读时返回 null。</returns>
+        private bool? AlphaHitTest(Vector3 worldPos)
+        {
+            foreach (var sr in GetComponentsInChildren<SpriteRenderer>())
+            {
+                if (sr == null || sr.sprite == null) continue;
+                if (!sr.enabled || !sr.gameObject.activeInHierarchy) continue;
+
+                var sBounds = sr.bounds;
+                if (!sBounds.Contains(new Vector3(worldPos.x, worldPos.y, sBounds.center.z)))
+                    continue;
+
+                var sprite = sr.sprite;
+                var tex    = sprite.texture;
+                if (tex == null) continue;
+
+                // 转换到纹理像素坐标
+                var local  = sr.transform.InverseTransformPoint(worldPos);
+                var ppu    = sprite.pixelsPerUnit;
+                var px     = Mathf.FloorToInt(sprite.rect.x + local.x * ppu + sprite.pivot.x);
+                var py     = Mathf.FloorToInt(sprite.rect.y + local.y * ppu + sprite.pivot.y);
+                if (px < 0 || px >= tex.width || py < 0 || py >= tex.height) continue;
+
+                try
+                {
+                    return tex.GetPixel(px, py).a > AlphaThreshold;
+                }
+                catch (UnityException)
+                {
+                    return null; // 纹理未开启 Read/Write，退化为 AABB
+                }
+            }
+            return null;
         }
     }
 }

@@ -2,6 +2,7 @@
 using Demo.DobeCat.Game.Pet.Ai;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Brain.Actions;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
@@ -88,6 +89,13 @@ namespace Demo.DobeCat.Game.Pet
             if (_entity == null) { Debug.LogError("[PetAiController] 取 Entity 失败"); return; }
             _entity.WorldPosition = spawnPosition;
 
+            // Needs: rates match DESIGN.md §4.4 (per-second)
+            _entity.Add<INeeds>(new NeedsComponent(
+                ("Hunger",  0f,   0.0001667f),   // +0.01 / min  → 0.7 in ~70 min
+                ("Energy",  1f,  -0.0000833f),   // -0.005 / min → 0.2 in ~160 min
+                ("Boredom", 0f,   0.0001333f)    // +0.008 / min → 0.6 in ~75 min
+            ));
+
             var root = CharacterViewBridge.CreateCharacter(
                 CharacterConfigId, CharacterInstanceId,
                 parent: transform, worldPosition: spawnPosition);
@@ -120,6 +128,92 @@ namespace Demo.DobeCat.Game.Pet
                     Id = "Wander",
                     Score = _ => 0.2f,
                     CreateAction = _ => new PetWanderAction(),
+                });
+
+                // Sleep: Energy < 0.2 → score rises as energy drains
+                brain.Add(new Consideration
+                {
+                    Id = "Sleep",
+                    Score = ctx =>
+                    {
+                        var e = ctx.GetNeed("Energy");
+                        return e < 0.2f ? (0.2f - e) / 0.2f * 0.9f : 0f;
+                    },
+                    CreateAction = _ => new PetSleepAction(),
+                });
+
+                // Eat: Hunger > 0.7 → eat cat_food from player inventory
+                brain.Add(new Consideration
+                {
+                    Id = "Eat",
+                    Score = ctx =>
+                    {
+                        var h = ctx.GetNeed("Hunger");
+                        return h > 0.7f ? 0.5f + (h - 0.7f) * 1.0f : 0f;
+                    },
+                    CreateAction = _ => new EatAction(Demo.DobeCat.Game.Shop.DobeCatShopSetup.FOOD_CAT_FOOD, "player", 0.4f),
+                });
+
+                // Boredom wander: Boredom > 0.6 → score rises, beats baseline wander
+                brain.Add(new Consideration
+                {
+                    Id = "BoredomWander",
+                    Score = ctx =>
+                    {
+                        var b = ctx.GetNeed("Boredom");
+                        return b > 0.6f ? 0.3f + (b - 0.6f) * 0.5f : 0f;
+                    },
+                    CreateAction = _ => new PetWanderAction(0.3f, 1.0f),
+                });
+
+                // Play: Boredom > 0.6 → quick erratic dashes, higher score than BoredomWander
+                brain.Add(new Consideration
+                {
+                    Id = "Play",
+                    Score = ctx =>
+                    {
+                        var b = ctx.GetNeed("Boredom");
+                        return b > 0.6f ? 0.4f + (b - 0.6f) * 0.8f : 0f;
+                    },
+                    CreateAction = _ => new PetPlayAction(),
+                });
+
+                // ReactToCursor: cursor within 2.5 world units → look toward it
+                const float cursorRange = 2.5f;
+                brain.Add(new Consideration
+                {
+                    Id = "ReactToCursor",
+                    Score = ctx =>
+                    {
+                        var cam = UnityEngine.Camera.main;
+                        if (cam == null) return 0f;
+                        Vector2 screenPos;
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+                        screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+#else
+                        screenPos = UnityEngine.Input.mousePosition;
+#endif
+                        var z     = UnityEngine.Mathf.Abs(cam.transform.position.z);
+                        var world = cam.ScreenToWorldPoint(new UnityEngine.Vector3(screenPos.x, screenPos.y, z));
+                        var dist  = UnityEngine.Vector2.Distance(
+                            new UnityEngine.Vector2(world.x, world.y),
+                            new UnityEngine.Vector2(ctx.Self.WorldPosition.x, ctx.Self.WorldPosition.y));
+                        return dist < cursorRange ? 0.35f * (1f - dist / cursorRange) : 0f;
+                    },
+                    CreateAction = _ => new PetCursorReactAction(CharacterInstanceId, cursorRange),
+                });
+
+                // IdleVariant: fires every ~30 s to show a random phrase
+                float lastVariantTime = 0f;
+                brain.Add(new Consideration
+                {
+                    Id = "IdleVariant",
+                    Score = _ => UnityEngine.Time.time - lastVariantTime > 30f ? 0.25f : 0f,
+                    CreateAction = _ =>
+                    {
+                        lastVariantTime = UnityEngine.Time.time;
+                        return new PetIdleVariantAction();
+                    },
                 });
             });
 
@@ -166,6 +260,10 @@ namespace Demo.DobeCat.Game.Pet
                 _lastMovingDispatched = ctx.IsMoving;
                 CharacterViewBridge.PlayLocomotion(CharacterInstanceId, ctx.IsMoving, true);
             }
+
+            // Reduce Boredom while moving (activity = entertainment)
+            if (ctx.IsMoving && _entity != null)
+                _entity.Get<INeeds>()?.Add("Boredom", -Time.deltaTime * 0.0003f);
         }
     }
 }

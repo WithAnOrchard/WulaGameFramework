@@ -37,8 +37,18 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         /// </summary>
         public static IEnumerator Enter()
         {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            // 使用 SPI_GETWORKAREA 获取真实可用区（排除任务栏），避免多显示器 DPI 偏差
+            var workArea = Win32Native.GetPrimaryWorkArea();
+            var w = workArea.right  - workArea.left;
+            var h = workArea.bottom - workArea.top;
+            if (w <= 0 || h <= 0) { w = Display.main.systemWidth; h = Display.main.systemHeight; }
+            _workAreaLeft = workArea.left;
+            _workAreaTop  = workArea.top;
+#else
             var w = Display.main.systemWidth;
             var h = Display.main.systemHeight;
+#endif
             Screen.SetResolution(w, h, false);
 
             yield return null; // 等 Unity 完成分辨率切换后再操作窗口
@@ -75,7 +85,7 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             if (hwnd != System.IntPtr.Zero)
             {
                 Win32Native.GetCursorPos(out var pt);
-                return new Vector2(pt.x, Screen.height - pt.y);
+                return new Vector2(pt.x - _workAreaLeft, Screen.height - (pt.y - _workAreaTop));
             }
 #endif
             return Input.mousePosition;
@@ -83,6 +93,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
 
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         private static System.IntPtr _hwnd = System.IntPtr.Zero;
+        private static int _workAreaLeft;
+        private static int _workAreaTop;
 
         private static System.IntPtr GetHwnd()
         {
@@ -114,7 +126,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
             Win32Native.DwmExtendFrameIntoClientArea(hwnd, ref margins);
 
-            Win32Native.SetWindowPos(hwnd, Win32Native.HWND_TOPMOST, 0, 0, w, h,
+            Win32Native.SetWindowPos(hwnd, Win32Native.HWND_TOPMOST,
+                _workAreaLeft, _workAreaTop, w, h,
                 Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW);
         }
 
