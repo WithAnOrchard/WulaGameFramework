@@ -65,7 +65,7 @@ namespace Demo.Tribe.Resource
         private void RegisterEntity()
         {
             if (!EventProcessor.HasInstance || string.IsNullOrEmpty(_pickableId) || !string.IsNullOrEmpty(_entityInstanceId)) return;
-            _entityInstanceId = $"{gameObject.name}_{GetInstanceID()}";
+            _entityInstanceId = $"{gameObject.name}_{GetHashCode()}";
             var definition = new EntityRuntimeDefinition
             {
                 Kind = EntityKind.Static,

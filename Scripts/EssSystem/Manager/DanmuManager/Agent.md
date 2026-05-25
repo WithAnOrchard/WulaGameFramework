@@ -147,6 +147,22 @@ DanmuService.Instance.Disconnect();
   }
   ```
 
+### `EVT_SC` — 超级留言 SuperChat（广播）
+- **常量**: `DanmuService.EVT_SC` = `"OnDanmuSuperChat"`
+- **触发**: 收到 `AnonDanmuMsgType.SuperChat` 类型消息
+- **参数**: `[string userName, string text, int priceYuan, long userId]`
+- **副作用**: 无
+- **示例**:
+  ```csharp
+  [EventListener(DanmuService.EVT_SC)]
+  void OnSC(List<object> data) {
+      var name  = (string)data[0];
+      var text  = (string)data[1];
+      var price = (int)data[2];
+      Debug.Log($"{name} SC ¥{price}：{text}");
+  }
+  ```
+
 ### `EVT_RAW` — 原始消息（广播，所有类型）
 - **常量**: `DanmuService.EVT_RAW` = `"OnDanmuRaw"`
 - **触发**: 任何类型的弹幕到达（含 LiveStart/LiveEnd/Welcome/SuperChat 等）

@@ -228,7 +228,7 @@ namespace Demo.Tribe
         /// </summary>
         private TribePlayer EnsurePlayer(Vector3 worldPosition)
         {
-            var existing = FindObjectOfType<TribePlayer>(true);
+            var existing = FindAnyObjectByType<TribePlayer>(FindObjectsInactive.Include);
             if (existing != null)
             {
                 existing.transform.position = worldPosition;
@@ -272,7 +272,7 @@ namespace Demo.Tribe
         private void ApplyCameraLock(TribePlayer player)
         {
             if (!_lockCameraY) return;
-            if (player == null) player = FindObjectOfType<TribePlayer>(true);
+            if (player == null) player = FindAnyObjectByType<TribePlayer>(FindObjectsInactive.Include);
             if (player == null) return;
             player.SetLockedCameraY(_cameraLockY, enable: true);
             Debug.Log($"[TribeGameManager] 镜头 Y 锁定={_cameraLockY:0.00}");

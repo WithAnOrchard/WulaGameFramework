@@ -32,9 +32,9 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
                 if (_instance == null)
                 {
                     // Unity 2022+ 推荐 API；FindFirstObjectByType 比旧的 FindObjectOfType 快 30%+
-                    _instance = (T)FindFirstObjectByType(typeof(T), FindObjectsInactive.Include);
+                    _instance = (T)FindAnyObjectByType(typeof(T), FindObjectsInactive.Include);
 
-                    var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include, FindObjectsSortMode.None);
+                    var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include);
                     if (all.Length > 1)
                     {
                         Debug.LogError("[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");

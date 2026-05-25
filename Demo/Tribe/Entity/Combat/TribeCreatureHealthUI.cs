@@ -57,7 +57,7 @@ namespace Demo.Tribe.Entities
             if (IsBuilt) return;
             if (!EventProcessor.HasInstance) { Debug.LogWarning("[TribeCreatureHealthUI] EventProcessor 未就绪"); return; }
 
-            _rootId = $"enemy_hp_{instanceId}_{GetInstanceID()}";
+            _rootId = $"enemy_hp_{instanceId}_{GetHashCode()}";
 
             // 父面板：透明背景，作为 anchor 容器
             _root = new UIPanelComponent(_rootId, "EnemyHealthRoot")

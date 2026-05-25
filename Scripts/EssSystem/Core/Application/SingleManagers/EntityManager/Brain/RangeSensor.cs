@@ -18,7 +18,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain
         public float Radius { get; }
         public LayerMask LayerMask { get; }
 
-        private static readonly Collider2D[] _buffer = new Collider2D[64];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
 
         public RangeSensor(float radius, float interval = 0.4f, LayerMask layerMask = default)
         {
@@ -34,11 +34,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Brain
                 ? (Vector2)ctx.Self.CharacterRoot.position
                 : (Vector2)ctx.Self.WorldPosition;
 
-            int count;
-            if (LayerMask == default)
-                count = Physics2D.OverlapCircleNonAlloc(pos, Radius, _buffer);
-            else
-                count = Physics2D.OverlapCircleNonAlloc(pos, Radius, _buffer, LayerMask);
+            var filter = new ContactFilter2D { useTriggers = true };
+            if (LayerMask != default) { filter.useLayerMask = true; filter.layerMask = LayerMask; }
+            var count = Physics2D.OverlapCircle(pos, Radius, filter, _buffer);
 
             for (var i = 0; i < count; i++)
             {

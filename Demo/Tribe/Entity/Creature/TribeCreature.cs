@@ -165,7 +165,7 @@ namespace Demo.Tribe.Entities
         {
             _healthBar = gameObject.GetComponent<TribeCreatureHealthUI>();
             if (_healthBar == null) _healthBar = gameObject.AddComponent<TribeCreatureHealthUI>();
-            _healthBar.Build(_entityInstanceId ?? gameObject.name + "_" + GetInstanceID());
+            _healthBar.Build(_entityInstanceId ?? gameObject.name + "_" + GetHashCode());
             _healthBar.SetValue(_config.MaxHp, _config.MaxHp);
         }
 
@@ -178,7 +178,7 @@ namespace Demo.Tribe.Entities
         private void RegisterEntityAndBrain()
         {
             if (!EventProcessor.HasInstance || !string.IsNullOrEmpty(_entityInstanceId)) return;
-            _entityInstanceId = $"{gameObject.name}_{GetInstanceID()}";
+            _entityInstanceId = $"{gameObject.name}_{GetHashCode()}";
 
             var definition = new EntityRuntimeDefinition
             {

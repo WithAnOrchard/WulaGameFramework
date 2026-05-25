@@ -344,7 +344,7 @@ namespace EssSystem.Core.Base.Event
             // 如果是MonoBehaviour，尝试从场景中获取（Unity 2022+ 推荐 API）
             if (typeof(MonoBehaviour).IsAssignableFrom(type))
             {
-                var instance = FindFirstObjectByType(type, FindObjectsInactive.Include) as MonoBehaviour;
+                var instance = FindAnyObjectByType(type, FindObjectsInactive.Include) as MonoBehaviour;
                 if (instance != null) return instance;
 
                 // 检查是否是 Manager 类型，Manager 通常由用户手动添加到场景

@@ -19,7 +19,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         /// <summary>是否包含施法者自身。</summary>
         public bool IncludeSelf;
 
-        private static readonly Collider2D[] _buffer = new Collider2D[32];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
+        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
 
         public AoeEffect(float radius, float radiusPerLevel = 0f, bool includeSelf = false)
         {
@@ -33,7 +34,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             var r = Radius + RadiusPerLevel * (ctx.Level - 1);
             var center = ctx.Position != Vector3.zero ? (Vector2)ctx.Position : (Vector2)ctx.Caster.WorldPosition;
 
-            var count = Physics2D.OverlapCircleNonAlloc(center, r, _buffer);
+            var count = Physics2D.OverlapCircle(center, r, _noFilter, _buffer);
             for (var i = 0; i < count; i++)
             {
                 var col = _buffer[i];

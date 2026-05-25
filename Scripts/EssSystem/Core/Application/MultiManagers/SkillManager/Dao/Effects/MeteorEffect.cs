@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
@@ -27,7 +28,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public bool IncludeSelf;
         public string DamageType = "fire";
 
-        private static readonly Collider2D[] _buffer = new Collider2D[32];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
+        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
 
         public MeteorEffect() { }
 
@@ -71,7 +73,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             bool includeSelf, string damageType)
         {
             if (!EntityService.HasInstance || damage <= 0f) return;
-            var count = Physics2D.OverlapCircleNonAlloc(center, radius, _buffer);
+            var count = Physics2D.OverlapCircle(center, radius, _noFilter, _buffer);
             for (var i = 0; i < count; i++)
             {
                 var col = _buffer[i];

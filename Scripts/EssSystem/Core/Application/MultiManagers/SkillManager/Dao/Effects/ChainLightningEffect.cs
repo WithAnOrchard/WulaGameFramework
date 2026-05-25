@@ -25,7 +25,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public float FalloffPerJump = 0.8f;
         public string DamageType = "lightning";
 
-        private static readonly Collider2D[] _buffer = new Collider2D[32];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
+        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
 
         public ChainLightningEffect() { }
 
@@ -71,7 +72,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         {
             if (caster.CharacterRoot == null) return null;
             var origin = (Vector2)caster.CharacterRoot.position;
-            var count = Physics2D.OverlapCircleNonAlloc(origin, JumpRadius, _buffer);
+            var count = Physics2D.OverlapCircle(origin, JumpRadius, _noFilter, _buffer);
             Entity best = null;
             var bestDist = float.MaxValue;
             for (var i = 0; i < count; i++)
@@ -92,7 +93,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         {
             if (from.CharacterRoot == null) return null;
             var origin = (Vector2)from.CharacterRoot.position;
-            var count = Physics2D.OverlapCircleNonAlloc(origin, JumpRadius, _buffer);
+            var count = Physics2D.OverlapCircle(origin, JumpRadius, _noFilter, _buffer);
             Entity best = null;
             var bestDist = float.MaxValue;
             for (var i = 0; i < count; i++)

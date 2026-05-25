@@ -26,7 +26,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public bool IncludeSelf;
 
-        private static readonly Collider2D[] _buffer = new Collider2D[32];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
+        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
 
         public CleaveEffect() { }
 
@@ -55,7 +56,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             }
 
             var cosThreshold = Mathf.Cos(HalfAngleDeg * Mathf.Deg2Rad);
-            var count = Physics2D.OverlapCircleNonAlloc(origin, Range, _buffer);
+            var count = Physics2D.OverlapCircle(origin, Range, _noFilter, _buffer);
             for (var i = 0; i < count; i++)
             {
                 var col = _buffer[i];

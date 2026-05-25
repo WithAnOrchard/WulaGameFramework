@@ -32,7 +32,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public float DamagePerLevel;
         public string DamageType = "jump_slash";
 
-        private static readonly Collider2D[] _buffer = new Collider2D[32];
+        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
+        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
 
         public JumpSlashEffect() { }
 
@@ -95,7 +96,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             // AOE 伤害：以当前位置为中心
             if (!EntityService.HasInstance || damage <= 0f) return;
             var center = (Vector2)root.position;
-            var count = Physics2D.OverlapCircleNonAlloc(center, radius, _buffer);
+            var count = Physics2D.OverlapCircle(center, radius, _noFilter, _buffer);
             for (var i = 0; i < count; i++)
             {
                 var col = _buffer[i];

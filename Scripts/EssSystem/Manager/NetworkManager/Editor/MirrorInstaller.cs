@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using EssSystem.Core.Base.Util;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -304,8 +305,9 @@ namespace EssSystem.Manager.NetworkManager.EditorTools
         private static bool HasDefine(string symbol)
         {
             var grp = EditorUserBuildSettings.selectedBuildTargetGroup;
-            var defs = PlayerSettings.GetScriptingDefineSymbolsForGroup(grp);
-            return defs.Split(';').Any(s => s.Trim() == symbol);
+            var named = NamedBuildTarget.FromBuildTargetGroup(grp);
+            PlayerSettings.GetScriptingDefineSymbols(named, out var defs);
+            return defs.Any(s => s.Trim() == symbol);
         }
 
         private static void EnsureScriptingDefine(bool desired)
@@ -320,8 +322,9 @@ namespace EssSystem.Manager.NetworkManager.EditorTools
             };
             foreach (var grp in groups)
             {
-                var defs = PlayerSettings.GetScriptingDefineSymbolsForGroup(grp);
-                var set = new HashSet<string>(defs.Split(';').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
+                var named = NamedBuildTarget.FromBuildTargetGroup(grp);
+                PlayerSettings.GetScriptingDefineSymbols(named, out var defsArr);
+                var set = new HashSet<string>(defsArr.Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)));
                 var dirty = false;
                 if (desired && !set.Contains(ScriptingDefineMirrorInstalled))
                 {
@@ -332,7 +335,7 @@ namespace EssSystem.Manager.NetworkManager.EditorTools
                     set.Remove(ScriptingDefineMirrorInstalled); dirty = true;
                 }
                 if (dirty)
-                    PlayerSettings.SetScriptingDefineSymbolsForGroup(grp, string.Join(";", set));
+                    PlayerSettings.SetScriptingDefineSymbols(named, set.ToArray());
             }
         }
     }

@@ -382,6 +382,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `DanmuService.EVT_DISCONNECTED` | `OnDanmuDisconnected` | DanmuManager | B 站长连接断开**广播**，参数 `[Exception errorOrNull]` |
 | `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |
 | `DanmuService.EVT_GIFT` | `OnDanmuGift` | DanmuManager | 礼物**广播**，参数 `[string userName, string giftName, int giftCount, long userId]` |
+| `DanmuService.EVT_SC` | `OnDanmuSuperChat` | DanmuManager | 超级留言 SuperChat **广播**，参数 `[string userName, string text, int priceYuan, long userId]` |
 | `DanmuService.EVT_RAW` | `OnDanmuRaw` | DanmuManager | 全类型原始 `DanmakuModel`**广播**（含 SuperChat / 上船 / 进场等高级类型） |
 | `AudioManager.EVT_PLAY_BGM` | `PlayBGM` | Core/AudioManager | 播放背景音乐（命令），参数 `[string path, bool fade?]` |
 | `AudioManager.EVT_STOP_BGM` | `StopBGM` | Core/AudioManager | 停止背景音乐（命令），参数 `[bool fade?]` |

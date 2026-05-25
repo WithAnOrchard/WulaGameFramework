@@ -138,7 +138,7 @@ namespace Demo.Tribe.World.Features
 
             // 视觉走 CharacterManager —— Idle 循环动作 + sprite_0..7
             TribeCampfireCharacterConfig.EnsureRegistered();
-            var charInstanceId = $"TribeCampfire_{go.GetInstanceID()}";
+            var charInstanceId = $"TribeCampfire_{go.GetHashCode()}";
             var charRoot = CharacterViewBridge.CreateCharacter(
                 TribeCampfireCharacterConfig.ConfigId, charInstanceId,
                 parent: go.transform, worldPosition: go.transform.position);
@@ -162,7 +162,7 @@ namespace Demo.Tribe.World.Features
             // 互动：以 Entity 能力形式注册（参 EntityManager.IInteractable / Entity.CanInteract）
             AttachInteractable(
                 go,
-                instanceId: $"TribeCampfire_Interact_{go.GetInstanceID()}",
+                instanceId: $"TribeCampfire_Interact_{go.GetHashCode()}",
                 radius: 2.5f,
                 promptLabel: "[F] 制作",
                 onInteract: () =>
