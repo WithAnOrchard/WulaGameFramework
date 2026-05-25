@@ -96,6 +96,19 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         [DllImport("user32.dll")]
         public static extern bool GetCursorPos(out POINT lpPoint);
 
+        public const uint SPI_GETWORKAREA = 0x0030;
+
+        [DllImport("user32.dll")]
+        public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, ref RECT pvParam, uint fWinIni);
+
+        /// <summary>获取主显示器工作区（排除任务栏 / Dock）的像素坐标。即为窗口可放置的实际可用区域。</summary>
+        public static RECT GetPrimaryWorkArea()
+        {
+            var r = new RECT();
+            SystemParametersInfo(SPI_GETWORKAREA, 0, ref r, 0);
+            return r;
+        }
+
         [DllImport("user32.dll")]
         public static extern bool ScreenToClient(IntPtr hWnd, ref POINT lpPoint);
 
@@ -105,6 +118,25 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         /// <summary>全局键盘状态查询（不受窗口焦点 / click-through 影响）。</summary>
         [DllImport("user32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
+        /// <summary>返回系统启动以来最后一次用户输入的 tick 时间（键盘或鼠标）。</summary>
+        [DllImport("user32.dll")]
+        public static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+        /// <summary>返回用户键鼠空闲秒数；非 Windows 平台返回 0。</summary>
+        public static float GetIdleSeconds()
+        {
+            var info = new LASTINPUTINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(LASTINPUTINFO)) };
+            if (!GetLastInputInfo(ref info)) return 0f;
+            return ((uint)System.Environment.TickCount - info.dwTime) / 1000f;
+        }
 
         // virtual-key codes
         public const int VK_ESCAPE  = 0x1B;

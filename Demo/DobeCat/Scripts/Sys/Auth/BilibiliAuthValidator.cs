@@ -16,7 +16,7 @@ namespace Demo.DobeCat.Sys.Auth
     public static class BilibiliAuthValidator
     {
         private const string NavUrl = "https://api.bilibili.com/x/web-interface/nav";
-        private const float TimeoutSec = 8f;
+        private const float TimeoutSec = 5f;
 
         /// <summary>验证 SESSDATA token，必须从 MonoBehaviour 协程启动。</summary>
         public static IEnumerator Validate(string sessdata, Action<string, long> onSuccess, Action<string> onFail)
@@ -34,9 +34,20 @@ namespace Demo.DobeCat.Sys.Auth
                 req.SetRequestHeader("User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 DobeCat/1.0");
                 req.SetRequestHeader("Referer", "https://www.bilibili.com");
-                req.timeout = Mathf.CeilToInt(TimeoutSec);
-
-                yield return req.SendWebRequest();
+                req.timeout = Mathf.CeilToInt(TimeoutSec); // 双保险：先给底层 timeout
+                var op      = req.SendWebRequest();
+                var elapsed = 0f;
+                while (!op.isDone)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    if (elapsed >= TimeoutSec)
+                    {
+                        req.Abort();
+                        onFail?.Invoke($"验证超时（>{TimeoutSec:0}s），请检查网络后重试");
+                        yield break;
+                    }
+                    yield return null;
+                }
 
 #if UNITY_2020_2_OR_NEWER
                 if (req.result != UnityWebRequest.Result.Success)
