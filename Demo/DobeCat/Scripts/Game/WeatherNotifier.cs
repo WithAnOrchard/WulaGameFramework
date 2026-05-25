@@ -7,66 +7,48 @@ using Demo.DobeCat.Game.Pet;
 namespace Demo.DobeCat.Game
 {
     /// <summary>
-    /// 拉取每日天气并展示到对话气泡。
-    /// 天气服务：心知天气 Seniverse API（国内，免费 key 在 console.seniverse.com 申请）。
-    /// 城市自动识别：若未配置城市，通过 ip-api.com 根据 IP 获取当前城市（无需 key）。
+    /// 拉取实时天气并展示到对话气泡。完全免费，无需任何 API Key。
+    /// <list type="bullet">
+    /// <item>ip-api.com → 根据公网 IP 自动获取城市 + 经纬度（免费，无需 key）</item>
+    /// <item>Open-Meteo → 根据经纬度拉取实时气温 / 体感 / 天气码（开源，完全免费）</item>
+    /// </list>
     /// DESIGN.md §7 天气播报.
-    ///
-    /// Setup:
-    ///   1. 在 https://console.seniverse.com/ 注册并获取免费 API Key。
-    ///   2. 在 Inspector 或 PlayerPrefs "WeatherApiKey" 填入 key；城市留空则自动按 IP 检测。
-    ///   3. WeatherNotifier 启动时拉取，此后每 _pollHours 小时刷新一次。
     /// </summary>
     public class WeatherNotifier : MonoBehaviour
     {
-        [Tooltip("心知天气 API key（console.seniverse.com 申请）。留空则禁用天气功能。")]
-        [SerializeField] private string _apiKey = "";
-
-        [Tooltip("城市名或拼音（如 beijing）。留空则自动通过 IP 检测。")]
-        [SerializeField] private string _city = "";
-
-        [Tooltip("Re-poll interval in hours.")]
+        [Tooltip("刷新间隔（小时）。")]
         [SerializeField] private float _pollHours = 6f;
 
-        private const string PREFS_KEY  = "WeatherApiKey";
-        private const string PREFS_CITY = "WeatherCity";
-        // 心知天气 Seniverse API v3
-        private const string API_URL =
-            "https://api.seniverse.com/v3/weather/now.json?key={1}&location={0}&language=zh-Hans&unit=c";
-        // ip-api.com：免费，无需 key，中国可访问
+        // ip-api.com：免费，无需 key；lang=zh-CN 返回中文城市名；同时拉经纬度
         private const string IP_GEO_URL =
-            "http://ip-api.com/json/?lang=zh-CN&fields=status,city";
+            "http://ip-api.com/json/?lang=zh-CN&fields=status,city,lat,lon";
+        // Open-Meteo：开源免费天气 API，无需任何 key
+        private const string WEATHER_URL =
+            "https://api.open-meteo.com/v1/forecast?latitude={0}&longitude={1}" +
+            "&current=temperature_2m,apparent_temperature,weather_code&timezone=auto&forecast_days=1";
 
-        private float _timer;
+        private float  _timer;
+        private float  _lat, _lon;
+        private string _city = "";
 
         public static WeatherNotifier Instance { get; private set; }
+        /// <summary>最近一次成功拉取的天气描述；未就绪时为空。</summary>
+        public static string LastWeatherInfo { get; private set; } = "";
+        /// <summary>IP 定位到的城市名。</summary>
+        public static string DetectedCity    { get; private set; } = "";
 
         private void Awake() { Instance = this; }
         private void OnDestroy() { if (Instance == this) Instance = null; }
 
         private void Start()
         {
-            var key = PlayerPrefs.GetString(PREFS_KEY, _apiKey);
-            if (string.IsNullOrWhiteSpace(key)) return;
-            _apiKey = key;
-            _city   = PlayerPrefs.GetString(PREFS_CITY, _city); // 有缓存则作备用，IP 失败时回退
-            _timer  = _pollHours * 3600f;
-            StartCoroutine(DetectCityThenFetch()); // 每次启动都重新 IP 定位
-        }
-
-        /// <summary>设置面板粘贴 API Key 后立即触发。</summary>
-        public void Restart(string apiKey)
-        {
-            if (string.IsNullOrWhiteSpace(apiKey)) return;
-            _apiKey = apiKey;
-            StopAllCoroutines();
             _timer = _pollHours * 3600f;
-            StartCoroutine(DetectCityThenFetch());
+            StartCoroutine(DetectLocationThenFetch());
         }
 
         private void Update()
         {
-            if (string.IsNullOrWhiteSpace(_apiKey)) return;
+            if (_lat == 0f && _lon == 0f) return;
             _timer -= Time.unscaledDeltaTime;
             if (_timer <= 0f)
             {
@@ -75,10 +57,10 @@ namespace Demo.DobeCat.Game
             }
         }
 
-        private IEnumerator DetectCityThenFetch()
+        private IEnumerator DetectLocationThenFetch()
         {
             using var geoReq = UnityWebRequest.Get(IP_GEO_URL);
-            geoReq.timeout = 5;
+            geoReq.timeout = 6;
             yield return geoReq.SendWebRequest();
 
             if (geoReq.result == UnityWebRequest.Result.Success)
@@ -88,37 +70,37 @@ namespace Demo.DobeCat.Game
                     var node = MiniJson.Parse(geoReq.downloadHandler.text);
                     if (node["status"].ToString() == "success")
                     {
-                        var detectedCity = node["city"].ToString();
-                        if (!string.IsNullOrEmpty(detectedCity))
-                        {
-                            _city = detectedCity;
-                            PlayerPrefs.SetString(PREFS_CITY, _city);
-                            PlayerPrefs.Save();
-                            Debug.Log($"[WeatherNotifier] IP 定位城市：{_city}");
-                        }
+                        _city = node["city"].ToString();
+                        float.TryParse(node["lat"].ToString(),  out _lat);
+                        float.TryParse(node["lon"].ToString(),  out _lon);
+                        DetectedCity = _city;
+                        Debug.Log($"[WeatherNotifier] IP 定位：{_city} ({_lat:F2},{_lon:F2})");
                     }
                 }
-                catch { /* 解析失败，_city 保持空，FetchWeather 会跳过 */ }
+                catch { Debug.LogWarning("[WeatherNotifier] IP 定位解析失败"); }
             }
             else
             {
-                Debug.LogWarning($"[WeatherNotifier] IP 定位失败：{geoReq.error}，跳过天气播报");
+                Debug.LogWarning($"[WeatherNotifier] IP 定位请求失败：{geoReq.error}");
             }
 
-            if (!string.IsNullOrWhiteSpace(_city))
+            if (_lat != 0f || _lon != 0f)
                 yield return StartCoroutine(FetchWeather());
         }
 
         private IEnumerator FetchWeather()
         {
-            var url = string.Format(API_URL, UnityWebRequest.EscapeURL(_city), _apiKey);
+            var url = string.Format(WEATHER_URL,
+                _lat.ToString("F4", System.Globalization.CultureInfo.InvariantCulture),
+                _lon.ToString("F4", System.Globalization.CultureInfo.InvariantCulture));
+
             using var req = UnityWebRequest.Get(url);
-            req.SetRequestHeader("User-Agent", "Mozilla/5.0");
+            req.timeout = 8;
             yield return req.SendWebRequest();
 
             if (req.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogWarning($"[WeatherNotifier] {req.error}");
+                Debug.LogWarning($"[WeatherNotifier] 天气请求失败：{req.error}");
                 yield break;
             }
 
@@ -126,34 +108,64 @@ namespace Demo.DobeCat.Game
             try   { root = MiniJson.Parse(req.downloadHandler.text); }
             catch { yield break; }
 
-            // 心知天气返回格式: { "results": [{"location":{"name":"..."},"now":{"text":"...","temperature":"25","feels_like":"24"}}] }
-            var result   = root["results"][0];
-            if (result.IsMissing) yield break;
+            // Open-Meteo 返回: { "current": { "temperature_2m": 22.5, "apparent_temperature": 21.0, "weather_code": 2 } }
+            var cur = root["current"];
+            if (cur.IsMissing) yield break;
 
-            var desc     = result["now"]["text"].ToString();
-            if (string.IsNullOrEmpty(desc)) yield break;
-            var tempStr  = result["now"]["temperature"].ToString();
-            var feelsStr = result["now"]["feels_like"].ToString();
-            var temp     = float.TryParse(tempStr, out var tf) ? tf : 0f;
-            var feels    = float.TryParse(feelsStr, out var ff) ? ff : temp;
-            var cityName = result["location"]["name"].ToString();
-            if (string.IsNullOrEmpty(cityName)) cityName = _city;
+            float.TryParse(cur["temperature_2m"].ToString(),     System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var temp);
+            float.TryParse(cur["apparent_temperature"].ToString(), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var feels);
+            int.TryParse(cur["weather_code"].ToString(), out var code);
 
-            var emoji = PickEmoji(desc);
-            var msg   = $"{emoji} {cityName} {Mathf.RoundToInt(temp)}°C，{desc}（体感 {Mathf.RoundToInt(feels)}°C）";
+            var desc  = WmoCodeToText(code);
+            var emoji = WmoCodeToEmoji(code);
+            var msg   = $"{emoji} {_city} {Mathf.RoundToInt(temp)}°C，{desc}（体感 {Mathf.RoundToInt(feels)}°C）";
+            LastWeatherInfo = msg;
 
             PetSpeechBubble.Instance?.Show(msg, 8f);
         }
 
-        private static string PickEmoji(string desc)
+        // ── WMO 天气码 → 中文描述 / emoji ────────────────────────────────────
+        private static string WmoCodeToText(int code) => code switch
         {
-            if (desc.Contains("雪"))  return "❄️";
-            if (desc.Contains("雨") || desc.Contains("阵雨")) return "🌧️";
-            if (desc.Contains("云") || desc.Contains("阴")) return "☁️";
-            if (desc.Contains("晴")) return "☀️";
-            if (desc.Contains("雾") || desc.Contains("霾")) return "🌫️";
-            if (desc.Contains("雷")) return "⛈️";
-            return "🌤️";
-        }
+            0          => "晴",
+            1          => "晴间多云",
+            2          => "多云",
+            3          => "阴",
+            45 or 48   => "雾",
+            51 or 53   => "毛毛雨",
+            55         => "浓毛毛雨",
+            56 or 57   => "冻毛毛雨",
+            61         => "小雨",
+            63         => "中雨",
+            65         => "大雨",
+            66 or 67   => "冻雨",
+            71         => "小雪",
+            73         => "中雪",
+            75         => "大雪",
+            77         => "冰粒",
+            80         => "阵雨",
+            81         => "中阵雨",
+            82         => "强阵雨",
+            85 or 86   => "阵雪",
+            95         => "雷暴",
+            96 or 99   => "雷暴伴冰雹",
+            _          => "未知"
+        };
+
+        private static string WmoCodeToEmoji(int code) => code switch
+        {
+            0          => "☀️",
+            1 or 2     => "⛅",
+            3          => "☁️",
+            45 or 48   => "🌫️",
+            >= 51 and <= 67 => "🌧️",
+            >= 71 and <= 77 => "❄️",
+            >= 80 and <= 82 => "u{1F327}u{FE0F}",
+            85 or 86   => "❄️",
+            >= 95      => "⛈️",
+            _          => "🌤️"
+        };
     }
 }

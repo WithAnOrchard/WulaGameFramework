@@ -24,8 +24,6 @@ namespace Demo.DobeCat.Sys.UI
         public static DobeCatSettingsPanelView Instance { get; private set; }
 
         // ─── PlayerPrefs keys ────────────────────────────────────────────────
-        private const string PK_WEATHER_KEY  = "WeatherApiKey";
-        private const string PK_WEATHER_CITY = "WeatherCity";
         private const string PK_BILI_UIDS    = "BiliNotifier_uids";
         private const string PK_REM_SITBREAK = "Rem_SitBreak";
         private const string PK_REM_WATER    = "Rem_Water";
@@ -39,8 +37,7 @@ namespace Demo.DobeCat.Sys.UI
         private int   _pomBreak = 5;
 
         // ─── UI DAO refs ─────────────────────────────────────────────────────
-        private UITextComponent _weatherKeyText;
-        private UITextComponent _weatherCityText;
+        private UITextComponent _weatherStatusText;
         private UITextComponent _biliUidsText;
         private UITextComponent _pomFocusText;
         private UITextComponent _pomBreakText;
@@ -99,7 +96,7 @@ namespace Demo.DobeCat.Sys.UI
             _pomFocus = PlayerPrefs.GetInt(PK_POM_FOCUS, 25);
             _pomBreak = PlayerPrefs.GetInt(PK_POM_BREAK, 5);
 
-            const float PW = 400f, PH = 600f;
+            const float PW = 400f, PH = 560f;
             float y = PH; // running cursor from top
 
             var root = new UIPanelComponent("cfg-root")
@@ -158,11 +155,12 @@ namespace Demo.DobeCat.Sys.UI
             }
 
             // ── Weather ──
-            SectionHeader("cfg-sec-weather", "🌤 天气（心知天气 Seniverse）");
-            _weatherKeyText  = ClipRow("cfg-wk", "API Key", PK_WEATHER_KEY,
-                v => { PlayerPrefs.SetString(PK_WEATHER_KEY, v); WeatherNotifier.Instance?.Restart(v); });
-            _weatherCityText = ClipRow("cfg-wc", "城市", PK_WEATHER_CITY,
-                v => PlayerPrefs.SetString(PK_WEATHER_CITY, v));
+            SectionHeader("cfg-sec-weather", "🌤 天气");
+            y -= 28f;
+            _weatherStatusText = new UITextComponent("cfg-weather-status", text: "正在获取天气...")
+                .SetSize(360f, 24f).SetPosition(PW / 2f, y + 12f)
+                .SetColor(CTM).SetFontSize(11).SetAlignment(TextAnchor.MiddleCenter);
+            root.AddChild(_weatherStatusText);
 
             // ── Bili space notifier ──
             SectionHeader("cfg-sec-bili", "📺 B站动态提醒");
@@ -295,9 +293,18 @@ namespace Demo.DobeCat.Sys.UI
 
         private void RefreshDisplay()
         {
-            if (_weatherKeyText  != null) _weatherKeyText.Text  = Truncate(PlayerPrefs.GetString(PK_WEATHER_KEY,  "（未设置）"), 22);
-            if (_weatherCityText != null) _weatherCityText.Text = Truncate(PlayerPrefs.GetString(PK_WEATHER_CITY, "（未设置）"), 22);
-            if (_biliUidsText    != null) _biliUidsText.Text    = Truncate(PlayerPrefs.GetString(PK_BILI_UIDS,    "（未设置）"), 22);
+            if (_weatherStatusText != null)
+            {
+                var info = WeatherNotifier.LastWeatherInfo;
+                var city = WeatherNotifier.DetectedCity;
+                if (!string.IsNullOrEmpty(info))
+                    _weatherStatusText.Text = Truncate(info, 36);
+                else if (!string.IsNullOrEmpty(city))
+                    _weatherStatusText.Text = $"{city} 获取中...";
+                else
+                    _weatherStatusText.Text = "城市检测中...";
+            }
+            if (_biliUidsText != null) _biliUidsText.Text = Truncate(PlayerPrefs.GetString(PK_BILI_UIDS, "（未设置）"), 22);
             if (_pomFocusText    != null) _pomFocusText.Text    = _pomFocus.ToString();
             if (_pomBreakText    != null) _pomBreakText.Text    = _pomBreak.ToString();
 

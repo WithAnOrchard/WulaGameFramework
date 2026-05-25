@@ -53,6 +53,10 @@ namespace Demo.DobeCat.Sys.UI
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
 
+        // ─── 颜色补充 ────────────────────────────────────────────────────────
+        private static readonly Color CBTN = new Color(0.18f, 0.20f, 0.26f, 1.00f);
+        private static readonly Color CACC = new Color(0.23f, 0.51f, 0.96f, 1.00f);
+
         // ─── 生命周期 ────────────────────────────────────────────────────────
         private void Awake() { Instance = this; }
 
@@ -78,79 +82,87 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = GetCanvasTransform();
             if (canvasT == null) { Debug.LogWarning("[TestPanelView] UIManager Canvas 未就绪"); return; }
 
-            // 面板在 UIManager 画布（1920×1080 参考分辨率）的右上角
-            // pos(left,top,w,h) = (left+w/2, PH-top-h/2)  ← 均以面板底左为原点
-            const float PW = 420f, PH = 540f;
+            const float PW = 420f, PH = 500f;  // 移除底部按钮后高度缩小
 
             // ── 根面板 ──
             var root = new UIPanelComponent("tp-root")
                 .SetBackgroundColor(CB).SetSize(PW, PH)
                 .SetPosition(1920f - PW / 2f - 20f, 1080f - PH / 2f - 20f);
 
-            // ── 标题栏（整行，可拖拽）──
+            // ── 标题栏（可拖拽）──
             var titleBar = new UIPanelComponent("tp-titlebar")
-                .SetBackgroundColor(CH).SetSize(PW, 44f)
-                .SetPosition(PW / 2f, PH - 22f);
+                .SetBackgroundColor(CH).SetSize(PW, 42f)
+                .SetPosition(PW / 2f, PH - 21f);
             root.AddChild(titleBar);
 
-            titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
-                .SetSize(340f, 44f).SetPosition(182f, 22f)
-                .SetColor(CTM).SetFontSize(14).SetAlignment(TextAnchor.MiddleLeft));
+            // 图标小方块
+            titleBar.AddChild(new UIPanelComponent("tp-icon")
+                .SetBackgroundColor(CACC).SetSize(20f, 20f)
+                .SetPosition(24f, 21f));
 
-            var closeXDao = new UIButtonComponent("tp-close-x", text: "×")
-                .SetSize(40f, 44f).SetPosition(400f, 22f).SetButtonColor(CX);
+            titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
+                .SetSize(300f, 42f).SetPosition(190f, 21f)
+                .SetColor(CTM).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
+
+            // 关闭按钮：红色背景，缩小到半尺寸
+            var closeXDao = new UIButtonComponent("tp-close-x", text: "X")
+                .SetSize(22f, 22f).SetPosition(PW - 19f, 21f).SetButtonColor(CX);
             titleBar.AddChild(closeXDao);
 
-            // ── 状态 / 直播文本 ──
-            _statusDao = new UITextComponent("tp-status", text: "未连接")
-                .SetSize(392f, 20f).SetPosition(PW / 2f, PH - 52f - 10f)
+            // ── 状态行 ──
+            float y = PH - 42f;  // 当前光标（从顶往下）
+
+            y -= 10f;
+            _statusDao = new UITextComponent("tp-status", text: "● 未连接")
+                .SetSize(392f, 18f).SetPosition(PW / 2f, y - 9f)
                 .SetColor(CTM).SetFontSize(12).SetAlignment(TextAnchor.MiddleLeft);
             root.AddChild(_statusDao);
 
+            y -= 22f;
             _liveDao = new UITextComponent("tp-live", text: "开播轮询: 未启动")
-                .SetSize(392f, 18f).SetPosition(PW / 2f, PH - 74f - 9f)
+                .SetSize(392f, 16f).SetPosition(PW / 2f, y - 8f)
                 .SetColor(CTS).SetFontSize(11).SetAlignment(TextAnchor.MiddleLeft);
             root.AddChild(_liveDao);
 
             // ── 分割线 ──
+            y -= 20f;
             root.AddChild(new UIPanelComponent("tp-div1")
                 .SetBackgroundColor(CDiv).SetSize(PW, 1f)
-                .SetPosition(PW / 2f, PH - 98f - 0.5f));
+                .SetPosition(PW / 2f, y));
 
-            // ── 直播详情标签 + 滚动区 ──
+            // ── 直播 / 房间区 ──
+            y -= 6f;
             root.AddChild(new UITextComponent("tp-detail-lbl", text: "直播 / 房间")
-                .SetSize(392f, 15f).SetPosition(PW / 2f, PH - 103f - 7.5f)
+                .SetSize(392f, 14f).SetPosition(PW / 2f, y - 7f)
                 .SetColor(CTS).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
-
+            y -= 18f;
+            const float detailH = 110f;
             root.AddChild(new UIScrollViewComponent("tp-detail-sv")
-                .SetBackgroundColor(CSB).SetSize(392f, 125f)
-                .SetPosition(PW / 2f, PH - 121f - 62.5f));
+                .SetBackgroundColor(CSB).SetSize(392f, detailH)
+                .SetPosition(PW / 2f, y - detailH / 2f));
+            y -= detailH + 6f;
 
             // ── 分割线 ──
             root.AddChild(new UIPanelComponent("tp-div2")
                 .SetBackgroundColor(CDiv).SetSize(PW, 1f)
-                .SetPosition(PW / 2f, PH - 252f - 0.5f));
+                .SetPosition(PW / 2f, y));
 
-            // ── 弹幕日志标签 + 滚动区 ──
+            // ── 弹幕日志区（剩余空间全给它）──
+            y -= 6f;
             root.AddChild(new UITextComponent("tp-log-lbl", text: "弹幕日志")
-                .SetSize(392f, 15f).SetPosition(PW / 2f, PH - 257f - 7.5f)
+                .SetSize(392f, 14f).SetPosition(PW / 2f, y - 7f)
                 .SetColor(CTS).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
-
+            y -= 18f;
+            var logH = y - 8f;   // 剩余到底部留 8px 边距
             root.AddChild(new UIScrollViewComponent("tp-log-sv")
-                .SetBackgroundColor(CSB).SetSize(392f, 210f)
-                .SetPosition(PW / 2f, PH - 275f - 105f));
-
-            // ── 关闭按钮 ──
-            var closeBtnDao = new UIButtonComponent("tp-close-btn", text: "关闭")
-                .SetSize(392f, 32f).SetPosition(PW / 2f, PH - 495f - 16f)
-                .SetButtonColor(new Color(0.18f, 0.19f, 0.24f, 1f));
-            root.AddChild(closeBtnDao);
+                .SetBackgroundColor(CSB).SetSize(392f, logH)
+                .SetPosition(PW / 2f, logH / 2f + 8f));
 
             // ── 注册到 UIManager ──
             _rootEntity = UIService.Instance.RegisterUIEntity("tp-root", root, canvasT);
             if (_rootEntity == null) return;
 
-            // 标题栏加 UIDraggable（需要 Image.raycastTarget = true）
+            // 标题栏加 UIDraggable
             var titleBarEntity = UIService.Instance.GetUIEntity("tp-titlebar");
             if (titleBarEntity != null)
             {
@@ -160,15 +172,14 @@ namespace Demo.DobeCat.Sys.UI
                     .DragTarget = _rootEntity.GetComponent<RectTransform>();
             }
 
-            // 按钮回调
-            closeXDao.OnClick   += _ => Hide();
-            closeBtnDao.OnClick += _ => Hide();
+            // 关闭按钮：只剩右上角 X
+            closeXDao.OnClick += _ => Hide();
 
             // ScrollView 实体引用
             _detailEntity = UIService.Instance.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
             _logEntity    = UIService.Instance.GetUIEntity("tp-log-sv")    as UIScrollViewEntity;
 
-            // 覆盖定位：让面板锚定右上角，不随 canvas 缩放漂移
+            // 锚定右上角
             var rt = _rootEntity.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
             rt.pivot = new Vector2(1f, 1f);
