@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using Demo.DobeCat.Game.Pet.Ai;
-using Demo.DobeCat.Sys.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
@@ -25,6 +24,9 @@ namespace Demo.DobeCat.Game.Pet
         public float MoveSpeed = 4f;
         public string CharacterInstanceId = "DobeCatLocal";
         public string CharacterConfigId = "Warrior";
+
+        /// <summary>场景中当前活跃的桌宠实例（供农场等系统检测玩家位置）。</summary>
+        public static PetAiController Current { get; private set; }
 
         private Entity _entity;
         private IBrain _brain;
@@ -51,6 +53,9 @@ namespace Demo.DobeCat.Game.Pet
         {
             if (_brain != null) _brain.Enabled = AiEnabled && !_externalPaused;
         }
+
+        private void Awake()  => Current = this;
+        private void OnDestroy() { if (Current == this) Current = null; }
 
         public void Initialize(Vector3 spawnPosition)
         {
@@ -103,15 +108,10 @@ namespace Demo.DobeCat.Game.Pet
                     Id = "PlayerControl",
                     Score = _ =>
                     {
-                        var win = DesktopWindow.Instance;
-                        var axis = win != null ? win.GetGlobalWasdAxis() : Vector2.zero;
+                        var axis = GetWasdAxis();
                         return axis.sqrMagnitude > 1e-3f ? 1.0f : 0f;
                     },
-                    CreateAction = _ => new PetPlayerControlAction(() =>
-                    {
-                        var win = DesktopWindow.Instance;
-                        return win != null ? win.GetGlobalWasdAxis() : Vector2.zero;
-                    }),
+                    CreateAction = _ => new PetPlayerControlAction(GetWasdAxis),
                 });
 
                 // 随机游荡（基线，所有时刻可用）
@@ -131,6 +131,23 @@ namespace Demo.DobeCat.Game.Pet
             CharacterViewBridge.SetFacing(CharacterInstanceId, true);
             _lastFacingDispatched = 1;
             _lastMovingDispatched = false;
+        }
+
+        private static Vector2 GetWasdAxis()
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var l = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_A) & 0x8000) != 0;
+            var r = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_D) & 0x8000) != 0;
+            var u = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_W) & 0x8000) != 0;
+            var d = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_S) & 0x8000) != 0;
+            return new Vector2((r ? 1 : 0) - (l ? 1 : 0), (u ? 1 : 0) - (d ? 1 : 0));
+#else
+            return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+#endif
         }
 
         private void Update()

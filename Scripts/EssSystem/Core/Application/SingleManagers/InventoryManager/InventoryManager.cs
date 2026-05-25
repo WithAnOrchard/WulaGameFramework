@@ -293,7 +293,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             if (Service.GetInventory(inventoryId) == null)
                 return ResultCode.Fail($"Inventory不存在: {inventoryId}");
 
-            // ① 缓存复用：之前构建过且 GameObject 仍然存活 → 直接 SetVisible(true)
+            // ① 缓存复用：之前构建过且 GameObject 仍然存活 → 直接 SetVisible(true) + 刷新 slot 图标
             if (_rootPanels.TryGetValue(inventoryId, out var cached))
             {
                 // §4.1 跨模块 bare-string 调用 UIManager.EVT_GET_UI_GAMEOBJECT
@@ -304,6 +304,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 if (go != null)
                 {
                     cached.Visible = true;
+                    // 每次打开都刷新一次 slot，确保物品注册后图标能正确显示
+                    RefreshSlots(inventoryId);
                     Log($"复用缓存的Inventory UI: {inventoryId}", Color.green);
                     LinkPlayerEquipmentVisibility(inventoryId, true);
                     return ResultCode.Ok(inventoryId);
@@ -394,7 +396,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         {
             if (data == null || data.Count < 1 || !(data[0] is InventoryItem item))
                 return ResultCode.Fail("参数无效: [InventoryItem]");
-            RegisterTemplateIfMissing(item);
+            // 强制更新模板，确保 IconSpriteId 等字段在重复注册时也能生效
+            Service.RegisterTemplate(item);
             return ResultCode.Ok(item.Id);
         }
 
@@ -534,6 +537,17 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             {
                 eqPanel.Visible = false;
             }
+        }
+
+        /// <summary>刷新指定背包所有已构建 slot 的当前物品显示（包括图标）。</summary>
+        private void RefreshSlots(string inventoryId)
+        {
+            if (!_slotRefs.TryGetValue(inventoryId, out var refs)) return;
+            var inv = Service?.GetInventory(inventoryId);
+            if (inv == null) return;
+            var slotCount = Mathf.Min(Mathf.Min(refs.Icons.Length, refs.Names.Length), refs.Stacks.Length);
+            for (var i = 0; i < slotCount; i++)
+                InventoryUIBuilder.ApplyItemToSlot(refs.Icons[i], refs.Names[i], refs.Stacks[i], inv.GetSlot(i)?.Item);
         }
 
         /// <summary>统一参数校验：从 data[index] 取非空字符串。</summary>

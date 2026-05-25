@@ -118,7 +118,7 @@ namespace Demo.Tribe.Entities
         {
             _rb.gravityScale = _config.UseGravity ? _config.GravityScale : 0f;
             _rb.bodyType = _config.UseGravity ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
-            _rb.drag = 0f;
+            _rb.linearDamping = 0f;
             _rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             _rb.interpolation = RigidbodyInterpolation2D.Interpolate;
             // 防止玩家（mass=1）把怪物当肉垫推：调高 mass 让玩家几乎推不动；

@@ -162,7 +162,7 @@ MonoBehaviour:
   _quitKey: 27
   _danmuMode: 1
   _bilibiliAutoConnect: 1
-  _danmuRoomId: 0
+  _danmuRoomId: 1728613904
   _pollIntervalSeconds: 3
   _sessdata: 
   _biliJct: 

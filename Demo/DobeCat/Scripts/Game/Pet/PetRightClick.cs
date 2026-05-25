@@ -1,5 +1,4 @@
 ﻿using Demo.DobeCat.Sys.Tray;
-using Demo.DobeCat.Sys.Platform.Windows;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -35,8 +34,7 @@ namespace Demo.DobeCat.Game.Pet
             // 仅在按下→抬起的下降沿触发（也就是经典的"右键点击"语义）
             if (_wasDown && !down)
             {
-                var win = DesktopWindow.Instance;
-                var screenPos = win != null ? win.GetGlobalCursorScreenPos() : (Vector2)Input.mousePosition;
+                var screenPos = (Vector2)Input.mousePosition;
                 if (HitTest(screenPos))
                 {
                     Tray.RequestShowMenu();

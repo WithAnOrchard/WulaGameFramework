@@ -76,6 +76,10 @@ namespace EssSystem.Core.Foundation.ResourceManager
         public const string EVT_RESOURCES_LOADED           = "OnResourcesLoaded";
         public const string EVT_EXTERNAL_IMAGE_LOADED      = "OnExternalImageLoaded";
         public const string EVT_EXTERNAL_IMAGE_LOAD_FAILED = "OnExternalImageLoadFailed";
+        /// <summary>业务侧主动声明一张多精灵图集，将其所有子精灵按名入缓存。
+        /// data: [string sheetResourcePath]  ―  Resources/ 相对路径，不含扩展名，如 "Plants/Plants"
+        /// 返回 Ok(int addedCount) / Fail(msg)。</summary>
+        public const string EVT_REGISTER_SPRITE_SHEET = "RegisterSpriteSheet";
 
         // ============================================================
         // 类型分发表
@@ -261,6 +265,33 @@ namespace EssSystem.Core.Foundation.ResourceManager
         }
 
         // ============================================================
+        // 注册多精灵图集（业务侧主动声明，框架不感知具体路径）
+        // ============================================================
+        [Event(EVT_REGISTER_SPRITE_SHEET)]
+        public List<object> RegisterSpriteSheet(List<object> data)
+        {
+            if (data == null || data.Count < 1 || !(data[0] is string sheetPath) || string.IsNullOrEmpty(sheetPath))
+                return ResultCode.Fail("参数错误：需要 [string sheetResourcePath]");
+
+            var sprites = Resources.LoadAll<Sprite>(sheetPath);
+            if (sprites == null || sprites.Length == 0)
+                return ResultCode.Fail($"找不到精灵图集: {sheetPath}");
+
+            int added = 0;
+            foreach (var s in sprites)
+            {
+                if (s == null) continue;
+                var key = new ResourceKey(s.name, false, "Sprite");
+                if (!_loadedResources.ContainsKey(key))
+                {
+                    _loadedResources[key] = s;
+                    added++;
+                }
+            }
+            Log($"图集注册 '{sheetPath}': +{added} 个子精灵（总 {sprites.Length}）");
+            return ResultCode.Ok(added);
+        }
+
         // 添加预加载配置
         // ============================================================
         [Event(EVT_ADD_RESOURCE_CONFIG)]

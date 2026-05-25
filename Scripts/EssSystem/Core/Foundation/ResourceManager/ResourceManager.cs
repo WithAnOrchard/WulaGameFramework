@@ -34,6 +34,8 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // 这里只保留常量作公开 API；façade 上原本的 [Event] 方法是 dead code 已删除。
         public const string EVT_UNLOAD_RESOURCE           = "UnloadResource";
         public const string EVT_UNLOAD_ALL_RESOURCES      = "UnloadAllResources";
+        /// <summary>主动注册一张多精灵图集，将子精灵按名缓存。data: [string sheetResourcePath]</summary>
+        public const string EVT_REGISTER_SPRITE_SHEET     = ResourceService.EVT_REGISTER_SPRITE_SHEET;
 
         private ResourceService _resourceService;
 

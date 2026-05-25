@@ -32,7 +32,7 @@ namespace Demo.Tribe.Player
                 _knockbackTimer -= Time.deltaTime;
                 if (_knockbackTimer <= 0f && _rb != null)
                 {
-                    _rb.velocity = new Vector2(0f, _rb.velocity.y);
+                    _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
                 }
             }
         }
@@ -48,7 +48,7 @@ namespace Demo.Tribe.Player
                 direction.x = _rb.transform.localScale.x > 0 ? 1f : -1f;
 
             var knockbackVelocity = direction * _knockbackForce;
-            _rb.velocity = new Vector2(knockbackVelocity.x, _rb.velocity.y);
+            _rb.linearVelocity = new Vector2(knockbackVelocity.x, _rb.linearVelocity.y);
             _knockbackTimer = _knockbackDuration;
         }
     }

@@ -38,6 +38,8 @@ namespace Demo.DobeCat.Sys.Tray
         public void RequestShowMenu()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            // 菜单弹出前立即刷新房间列表，避免用户看到过期数据
+            Discovery?.RefreshNow();
             _tray?.RequestShowMenu();
 #endif
         }
@@ -85,6 +87,11 @@ namespace Demo.DobeCat.Sys.Tray
                 var label = Ai.AiEnabled ? "✔ AI / 玩家控制" : "  AI / 玩家控制";
                 items.Add(SystemTray.MenuItemDef.Item(label, ToggleAi));
             }
+            // 显示模式切换（桌面叠加 ↔ 窗口捕捉）
+            var captureLabel = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode
+                ? "✔ 窗口捕捉模式 (OBS)" : "  窗口捕捉模式 (OBS)";
+            items.Add(SystemTray.MenuItemDef.Item(captureLabel, ToggleWindowCaptureMode));
+
             items.Add(SystemTray.MenuItemDef.Separator());
 
             // 房间区
@@ -108,7 +115,9 @@ namespace Demo.DobeCat.Sys.Tray
             }
 
             items.Add(SystemTray.MenuItemDef.Separator());
-            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.Game.UI.DobeCatTestPanel.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Item("农场", () => Demo.DobeCat.Game.Farm.FarmWorldController.ToggleVisibility()));
+            items.Add(SystemTray.MenuItemDef.Item("商店", () => Demo.DobeCat.Game.Shop.ShopWindow.Instance?.Toggle()));
+            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()));
             items.Add(SystemTray.MenuItemDef.Separator());
             items.Add(SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit));
 
@@ -133,11 +142,6 @@ namespace Demo.DobeCat.Sys.Tray
             // 隐藏后 PetClickThroughDriver.Update 不会再运行；窗口可能停留在"不穿透"状态
             // 导致桌面点击全部被 Unity 窗口吞掉。这里强制把窗口切回穿透。
             // 重新显示时驱动器接管 → 命中检测会自然把穿透切回正确状态。
-            if (!_petVisible)
-            {
-                var win = Demo.DobeCat.Sys.Platform.Windows.DesktopWindow.Instance;
-                if (win != null) win.SetClickThrough(true);
-            }
         }
 
         private void ResetPetPosition()
@@ -151,6 +155,13 @@ namespace Demo.DobeCat.Sys.Tray
             if (Ai == null) return;
             Ai.SetAiEnabled(!Ai.AiEnabled);
             RebuildMenu(); // 刷新菜单的 ✔ 标记
+        }
+
+        private void ToggleWindowCaptureMode()
+        {
+            var next = !Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode;
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetWindowCaptureMode(next);
+            RebuildMenu();
         }
 
         private void Quit()

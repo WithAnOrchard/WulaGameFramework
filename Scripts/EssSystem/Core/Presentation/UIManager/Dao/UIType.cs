@@ -20,7 +20,12 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
         /// </summary>
         Text,
 
-        Bar
+        Bar,
+
+        /// <summary>
+        ///     可滚动容器（ScrollRect + VerticalLayoutGroup 内容区）
+        /// </summary>
+        ScrollView
     }
 
     /// <summary>
@@ -41,6 +46,7 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
                 UIType.Panel => "面板",
                 UIType.Text => "文本",
                 UIType.Bar => "进度条",
+                UIType.ScrollView => "滚动视图",
                 _ => uiType.ToString()
             };
         }
@@ -52,7 +58,7 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
         /// <returns>是否为容器类型</returns>
         public static bool IsContainer(this UIType uiType)
         {
-            return uiType == UIType.Panel;
+            return uiType == UIType.Panel || uiType == UIType.ScrollView;
         }
 
         /// <summary>

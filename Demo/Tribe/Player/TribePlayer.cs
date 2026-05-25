@@ -146,8 +146,8 @@ namespace Demo.Tribe.Player
             p.x = boundary.LeftLimitX;
             transform.position = p;
             var rb = GetComponent<Rigidbody2D>();
-            if (rb != null && rb.velocity.x < 0f)
-                rb.velocity = new Vector2(0f, rb.velocity.y);
+            if (rb != null && rb.linearVelocity.x < 0f)
+                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
         private void LateUpdate()  => _cameraFollow.LateTick();
 

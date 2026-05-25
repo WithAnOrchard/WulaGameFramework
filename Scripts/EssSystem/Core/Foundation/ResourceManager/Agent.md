@@ -142,6 +142,12 @@ public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, Animati
       new List<object> { "C:/Users/.../avatar.png" });
   ```
 
+#### `ResourceService.EVT_REGISTER_SPRITE_SHEET` — 注册多精灵图集
+- **常量**: `ResourceService.EVT_REGISTER_SPRITE_SHEET` = `"RegisterSpriteSheet"`
+- **参数**: `[string sheetResourcePath]`（Resources/ 相对路径，不含扩展名，如 `"Plants/Plants"`）
+- **返回**: `ResultCode.Ok(int addedCount)` / `ResultCode.Fail(msg)`
+- **副作用**: `Resources.LoadAll<Sprite>(sheetPath)` 按 `sprite.name` 写入全局缓存，后续可用 `EVT_GET_SPRITE` 按子图名单张查询
+
 ### 命令类（配置 / 卸载）
 
 #### `ResourceManager.EVT_ADD_PRELOAD_CONFIG` — 添加预加载项

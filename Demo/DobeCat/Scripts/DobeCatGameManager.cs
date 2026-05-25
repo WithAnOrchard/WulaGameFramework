@@ -9,11 +9,13 @@ using EssSystem.Manager.NetworkManager;
 using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
-using Demo.DobeCat.Sys.Platform.Windows;
-using Demo.DobeCat.Game.Auth;
+using Demo.DobeCat.Sys.Auth;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Sys.Tray;
-using Demo.DobeCat.Game.UI;
+using Demo.DobeCat.Sys.UI;
+using Demo.DobeCat.Game.Farm;
+using Demo.DobeCat.Game.Shop;
+using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys.Network;
 
 namespace Demo.DobeCat
@@ -24,7 +26,6 @@ namespace Demo.DobeCat
     /// （EventProcessor / DataManager / ResourceManager / AudioManager / UIManager）。</para>
     /// <para>M1 阶段职责：</para>
     /// <list type="number">
-    /// <item>初始化 <see cref="DesktopWindow"/>（透明 / 置顶 / 穿透）。</item>
     /// <item>调整 Camera 为透明背景 + 正交。</item>
     /// <item>生成一个占位桌宠，挂上 wander / drag / click-through 驱动。</item>
     /// <item>提供热键：F1 隐藏/显示，F2 切置顶，Esc 退出。</item>
@@ -56,10 +57,14 @@ namespace Demo.DobeCat
         [SerializeField, Min(0.1f)] private float _wasdMoveSpeed = 4f;
 
         // 已废弃，仅保留以保持旧场景反序列化兼容（不再使用）
+#pragma warning disable 414
         [SerializeField, HideInInspector] private string _petSpritePath = "";
+#pragma warning restore 414
 
         // 已移除 ESC 退出快捷键（避免误触关闭桌宠）；保留字段仅为旧场景反序列化兼容。
+#pragma warning disable 414
         [SerializeField, HideInInspector] private KeyCode _quitKey = KeyCode.None;
+#pragma warning restore 414
 
         [Header("BiliBili Danmu — Mode")]
         [Tooltip("弹幕接入模式：\nPolling=零认证（仅文字弹幕，3s 延迟）\nToken=登录 cookie（实时 + 礼物 + SC）\nOpenLive=主播身份码（实时 + 礼物 + SC，仅自己直播间）")]
@@ -119,60 +124,21 @@ namespace Demo.DobeCat
         [Tooltip("启动时自动打开 DobeCatTestPanel，方便调试。生产环境改 false。")]
         [SerializeField] private bool _autoOpenTestPanel = true;
 
-        private DesktopWindow _window;
         private GameObject _pet;
         private RoomDiscoveryClient _discovery;
+        private DataExchangeSession _dataSession;
+        private ActionsClient _actions;
+        private bool _wasBKey;
+        private bool _backpackOpen;
 
         protected override void Awake()
         {
-            base.Awake(); // 框架基础 Manager 接管完成
-            // 桌宠窗口 click-through 时失去焦点；若 Unity 暂停 Update，托盘菜单点击 / 主线程查询会全卡死
+            base.Awake();
             Application.runInBackground = true;
+            Screen.SetResolution(460, 400, false);
             EnsureCamera();
-            // 桌宠窗口必须在第一次渲染前就建好（WS_EX_LAYERED + DWM 玻璃帧），
-            // 否则 D3D11 swapchain 按非透明路径锁死，登录后 alpha 通道救不回 → 整窗白屏。
-            // 登录界面以 IMGUI 浮层渲染在这个全屏透明窗里，不再占独立 Win32 窗口。
-            EnsureWindow();
-            Debug.Log("[DobeCatGameManager] 框架 Manager 初始化完成（runInBackground=true）");
-        }
-
-        private void Start()
-        {
-            if (AuthSession.IsAuthenticated)
-            {
-                Debug.Log("[DobeCatGameManager] 检测到本机已登录 token，重新校验中...");
-                StartCoroutine(RevalidateCachedTokenThenRun());
-            }
-            else
-            {
-                ShowLoginScreen();
-            }
-        }
-
-        /// <summary>
-        /// 启动期重新校验缓存的 SESSDATA：通过则直接进入游戏；失败则清掉缓存改走登录界面。
-        /// 防止 token 已过期但本地还残留的情况下"假登录"放人进游戏。
-        /// </summary>
-        private System.Collections.IEnumerator RevalidateCachedTokenThenRun()
-        {
-            var passed = false;
-            yield return BilibiliAuthValidator.Validate(
-                AuthSession.Token,
-                onSuccess: (uname, mid) =>
-                {
-                    passed = true;
-                    // 顺带刷新昵称 / mid（B 站这边可能改昵称）
-                    AuthSession.Login(AuthSession.Token, uname, mid);
-                    Debug.Log($"[DobeCatGameManager] 缓存 token 校验通过：uname={uname}, mid={mid}");
-                },
-                onFail: msg =>
-                {
-                    Debug.LogWarning($"[DobeCatGameManager] 缓存 token 校验失败：{msg}，清除缓存并回到登录界面");
-                    AuthSession.Logout();
-                });
-
-            if (passed) RunAfterLogin();
-            else        ShowLoginScreen();
+            ShowLoginScreen();
+            Debug.Log("[DobeCatGameManager] Awake 完成，登录屏已创建。");
         }
 
         private void ShowLoginScreen()
@@ -184,12 +150,11 @@ namespace Demo.DobeCat
             Debug.Log("[DobeCatGameManager] 等待用户登录...");
         }
 
-        /// <summary>登录通过后的初始化序列 —— 桌宠、网络、托盘、面板全在这里串起来。窗口在 Awake 已建。</summary>
+        /// <summary>登录通过后的初始化序列 —— 桌宠、网络、托盘、面板全在这里串起来。</summary>
         private void RunAfterLogin()
         {
-            // 0) 切桌宠模式：开启 WS_EX_TOOLWINDOW，从 Alt+Tab / 任务栏隐藏
-            //    （登录期故意不开，方便用户切走查 SESSDATA 文档再切回）
-            if (_window != null) _window.SetToolWindow(true);
+            // 0) 切换到全屏无边框透明叠加层（等一帧让 Unity 完成分辨率切换）
+            StartCoroutine(Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.Enter());
 
             // 1) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
@@ -204,13 +169,68 @@ namespace Demo.DobeCat
             TryAutoConnectDanmu();
             TryStartLivePolling();
             TryAutoStartNetwork();
+            EnsureDataExchangeSession(); // 必须早于 RoomDiscovery：心跳上行要带它签发的 token
             EnsureRoomDiscovery();
             EnsureTray(); // 必须晚于 EnsureRoomDiscovery，否则 Tray 拿不到 _discovery
+            EnsureFarmWorld();
+            DobeCatGameContext.OnContextChanged += OnGameContextChanged;
+            StartCoroutine(SuppressAutoHotbar());
 
             if (_autoOpenTestPanel)
             {
                 // 推迟一帧确保所有 Manager Initialize 完成后再注册 UI
                 StartCoroutine(OpenTestPanelDelayed());
+            }
+        }
+
+        private void EnsureFarmWorld()
+        {
+            var holder = new GameObject("FarmWorld");
+            holder.transform.SetParent(transform);
+            holder.AddComponent<FarmWorldController>();
+
+            if (_pet != null)
+                _pet.AddComponent<HotbarSelectionDriver>();
+
+            var shopHolder = new GameObject("ShopWindow");
+            shopHolder.transform.SetParent(transform);
+            shopHolder.AddComponent<ShopWindow>();
+
+            var syncHolder = new GameObject("PlayerDataSync");
+            syncHolder.transform.SetParent(transform);
+            var sync = syncHolder.AddComponent<PlayerDataSync>();
+            sync.ServerBaseUrl = _roomDiscoveryServerUrl;
+        }
+
+        private System.Collections.IEnumerator SuppressAutoHotbar()
+        {
+            // InventoryManager.Start() 在下一帧自动开启 Hotbar，我们再等一帧就将它关掉
+            yield return null;
+            yield return null;
+            if (!DobeCatGameContext.IsActive && EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod(
+                    "CloseInventoryUI", new List<object> { "hotbar" });
+        }
+
+        private void OnGameContextChanged(bool active)
+        {
+            if (!EventProcessor.HasInstance) return;
+            var ep = EventProcessor.Instance;
+            if (active)
+            {
+                ep.TriggerEventMethod("OpenInventoryUI",
+                    new List<object> { "hotbar", "Hotbar" });
+            }
+            else
+            {
+                ep.TriggerEventMethod("CloseInventoryUI",
+                    new List<object> { "hotbar" });
+                if (_backpackOpen)
+                {
+                    _backpackOpen = false;
+                    ep.TriggerEventMethod("CloseInventoryUI",
+                        new List<object> { "player" });
+                }
             }
         }
 
@@ -223,9 +243,20 @@ namespace Demo.DobeCat
 
         private void Update()
         {
-            // 退出快捷键：仅 Ctrl+Shift+Q（全局，click-through 时也生效）。
-            // 已取消 ESC 退出，避免按 ESC 关闭其它窗口时误关桌宠。
-            var quit = _window != null && _window.IsGlobalQuitHotkeyPressed();
+            // 退出快捷键：Ctrl+Shift+Q
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var quit =
+                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_CONTROL) & 0x8000) != 0 &&
+                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_SHIFT) & 0x8000) != 0 &&
+                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_Q) & 0x8000) != 0;
+#else
+            var quit = Input.GetKey(KeyCode.LeftControl)
+                    && Input.GetKey(KeyCode.LeftShift)
+                    && Input.GetKey(KeyCode.Q);
+#endif
 
             if (quit)
             {
@@ -235,6 +266,24 @@ namespace Demo.DobeCat
                 Application.Quit();
 #endif
             }
+
+            // B 键：打开 / 关闭背包（全局，click-through 时也生效）
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var bKey = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_B) & 0x8000) != 0;
+#else
+            var bKey = Input.GetKey(KeyCode.B);
+#endif
+            if (bKey && !_wasBKey && DobeCatGameContext.IsActive)
+            {
+                _backpackOpen = !_backpackOpen;
+                if (EventProcessor.HasInstance)
+                    EventProcessor.Instance.TriggerEventMethod(
+                        _backpackOpen ? "OpenInventoryUI" : "CloseInventoryUI",
+                        new System.Collections.Generic.List<object>
+                            { "player", "PlayerBackPack" });
+            }
+            _wasBKey = bKey;
         }
 
         // ──────────────────────────────────────────────────────
@@ -252,17 +301,8 @@ namespace Demo.DobeCat
             cam.orthographic = true;
             cam.orthographicSize = Mathf.Max(0.1f, _cameraOrthoSize);
             cam.clearFlags = CameraClearFlags.SolidColor;
-            var c = cam.backgroundColor; c.a = 0f; cam.backgroundColor = c;
+            cam.backgroundColor = Color.clear; // RGBA 全 0，DWM 合成时完全透明
             cam.transform.position = new Vector3(0f, 0f, -10f);
-        }
-
-        private void EnsureWindow()
-        {
-            _window = GetComponentInChildren<DesktopWindow>(true);
-            if (_window != null) return;
-            var holder = new GameObject(nameof(DesktopWindow));
-            holder.transform.SetParent(transform);
-            _window = holder.AddComponent<DesktopWindow>();
         }
 
         private void SpawnPet()
@@ -338,6 +378,29 @@ namespace Demo.DobeCat
             }
         }
 
+        /// <summary>
+        /// 用本地 AuthSession 的 SESSDATA 向 <c>data_exchange_server</c> 换取一个短期 token。
+        /// 后续 RoomDiscoveryClient / ActionsClient 的所有上行写请求都会自动带这个 token。
+        /// </summary>
+        private void EnsureDataExchangeSession()
+        {
+            if (!_roomDiscoveryEnabled || string.IsNullOrEmpty(_roomDiscoveryServerUrl)) return;
+            if (_dataSession != null && _actions != null) return;
+
+            var holder = new GameObject("DataExchangeClients");
+            holder.transform.SetParent(transform);
+            holder.SetActive(false); // 关掉再配字段，避免 OnEnable 时用默认空 URL 起协程
+
+            _dataSession = holder.AddComponent<DataExchangeSession>();
+            _dataSession.ServerBaseUrl = _roomDiscoveryServerUrl;
+            _dataSession.AutoLogin = true;
+
+            _actions = holder.AddComponent<ActionsClient>();
+            _actions.ServerBaseUrl = _roomDiscoveryServerUrl;
+
+            holder.SetActive(true);
+        }
+
         private void EnsureRoomDiscovery()
         {
             if (!_roomDiscoveryEnabled) return;
@@ -390,11 +453,14 @@ namespace Demo.DobeCat
         {
             // 访问 Instance 以触发 SingletonMono 自动创建
             _ = UIManager.Instance;
+            _ = EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.Instance; // OpenInventoryUI / CloseInventoryUI / RegisterItem
             _ = DanmuManager.Instance;
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
             _ = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
             _ = EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager.Instance; // EntityManager 提供 Brain / Capabilities
+            _ = EssSystem.Core.Application.MultiManagers.FarmManager.FarmManager.Instance;     // FarmManager 农场系统（HandleSpawnFarm / HandleQuerySlot 等）
+            _ = EssSystem.Core.Application.MultiManagers.ShopManager.ShopManager.Instance;      // ShopManager 商店系统
         }
 
         private void TryAutoStartNetwork()
@@ -436,7 +502,7 @@ namespace Demo.DobeCat
                 Mode = _danmuMode,
                 RoomId = _danmuRoomId > 0 ? _danmuRoomId : _liveRoomId,
                 PollIntervalSeconds = _pollIntervalSeconds,
-                Sessdata = _sessdata,
+                Sessdata = !string.IsNullOrEmpty(_sessdata) ? _sessdata : AuthSession.Token,
                 BiliJct = _biliJct,
                 IdentityCode = _bilibiliIdentityCode,
                 AppId = _bilibiliAppId,

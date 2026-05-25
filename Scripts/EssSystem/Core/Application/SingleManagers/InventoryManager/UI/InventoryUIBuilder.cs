@@ -100,7 +100,12 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var hasItem = item != null && !item.IsEmpty;
             if (hasItem)
             {
-                icon.BackgroundSpriteId = item.IconSpriteId ?? string.Empty;
+                // 物品实例 IconSpriteId 可能为空（持久化数据来自旧 session），回退到模板
+                var iconSpriteId = item.IconSpriteId;
+                if (string.IsNullOrEmpty(iconSpriteId) && InventoryService.HasInstance)
+                    iconSpriteId = InventoryService.Instance.GetTemplate(item.Id)?.IconSpriteId;
+
+                icon.BackgroundSpriteId = iconSpriteId ?? string.Empty;
                 icon.BackgroundColor    = Color.white;
                 name.Text  = string.Empty;
                 stack.Text = item.CurrentStack > 0 ? item.CurrentStack.ToString() : string.Empty;
@@ -120,7 +125,12 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var hasItem = item != null && !item.IsEmpty;
             if (hasItem)
             {
-                refs.Icon.BackgroundSpriteId = item.IconSpriteId ?? string.Empty;
+                // 与 ApplyItemToSlot 保持一致：实例 IconSpriteId 为空时回退到模板
+                var iconSpriteId = item.IconSpriteId;
+                if (string.IsNullOrEmpty(iconSpriteId) && InventoryService.HasInstance)
+                    iconSpriteId = InventoryService.Instance.GetTemplate(item.Id)?.IconSpriteId;
+
+                refs.Icon.BackgroundSpriteId = iconSpriteId ?? string.Empty;
                 refs.Icon.BackgroundColor    = Color.white;
                 refs.Name.Text        = item.Name ?? item.Id ?? string.Empty;
                 refs.Stack.Text       = $"数量 {item.CurrentStack} / 最大堆叠 {item.MaxStack}";

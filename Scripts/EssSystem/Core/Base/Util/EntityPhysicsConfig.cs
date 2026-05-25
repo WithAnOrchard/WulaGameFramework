@@ -56,7 +56,7 @@ namespace EssSystem.Core.Base.Util
             if (rb == null) return;
             rb.gravityScale = UseGravity ? GravityScale : 0f;
             rb.bodyType = UseGravity ? RigidbodyType2D.Dynamic : RigidbodyType2D.Kinematic;
-            rb.drag = LinearDrag;
+            rb.linearDamping = LinearDrag;
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 

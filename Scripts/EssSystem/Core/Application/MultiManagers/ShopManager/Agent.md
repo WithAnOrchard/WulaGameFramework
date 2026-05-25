@@ -47,8 +47,18 @@ CHA 折扣  = max(0, (CHA - 10) * 0.01)        // 每点 CHA -1%
 卖出价 = item.Value * stock.SellbackRatio * Policy.SellMarkdownRatio * (1 + (CHA-10)*0.005)
 ```
 
-## 计划事件（M4 实施时新增）
+## Event API
 
-> 当前骨架阶段尚未声明 `EVT_*` 常量。实施时按 ToDo #4 第 (8) 节注册：
-> RegisterShop / OpenShop / CloseShop / ShopBuyItem / ShopSellItem /
-> RegisterCurrency / GetPlayerCurrency / ShopTransaction。
+通过 `EventProcessor.Instance.TriggerEventMethod(EVT_*, args)` 调用。
+
+| 常量 | 字符串 | 参数 | 返回 |
+|---|---|---|---|
+| `ShopManager.EVT_REGISTER_SHOP` | `"ShopRegister"` | `[ShopConfig]` | `Ok(id)` |
+| `ShopManager.EVT_REGISTER_CURRENCY` | `"ShopRegisterCurrency"` | `[CurrencyEntry]` | `Ok(id)` |
+| `ShopManager.EVT_BUY_ITEM` | `"ShopBuy"` | `[shopId, itemId, amount?, playerId?]` | `Ok("购买成功")` / `Fail(msg)` |
+| `ShopManager.EVT_INIT_WALLET` | `"ShopInitWallet"` | `[playerId, currencyId, amount]` | `Ok()` / `Fail(msg)` |
+| `ShopManager.EVT_GET_WALLET` | `"ShopGetWallet"` | `[playerId, currencyId]` | `Ok(amount)` / `Fail(msg)` |
+
+### 计划中（尚未实现）
+
+`EVT_ADD_WALLET`（充值）/ `OpenShop` / `CloseShop` / `ShopSellItem` — M4 实施时新增。

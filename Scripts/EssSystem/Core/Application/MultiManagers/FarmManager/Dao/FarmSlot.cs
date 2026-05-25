@@ -25,7 +25,19 @@ namespace EssSystem.Core.Application.MultiManagers.FarmManager.Dao
         /// <summary>当前生长阶段（按 CropConfig.StageDurations 推进）。</summary>
         public CropGrowthStage Stage = CropGrowthStage.Empty;
 
-        /// <summary>是否被浇水 —— 业务规则保留位（可加速生长 / 防枯萎，未来里程碑实施）。</summary>
+        /// <summary>是否被浇水 —— 浇水后生长速度按 <c>FarmService.WateredSpeedMultiplier</c> 加速；阶段推进后自动重置。</summary>
         public bool Watered;
+
+        /// <summary>是否有害虫 —— 害虫存在期间生长停滞；调用除虫操作后恢复并重新安排下次害虫定时。</summary>
+        public bool HasPest;
+
+        /// <summary>施肥加速到期时刻（UTC Unix 秒）；0 = 无施肥效果。</summary>
+        public long FertilizeBoostUntilUnix;
+
+        /// <summary>当前生长阶段开始时刻（UTC Unix 秒）；种植或阶段推进时更新，用于计算本阶段已累计时间。</summary>
+        public long StageStartUnixSeconds;
+
+        /// <summary>下次害虫触发时刻（UTC Unix 秒）；0 = 不触发。种植 / 除虫后随机重新安排。</summary>
+        public long ScheduledPestUnixSeconds;
     }
 }

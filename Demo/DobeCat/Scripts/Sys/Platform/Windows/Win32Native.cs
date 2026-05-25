@@ -65,6 +65,11 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         [DllImport("user32.dll")] public static extern IntPtr GetActiveWindow();
         [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 
+        /// <summary>按窗口类名 / 标题查找窗口；任一参数可为 null。
+        /// Unity Standalone Windows 的窗口类名为 "UnityWndClass"。</summary>
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
         [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
         public static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
 
@@ -81,8 +86,9 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         [DllImport("user32.dll")]
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-        public const int SW_HIDE = 0;
-        public const int SW_SHOWNA = 8;
+        public const int SW_HIDE            = 0;
+        public const int SW_SHOWNOACTIVATE  = 4; // 以普通尺寸显示，不激活（即使窗口从未可见过也有效）
+        public const int SW_SHOWNA          = 8;
 
         [DllImport("user32.dll")]
         public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
@@ -109,6 +115,18 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         public const int VK_A       = 0x41;
         public const int VK_S       = 0x53;
         public const int VK_D       = 0x44;
+        public const int VK_B       = 0x42;
+        public const int VK_LBUTTON = 0x01;
+        public const int VK_SPACE   = 0x20;
+        public const int VK_1       = 0x31;
+        public const int VK_2       = 0x32;
+        public const int VK_3       = 0x33;
+        public const int VK_4       = 0x34;
+        public const int VK_5       = 0x35;
+        public const int VK_6       = 0x36;
+        public const int VK_7       = 0x37;
+        public const int VK_8       = 0x38;
+        public const int VK_9       = 0x39;
     }
 }
 #endif

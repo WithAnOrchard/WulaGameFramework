@@ -1,0 +1,31 @@
+<linker>
+  <!-- 保留 DobeCat 及框架核心程序集，裁剪未用的大型 .NET 模块 -->
+  <assembly fullname="Assembly-CSharp" preserve="all"/>
+
+  <!-- Mirror 网络：保留但排除示例 -->
+  <assembly fullname="Mirror" preserve="all"/>
+  <assembly fullname="Mirror.Components" preserve="all"/>
+  <assembly fullname="Mirror.Transports" preserve="all"/>
+  <assembly fullname="Mirror.Authenticators" preserve="all"/>
+  <!-- Mirror.Examples 完全不需要 -->
+  <assembly fullname="Mirror.Examples" preserve="nothing"/>
+
+  <!-- 裁剪 DobeCat 不用的大型 .NET 程序集 -->
+  <assembly fullname="System.Data" preserve="nothing"/>
+  <assembly fullname="System.Drawing" preserve="nothing"/>
+  <assembly fullname="System.ComponentModel.Composition" preserve="nothing"/>
+  <assembly fullname="System.ServiceModel.Internals" preserve="nothing"/>
+  <assembly fullname="System.Runtime.Serialization" preserve="nothing">
+    <!-- MiniJson / JsonUtility 不依赖此库 -->
+  </assembly>
+
+  <!-- Unity 模块：DobeCat 不用 Terrain / Vehicle / Wind -->
+  <assembly fullname="UnityEngine.TerrainModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.TerrainPhysicsModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.VehiclesModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.WindModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.ClothModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.VFXModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.XRModule" preserve="nothing"/>
+  <assembly fullname="UnityEngine.ARModule" preserve="nothing"/>
+</linker>

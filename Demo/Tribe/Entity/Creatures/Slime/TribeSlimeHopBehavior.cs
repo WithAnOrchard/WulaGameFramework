@@ -106,8 +106,8 @@ namespace Demo.Tribe.Entities
 
             // 落地后清掉水平残余速度（drag=0 + 无摩擦 → 否则会一直滑）。
             // 不动 vy，让重力继续维持贴地。
-            if (grounded && Mathf.Abs(_rb.velocity.x) > 0.05f)
-                _rb.velocity = new Vector2(0f, _rb.velocity.y);
+            if (grounded && Mathf.Abs(_rb.linearVelocity.x) > 0.05f)
+                _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
 
             // 落地才能继续决策（空中不再做任何动作）
             if (!grounded) return;
@@ -131,7 +131,7 @@ namespace Demo.Tribe.Entities
             var vertical = _config.SmallHopVertical;
             var cooldown = _config.HopCooldown + Random.Range(-0.2f, 0.3f);
 
-            _rb.velocity = new Vector2(direction * horizontal, vertical);
+            _rb.linearVelocity = new Vector2(direction * horizontal, vertical);
 
             // 朝向同步：走 CharacterManager（sheet 4×4 模式下按行挑选帧序列）。
             // 注：UseHopMovement 的史莱姆没有 Brain，TribeCreature.Update 不会推 Direction，必须在此驱动。
@@ -254,7 +254,7 @@ namespace Demo.Tribe.Entities
         private bool IsGrounded()
         {
             // 短射线 + 圆形重叠组合：射线判断"脚下有东西"，并且竖直速度近 0 才算稳稳着地
-            if (Mathf.Abs(_rb.velocity.y) > 0.5f) return false;
+            if (Mathf.Abs(_rb.linearVelocity.y) > 0.5f) return false;
             var origin = (Vector2)transform.position + Vector2.down * (_config.ColliderRadius * 0.5f);
             var hit = Physics2D.Raycast(origin, Vector2.down,
                 _config.ColliderRadius + 0.15f, ~(1 << gameObject.layer));

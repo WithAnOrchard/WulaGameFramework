@@ -16,8 +16,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         /// <summary>当前速度（读自 Rigidbody2D）。<c>set</c> 强制写入 rb.velocity。</summary>
         public Vector3 Velocity
         {
-            get => _rb != null ? (Vector3)_rb.velocity : Vector3.zero;
-            set { if (_rb != null) _rb.velocity = value; }
+            get => _rb != null ? (Vector3)_rb.linearVelocity : Vector3.zero;
+            set { if (_rb != null) _rb.linearVelocity = value; }
         }
 
         /// <summary>冲刺倍率（&gt;1 加速）。运行时可改。</summary>
@@ -44,7 +44,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         }
 
         public void OnAttach(Entity owner) { _owner = owner; }
-        public void OnDetach(Entity owner) { _owner = null; if (_rb != null) _rb.velocity = Vector2.zero; }
+        public void OnDetach(Entity owner) { _owner = null; if (_rb != null) _rb.linearVelocity = Vector2.zero; }
 
         /// <summary>
         /// 把 <paramref name="direction"/> 转化为 Rigidbody2D 速度；<paramref name="deltaTime"/> 未使用（物理由 Unity 积分）。
@@ -57,7 +57,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
             var ctrl = _owner != null ? _owner.Get<IControllable>() : null;
             if (ctrl != null && ctrl.Stunned)
             {
-                _rb.velocity = new Vector2(0f, _rb.velocity.y);
+                _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
                 if (_owner != null) _owner.WorldPosition = _rb.position;
                 return;
             }
@@ -65,8 +65,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
                         * (Sprinting ? Mathf.Max(1f, SprintMultiplier) : 1f)
                         * Mathf.Max(0f, SpeedMultiplier);
             var dir = direction.sqrMagnitude > 1f ? direction.normalized : direction;
-            _rb.velocity = SideScroller
-                ? new Vector2(dir.x * speed, _rb.velocity.y)
+            _rb.linearVelocity = SideScroller
+                ? new Vector2(dir.x * speed, _rb.linearVelocity.y)
                 : new Vector2(dir.x * speed, dir.y * speed);
             if (_owner != null) _owner.WorldPosition = _rb.position;
         }

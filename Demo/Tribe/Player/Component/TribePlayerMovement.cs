@@ -105,7 +105,7 @@ namespace Demo.Tribe.Player
             _rb.gravityScale = _useSideScrollerPhysics ? _gravityScale : 0f;
             _rb.constraints = RigidbodyConstraints2D.FreezeRotation;
             _rb.bodyType = RigidbodyType2D.Dynamic;
-            _rb.drag = _linearDrag;
+            _rb.linearDamping = _linearDrag;
             _rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             _rb.interpolation = RigidbodyInterpolation2D.Interpolate;
             _collider.radius = _colliderRadius;

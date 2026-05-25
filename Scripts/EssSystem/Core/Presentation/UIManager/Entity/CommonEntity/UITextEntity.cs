@@ -21,13 +21,6 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         {
             _text = gameObject.GetComponent<Text>() ?? gameObject.AddComponent<Text>();
 
-            // 使用中心锚点 + 中心 pivot，使 Adjustable.ApplyToRectTransform 中的
-            // sizeDelta / anchoredPosition 表达绝对宽高与位置（与 Panel/Button 一致）。
-            var rectTransform = _text.GetComponent<RectTransform>();
-            rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
-            rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            rectTransform.pivot     = new Vector2(0.5f, 0.5f);
-
             _text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             _text.fontSize = 14;
             _text.color = Color.black;
@@ -45,6 +38,13 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
                 _text.color = textDao.Color;
                 _text.alignment = textDao.Alignment;
             }
+        }
+
+        public override void OnDaoPropertyChanged(string propertyName, object value)
+        {
+            base.OnDaoPropertyChanged(propertyName, value);
+            if (propertyName == "Text" && _text != null)
+                _text.text = value as string ?? "";
         }
 
         public Text GetText()

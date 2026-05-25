@@ -345,6 +345,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ResourceManager.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/ResourceManager | 取 FBX/Model 内全部 AnimationClip（别名 → `ResourceService.EVT_GET_MODEL_CLIPS`） |
 | `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
 | `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/ResourceManager | 资源全部预加载/索引完成后**广播** |
+| `ResourceService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/ResourceManager | 批量注册多精灵图集子图入缓存（命令），参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
 | `CharacterService.EVT_FRAME_EVENT` | `OnCharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
 | `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
 | `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |
@@ -467,7 +468,32 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `FarmManager.EVT_REGISTER_FARM_CONFIG` | `RegisterFarmConfig` | Core/FarmManager | 注册农场模板（命令），参数 `[FarmConfig]` |
 | `FarmManager.EVT_REGISTER_CROP_CONFIG` | `RegisterCropConfig` | Core/FarmManager | 注册作物模板（命令），参数 `[CropConfig]` |
 | `FarmManager.EVT_SPAWN_FARM` | `SpawnFarm` | Core/FarmManager | 实例化一座农场（命令），参数 `[string configId, Vector3 worldPosition, string instanceId?]` |
+| `FarmManager.EVT_PLANT_CROP` | `PlantCrop` | Core/FarmManager | 种植作物（命令），参数 `[instanceId, row, col, cropConfigId, inventoryId?]` |
+| `FarmManager.EVT_WATER_CROP` | `WaterCrop` | Core/FarmManager | 浇水（命令），参数 `[instanceId, row, col]` |
+| `FarmManager.EVT_FERTILIZE` | `FertilizeCrop` | Core/FarmManager | 施肥（命令），参数 `[instanceId, row, col, boostSeconds?]` |
+| `FarmManager.EVT_REMOVE_PEST` | `RemovePest` | Core/FarmManager | 除虫（命令），参数 `[instanceId, row, col]` |
+| `FarmManager.EVT_HARVEST_CROP` | `HarvestCrop` | Core/FarmManager | 收割（命令），参数 `[instanceId, row, col, inventoryId?]` |
+| `FarmManager.EVT_QUERY_SLOT` | `QueryFarmSlot` | Core/FarmManager | 查询槽位（查询），参数 `[instanceId, row, col]` |
+| `FarmManager.EVT_CLEAR_SLOT` | `ClearFarmSlot` | Core/FarmManager | 清除槽位无产出（命令），参数 `[instanceId, row, col]` |
 | `FarmService.EVT_ON_FARM_SPAWNED` | `OnFarmSpawned` | Core/FarmManager | 农场实例化成功**广播**，参数 `[string instanceId, FarmInstance instance]` |
+| `FarmService.EVT_ON_CROP_PLANTED` | `OnCropPlanted` | Core/FarmManager | 种植完成**广播**，参数 `[instanceId, FarmSlot]` |
+| `FarmService.EVT_ON_CROP_WATERED` | `OnCropWatered` | Core/FarmManager | 浇水完成**广播**，参数 `[instanceId, FarmSlot]` |
+| `FarmService.EVT_ON_CROP_FERTILIZED` | `OnCropFertilized` | Core/FarmManager | 施肥完成**广播**，参数 `[instanceId, FarmSlot]` |
+| `FarmService.EVT_ON_PEST_SPAWNED` | `OnPestSpawned` | Core/FarmManager | 害虫出现**广播**，参数 `[instanceId, FarmSlot]` |
+| `FarmService.EVT_ON_PEST_REMOVED` | `OnPestRemoved` | Core/FarmManager | 害虫清除**广播**，参数 `[instanceId, FarmSlot]` |
+| `FarmService.EVT_ON_CROP_STAGE_CHANGED` | `OnCropStageChanged` | Core/FarmManager | 生长阶段变化**广播**，参数 `[instanceId, FarmSlot, oldStage, newStage]` |
+| `FarmService.EVT_ON_CROP_HARVESTED` | `OnCropHarvested` | Core/FarmManager | 收割完成**广播**，参数 `[instanceId, FarmSlot, cropConfigId, amount]` |
+| `FarmService.EVT_ON_CROP_WILTED` | `OnCropWilted` | Core/FarmManager | 作物枯萎**广播**，参数 `[instanceId, FarmSlot]` |
+| `ShopManager.EVT_REGISTER_SHOP` | `ShopRegister` | Core/ShopManager | 注册商店配置（命令），参数 `[ShopConfig]` |
+| `ShopManager.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/ShopManager | 注册货币（命令），参数 `[CurrencyEntry]` |
+| `ShopManager.EVT_BUY_ITEM` | `ShopBuy` | Core/ShopManager | 购买物品（命令），参数 `[shopId, itemId, amount?, playerId?]` |
+| `ShopManager.EVT_INIT_WALLET` | `ShopInitWallet` | Core/ShopManager | 初始化钱包（命令），参数 `[playerId, currencyId, amount]` |
+| `ShopManager.EVT_GET_WALLET` | `ShopGetWallet` | Core/ShopManager | 查询余额（查询），参数 `[playerId, currencyId]` → `Ok(amount)` |
+| `ShopService.EVT_REGISTER_SHOP` | `ShopRegister` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
+| `ShopService.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
+| `ShopService.EVT_BUY_ITEM` | `ShopBuy` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
+| `ShopService.EVT_INIT_WALLET` | `ShopInitWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
+| `ShopService.EVT_GET_WALLET` | `ShopGetWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
 | `NetworkManager.EVT_HOST_START` | `NetHostStart` | Manager/NetworkManager | 启动主机 Server+本地 Client（命令），参数 `[ushort? port]` |
 | `NetworkManager.EVT_SERVER_START` | `NetServerStart` | Manager/NetworkManager | 启动纯专用服务器（命令），参数 `[ushort? port]` |
 | `NetworkManager.EVT_CLIENT_CONNECT` | `NetClientConnect` | Manager/NetworkManager | 连接到指定服务器（命令），参数 `[string address, ushort? port]` |

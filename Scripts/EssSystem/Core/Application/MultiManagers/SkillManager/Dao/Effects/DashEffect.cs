@@ -57,8 +57,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
                 : (root.localScale.x >= 0f ? 1f : -1f);
 
             var speed = Speed + SpeedPerLevel * (ctx.Level - 1);
-            var vy = KeepVerticalVelocity ? rb.velocity.y : VerticalKick;
-            rb.velocity = new Vector2(dirX * speed, vy);
+            var vy = KeepVerticalVelocity ? rb.linearVelocity.y : VerticalKick;
+            rb.linearVelocity = new Vector2(dirX * speed, vy);
 
             // 视觉翻面（如果存在 Visual 子节点）
             var visual = root.Find("Visual");

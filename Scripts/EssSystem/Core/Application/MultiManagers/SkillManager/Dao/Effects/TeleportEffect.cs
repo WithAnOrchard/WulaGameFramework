@@ -62,7 +62,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             {
                 caster.CharacterRoot.position = targetPos;
                 var rb = caster.CharacterRoot.GetComponent<Rigidbody2D>();
-                if (rb != null) rb.velocity = Vector2.zero;
+                if (rb != null) rb.linearVelocity = Vector2.zero;
             }
         }
     }

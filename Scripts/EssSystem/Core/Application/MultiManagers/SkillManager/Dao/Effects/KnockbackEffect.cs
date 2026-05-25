@@ -38,7 +38,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             var sign = dx >= 0f ? 1f : -1f;
 
             var force = Force + ForcePerLevel * (ctx.Level - 1);
-            rb.velocity = new Vector2(sign * force, Mathf.Max(rb.velocity.y, UpKick));
+            rb.linearVelocity = new Vector2(sign * force, Mathf.Max(rb.linearVelocity.y, UpKick));
         }
     }
 }

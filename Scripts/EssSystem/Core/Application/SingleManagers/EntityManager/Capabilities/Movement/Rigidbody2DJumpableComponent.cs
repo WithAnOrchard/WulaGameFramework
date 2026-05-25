@@ -33,7 +33,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         public bool Jump()
         {
             if (!CanJump) return false;
-            _rb.velocity = new Vector2(_rb.velocity.x, JumpForce);
+            _rb.linearVelocity = new Vector2(_rb.linearVelocity.x, JumpForce);
             _lastJumpTime = Time.time;
             return true;
         }

@@ -38,7 +38,8 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                 UIType.Button => gameObject.AddComponent<UIButtonEntity>(),
                 UIType.Panel => gameObject.AddComponent<UIPanelEntity>(),
                 UIType.Text => gameObject.AddComponent<UITextEntity>(),
-                UIType.Bar => gameObject.AddComponent<UIBarEntity>(),
+                UIType.Bar        => gameObject.AddComponent<UIBarEntity>(),
+                UIType.ScrollView => gameObject.AddComponent<UIScrollViewEntity>(),
                 _ => gameObject.AddComponent<UIEntity>()
             };
 
@@ -107,6 +108,44 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     var barImage = gameObject.AddComponent<Image>();
                     barImage.color = dao is UIBarComponent barDao ? barDao.BackgroundColor : Color.black;
                     barImage.raycastTarget = false;
+                    break;
+
+                case UIType.ScrollView:
+                    var svDao = dao as UIScrollViewComponent;
+                    var svBg  = gameObject.AddComponent<Image>();
+                    svBg.color = svDao != null ? svDao.BackgroundColor : new Color(0.08f, 0.09f, 0.11f, 1f);
+
+                    var sr = gameObject.AddComponent<ScrollRect>();
+                    sr.horizontal = false;
+
+                    var vpGo = new GameObject("Viewport");
+                    vpGo.transform.SetParent(gameObject.transform, false);
+                    var vpRt = vpGo.AddComponent<RectTransform>();
+                    vpRt.anchorMin = Vector2.zero; vpRt.anchorMax = Vector2.one;
+                    vpRt.offsetMin = Vector2.zero; vpRt.offsetMax = Vector2.zero;
+                    vpRt.localScale = Vector3.one;
+                    vpGo.AddComponent<Image>().color = svBg.color;
+                    var mask = vpGo.AddComponent<Mask>(); mask.showMaskGraphic = false;
+                    sr.viewport = vpRt;
+
+                    var ctGo = new GameObject("Content");
+                    ctGo.transform.SetParent(vpGo.transform, false);
+                    var ctRt = ctGo.AddComponent<RectTransform>();
+                    ctRt.anchorMin = new Vector2(0, 1); ctRt.anchorMax = Vector2.one;
+                    ctRt.pivot     = new Vector2(0.5f, 1f);
+                    ctRt.offsetMin = Vector2.zero; ctRt.offsetMax = Vector2.zero;
+                    ctRt.localScale = Vector3.one;
+                    var vlg = ctGo.AddComponent<VerticalLayoutGroup>();
+                    int pad = svDao != null ? svDao.ContentPadding : 4;
+                    vlg.padding             = new RectOffset(pad, pad, pad, pad);
+                    vlg.spacing             = svDao != null ? svDao.ItemSpacing : 2f;
+                    vlg.childControlWidth   = true;
+                    vlg.childControlHeight  = false;
+                    vlg.childForceExpandWidth  = true;
+                    vlg.childForceExpandHeight = false;
+                    ctGo.AddComponent<ContentSizeFitter>().verticalFit =
+                        ContentSizeFitter.FitMode.PreferredSize;
+                    sr.content = ctRt;
                     break;
             }
         }

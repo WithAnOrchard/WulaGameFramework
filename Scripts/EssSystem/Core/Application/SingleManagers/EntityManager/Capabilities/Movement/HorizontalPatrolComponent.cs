@@ -44,7 +44,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         public void OnDetach(Entity owner)
         {
             _owner = null;
-            if (_rb != null) _rb.velocity = new Vector2(0f, _rb.velocity.y);
+            if (_rb != null) _rb.linearVelocity = new Vector2(0f, _rb.linearVelocity.y);
         }
 
         public void Tick(float deltaTime)
@@ -54,7 +54,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
             // 1) 推进位置（物理 vs 逻辑）
             if (_rb != null)
             {
-                _rb.velocity = new Vector2(Direction * MoveSpeed, _rb.velocity.y);
+                _rb.linearVelocity = new Vector2(Direction * MoveSpeed, _rb.linearVelocity.y);
             }
             else if (_owner.CharacterRoot != null)
             {

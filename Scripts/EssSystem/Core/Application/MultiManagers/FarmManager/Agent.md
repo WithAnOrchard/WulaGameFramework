@@ -11,9 +11,12 @@
 
 ## 状态
 
-🚧 **骨架阶段**：Manager / Service / Dao（`FarmConfig` / `FarmInstance` / `FarmSlot` /
-`CropConfig` / `CropGrowthStage` + `BuildCost` / `FarmUpgradeStep`）已挂入优先级链；
-Spawn / Plant / Water / Harvest / Upgrade / EnterFarm 与事件 API 尚未实现。
+**M1 已实施**：SpawnFarm + 广播 OnFarmSpawned。
+
+**M2 已实施**：PlantCrop / WaterCrop / FertilizeCrop / RemovePest / HarvestCrop / QueryFarmSlot。
+生长周期由 `FarmManager.Update`（1秒一Tick）驱动，支持浇水加速、施肥加速、害虫停滞、枯萎过期。
+
+🚧 **尚未实施**：UpgradeFarm / EnterFarm / ExitFarm。
 
 业务上游需求（玩家提出）：
 1. 营地以左侧某一边界为地图极限，禁止玩家越界。
@@ -35,6 +38,7 @@ FarmManager/
     ├── FarmConfig.cs             农场模板：Id / DisplayName / Rows×Cols / AllowedCropIds / BuildCosts / Upgrades / InteriorSceneInstanceId
     ├── FarmInstance.cs           运行时实例：InstanceId / ConfigId / WorldPosition / Level / Rows×Cols / Slots / ActiveSceneInstanceId
     ├── FarmSlot.cs               单个槽位：Row / Col / CropConfigId / PlantedAtUnixSeconds / Stage / Watered
+    │                              + HasPest / FertilizeBoostUntilUnix / StageStartUnixSeconds / ScheduledPestUnixSeconds
     ├── CropConfig.cs             作物模板：Id / DisplayName / SeedItemId / OutputItemId / OutputAmount / StageDurations / StageSpriteIds
     └── CropGrowthStage.cs        枚举：Empty / Seed / Sprout / Growing / Mature / Wilted
 ```
@@ -53,22 +57,48 @@ FarmManager/
 
 通过 `EventProcessor.Instance.TriggerEventMethod(EVT_*, args)` 调用。
 
-- `EVT_REGISTER_FARM_CONFIG` = `"RegisterFarmConfig"` -- 参数 `[FarmConfig]` -- 注册一份农场模板
-- `EVT_REGISTER_CROP_CONFIG` = `"RegisterCropConfig"` -- 参数 `[CropConfig]` -- 注册一份作物模板
-- `EVT_SPAWN_FARM` = `"SpawnFarm"` -- 参数 `[string configId, Vector3 worldPosition, string instanceId?]` -- 实例化一座农场（重复 instanceId 直接返回已有实例，不重建）
+| 常量 | 字符串 | 参数 | 返回 |
+|---|---|---|---|
+| `EVT_REGISTER_FARM_CONFIG` | `"RegisterFarmConfig"` | `[FarmConfig]` | `Ok(id)` |
+| `EVT_REGISTER_CROP_CONFIG` | `"RegisterCropConfig"` | `[CropConfig]` | `Ok(id)` |
+| `EVT_SPAWN_FARM` | `"SpawnFarm"` | `[configId, Vector3, instanceId?]` | `Ok(FarmInstance)` |
+| `EVT_PLANT_CROP` | `"PlantCrop"` | `[instanceId, row, col, cropConfigId, inventoryId?]` | `Ok(FarmSlot)` |
+| `EVT_WATER_CROP` | `"WaterCrop"` | `[instanceId, row, col]` | `Ok(FarmSlot)` |
+| `EVT_FERTILIZE` | `"FertilizeCrop"` | `[instanceId, row, col, boostSeconds?=300]` | `Ok(FarmSlot)` |
+| `EVT_REMOVE_PEST` | `"RemovePest"` | `[instanceId, row, col]` | `Ok(FarmSlot)` |
+| `EVT_HARVEST_CROP` | `"HarvestCrop"` | `[instanceId, row, col, inventoryId?]` | `Ok("已收获")` |
+| `EVT_QUERY_SLOT` | `"QueryFarmSlot"` | `[instanceId, row, col]` | `Ok(FarmSlot)` |
+| `EVT_CLEAR_SLOT` | `"ClearFarmSlot"` | `[instanceId, row, col]` | `Ok("已清除")` / `Fail(msg)` |
 
 ### 广播事件（FarmService -> 业务方）
 
 通过 `[EventListener(FarmService.EVT_*)]` 订阅。
 
-- `EVT_ON_FARM_SPAWNED` = `"OnFarmSpawned"` -- 参数 `[string instanceId, FarmInstance instance]` -- 农场实例化成功；Tribe / CampFeature 订阅它来扩展世界边界 / 创建视觉 / 挂 IInteractable
+| 常量 | 字符串 | 参数 |
+|---|---|---|
+| `EVT_ON_FARM_SPAWNED` | `"OnFarmSpawned"` | `[instanceId, FarmInstance]` |
+| `EVT_ON_CROP_PLANTED` | `"OnCropPlanted"` | `[instanceId, FarmSlot]` |
+| `EVT_ON_CROP_WATERED` | `"OnCropWatered"` | `[instanceId, FarmSlot]` |
+| `EVT_ON_CROP_FERTILIZED` | `"OnCropFertilized"` | `[instanceId, FarmSlot]` |
+| `EVT_ON_PEST_SPAWNED` | `"OnPestSpawned"` | `[instanceId, FarmSlot]` |
+| `EVT_ON_PEST_REMOVED` | `"OnPestRemoved"` | `[instanceId, FarmSlot]` |
+| `EVT_ON_CROP_STAGE_CHANGED` | `"OnCropStageChanged"` | `[instanceId, FarmSlot, oldStage, newStage]` |
+| `EVT_ON_CROP_HARVESTED` | `"OnCropHarvested"` | `[instanceId, FarmSlot, cropConfigId, amount]` |
+| `EVT_ON_CROP_WILTED` | `"OnCropWilted"` | `[instanceId, FarmSlot]` |
 
 ### 计划中（尚未实现）
 
-**实例生命周期**：`DespawnFarm` / `UpgradeFarm`
-**种植循环**：`PlantCrop` / `WaterCrop` / `HarvestCrop`
-**子场景路由**：`EnterFarm` / `ExitFarm`
-**广播扩展**：`OnFarmUpgraded` / `OnCropMatured` / `OnCropHarvested`
+- `UpgradeFarm` / `DespawnFarm`
+- `EnterFarm` / `ExitFarm`
+- 广播：`OnFarmUpgraded`
+
+## 生长机制
+
+- `FarmManager.Update` 每秒调用 `FarmService.TickAllFarms()`。
+- 每个占用槽位：计算 `realElapsed = nowUnix - slot.StageStartUnixSeconds`，乘以速度倍数（浇水“2×” / 施肥“1.5×” / 害虫“0×”），与 `CropConfig.StageDurations[stageIndex]` 比较推进阶段。
+- 枯萎：`Mature` 阶段对应 `StageDurations[3]`（可选）超时后自动变为 `Wilted`。
+- 害虫：广播 `OnPestSpawned`，搜集时间就预约在 `ScheduledPestUnixSeconds`，默认随机 120–600 秒后。宇虫阶段（Sprout / Growing）才能触发。
+- 速度参数可在运行时覆盖：`FarmService.Instance.WateredSpeedMultiplier`、`FertilizedSpeedMultiplier`、`PestMinDelaySec`、`PestMaxDelaySec`。
 
 ## 与上游模块的解耦
 

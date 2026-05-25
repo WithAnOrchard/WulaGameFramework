@@ -63,7 +63,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
                 : (root.localScale.x >= 0f ? 1f : -1f);
 
             // ① 起跳 + 向前推
-            rb.velocity = new Vector2(dirX * JumpForward, JumpUp);
+            rb.linearVelocity = new Vector2(dirX * JumpForward, JumpUp);
 
             // ② 滞空：BuffInstance 到期触发砸地（OnExpire 调度）
             if (!SkillService.HasInstance) return;
@@ -90,7 +90,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             if (rb == null || root == null) return;
 
             // 强制砸地：横向归零，竖直给一个大向下速度
-            rb.velocity = new Vector2(0f, slamVelocity);
+            rb.linearVelocity = new Vector2(0f, slamVelocity);
 
             // AOE 伤害：以当前位置为中心
             if (!EntityService.HasInstance || damage <= 0f) return;
