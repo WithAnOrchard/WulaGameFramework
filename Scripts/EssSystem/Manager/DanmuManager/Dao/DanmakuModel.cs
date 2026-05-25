@@ -220,8 +220,9 @@ namespace BiliBiliDanmu.Dao
                                 UserID_long = -1;
                             }
 
-                            // Giftrcost = obj["data"]["rcost"].ToString();
-                            GiftCount = obj["data"]["num"].ToObject<int>();
+                            GiftCount    = obj["data"]["num"].ToObject<int>();
+                            GiftPrice    = obj["data"].Value<int>("price");
+                            GiftCoinType = obj["data"]["coin_type"]?.ToString() ?? "silver";
                             break;
                         case "COMBO_SEND":
                         {
@@ -791,6 +792,12 @@ namespace BiliBiliDanmu.Dao
         ///     <para>此字段也用于标识上船 <see cref="MsgTypeEnum.GuardBuy" /> 的数量（月数）</para>
         /// </summary>
         public int GiftCount { get; set; }
+
+        /// <summary>单个礼物价格（金瓜子，100 = 1 电池 = 0.1 元）。银瓜子礼物此值为银瓜子数。</summary>
+        public int GiftPrice { get; set; }
+
+        /// <summary>"gold" = 付费电池礼物；"silver" = 免费银瓜子礼物。</summary>
+        public string GiftCoinType { get; set; } = "silver";
 
         /// <summary>
         ///     当前房间的礼物积分（Room Cost）

@@ -64,6 +64,8 @@ namespace BiliBiliDanmu
         public const string EVT_DISCONNECTED = "OnDanmuDisconnected";
         public const string EVT_DANMAKU      = "OnDanmuComment";
         public const string EVT_GIFT         = "OnDanmuGift";
+        /// <summary>Super Chat 事件。data: [userName, text, priceYuan_int, userId_long]</summary>
+        public const string EVT_SC           = "OnDanmuSuperChat";
         public const string EVT_RAW          = "OnDanmuRaw";
 
         #endregion
@@ -375,9 +377,12 @@ namespace BiliBiliDanmu
                         ep.TriggerEvent(EVT_DANMAKU, new List<object> { msg.UserName, msg.Text, msg.UserId });
                         break;
                     case AnonDanmuMsgType.Gift:
-                        ep.TriggerEvent(EVT_GIFT, new List<object> { msg.UserName, msg.GiftName, msg.GiftCount, msg.UserId });
+                        ep.TriggerEvent(EVT_GIFT, new List<object> { msg.UserName, msg.GiftName, msg.GiftCount, msg.UserId, msg.GiftPrice, msg.GiftCoinType });
                         break;
-                    // SuperChat 暂不映射到基础事件
+                    case AnonDanmuMsgType.SuperChat:
+                        ep.TriggerEvent(EVT_SC, new List<object> { msg.UserName, msg.Text, msg.GiftCount, msg.UserId });
+                        break;
+                    // SuperChat 已映射到 EVT_SC
                 }
             });
         }
@@ -442,7 +447,7 @@ namespace BiliBiliDanmu
                         break;
                     case MsgTypeEnum.GiftSend:
                         ep.TriggerEvent(EVT_GIFT, new List<object>
-                            { dm.UserName ?? string.Empty, dm.GiftName ?? string.Empty, dm.GiftCount, dm.UserID_long });
+                            { dm.UserName ?? string.Empty, dm.GiftName ?? string.Empty, dm.GiftCount, dm.UserID_long, dm.GiftPrice, dm.GiftCoinType });
                         break;
                 }
             });

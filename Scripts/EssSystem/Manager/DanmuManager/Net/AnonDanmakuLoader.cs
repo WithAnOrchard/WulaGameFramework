@@ -239,6 +239,8 @@ namespace BiliBiliDanmu.Net
                         GiftName = d["giftName"].ToString(),
                         GiftCount = d.Value<int>("num"),
                         UserId = d.Value<long>("uid"),
+                        GiftPrice    = d.Value<int>("price"),
+                        GiftCoinType = d["coin_type"]?.ToString() ?? "silver",
                     });
                     break;
                 }
@@ -274,5 +276,9 @@ namespace BiliBiliDanmu.Net
         public string GiftName = string.Empty;
         public int GiftCount;
         public long UserId;
+        /// <summary>Price per gift in 金瓜子 (100 = 1 battery = 0.1 RMB). 0 for silver gifts.</summary>
+        public int GiftPrice;
+        /// <summary>"gold" = paid battery gift, "silver" = free room-coin gift.</summary>
+        public string GiftCoinType = "silver";
     }
 }
