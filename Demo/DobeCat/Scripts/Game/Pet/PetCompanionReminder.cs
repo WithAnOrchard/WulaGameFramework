@@ -105,6 +105,26 @@ namespace Demo.DobeCat.Game.Pet
             Debug.Log("[PetCompanionReminder] 所有闹钟已清除");
         }
 
+        /// <summary>当前闹钟数量。</summary>
+        public int AlarmCount => _alarms.Count;
+
+        /// <summary>按索引取闹钟信息（hour, minute, label）。越界返回默认值。</summary>
+        public (int Hour, int Minute, string Label) GetAlarm(int index)
+        {
+            if (index < 0 || index >= _alarms.Count) return (0, 0, "");
+            var a = _alarms[index];
+            return (a.Hour, a.Minute, a.Label);
+        }
+
+        /// <summary>按索引删除一条闹钟。</summary>
+        public void RemoveAlarmAt(int index)
+        {
+            if (index < 0 || index >= _alarms.Count) return;
+            var a = _alarms[index];
+            _alarms.RemoveAt(index);
+            Debug.Log($"[PetCompanionReminder] 闹钟删除: {a.Hour:D2}:{a.Minute:D2} {a.Label}");
+        }
+
         /// <summary>Start a Pomodoro cycle. Default 25 min focus / 5 min break.</summary>
         public void StartPomodoro(int focusMinutes = 25, int breakMinutes = 5)
         {
@@ -112,6 +132,7 @@ namespace Demo.DobeCat.Game.Pet
             _pomBreakSec = breakMinutes * 60f;
             _pomTimer    = _pomFocusSec;
             _pomPhase    = PomodoroPhase.Focus;
+            PetAiController.Current?.SetPaused(true);   // 专注阶段：宠物不乱跑
             ShowBubble($"番茄钟启动！专注 {focusMinutes} 分钟 🍅");
         }
 
@@ -120,6 +141,7 @@ namespace Demo.DobeCat.Game.Pet
         {
             if (_pomPhase == PomodoroPhase.None) return;
             _pomPhase = PomodoroPhase.None;
+            PetAiController.Current?.SetPaused(false);  // 取消时恢复
             ShowBubble("番茄钟已取消。");
         }
 
@@ -210,12 +232,14 @@ namespace Demo.DobeCat.Game.Pet
             {
                 _pomPhase = PomodoroPhase.Break;
                 _pomTimer = _pomBreakSec;
+                PetAiController.Current?.SetPaused(false); // 休息阶段：宠物恢复活动
                 var breakMin = Mathf.RoundToInt(_pomBreakSec / 60f);
                 ShowBubble($"🍅 番茄钟结束！好好休息 {breakMin} 分钟吧～");
             }
             else
             {
                 _pomPhase = PomodoroPhase.None;
+                PetAiController.Current?.SetPaused(false); // 全程结束：恢复正常
                 ShowBubble("⏰ 休息结束！继续加油！");
             }
         }
