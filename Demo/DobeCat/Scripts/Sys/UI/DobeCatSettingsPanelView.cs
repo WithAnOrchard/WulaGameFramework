@@ -1,46 +1,30 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using EssSystem.Core.Base.Event;
-using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
-using Demo.DobeCat.Game;
 
 namespace Demo.DobeCat.Sys.UI
 {
     /// <summary>
-    /// Settings panel view — clipboard-paste for text fields, buttons for toggles/numbers.
+    /// 设置面板：陪伴提醒开关 + 界面主题选择 + 清空缓存。
+    /// 番茄钟 → 托盘「生活助手 → 番茄钟设置」独立窗口。
+    /// 天气 / 闹钟 → 托盘「生活助手」子菜单。
+    /// 礼物统计 / 弹幕面板 → 托盘「工具」子菜单。
     /// DESIGN.md §M5 设置面板.
-    /// Layout:
-    ///   [天气]  API Key, City
-    ///   [动态提醒] Watch UIDs
-    ///   [陪伴] reminder toggles
-    ///   [番茄钟] focus/break ±
     /// </summary>
     public class DobeCatSettingsPanelView : MonoBehaviour
     {
         public static DobeCatSettingsPanelView Instance { get; private set; }
 
         // ─── PlayerPrefs keys ────────────────────────────────────────────────
-        private const string PK_BILI_UIDS    = "BiliNotifier_uids";
         private const string PK_REM_SITBREAK = "Rem_SitBreak";
         private const string PK_REM_WATER    = "Rem_Water";
         private const string PK_REM_HOURLY   = "Rem_Hourly";
         private const string PK_REM_LATENIGHT= "Rem_LateNight";
-        private const string PK_POM_FOCUS    = "Pom_FocusMin";
-        private const string PK_POM_BREAK    = "Pom_BreakMin";
-
-        // ─── State ───────────────────────────────────────────────────────────
-        private int   _pomFocus = 25;
-        private int   _pomBreak = 5;
 
         // ─── UI DAO refs ─────────────────────────────────────────────────────
-        private UITextComponent _weatherStatusText;
-        private UITextComponent _biliUidsText;
-        private UITextComponent _pomFocusText;
-        private UITextComponent _pomBreakText;
         private readonly Dictionary<string, UIButtonComponent> _toggleBtns =
             new Dictionary<string, UIButtonComponent>();
 
@@ -49,26 +33,35 @@ namespace Demo.DobeCat.Sys.UI
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
 
-        // ─── Colors ──────────────────────────────────────────────────────────
-        private static readonly Color CB   = new Color(0.10f, 0.11f, 0.14f, 0.97f);
-        private static readonly Color CH   = new Color(0.07f, 0.08f, 0.11f, 1.00f);
-        private static readonly Color CX   = new Color(0.70f, 0.18f, 0.18f, 1.00f);
-        private static readonly Color CTM  = new Color(0.94f, 0.94f, 0.96f, 1.00f);
-        private static readonly Color CTS  = new Color(0.58f, 0.61f, 0.70f, 1.00f);
-        private static readonly Color CDiv = new Color(0.22f, 0.23f, 0.28f, 1.00f);
-        private static readonly Color CBTN = new Color(0.18f, 0.19f, 0.24f, 1.00f);
-        private static readonly Color CGRN = new Color(0.18f, 0.52f, 0.30f, 1.00f);
-        private static readonly Color CRED = new Color(0.50f, 0.18f, 0.18f, 1.00f);
+        // 颜色由 DobeCatTheme 提供，不再使用静态常量。
 
         // ─── Unity lifecycle ─────────────────────────────────────────────────
 
-        private void Awake() { Instance = this; }
+        private void Awake()
+        {
+            Instance = this;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
+        }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("cfg-root");
+        }
+
+        private void RebuildUI()
+        {
+            if (!_initialized) return;
+            var wasOpen = IsOpen;
+            _initialized = false;
+            // 直接通过 _rootEntity 引用销毁 GameObject —— UIService 缓存可能因延迟 OnDestroy 已被清空，DestroyUIEntity 会静默 no-op
+            if (_rootEntity != null && _rootEntity.gameObject != null)
+                Destroy(_rootEntity.gameObject);
+            if (UIService.HasInstance) UIService.Instance.DestroyUIEntity("cfg-root");
+            _rootEntity = null; _toggleBtns.Clear();
+            if (wasOpen) Show();
         }
 
         // ─── Public API ──────────────────────────────────────────────────────
@@ -76,7 +69,6 @@ namespace Demo.DobeCat.Sys.UI
         public void Show()
         {
             if (!_initialized) BuildUI();
-            RefreshDisplay();
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(true);
         }
 
@@ -93,11 +85,13 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = GetCanvasTransform();
             if (canvasT == null) { Debug.LogWarning("[SettingsPanel] UIManager Canvas 未就绪"); return; }
 
-            _pomFocus = PlayerPrefs.GetInt(PK_POM_FOCUS, 25);
-            _pomBreak = PlayerPrefs.GetInt(PK_POM_BREAK, 5);
-
-            const float PW = 400f, PH = 560f;
+            const float PW = 400f, PH = 500f;
             float y = PH; // running cursor from top
+
+            var t    = DobeCatTheme.Current;
+            var CB   = t.Background; var CH = t.Header; var CX  = t.Close;
+            var CTM  = t.TextMain;   var CTS = t.TextSub; var CDiv = t.Divider;
+            var CBTN = t.ButtonBg;   var CGRN = t.ButtonGreen; var CRED = t.ButtonRed;
 
             var root = new UIPanelComponent("cfg-root")
                 .SetBackgroundColor(CB).SetSize(PW, PH)
@@ -110,7 +104,7 @@ namespace Demo.DobeCat.Sys.UI
             root.AddChild(titleBar);
             titleBar.AddChild(new UITextComponent("cfg-title", text: "⚙ 设置")
                 .SetSize(320f, 44f).SetPosition(172f, 22f)
-                .SetColor(CTM).SetFontSize(14).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(t.TextOnHeader).SetFontSize(14).SetAlignment(TextAnchor.MiddleLeft));
             var closeXBtn = new UIButtonComponent("cfg-close-x", text: "×")
                 .SetSize(40f, 44f).SetPosition(380f, 22f).SetButtonColor(CX);
             titleBar.AddChild(closeXBtn);
@@ -129,44 +123,6 @@ namespace Demo.DobeCat.Sys.UI
                 y -= 2f;
             }
 
-            UITextComponent ClipRow(string id, string label, string pkKey,
-                                    System.Action<string> onApply)
-            {
-                y -= 28f;
-                root.AddChild(new UITextComponent(id + "-lbl", text: label)
-                    .SetSize(100f, 24f).SetPosition(90f, y + 12f)
-                    .SetColor(CTM).SetFontSize(11).SetAlignment(TextAnchor.MiddleLeft));
-                var valText = new UITextComponent(id + "-val", text: "—")
-                    .SetSize(180f, 24f).SetPosition(198f, y + 12f)
-                    .SetColor(CTS).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft);
-                root.AddChild(valText);
-                var pasteBtn = new UIButtonComponent(id + "-paste", text: "📋 粘贴")
-                    .SetSize(70f, 24f).SetPosition(333f, y + 12f).SetButtonColor(CBTN);
-                root.AddChild(pasteBtn);
-                pasteBtn.OnClick += _ =>
-                {
-                    var clip = GUIUtility.systemCopyBuffer?.Trim() ?? "";
-                    if (string.IsNullOrEmpty(clip)) return;
-                    PlayerPrefs.SetString(pkKey, clip);
-                    onApply?.Invoke(clip);
-                    valText.Text = Truncate(clip, 22);
-                };
-                return valText;
-            }
-
-            // ── Weather ──
-            SectionHeader("cfg-sec-weather", "🌤 天气");
-            y -= 28f;
-            _weatherStatusText = new UITextComponent("cfg-weather-status", text: "正在获取天气...")
-                .SetSize(360f, 24f).SetPosition(PW / 2f, y + 12f)
-                .SetColor(CTM).SetFontSize(11).SetAlignment(TextAnchor.MiddleCenter);
-            root.AddChild(_weatherStatusText);
-
-            // ── Bili space notifier ──
-            SectionHeader("cfg-sec-bili", "📺 B站动态提醒");
-            _biliUidsText = ClipRow("cfg-bu", "UIDs", PK_BILI_UIDS,
-                v => BiliSpaceNotifier.Instance?.SetWatchUids(v));
-
             // ── Companion reminders ──
             SectionHeader("cfg-sec-rem", "🔔 陪伴提醒");
             y -= 30f;
@@ -175,14 +131,28 @@ namespace Demo.DobeCat.Sys.UI
             AddToggleRow(root, "cfg-hour",  "整点报时",   PK_REM_HOURLY,   PW, ref y);
             AddToggleRow(root, "cfg-late",  "深夜劝睡",   PK_REM_LATENIGHT,PW, ref y);
 
-            // ── Pomodoro ──
-            SectionHeader("cfg-sec-pom", "🍅 番茄钟");
-            y -= 30f;
-            AddStepperRow(root, "cfg-pf", "专注（分钟）", ref _pomFocus, 5, 60, PW, ref y,
-                () => { PlayerPrefs.SetInt(PK_POM_FOCUS, _pomFocus); RefreshPomodoro(); });
-            y -= 4f;
-            AddStepperRow(root, "cfg-pb", "休息（分钟）", ref _pomBreak, 1, 30, PW, ref y,
-                () => { PlayerPrefs.SetInt(PK_POM_BREAK, _pomBreak); RefreshPomodoro(); });
+            // ── Theme selector (2 rows x 4) ──
+            SectionHeader("cfg-sec-theme", "🎨 界面主题");
+            y -= 6f;
+            const int COLS = 4;
+            float themeW = (PW - 24f) / COLS;
+            int totalThemes = DobeCatTheme.Presets.Length;
+            int rows = Mathf.CeilToInt(totalThemes / (float)COLS);
+            for (int i = 0; i < totalThemes; i++)
+            {
+                int idx = i;
+                int row = idx / COLS;
+                int col = idx % COLS;
+                var isActive = DobeCatTheme.CurrentIndex == idx;
+                var tbtn = new UIButtonComponent($"cfg-theme-{idx}", text: DobeCatTheme.Presets[idx].Name)
+                    .SetSize(themeW - 4f, 28f)
+                    .SetPosition(12f + themeW * col + themeW / 2f - 2f, y - 14f - row * 32f)
+                    .SetButtonColor(isActive ? t.Accent : t.ButtonBg)
+                    .SetFontSize(11);
+                root.AddChild(tbtn);
+                tbtn.OnClick += _ => DobeCatTheme.Apply(idx);
+            }
+            y -= rows * 32f + 4f;
 
             // ── Clear cache button ──
             y -= 14f;
@@ -215,15 +185,14 @@ namespace Demo.DobeCat.Sys.UI
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);
             rt.pivot = new Vector2(0f, 0f);
             rt.anchoredPosition = new Vector2(20f, 20f);
-            rt.sizeDelta = new Vector2(PW, PH);
+            rt.sizeDelta  = new Vector2(PW, PH);
 
-            closeXBtn.OnClick  += _ => Hide();
-            closeBtn.OnClick   += _ => Hide();
-            clearBtn.OnClick   += _ =>
+            closeXBtn.OnClick += _ => Hide();
+            closeBtn.OnClick  += _ => Hide();
+            clearBtn.OnClick  += _ =>
             {
                 PlayerPrefs.DeleteAll();
                 PlayerPrefs.Save();
-                RefreshDisplay();
                 Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show("🗑 本地缓存已清空", 3f);
                 Debug.Log("[SettingsPanel] PlayerPrefs 已全部清除");
             };
@@ -235,9 +204,10 @@ namespace Demo.DobeCat.Sys.UI
                                   string pk, float pw, ref float y)
         {
             var enabled = PlayerPrefs.GetInt(pk, 1) == 1;
+            var tg = DobeCatTheme.Current;
             var btn = new UIButtonComponent(id + "-btn", text: ToggleLabel(label, enabled))
                 .SetSize(pw - 24f, 26f).SetPosition(pw / 2f, y - 13f)
-                .SetButtonColor(enabled ? CGRN : CRED);
+                .SetButtonColor(enabled ? tg.ButtonGreen : tg.ButtonRed);
             root.AddChild(btn);
             _toggleBtns[pk] = btn;
             btn.OnClick += _ =>
@@ -245,89 +215,19 @@ namespace Demo.DobeCat.Sys.UI
                 var cur = PlayerPrefs.GetInt(pk, 1) == 1;
                 var next = !cur;
                 PlayerPrefs.SetInt(pk, next ? 1 : 0);
+                // 先更新 DAO 属性（驱动事件链）
                 btn.Text = ToggleLabel(label, next);
-                btn.SetButtonColor(next ? CGRN : CRED);
+                btn.SetButtonColor(next ? DobeCatTheme.Current.ButtonGreen : DobeCatTheme.Current.ButtonRed);
+                // 再直接强制同步 Entity，确保视觉一定刷新（兜底）
+                EssSystem.Core.Presentation.UIManager.Entity.UIEntity
+                    .GetEntityById(btn.Id)?.SyncFromDao();
             };
             y -= 30f;
         }
-
-        private void AddStepperRow(UIPanelComponent root, string id, string label,
-                                   ref int valueRef, int min, int max, float pw, ref float y,
-                                   System.Action onChanged)
-        {
-            root.AddChild(new UITextComponent(id + "-lbl", text: label)
-                .SetSize(140f, 26f).SetPosition(100f, y - 13f)
-                .SetColor(CTM).SetFontSize(11).SetAlignment(TextAnchor.MiddleLeft));
-
-            var numText = new UITextComponent(id + "-num", text: valueRef.ToString())
-                .SetSize(44f, 26f).SetPosition(220f, y - 13f)
-                .SetColor(CTM).SetFontSize(13).SetAlignment(TextAnchor.MiddleCenter);
-            root.AddChild(numText);
-
-            var minusBtn = new UIButtonComponent(id + "-minus", text: "−")
-                .SetSize(30f, 26f).SetPosition(193f, y - 13f).SetButtonColor(CBTN);
-            root.AddChild(minusBtn);
-
-            var plusBtn = new UIButtonComponent(id + "-plus", text: "+")
-                .SetSize(30f, 26f).SetPosition(247f, y - 13f).SetButtonColor(CBTN);
-            root.AddChild(plusBtn);
-
-            if (id == "cfg-pf") _pomFocusText = numText;
-            else                _pomBreakText = numText;
-
-            minusBtn.OnClick += _ =>
-            {
-                if (id == "cfg-pf") { _pomFocus = Mathf.Max(min, _pomFocus - 5); numText.Text = _pomFocus.ToString(); }
-                else                { _pomBreak = Mathf.Max(min, _pomBreak - 1); numText.Text = _pomBreak.ToString(); }
-                onChanged?.Invoke();
-            };
-            plusBtn.OnClick += _ =>
-            {
-                if (id == "cfg-pf") { _pomFocus = Mathf.Min(max, _pomFocus + 5); numText.Text = _pomFocus.ToString(); }
-                else                { _pomBreak = Mathf.Min(max, _pomBreak + 1); numText.Text = _pomBreak.ToString(); }
-                onChanged?.Invoke();
-            };
-
-            y -= 30f;
-        }
-
-        private void RefreshDisplay()
-        {
-            if (_weatherStatusText != null)
-            {
-                var info = WeatherNotifier.LastWeatherInfo;
-                var city = WeatherNotifier.DetectedCity;
-                if (!string.IsNullOrEmpty(info))
-                    _weatherStatusText.Text = Truncate(info, 36);
-                else if (!string.IsNullOrEmpty(city))
-                    _weatherStatusText.Text = $"{city} 获取中...";
-                else
-                    _weatherStatusText.Text = "城市检测中...";
-            }
-            if (_biliUidsText != null) _biliUidsText.Text = Truncate(PlayerPrefs.GetString(PK_BILI_UIDS, "（未设置）"), 22);
-            if (_pomFocusText    != null) _pomFocusText.Text    = _pomFocus.ToString();
-            if (_pomBreakText    != null) _pomBreakText.Text    = _pomBreak.ToString();
-
-            foreach (var kv in _toggleBtns)
-            {
-                // Re-read and reset visual — buttons self-update on click, this covers initial state
-            }
-        }
-
-        private static void RefreshPomodoro() { /* future: update running pomodoro if active */ }
 
         private static string ToggleLabel(string label, bool on) =>
             on ? $"✔ {label}" : $"  {label}（已禁用）";
 
-        private static string Truncate(string s, int max) =>
-            s.Length <= max ? s : s.Substring(0, max) + "…";
-
-        private static Transform GetCanvasTransform()
-        {
-            if (!EventProcessor.HasInstance) return null;
-            var res = EventProcessor.Instance.TriggerEventMethod(
-                UIManager.EVT_GET_CANVAS_TRANSFORM, new List<object>());
-            return ResultCode.IsOk(res) && res.Count >= 2 ? res[1] as Transform : null;
-        }
+        private static Transform GetCanvasTransform() => DobeCatCanvasProvider.GetOrCreate();
     }
 }

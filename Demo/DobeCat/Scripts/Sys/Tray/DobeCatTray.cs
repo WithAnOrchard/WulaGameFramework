@@ -77,87 +77,111 @@ namespace Demo.DobeCat.Sys.Tray
         private void RebuildMenu()
         {
             if (_tray == null) return;
-            var items = new List<SystemTray.MenuItemDef>
-            {
-                SystemTray.MenuItemDef.Item("显示 / 隐藏", TogglePetVisible),
-                SystemTray.MenuItemDef.Item("重置位置", ResetPetPosition),
-            };
 
-            // AI 总开关（包含 PlayerControl 与 Wander 两个 Consideration）
+            // ── 二级：桌宠设置 ──────────────────────────────────────────────
+            var petSub = new List<SystemTray.MenuItemDef>();
             if (Ai != null)
-            {
-                var label = Ai.AiEnabled ? "✔ AI / 玩家控制" : "  AI / 玩家控制";
-                items.Add(SystemTray.MenuItemDef.Item(label, ToggleAi));
-            }
-            // 显示模式切换（桌面叠加 ↔ 窗口捕捉）
-            var captureLabel = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode
-                ? "✔ 窗口捕捉模式 (OBS)" : "  窗口捕捉模式 (OBS)";
-            items.Add(SystemTray.MenuItemDef.Item(captureLabel, ToggleWindowCaptureMode));
-
-            // 背景层开关
+                petSub.Add(SystemTray.MenuItemDef.Item(
+                    Ai.AiEnabled ? "✔ AI / 玩家控制" : "  AI / 玩家控制", ToggleAi));
+            petSub.Add(SystemTray.MenuItemDef.Item(
+                Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode
+                    ? "✔ 窗口捕捉模式 (OBS)" : "  窗口捕捉模式 (OBS)",
+                ToggleWindowCaptureMode));
             var bgVisible = Demo.DobeCat.Game.Pet.PetBackgroundLayer.Instance?.Visible ?? false;
-            var bgLabel = bgVisible ? "✔ 显示背景" : "  显示背景";
-            items.Add(SystemTray.MenuItemDef.Item(bgLabel, ToggleBackground));
-
-            // 桌宠大小预设（在托盘里以文字标记当前挡位）
+            petSub.Add(SystemTray.MenuItemDef.Item(
+                bgVisible ? "✔ 显示背景" : "  显示背景", ToggleBackground));
+            petSub.Add(SystemTray.MenuItemDef.Separator());
             var curScale = Demo.DobeCat.Game.Pet.PetScaleController.Instance?.ScaleFactor ?? 1f;
-            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 0.5f, "桌宠大小 50%"),  () => SetScale(0.5f)));
-            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.0f, "桌宠大小 100%"), () => SetScale(1.0f)));
-            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.5f, "桌宠大小 150%"), () => SetScale(1.5f)));
-            items.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 2.0f, "桌宠大小 200%"), () => SetScale(2.0f)));
+            petSub.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 0.5f, "大小 50%"),  () => SetScale(0.5f)));
+            petSub.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.0f, "大小 100%"), () => SetScale(1.0f)));
+            petSub.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 1.5f, "大小 150%"), () => SetScale(1.5f)));
+            petSub.Add(SystemTray.MenuItemDef.Item(Mark(curScale, 2.0f, "大小 200%"), () => SetScale(2.0f)));
 
-            items.Add(SystemTray.MenuItemDef.Separator());
-
-            // 房间区
+            // ── 二级：加入房间 ──────────────────────────────────────────────
+            var roomSub = new List<SystemTray.MenuItemDef>();
             if (Discovery == null || Discovery.LatestRooms == null || Discovery.LatestRooms.Count == 0)
             {
-                items.Add(SystemTray.MenuItemDef.Disabled("（暂无在线房间）"));
+                roomSub.Add(SystemTray.MenuItemDef.Disabled("（暂无在线房间）"));
             }
             else
             {
-                items.Add(SystemTray.MenuItemDef.Disabled("─ 加入房间 ─"));
                 foreach (var r in Discovery.LatestRooms)
                 {
                     var captured = r;
-                    var label = captured.IsSelf
+                    var lbl = captured.IsSelf
                         ? $"● 我的房间: {captured.Name} ({captured.Host}:{captured.Port})"
                         : $"加入: {captured.Name} ({captured.Host}:{captured.Port})";
-                    items.Add(SystemTray.MenuItemDef.Item(label,
+                    roomSub.Add(SystemTray.MenuItemDef.Item(lbl,
                         () => OnJoinRoomRequested?.Invoke(captured),
                         enabled: !captured.IsSelf));
                 }
             }
 
-            items.Add(SystemTray.MenuItemDef.Separator());
-            items.Add(SystemTray.MenuItemDef.Item("喂食 (猫粮)", FeedPet));
+            // ── 二级：生活助手 ──────────────────────────────────────────────
             var reminder = Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance;
+            var lifeSub  = new List<SystemTray.MenuItemDef>();
+
+            // 天气
+            var weatherInfo = Demo.DobeCat.Game.WeatherNotifier.LastWeatherInfo;
+            lifeSub.Add(string.IsNullOrEmpty(weatherInfo)
+                ? SystemTray.MenuItemDef.Disabled("🌤 天气: 拉取中...")
+                : SystemTray.MenuItemDef.Item($"🌤 {weatherInfo}", () =>
+                      Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show(weatherInfo, 6f)));
+            lifeSub.Add(SystemTray.MenuItemDef.Separator());
+
+            // 番茄钟
+            lifeSub.Add(SystemTray.MenuItemDef.Item("🍅 番茄钟设置...",
+                () => Demo.DobeCat.Sys.UI.DobeCatPomodoroPanel.Toggle()));
             if (reminder != null && reminder.PomodoroActive)
-                items.Add(SystemTray.MenuItemDef.Item("⏹ 取消番茄钟",
-                    () => Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StopPomodoro()));
-            else
-                items.Add(SystemTray.MenuItemDef.Item("🍅 启动番茄钟 (25min)",
-                    () => Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StartPomodoro()));
-            // 自定义闹钟（格式：先复制 "HH:mm 备注" 到剪贴板再点击）
-            if (reminder != null)
+                lifeSub.Add(SystemTray.MenuItemDef.Item("⏹ 取消番茄钟",
+                    () => { Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StopPomodoro(); RebuildMenu(); }));
+            lifeSub.Add(SystemTray.MenuItemDef.Separator());
+
+            // 闹钟
+            var alarmDisplay = reminder != null ? reminder.GetAlarmsDisplay() : "无闹钟";
+            lifeSub.Add(SystemTray.MenuItemDef.Item(
+                $"⏰ 闹钟管理...  ({alarmDisplay})",
+                () => Demo.DobeCat.Sys.UI.DobeCatAlarmPanel.Toggle()));
+            lifeSub.Add(SystemTray.MenuItemDef.Separator());
+            lifeSub.Add(SystemTray.MenuItemDef.Item("喂食 (猫粮)", FeedPet));
+
+            // ── 二级：工具 ──────────────────────────────────────────────────
+            var toolSub = new List<SystemTray.MenuItemDef>
             {
-                items.Add(SystemTray.MenuItemDef.Item(
-                    $"⏰ 闹钟: {reminder.GetAlarmsDisplay()}  [粘贴时间设置]",
-                    SetAlarmFromClipboard));
-                if (reminder.GetAlarmsDisplay() != "无闹钟")
-                    items.Add(SystemTray.MenuItemDef.Item("❌ 清除所有闹钟",
-                        () => { reminder.ClearAlarms(); RebuildMenu(); }));
-            }
-            items.Add(SystemTray.MenuItemDef.Item("农场", () => Demo.DobeCat.Game.Farm.FarmWorldController.ToggleVisibility()));
-            items.Add(SystemTray.MenuItemDef.Item("商店", () => Demo.DobeCat.Game.Shop.ShopWindow.Instance?.Toggle()));
-            items.Add(SystemTray.MenuItemDef.Item("弹幕测试面板", () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()));
-            items.Add(SystemTray.MenuItemDef.Item("⚙ 设置", () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanel.Toggle()));
-            items.Add(SystemTray.MenuItemDef.Separator());
+                SystemTray.MenuItemDef.Item("🎁 查看礼物统计",
+                    () => Demo.DobeCat.Sys.UI.DobeCatGiftStatsPanelView.Instance?.Show()),
+                SystemTray.MenuItemDef.Item("💬 弹幕面板",
+                    () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()),
+            };
+
+            // ── 二级：互动玩法 ──────────────────────────────────────────────
+            var playSub = new List<SystemTray.MenuItemDef>
+            {
+                SystemTray.MenuItemDef.Item("🌾 农场", () => Demo.DobeCat.Game.Farm.FarmWorldController.ToggleVisibility()),
+                SystemTray.MenuItemDef.Item("🛒 商店", () => Demo.DobeCat.Game.Shop.ShopWindow.Instance?.Toggle()),
+            };
+
+            // ── 一级菜单 ─────────────────────────────────────────────────────
             var autoLabel = Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.IsEnabled
                 ? "✔ 开机自启" : "  开机自启";
-            items.Add(SystemTray.MenuItemDef.Item(autoLabel,
-                () => Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.Toggle()));
-            items.Add(SystemTray.MenuItemDef.Separator());
-            items.Add(SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit));
+            var items = new List<SystemTray.MenuItemDef>
+            {
+                SystemTray.MenuItemDef.Item("显示 / 隐藏", TogglePetVisible),
+                SystemTray.MenuItemDef.Item("重置位置",     ResetPetPosition),
+                SystemTray.MenuItemDef.Separator(),
+                SystemTray.MenuItemDef.Sub("⚙ 桌宠设置",  petSub.ToArray()),
+                SystemTray.MenuItemDef.Sub("🎭 加入房间",  roomSub.ToArray()),
+                SystemTray.MenuItemDef.Separator(),
+                SystemTray.MenuItemDef.Sub("🌟 生活助手",  lifeSub.ToArray()),
+                SystemTray.MenuItemDef.Sub("🎮 互动玩法",  playSub.ToArray()),
+                SystemTray.MenuItemDef.Sub("🔧 工具",       toolSub.ToArray()),
+                SystemTray.MenuItemDef.Item("⚙ 设置面板",  () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanel.Toggle()),
+                SystemTray.MenuItemDef.Separator(),
+                SystemTray.MenuItemDef.Item(autoLabel,
+                    () => Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.Toggle()),
+                SystemTray.MenuItemDef.Separator(),
+                SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit),
+            };
 
             _tray.SetItems(items);
         }
@@ -218,23 +242,6 @@ namespace Demo.DobeCat.Sys.Tray
             if (Ai == null) return;
             Ai.SetAiEnabled(!Ai.AiEnabled);
             RebuildMenu(); // 刷新菜单的 ✔ 标记
-        }
-
-        private void SetAlarmFromClipboard()
-        {
-            var r = Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance;
-            if (r == null) return;
-            var text = GUIUtility.systemCopyBuffer?.Trim();
-            if (r.AddAlarmFromString(text))
-            {
-                Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show($"闹钟已设置：{text}", 3f);
-                RebuildMenu();
-            }
-            else
-            {
-                Demo.DobeCat.Game.Pet.PetSpeechBubble.Instance?.Show(
-                    "格式错误！请先复制 \"HH:mm 备注\" 再点击", 4f);
-            }
         }
 
         private void ToggleWindowCaptureMode()

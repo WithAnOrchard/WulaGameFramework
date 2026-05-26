@@ -1,8 +1,5 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using EssSystem.Core.Base.Event;
-using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
@@ -28,14 +25,7 @@ namespace Demo.DobeCat.Sys.UI
         private UIEntity _rootEntity;
         private bool     _initialized;
 
-        // ─── 颜色 ───────────────────────────────────────────────────────────
-        private static readonly Color CB   = new Color(0.11f, 0.12f, 0.15f, 0.97f);
-        private static readonly Color CH   = new Color(0.07f, 0.08f, 0.11f, 1.00f);
-        private static readonly Color CX   = new Color(0.70f, 0.18f, 0.18f, 1.00f);
-        private static readonly Color CTM  = new Color(0.94f, 0.94f, 0.96f, 1.00f);
-        private static readonly Color CTS  = new Color(0.58f, 0.61f, 0.70f, 1.00f);
-        private static readonly Color CDiv = new Color(0.22f, 0.23f, 0.28f, 1.00f);
-        private static readonly Color CSB  = new Color(0.08f, 0.09f, 0.11f, 1.00f);
+        // 颜色由 DobeCatTheme 提供，不再使用静态常量。
 
         // ─── 公共属性 ────────────────────────────────────────────────────────
         internal string StatusText
@@ -53,18 +43,34 @@ namespace Demo.DobeCat.Sys.UI
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
 
-        // ─── 颜色补充 ────────────────────────────────────────────────────────
-        private static readonly Color CBTN = new Color(0.18f, 0.20f, 0.26f, 1.00f);
-        private static readonly Color CACC = new Color(0.23f, 0.51f, 0.96f, 1.00f);
 
         // ─── 生命周期 ────────────────────────────────────────────────────────
-        private void Awake() { Instance = this; }
+        private void Awake()
+        {
+            Instance = this;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
+        }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("tp-root");
+        }
+
+        private void RebuildUI()
+        {
+            if (!_initialized) return;
+            var wasOpen = IsOpen;
+            _initialized = false;
+            // 直接通过 _rootEntity 引用销毁 GameObject —— UIService 缓存可能已被延迟 OnDestroy 清空
+            if (_rootEntity != null && _rootEntity.gameObject != null)
+                Destroy(_rootEntity.gameObject);
+            if (UIService.HasInstance) UIService.Instance.DestroyUIEntity("tp-root");
+            _rootEntity = null; _detailEntity = null; _logEntity = null;
+            _statusDao = null; _liveDao = null;
+            if (wasOpen) Show();
         }
 
         // ─── 公共 API ────────────────────────────────────────────────────────
@@ -82,7 +88,12 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = GetCanvasTransform();
             if (canvasT == null) { Debug.LogWarning("[TestPanelView] UIManager Canvas 未就绪"); return; }
 
-            const float PW = 420f, PH = 500f;  // 移除底部按钮后高度缩小
+            var t = DobeCatTheme.Current;
+            var CB   = t.Background; var CH = t.Header; var CX  = t.Close;
+            var CTM  = t.TextMain;   var CTS = t.TextSub; var CDiv = t.Divider;
+            var CSB  = t.ScrollBg;   var CACC = t.Accent;
+
+            const float PW = 420f, PH = 500f;
 
             // ── 根面板 ──
             var root = new UIPanelComponent("tp-root")
@@ -102,11 +113,11 @@ namespace Demo.DobeCat.Sys.UI
 
             titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
                 .SetSize(300f, 42f).SetPosition(190f, 21f)
-                .SetColor(CTM).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(t.TextOnHeader).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
 
             // 关闭按钮：红色背景，缩小到半尺寸
             var closeXDao = new UIButtonComponent("tp-close-x", text: "X")
-                .SetSize(22f, 22f).SetPosition(PW - 19f, 21f).SetButtonColor(CX);
+                .SetSize(22f, 22f).SetPosition(PW - 19f, 21f).SetButtonColor(CX).SetFontSize(10);
             titleBar.AddChild(closeXDao);
 
             // ── 状态行 ──
@@ -189,12 +200,6 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity.gameObject.SetActive(false);
         }
 
-        private static Transform GetCanvasTransform()
-        {
-            if (!EventProcessor.HasInstance) return null;
-            var res = EventProcessor.Instance.TriggerEventMethod(
-                UIManager.EVT_GET_CANVAS_TRANSFORM, new List<object>());
-            return ResultCode.IsOk(res) && res.Count >= 2 ? res[1] as Transform : null;
-        }
+        private static Transform GetCanvasTransform() => DobeCatCanvasProvider.GetOrCreate();
     }
 }
