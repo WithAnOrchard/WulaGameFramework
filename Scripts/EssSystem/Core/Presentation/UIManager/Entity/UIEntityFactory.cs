@@ -39,7 +39,8 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                 UIType.Panel => gameObject.AddComponent<UIPanelEntity>(),
                 UIType.Text => gameObject.AddComponent<UITextEntity>(),
                 UIType.Bar        => gameObject.AddComponent<UIBarEntity>(),
-                UIType.ScrollView => gameObject.AddComponent<UIScrollViewEntity>(),
+                UIType.ScrollView  => gameObject.AddComponent<UIScrollViewEntity>(),
+                UIType.InputField  => gameObject.AddComponent<UIInputEntity>(),
                 _ => gameObject.AddComponent<UIEntity>()
             };
 
@@ -62,11 +63,9 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     {
                         LoadSpriteFromId(buttonComponent.ButtonSpriteId, image);
                     }
-
                     var textObject = new GameObject("Text");
                     textObject.transform.SetParent(gameObject.transform);
                     var textRect = textObject.AddComponent<RectTransform>();
-                    // 让子 Text 贴满按钮（stretch）—— 零尺寸 rect 会让 uGUI Text 渲染异常
                     textRect.anchorMin = Vector2.zero;
                     textRect.anchorMax = Vector2.one;
                     textRect.offsetMin = Vector2.zero;
@@ -77,7 +76,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     text.text = dao is UIButtonComponent buttonDao ? buttonDao.Text : "Button";
                     text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                     text.fontSize = 14;
-                    text.color = Color.black;
+                    text.color = Color.white;
                     text.alignment = TextAnchor.MiddleCenter;
                     break;
 
@@ -108,6 +107,11 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     var barImage = gameObject.AddComponent<Image>();
                     barImage.color = dao is UIBarComponent barDao ? barDao.BackgroundColor : Color.black;
                     barImage.raycastTarget = false;
+                    break;
+
+                case UIType.InputField:
+                    // UIInputEntity.InitializeComponents() 在 Awake 中负责完整创建
+                    // TMP_InputField 子节点树并完成初始化，这里不做任何操作。
                     break;
 
                 case UIType.ScrollView:

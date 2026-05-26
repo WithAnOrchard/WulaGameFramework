@@ -25,7 +25,12 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
         /// <summary>
         ///     可滚动容器（ScrollRect + VerticalLayoutGroup 内容区）
         /// </summary>
-        ScrollView
+        ScrollView,
+
+        /// <summary>
+        ///     输入框（TMP_InputField）
+        /// </summary>
+        InputField
     }
 
     /// <summary>
@@ -47,6 +52,7 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
                 UIType.Text => "文本",
                 UIType.Bar => "进度条",
                 UIType.ScrollView => "滚动视图",
+                UIType.InputField => "输入框",
                 _ => uiType.ToString()
             };
         }
@@ -68,7 +74,7 @@ namespace EssSystem.Core.Presentation.UIManager.Dao
         /// <returns>是否为交互类型</returns>
         public static bool IsInteractive(this UIType uiType)
         {
-            return uiType == UIType.Button;
+            return uiType == UIType.Button || uiType == UIType.InputField;
         }
     }
 }

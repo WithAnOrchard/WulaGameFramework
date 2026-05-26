@@ -23,6 +23,9 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         /// </summary>
         private Color _buttonColor = Color.white;
 
+        /// <summary>按钮文本字号；默认 14。</summary>
+        private int _fontSize = 14;
+
         /// <summary>  
         ///     构造函数
         /// </summary>
@@ -113,6 +116,18 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         public UIButtonComponent SetButtonColor(Color color)
         {
             ButtonColor = color;
+            return this;
+        }
+
+        public int FontSize
+        {
+            get => _fontSize;
+            set { if (_fontSize != value) { _fontSize = value; NotifyEntityPropertyChanged("FontSize", value); } }
+        }
+
+        public UIButtonComponent SetFontSize(int size)
+        {
+            FontSize = size;
             return this;
         }
 

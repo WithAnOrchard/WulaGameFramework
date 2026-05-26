@@ -232,7 +232,12 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
 
         private void UnregisterEntity()
         {
-            if (_dao != null && !string.IsNullOrEmpty(_dao.Id)) UIService.Instance.UnregisterUIEntity(_dao.Id);
+            if (_dao == null || string.IsNullOrEmpty(_dao.Id)) return;
+            if (!UIService.HasInstance) return;
+            // 只有当缓存里存的仍是本实例时才移除，防止旧 GameObject 延迟 OnDestroy
+            // 把刚注册的新实例从缓存里误删（Rebuild 先 RegisterNew 再 DestroyOld 时会触发此情况）。
+            if (UIService.Instance.GetUIEntity(_dao.Id) == this)
+                UIService.Instance.UnregisterUIEntity(_dao.Id);
         }
 
         /// <summary>
