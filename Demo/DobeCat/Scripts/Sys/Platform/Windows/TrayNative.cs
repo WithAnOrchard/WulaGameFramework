@@ -30,6 +30,7 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         public const uint MF_STRING    = 0x0000;
         public const uint MF_SEPARATOR = 0x0800;
         public const uint MF_GRAYED    = 0x0001;
+        public const uint MF_POPUP     = 0x0010;
         public const uint TPM_RIGHTBUTTON = 0x0002;
         public const uint TPM_RETURNCMD   = 0x0100;
 
@@ -165,6 +166,11 @@ namespace Demo.DobeCat.Sys.Platform.Windows
 
         [DllImport("user32.dll")]
         public static extern bool DestroyIcon(IntPtr hIcon);
+
+        /// <summary>从文件（.exe / .dll / .ico）提取图标句柄。nIconIndex=0 取第一个图标。</summary>
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+        public static extern uint ExtractIconEx(string lpszFile, int nIconIndex,
+            IntPtr[] phiconLarge, IntPtr[] phiconSmall, uint nIcons);
 
         [DllImport("kernel32.dll")]
         public static extern IntPtr GetModuleHandle(string lpModuleName);

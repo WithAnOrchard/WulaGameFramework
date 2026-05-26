@@ -64,6 +64,7 @@ namespace Demo.DobeCat.Sys.Platform.Windows
 
         [DllImport("user32.dll")] public static extern IntPtr GetActiveWindow();
         [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] public static extern bool   SetForegroundWindow(IntPtr hWnd);
 
         /// <summary>按窗口类名 / 标题查找窗口；任一参数可为 null。
         /// Unity Standalone Windows 的窗口类名为 "UnityWndClass"。</summary>

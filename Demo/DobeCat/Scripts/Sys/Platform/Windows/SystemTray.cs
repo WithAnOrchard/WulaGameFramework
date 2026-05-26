@@ -137,8 +137,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                     return;
                 }
 
-                // 3) 注册托盘图标
-                _hIcon = TrayNative.LoadIcon(IntPtr.Zero, TrayNative.IDI_APPLICATION);
+                // 3) 注册托盘图标 —— 优先从 .exe 提取嵌入图标，失败时回退到系统默认
+                _hIcon = LoadExeIcon();
                 var nid = new TrayNative.NOTIFYICONDATA
                 {
                     cbSize = (uint)Marshal.SizeOf(typeof(TrayNative.NOTIFYICONDATA)),
@@ -181,6 +181,34 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             {
                 Debug.LogError("[SystemTray] ThreadProc 异常：" + e);
             }
+        }
+
+        /// <summary>从正在运行的 .exe 提取第一个图标（即 Unity Player Settings 里设置的图标）。</summary>
+        private static IntPtr LoadExeIcon()
+        {
+            try
+            {
+                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                if (!string.IsNullOrEmpty(exePath))
+                {
+                    var small = new IntPtr[1];
+                    var large = new IntPtr[1];
+                    uint cnt = TrayNative.ExtractIconEx(exePath, 0, large, small, 1);
+                    if (cnt > 0)
+                    {
+                        // 优先用小图标（16px，托盘标准尺寸），大图标不为零则释放
+                        if (large[0] != IntPtr.Zero && large[0] != small[0])
+                            TrayNative.DestroyIcon(large[0]);
+                        if (small[0] != IntPtr.Zero) return small[0];
+                        if (large[0] != IntPtr.Zero) return large[0];
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("[SystemTray] LoadExeIcon 失败，回退默认图标：" + ex.Message);
+            }
+            return TrayNative.LoadIcon(IntPtr.Zero, TrayNative.IDI_APPLICATION);
         }
 
         private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
@@ -227,26 +255,11 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             if (hMenu == IntPtr.Zero) return;
             try
             {
-                // 构建菜单
                 var idToAction = new List<Action>(); // index 0 占位（菜单 ID 从 1 开始）
                 idToAction.Add(null);
                 MenuItemDef[] snapshot;
                 lock (_items) snapshot = _items.ToArray();
-                foreach (var def in snapshot)
-                {
-                    if (string.IsNullOrEmpty(def.Text))
-                    {
-                        TrayNative.AppendMenu(hMenu, TrayNative.MF_SEPARATOR, IntPtr.Zero, null);
-                    }
-                    else
-                    {
-                        idToAction.Add(def.OnClick);
-                        var id = idToAction.Count - 1;
-                        var flags = TrayNative.MF_STRING;
-                        if (!def.Enabled) flags |= TrayNative.MF_GRAYED;
-                        TrayNative.AppendMenu(hMenu, flags, new IntPtr(id), def.Text);
-                    }
-                }
+                BuildMenuTree(hMenu, snapshot, idToAction);
 
                 // TrackPopupMenu 要求 SetForegroundWindow，否则菜单不会自动消失
                 TrayNative.SetForegroundWindow(_hWnd);
@@ -266,7 +279,38 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             }
             finally
             {
-                TrayNative.DestroyMenu(hMenu);
+                TrayNative.DestroyMenu(hMenu); // 递归销毁整棵菜单树
+            }
+        }
+
+        /// <summary>
+        /// 递归构建 Win32 菜单树。SubItems 非空 → 创建 popup 子菜单并用 MF_POPUP 附加；
+        /// 叶节点分配递增 ID，TrackPopupMenu(TPM_RETURNCMD) 最终只返回叶节点 ID。
+        /// </summary>
+        private static void BuildMenuTree(IntPtr hMenu, MenuItemDef[] items, List<Action> idToAction)
+        {
+            foreach (var def in items)
+            {
+                if (def.SubItems != null)
+                {
+                    // 子菜单：创建 popup，递归填充，然后用 MF_POPUP 追加到父菜单
+                    var hSub = TrayNative.CreatePopupMenu();
+                    BuildMenuTree(hSub, def.SubItems, idToAction);
+                    TrayNative.AppendMenu(hMenu,
+                        TrayNative.MF_POPUP | TrayNative.MF_STRING,
+                        hSub, def.Text);
+                }
+                else if (string.IsNullOrEmpty(def.Text))
+                {
+                    TrayNative.AppendMenu(hMenu, TrayNative.MF_SEPARATOR, IntPtr.Zero, null);
+                }
+                else
+                {
+                    idToAction.Add(def.OnClick);
+                    uint flags = TrayNative.MF_STRING;
+                    if (!def.Enabled) flags |= TrayNative.MF_GRAYED;
+                    TrayNative.AppendMenu(hMenu, flags, new IntPtr(idToAction.Count - 1), def.Text);
+                }
             }
         }
 
@@ -278,6 +322,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             public Action OnClick;
             /// <summary><c>false</c> = 灰色不可点。默认（new 出来时）是 <c>false</c>，请用 <see cref="Item"/> 工厂创建。</summary>
             public bool Enabled;
+            /// <summary>非 null = 此项为子菜单头，鼠标悬停自动展开。子项由 Win32 原生悬停行为驱动。</summary>
+            public MenuItemDef[] SubItems;
 
             public static MenuItemDef Item(string text, Action onClick, bool enabled = true)
                 => new MenuItemDef { Text = text, OnClick = onClick, Enabled = enabled };
@@ -285,6 +331,9 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                 => new MenuItemDef { Text = null, OnClick = null, Enabled = false };
             public static MenuItemDef Disabled(string text)
                 => new MenuItemDef { Text = text, OnClick = null, Enabled = false };
+            /// <summary>创建带子菜单的父项。鼠标悬停时自动展开二级菜单（Win32 原生行为）。</summary>
+            public static MenuItemDef Sub(string text, MenuItemDef[] subItems)
+                => new MenuItemDef { Text = text, SubItems = subItems, Enabled = true };
         }
     }
 }

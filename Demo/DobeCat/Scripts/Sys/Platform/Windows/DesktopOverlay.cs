@@ -59,6 +59,25 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             Debug.Log($"[DesktopOverlay] 已进入桌面叠加模式 {w}×{h}");
         }
 
+        /// <summary>
+        /// 将窗口带到前台并获取键盘焦点，使 TMP_InputField 等需要键盘的 UI 可以正常输入。
+        /// 会暂时去除 WS_EX_TRANSPARENT，使窗口能被激活；<see cref="PetClickThroughDriver"/>
+        /// 仍负责在没有可交互 UI 时自动恢复穿透状态。
+        /// </summary>
+        public static void BringToForeground()
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var hwnd = GetHwnd();
+            if (hwnd == System.IntPtr.Zero) return;
+            // 临时去除 TRANSPARENT，让窗口可被激活
+            var ex = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_EXSTYLE);
+            ex &= ~Win32Native.WS_EX_TRANSPARENT;
+            Win32Native.SetWindowLong(hwnd, Win32Native.GWL_EXSTYLE, ex);
+            // 将窗口置前并激活 → 键盘事件路由到此窗口
+            Win32Native.SetForegroundWindow(hwnd);
+#endif
+        }
+
         /// <summary>切换鼠标穿透（WS_EX_TRANSPARENT）。true=穿透桌面；false=窗口接收鼠标。</summary>
         public static void SetClickThrough(bool clickThrough)
         {
