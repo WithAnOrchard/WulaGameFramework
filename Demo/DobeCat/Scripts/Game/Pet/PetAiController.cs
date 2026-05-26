@@ -264,6 +264,35 @@ namespace Demo.DobeCat.Game.Pet
             // Reduce Boredom while moving (activity = entertainment)
             if (ctx.IsMoving && _entity != null)
                 _entity.Get<INeeds>()?.Add("Boredom", -Time.deltaTime * 0.0003f);
+
+            // 每帧边界夹紧（玩家手动操控 + AI 游荡都受约束）
+            ClampToScreenBounds();
+        }
+
+        /// <summary>把宠物位置夹紧到摄像机可见范围内，留一半身位边距（约 0.5 世界单位）。</summary>
+        public void ClampToScreenBounds()
+        {
+            if (_entity == null) return;
+            var cam = Camera.main;
+            if (cam == null) return;
+
+            var pos = _entity.WorldPosition;
+            var z   = Mathf.Abs(cam.transform.position.z);
+
+            var bl = cam.ScreenToWorldPoint(new Vector3(0f,            0f,             z));
+            var tr = cam.ScreenToWorldPoint(new Vector3(Screen.width,  Screen.height,  z));
+
+            const float margin = 0.6f; // 世界单位，约半个身位
+            float cx = Mathf.Clamp(pos.x, bl.x + margin, tr.x - margin);
+            float cy = Mathf.Clamp(pos.y, bl.y + margin, tr.y - margin);
+
+            if (Mathf.Abs(cx - pos.x) > 0.001f || Mathf.Abs(cy - pos.y) > 0.001f)
+            {
+                var clamped = new Vector3(cx, cy, pos.z);
+                _entity.WorldPosition = clamped;
+                transform.position    = clamped;
+            }
         }
     }
 }
+

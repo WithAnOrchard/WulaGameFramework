@@ -49,7 +49,15 @@ namespace Demo.DobeCat.Game
         {
             Instance = this;
             var saved = PlayerPrefs.GetString(PREFS_UIDS, "");
-            if (!string.IsNullOrWhiteSpace(saved)) _watchUids = saved;
+            if (!string.IsNullOrWhiteSpace(saved))
+            {
+                _watchUids = saved;
+            }
+            else if (!string.IsNullOrEmpty(_watchUids))
+            {
+                // Inspector 字段有默认值则持久化
+                PlayerPrefs.SetString(PREFS_UIDS, _watchUids);
+            }
         }
 
         private void OnEnable()
@@ -72,6 +80,10 @@ namespace Demo.DobeCat.Game
 
         private void Start()
         {
+            // 若 UIDs 仍为空，尝试用直播间主播的 UID 作为默认值
+            if (string.IsNullOrWhiteSpace(_watchUids))
+                TrySeedUidFromLiveRoom();
+
             foreach (var uid in GetUids())
             {
                 _lastDynamicId[uid] = PlayerPrefs.GetString(PREFS_DYN + uid, "");
@@ -80,6 +92,31 @@ namespace Demo.DobeCat.Game
             // Stagger first polls so they don't fire instantly on startup
             _dynamicTimer = 15f;
             _videoTimer   = 35f;
+
+            // 若直播信息未就绪，订阅第一次 poll 事件时再补种
+            if (string.IsNullOrWhiteSpace(_watchUids) && EventProcessor.HasInstance)
+                EventProcessor.Instance.AddListener(BiliBiliLive.LiveStatusService.EVT_STATUS_POLLED, OnLivePolledForSeed);
+        }
+
+        /// <summary>尝试从 LiveStatusService 已缓存的直播间信息里取主播 UID 作为默认订阅。</summary>
+        private void TrySeedUidFromLiveRoom()
+        {
+            var svc = BiliBiliLive.LiveStatusService.HasInstance ? BiliBiliLive.LiveStatusService.Instance : null;
+            var uidRaw = svc?.Info?.Uid;
+            var uid = uidRaw?.ToString();
+            if (!string.IsNullOrEmpty(uid) && uid != "0")
+            {
+                SetWatchUids(uid);
+                Debug.Log($"[BiliSpaceNotifier] 自动使用直播主播 UID: {uid}");
+            }
+        }
+
+        private List<object> OnLivePolledForSeed(string evt, List<object> data)
+        {
+            TrySeedUidFromLiveRoom();
+            if (!string.IsNullOrWhiteSpace(_watchUids) && EventProcessor.HasInstance)
+                EventProcessor.Instance.RemoveListener(BiliBiliLive.LiveStatusService.EVT_STATUS_POLLED, OnLivePolledForSeed);
+            return null;
         }
 
         /// <summary>Update watched UIDs at runtime and persist to PlayerPrefs.</summary>

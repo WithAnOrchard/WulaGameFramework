@@ -143,6 +143,10 @@ namespace Demo.DobeCat
             gameObject.AddComponent<DobeCatLogger>();
             Application.runInBackground = true;
             Screen.SetResolution(460, 400, false);
+            // 主题 & 礼物统计
+            DobeCatTheme.LoadSaved();
+            gameObject.AddComponent<GiftQueryService>();
+            gameObject.AddComponent<DobeCatGiftStatsPanelView>();
             EnsureCamera();
             ShowLoginScreen();
             Debug.Log("[DobeCatGameManager] Awake 完成，登录屏已创建。");
