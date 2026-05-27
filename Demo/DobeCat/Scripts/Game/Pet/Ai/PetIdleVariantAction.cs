@@ -1,4 +1,5 @@
-using Demo.DobeCat.Game;
+﻿using Demo.DobeCat.Game;
+using Demo.DobeCat.Game.Pet;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using UnityEngine;

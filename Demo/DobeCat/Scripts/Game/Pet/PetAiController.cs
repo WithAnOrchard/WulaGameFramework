@@ -50,6 +50,17 @@ namespace Demo.DobeCat.Game.Pet
             ApplyEnabled();
         }
 
+        /// <summary>
+        /// 手动模式：仅响应玩家 WASD，屏蔽游荡/睡眠/吃饱等自主行为。Brain 保持启动。
+        /// </summary>
+        public bool ManualMode { get; private set; }
+
+        public void SetManualMode(bool manual)
+        {
+            ManualMode = manual;
+            // Brain 保持启动；PlayerControl Consideration 始终有效
+        }
+
         private void ApplyEnabled()
         {
             if (_brain != null) _brain.Enabled = AiEnabled && !_externalPaused;
@@ -122,56 +133,60 @@ namespace Demo.DobeCat.Game.Pet
                     CreateAction = _ => new PetPlayerControlAction(GetWasdAxis),
                 });
 
-                // 随机游荡（基线，所有时刻可用）
+                // 随机游荡（基线，手动模式暂停）
                 brain.Add(new Consideration
                 {
                     Id = "Wander",
-                    Score = _ => 0.2f,
+                    Score = _ => ManualMode ? 0f : 0.2f,
                     CreateAction = _ => new PetWanderAction(),
                 });
 
-                // Sleep: Energy < 0.2 → score rises as energy drains
+                // Sleep: Energy < 0.2 → score rises as energy drains（手动模式暂停）
                 brain.Add(new Consideration
                 {
                     Id = "Sleep",
                     Score = ctx =>
                     {
+                        if (ManualMode) return 0f;
                         var e = ctx.GetNeed("Energy");
                         return e < 0.2f ? (0.2f - e) / 0.2f * 0.9f : 0f;
                     },
                     CreateAction = _ => new PetSleepAction(),
                 });
 
-                // Eat: Hunger > 0.7 → eat cat_food from player inventory
+                // Eat: Hunger > 0.7 → eat cat_food from player inventory（手动模式暂停）
                 brain.Add(new Consideration
                 {
                     Id = "Eat",
                     Score = ctx =>
                     {
+                        if (ManualMode) return 0f;
                         var h = ctx.GetNeed("Hunger");
                         return h > 0.7f ? 0.5f + (h - 0.7f) * 1.0f : 0f;
                     },
                     CreateAction = _ => new EatAction(Demo.DobeCat.Game.Shop.DobeCatShopSetup.FOOD_CAT_FOOD, "player", 0.4f),
                 });
 
-                // Boredom wander: Boredom > 0.6 → score rises, beats baseline wander
+                // Boredom wander（手动模式暂停）
                 brain.Add(new Consideration
                 {
                     Id = "BoredomWander",
                     Score = ctx =>
                     {
+                        if (ManualMode) return 0f;
                         var b = ctx.GetNeed("Boredom");
                         return b > 0.6f ? 0.3f + (b - 0.6f) * 0.5f : 0f;
                     },
                     CreateAction = _ => new PetWanderAction(0.3f, 1.0f),
                 });
 
-                // Play: Boredom > 0.6 → quick erratic dashes, higher score than BoredomWander
+                // Play（手动模式暂停）
                 brain.Add(new Consideration
                 {
                     Id = "Play",
                     Score = ctx =>
                     {
+                        if (ManualMode) return 0f;
                         var b = ctx.GetNeed("Boredom");
                         return b > 0.6f ? 0.4f + (b - 0.6f) * 0.8f : 0f;
                     },
