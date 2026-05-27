@@ -1,5 +1,6 @@
-using Demo.DobeCat.Game;
+﻿using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys;
+using Demo.DobeCat.Sys.Audio;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet

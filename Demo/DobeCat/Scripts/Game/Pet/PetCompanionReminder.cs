@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Demo.DobeCat.Sys;
+using Demo.DobeCat.Sys.Audio;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -37,12 +38,27 @@ namespace Demo.DobeCat.Game.Pet
         private bool  _sitBreakFired;        // prevent multiple sit-break triggers per session
         private bool  _focusFired;           // prevent multiple focus triggers per session
 
+        // ─── 钩子事件 ──────────────────────────────────────────────────────────
+        /// <summary>
+        /// 番茄钟阶段结束时触发。<br/>
+        /// <c>phase</c>："Focus" 或 "Break"；<c>isCycleComplete</c>：休息阶段结束 = 整个周期完成。
+        /// </summary>
+        public static event Action<string, bool> OnPomodoroPhaseComplete;
+
+        /// <summary>
+        /// 闹钟到点时触发。参数：hour, minute, label。<br/>
+        /// 可在此播放音效、弹窗、执行任意逻辑。
+        /// </summary>
+        public static event Action<int, int, string> OnAlarmFired;
+
         // ─── Pomodoro ─────────────────────────────────────────────────────────
         private enum PomodoroPhase { None, Focus, Break }
         private PomodoroPhase _pomPhase   = PomodoroPhase.None;
         private float         _pomTimer   = 0f;
         private float         _pomFocusSec;
         private float         _pomBreakSec;
+        private float         _pomBubbleRefreshTimer = 0f; // 距上次刷新倒计时气泡的累计秒数
+        private const float   PomBubbleInterval = 1f;     // 每 1 秒实时刷新一次
 
         public bool PomodoroActive => _pomPhase != PomodoroPhase.None;
 
@@ -54,6 +70,9 @@ namespace Demo.DobeCat.Game.Pet
             public string Label;
             public int    LastFiredDay; // System.DateTime.Now.DayOfYear
         }
+
+        private float _alarmPauseRemaining = 0f; // 闹钟触发后暂停宠物的剩余秒数
+        private const float AlarmPauseDuration = 15f; // 闹钟触发后暂停宠物 N 秒
 
         private readonly List<AlarmEntry> _alarms = new List<AlarmEntry>();
 
@@ -132,8 +151,10 @@ namespace Demo.DobeCat.Game.Pet
             _pomBreakSec = breakMinutes * 60f;
             _pomTimer    = _pomFocusSec;
             _pomPhase    = PomodoroPhase.Focus;
-            PetAiController.Current?.SetPaused(true);   // 专注阶段：宠物不乱跑
-            ShowBubble($"番茄钟启动！专注 {focusMinutes} 分钟 🍅");
+            _pomBubbleRefreshTimer = PomBubbleInterval; // 立刻刷新一次
+            PetAiController.Current?.SetPaused(true);   // 整个周期：宠物停下专注
+            ShowBubble($"番茄钟启动！专注 {focusMinutes} 分钟 🍅"); // 启动提示先弹出
+            PetSpeechBubble.PomodoroLock = true;        // 封锁：屏蔽所有其他对话
         }
 
         /// <summary>Cancel a running Pomodoro.</summary>
@@ -141,6 +162,7 @@ namespace Demo.DobeCat.Game.Pet
         {
             if (_pomPhase == PomodoroPhase.None) return;
             _pomPhase = PomodoroPhase.None;
+            PetSpeechBubble.PomodoroLock = false;       // 先解锁
             PetAiController.Current?.SetPaused(false);  // 取消时恢复
             ShowBubble("番茄钟已取消。");
         }
@@ -154,6 +176,14 @@ namespace Demo.DobeCat.Game.Pet
         {
             var dt      = Time.unscaledDeltaTime;
             var isActive = IsUserActive();
+
+            // 闹钟触发后的短暂暂停倒计时
+            if (_alarmPauseRemaining > 0f)
+            {
+                _alarmPauseRemaining -= dt;
+                if (_alarmPauseRemaining <= 0f)
+                    PetAiController.Current?.SetPaused(false);
+            }
 
             if (isActive)
             {
@@ -225,22 +255,42 @@ namespace Demo.DobeCat.Game.Pet
         private void CheckPomodoro(float dt)
         {
             if (_pomPhase == PomodoroPhase.None) return;
+
             _pomTimer -= dt;
+
+            // 每隔 PomBubbleInterval 秒静默刷新气泡，显示剩余时间
+            _pomBubbleRefreshTimer -= dt;
+            if (_pomBubbleRefreshTimer <= 0f)
+            {
+                _pomBubbleRefreshTimer = PomBubbleInterval;
+                var remaining = Mathf.Max(0f, _pomTimer);
+                var mm = (int)(remaining / 60f);
+                var ss = (int)remaining % 60;
+                var phaseLabel = _pomPhase == PomodoroPhase.Focus ? "专注中" : "休息中";
+                PetSpeechBubble.Instance?.ShowSilent($"🍅 {phaseLabel} {mm:D2}:{ss:D2}", 2f);
+            }
+
             if (_pomTimer > 0f) return;
 
             if (_pomPhase == PomodoroPhase.Focus)
             {
                 _pomPhase = PomodoroPhase.Break;
                 _pomTimer = _pomBreakSec;
-                PetAiController.Current?.SetPaused(false); // 休息阶段：宠物恢复活动
+                _pomBubbleRefreshTimer = PomBubbleInterval; // 立刻刷新休息倒计时
+                // 切换阶段时短暂解锁展示提示，然后重新上锁
+                PetSpeechBubble.PomodoroLock = false;
                 var breakMin = Mathf.RoundToInt(_pomBreakSec / 60f);
-                ShowBubble($"🍅 番茄钟结束！好好休息 {breakMin} 分钟吧～");
+                ShowBubble($"🍅 专注结束！休息 {breakMin} 分钟吧～");
+                PetSpeechBubble.PomodoroLock = true;    // 休息阶段继续封锁
+                try { OnPomodoroPhaseComplete?.Invoke("Focus", false); } catch (Exception ex) { Debug.LogException(ex); }
             }
             else
             {
                 _pomPhase = PomodoroPhase.None;
-                PetAiController.Current?.SetPaused(false); // 全程结束：恢复正常
+                PetSpeechBubble.PomodoroLock = false;   // 周期全部完成：解锁
+                PetAiController.Current?.SetPaused(false); // 恢复正常
                 ShowBubble("⏰ 休息结束！继续加油！");
+                try { OnPomodoroPhaseComplete?.Invoke("Break", true); } catch (Exception ex) { Debug.LogException(ex); }
             }
         }
 
@@ -260,6 +310,10 @@ namespace Demo.DobeCat.Game.Pet
                 var label = string.IsNullOrEmpty(a.Label) ? "闹钟提醒" : a.Label;
                 ShowBubble($"⏰ {a.Hour:D2}:{a.Minute:D2} {label}");
                 PetSoundController.PlayNotify();
+                // 触发闹钟时暂停宠物，让它"停下提醒"你
+                PetAiController.Current?.SetPaused(true);
+                _alarmPauseRemaining = AlarmPauseDuration;
+                try { OnAlarmFired?.Invoke(a.Hour, a.Minute, label); } catch (Exception ex) { Debug.LogException(ex); }
             }
         }
 

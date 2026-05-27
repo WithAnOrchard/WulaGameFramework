@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Demo.DobeCat.Sys;
+using Demo.DobeCat.Sys.Audio;
 using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
@@ -18,7 +19,10 @@ namespace Demo.DobeCat.Game.Pet
         public static PetSpeechBubble Instance { get; private set; }
 
         [Tooltip("气泡底部锚点相对桌宠根节点的世界偏移。")]
-        [SerializeField] private Vector3 _offset = new Vector3(0f, 0.4f, 0f);
+        [SerializeField] private Vector3 _offset = new Vector3(0f, 0.9f, 0f);
+
+        [Tooltip("在屏幕像素空间叠加的额外 Y 偏移（正=上移，负=下移）。")]
+        [SerializeField] private float _screenOffsetY = -45f;
 
         private const string BUBBLE_ID      = "pet-speech-bubble";
         private const string BUBBLE_BTN_ID  = "pet-speech-bubble-btn";
@@ -35,17 +39,43 @@ namespace Demo.DobeCat.Game.Pet
         private float             _timer;
         private bool              _built;
 
+        /// <summary>
+        /// 番茄钟专注/休息期间设为 <c>true</c>，屏蔽所有普通 <see cref="Show"/> 调用。
+        /// <see cref="ShowSilent"/> 不受此标志影响，始终可以刷新倒计时文字。
+        /// </summary>
+        public static bool PomodoroLock { get; set; }
+
         // ─── 公共 API ────────────────────────────────────────────────────────
 
         public void SetPetTransform(Transform petTr) => _petTransform = petTr;
 
-        /// <summary>展示气泡文字，<paramref name="duration"/> 秒后自动隐藏。</summary>
+        /// <summary>展示气泡文字，<paramref name="duration"/> 秒后自动隐藏。番茄钟期间被屏蔽。</summary>
         public void Show(string message, float duration = 3f)
-            => ShowInternal(message, null, duration);
+        {
+            if (PomodoroLock) return;
+            ShowInternal(message, null, duration);
+        }
 
-        /// <summary>展示可点击气泡，点击后用默认浏览器打开 <paramref name="url"/>。</summary>
+        /// <summary>展示可点击气泡。番茄钟期间被屏蔽。</summary>
         public void ShowWithLink(string message, string url, float duration = 5f)
-            => ShowInternal(message, url, duration);
+        {
+            if (PomodoroLock) return;
+            ShowInternal(message, url, duration);
+        }
+
+        /// <summary>
+        /// 静默刷新气泡文字（不播放 pop 音效）。
+        /// 适用于倒计时场景：每隔几秒持续更新剩余时间，避免音效轰炸。
+        /// </summary>
+        public void ShowSilent(string message, float duration = 3f)
+        {
+            if (!_built) { if (EventProcessor.HasInstance) BuildUI(); else return; }
+            if (_msgText != null) _msgText.Text = message;
+            _pendingUrl = null;
+            if (_bubbleBtn != null) _bubbleBtn.Interactable = false;
+            if (_bubbleGo != null) { _bubbleGo.SetActive(true); UpdateScreenPosition(); }
+            _timer = duration;
+        }
 
         // ─── Unity 生命周期 ───────────────────────────────────────────────────
 
@@ -101,7 +131,7 @@ namespace Demo.DobeCat.Game.Pet
             var screenPos = cam.WorldToScreenPoint(petTr.position + _offset);
             if (screenPos.z < 0f) return;
             var sf = _canvas.scaleFactor;
-            _bubbleRt.anchoredPosition = new Vector2(screenPos.x / sf, screenPos.y / sf);
+            _bubbleRt.anchoredPosition = new Vector2(screenPos.x / sf, screenPos.y / sf + _screenOffsetY);
         }
 
         // ─── UI 构建（走 UIManager DAO，禁止 using UnityEngine.UI）────────────
