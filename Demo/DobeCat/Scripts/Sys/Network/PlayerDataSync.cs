@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -43,6 +45,45 @@ namespace Demo.DobeCat.Sys.Network
 
         private void OnEnable()  => Instance = this;
         private void OnDisable() { if (Instance == this) Instance = null; }
+
+        /// <summary>退出时同步上传一次最新存档 —— 协程在 Quit 期间不可靠，直接走 .NET HttpWebRequest。</summary>
+        private void OnApplicationQuit()
+        {
+            try
+            {
+                if (!EventProcessor.HasInstance) return;
+                var key = GetPlayerKey();
+                if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(ServerBaseUrl)) return;
+
+                var innerData = CollectPlayerData(EventProcessor.Instance);
+                var payload = new Dictionary<string, object>
+                {
+                    ["id"]   = key,
+                    ["ttl"]  = 99999999,
+                    ["data"] = innerData,
+                };
+                var json  = MiniJson.Serialize(payload);
+                var bytes = Encoding.UTF8.GetBytes(json);
+                var url   = $"{ServerBaseUrl.TrimEnd('/')}/collections/{Collection}/items";
+
+                var req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method        = "POST";
+                req.ContentType   = "application/json";
+                req.Timeout       = (int)(HttpTimeout * 1000);
+                req.ContentLength = bytes.Length;
+                var bearer = DataExchangeSession.BuildAuthorizationHeader();
+                if (bearer != null) req.Headers["Authorization"] = bearer;
+                using (var s = req.GetRequestStream()) s.Write(bytes, 0, bytes.Length);
+                using (var resp = (HttpWebResponse)req.GetResponse())
+                {
+                    Debug.Log($"[PlayerDataSync] OnQuit 同步上传 ok key={key} status={(int)resp.StatusCode}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[PlayerDataSync] OnQuit 同步上传失败: {ex.Message}");
+            }
+        }
 
         private void Update()
         {

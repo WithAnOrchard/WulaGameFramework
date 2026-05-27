@@ -7,6 +7,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Demo.DobeCat.Sys.Auth;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -70,6 +71,7 @@ namespace Demo.DobeCat.Sys.Network
         {
             public string Id;
             public string Name;
+            public long   BiliUid;
             public string Host;
             public int Port;
             public int PlayerCount;
@@ -101,7 +103,8 @@ namespace Demo.DobeCat.Sys.Network
         private void OnEnable()
         {
             if (string.IsNullOrEmpty(RoomId)) RoomId = GenerateDefaultRoomId();
-            if (string.IsNullOrEmpty(RoomDisplayName)) RoomDisplayName = SystemInfo.deviceName;
+            if (string.IsNullOrEmpty(RoomDisplayName))
+                RoomDisplayName = !string.IsNullOrEmpty(AuthSession.Nickname) ? AuthSession.Nickname : SystemInfo.deviceName;
             if (string.IsNullOrEmpty(AdvertisedHost)) AdvertisedHost = DetectLocalIPv4() ?? "127.0.0.1";
 
             _heartbeatCo = StartCoroutine(HeartbeatLoop());
@@ -175,6 +178,7 @@ namespace Demo.DobeCat.Sys.Network
                 {"data", new Dictionary<string, object>
                     {
                         {"name", RoomDisplayName},
+                        {"bili_uid", AuthSession.Mid},
                         {"host", AdvertisedHost},
                         {"port", (long)AdvertisedPort},
                         {"player_count", (long)1}, // 至少自己；后续可由 NetworkService 提供真实值
@@ -271,6 +275,7 @@ namespace Demo.DobeCat.Sys.Network
                 {
                     Id = id,
                     Name = entry["data"]["name"].ToString(),
+                    BiliUid = entry["data"]["bili_uid"].Exists ? entry["data"]["bili_uid"].ToObject<long>() : 0L,
                     Host = entry["data"]["host"].ToString(),
                     Port = (int)entry["data"]["port"].ToObject<long>(),
                     PlayerCount = (int)entry["data"]["player_count"].ToObject<long>(),
