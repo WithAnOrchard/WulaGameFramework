@@ -7,13 +7,16 @@ using EssSystem.Core.Base.Event;
 namespace Demo.DobeCat.Game.Farm
 {
     /// <summary>
-    /// DobeCat 农场作物配置注册器（共 18 种作物）。
+    /// DobeCat 农场作物配置注册器（共 16 种作物）。
     /// 精灵图集：Assets/Demo/DobeCat/Resources/Sprites/Plants/Plants.png
     /// <list type="bullet">
-    /// <item>蔬菜：胡萝卜、大头菜、西蓝花、青辣椒、萝卜、豆角、番茄、辣椒、茄子、玉米、土豆</item>
+    /// <item>蔬菜：胡萝卜、西蓝花、青辣椒、萝卜、豆角、番茄、辣椒、茄子、玉米、土豆</item>
     /// <item>水果：草莓、蓝莓、葡萄、南瓜</item>
-    /// <item>其他：小麦、紫甘蓝、红萝卜</item>
-    /// <item>StageSpriteIds 对应各作物生长阶段，数量因作物而异</item>
+    /// <item>其他：小麦、紫甘蓝</item>
+    /// <item>StageDurations 仅读 [0..3] 四个阶段（Seed→Sprout→Growing→Mature→Wilted）；
+    ///       StageSpriteIds 也仅用 [0..3]，第五张精灵当前不使用（留作后续拓展）。</item>
+    /// <item>成长时间公式：T × (1, 2, 3, 10)，低 T（~20-30）纶10分钟成熟，高 T（~50-60）纶20分钟；
+    ///       调难度只需改 RegisterCrop 里的 StageDurations 即可。</item>
     /// </list>
     /// </summary>
     public static class DobeCatCropSetup
@@ -45,7 +48,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_carrot",
                 OutputItemId = "carrot",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_44", "Plants_46", "Plants_47", "Plants_50", "Plants_51" }
             });
@@ -60,7 +63,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_broccoli",
                 OutputItemId = "broccoli",
                 OutputAmount = 1,
-                StageDurations = new List<float> { 35f, 70f, 105f, 350f },
+                StageDurations = new List<float> { 105f, 210f, 315f, 1050f },
                 StageSpriteIds = new List<string>
                     { "Plants_16", "Plants_17", "Plants_18", "Plants_19", "Plants_20" }
             });
@@ -68,6 +71,8 @@ namespace Demo.DobeCat.Game.Farm
             RegisterItem(ep, "broccoli",      "西蓝花",     "Plants_21");
 
             // ── 青辣椒 ────────────────────────────────────────────
+            // 修正：原配置多了第 5 个 duration / 第 5、6 个 sprite，但代码只读 [0..3]，多余部分永远不会被使用。
+            // 统一为 4 阶段（与其他作物一致，T × 1, 2, 3, 10）。
             RegisterCrop(ep, new CropConfig
             {
                 Id           = "crop_green_pepper",
@@ -75,9 +80,9 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_green_pepper",
                 OutputItemId = "green_pepper",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 20f, 40f, 60f, 90f, 180f },
+                StageDurations = new List<float> { 60f, 120f, 180f, 600f },
                 StageSpriteIds = new List<string>
-                    { "Plants_5", "Plants_6", "Plants_7", "Plants_8", "Plants_9", "Plants_10" }
+                    { "Plants_5", "Plants_7", "Plants_8", "Plants_10", "Plants_9" }
             });
             RegisterItem(ep, "seed_green_pepper", "青辣椒种子", "Plants_162");
             RegisterItem(ep, "green_pepper",      "青辣椒",     "Plants_15");
@@ -90,7 +95,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_radish",
                 OutputItemId = "radish",
                 OutputAmount = 1,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_32", "Plants_22", "Plants_23", "Plants_24", "Plants_25" }
             });
@@ -107,11 +112,11 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_bean",
                 OutputItemId = "bean",
                 OutputAmount = 3,
-                StageDurations = new List<float> { 22f, 44f, 66f, 220f },
+                StageDurations = new List<float> { 66f, 132f, 198f, 660f },
                 StageSpriteIds = new List<string>
                     { "Plants_53", "Plants_54", "Plants_55", "Plants_57", "Plants_58" }
             });
-            RegisterItem(ep, "seed_bean", "豆角种子", "Plants_162");
+            RegisterItem(ep, "seed_bean", "豆角种子", "Plants_171"); // 原为 Plants_162，与 seed_green_pepper 重复，修正
             RegisterItem(ep, "bean",      "豆角",     "Plants_57");
 
             // ── 番茄 ──────────────────────────────────────────────
@@ -122,7 +127,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_tomato",
                 OutputItemId = "tomato",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 35f, 70f, 105f, 350f },
+                StageDurations = new List<float> { 105f, 210f, 315f, 1050f },
                 StageSpriteIds = new List<string>
                     { "Plants_72", "Plants_60", "Plants_61", "Plants_62", "Plants_63" }
             });
@@ -137,7 +142,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_pepper",
                 OutputItemId = "pepper",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_65", "Plants_66", "Plants_67", "Plants_69", "Plants_70" }
             });
@@ -152,7 +157,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_eggplant",
                 OutputItemId = "eggplant",
                 OutputAmount = 1,
-                StageDurations = new List<float> { 40f, 80f, 120f, 400f },
+                StageDurations = new List<float> { 120f, 240f, 360f, 1200f },
                 StageSpriteIds = new List<string>
                     { "Plants_93", "Plants_94", "Plants_95", "Plants_97", "Plants_96" }
             });
@@ -167,7 +172,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_corn",
                 OutputItemId = "corn",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 45f, 90f, 135f, 450f },
+                StageDurations = new List<float> { 135f, 270f, 405f, 1350f },
                 StageSpriteIds = new List<string>
                     { "Plants_109", "Plants_110", "Plants_99", "Plants_101", "Plants_102" }
             });
@@ -182,7 +187,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_strawberry",
                 OutputItemId = "strawberry",
                 OutputAmount = 3,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_111", "Plants_112", "Plants_113", "Plants_115", "Plants_114" }
             });
@@ -197,7 +202,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_blueberry",
                 OutputItemId = "blueberry",
                 OutputAmount = 4,
-                StageDurations = new List<float> { 25f, 50f, 75f, 250f },
+                StageDurations = new List<float> { 75f, 150f, 225f, 750f },
                 StageSpriteIds = new List<string>
                     { "Plants_73", "Plants_74", "Plants_75", "Plants_77", "Plants_76" }
             });
@@ -212,7 +217,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_grape",
                 OutputItemId = "grape",
                 OutputAmount = 5,
-                StageDurations = new List<float> { 50f, 100f, 150f, 500f },
+                StageDurations = new List<float> { 150f, 300f, 450f, 1500f },
                 StageSpriteIds = new List<string>
                     { "Plants_122", "Plants_123", "Plants_116", "Plants_78", "Plants_212" }
             });
@@ -227,7 +232,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_pumpkin",
                 OutputItemId = "pumpkin",
                 OutputAmount = 1,
-                StageDurations = new List<float> { 60f, 120f, 180f, 600f },
+                StageDurations = new List<float> { 180f, 360f, 540f, 1800f },
                 StageSpriteIds = new List<string>
                     { "Plants_83", "Plants_3", "Plants_4", "Plants_13", "Plants_202" }
             });
@@ -242,7 +247,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_wheat",
                 OutputItemId = "wheat",
                 OutputAmount = 3,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_8", "Plants_3", "Plants_4", "Plants_13", "Plants_79" }
             });
@@ -257,7 +262,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_purple_cabbage",
                 OutputItemId = "purple_cabbage",
                 OutputAmount = 1,
-                StageDurations = new List<float> { 28f, 56f, 84f, 280f },
+                StageDurations = new List<float> { 84f, 168f, 252f, 840f },
                 StageSpriteIds = new List<string>
                     { "Plants_90", "Plants_91", "Plants_92", "Plants_88", "Plants_14" }
             });
@@ -272,7 +277,7 @@ namespace Demo.DobeCat.Game.Farm
                 SeedItemId   = "seed_potato",
                 OutputItemId = "potato",
                 OutputAmount = 2,
-                StageDurations = new List<float> { 30f, 60f, 90f, 300f },
+                StageDurations = new List<float> { 90f, 180f, 270f, 900f },
                 StageSpriteIds = new List<string>
                     { "Plants_26", "Plants_27", "Plants_28", "Plants_29", "Plants_30" }
             });

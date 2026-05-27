@@ -36,27 +36,47 @@ namespace Demo.DobeCat.Game.Shop
         private string _currentShopId     = DobeCatShopSetup.SHOP_SEED_STORE;
         private string _currentCurrencyId = CURRENCY_SILVER;
 
-        // ─── 颜色 ───────────────────────────────────────────────────────────
-        private static readonly Color CB   = new Color(0.11f, 0.12f, 0.15f, 0.97f);
-        private static readonly Color CH   = new Color(0.07f, 0.08f, 0.11f, 1.00f);
-        private static readonly Color CX   = new Color(0.70f, 0.18f, 0.18f, 1.00f);
-        private static readonly Color CTM  = new Color(0.94f, 0.94f, 0.96f, 1.00f);
-        private static readonly Color CTS  = new Color(0.58f, 0.61f, 0.70f, 1.00f);
-        private static readonly Color CDiv = new Color(0.22f, 0.23f, 0.28f, 1.00f);
-        private static readonly Color CSB  = new Color(0.08f, 0.09f, 0.11f, 1.00f);
-        private static readonly Color CRow = new Color(0.16f, 0.17f, 0.21f, 1.00f);
-        private static readonly Color CBuy = new Color(0.15f, 0.40f, 0.80f, 1.00f);
-        private static readonly Color CTabOn  = new Color(0.30f, 0.32f, 0.40f, 1.00f); // 选中 Tab
-        private static readonly Color CTabOff = new Color(0.13f, 0.14f, 0.18f, 1.00f); // 未选中 Tab
+        // ─── 颜色（全部读 DobeCatTheme.Current，跟随主题切换）──────────────
+        private static Color CB    => DobeCatTheme.Current.Background;
+        private static Color CH    => DobeCatTheme.Current.Header;
+        private static Color CX    => DobeCatTheme.Current.Close;
+        private static Color CTM   => DobeCatTheme.Current.TextMain;
+        private static Color CTS   => DobeCatTheme.Current.TextSub;
+        private static Color CDiv  => DobeCatTheme.Current.Divider;
+        private static Color CSB   => DobeCatTheme.Current.ScrollBg;
+        private static Color CRow  => DobeCatTheme.Current.ButtonBg;
+        private static Color CBuy  => DobeCatTheme.Current.Accent;
+        private static Color CTabOn  => DobeCatTheme.Current.Accent;
+        private static Color CTabOff => DobeCatTheme.Current.ButtonBg;
 
-        private void Awake() { Instance = this; }
+        private void Awake()
+        {
+            Instance = this;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
+        }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod(
-                    "UnregisterUIEntity", new List<object> { "shop-root" });
+                    "DestroyUIEntity", new List<object> { "shop-root" });
+        }
+
+        /// <summary>主题切换时销毁旧面板并重建，保留显隐状态。</summary>
+        private void RebuildUI()
+        {
+            if (!_initialized) return;
+            var wasVisible = _rootPanel?.Visible ?? false;
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod(
+                    "DestroyUIEntity", new List<object> { "shop-root" });
+            _rootPanel = null; _balanceDao = null; _msgDao = null;
+            _contentTransform = null; _tabSilverDao = null; _tabGoldDao = null;
+            _rowIds.Clear(); _rowIdx = 0; _initialized = false;
+            BuildUI();
+            if (wasVisible && _rootPanel != null) _rootPanel.Visible = true;
         }
 
         private void Update()
@@ -312,12 +332,25 @@ namespace Demo.DobeCat.Game.Shop
             Rebuild();
         }
 
+        private const string ITEM_SILVER_10PACK = "coin_silver_10pack";
+        private const int    SILVER_10PACK_GRANT = 10; // 每包兑换的银币数
+
         private void BuyItem(string itemId, string displayName)
         {
             if (!EventProcessor.HasInstance) return;
-            var res = EventProcessor.Instance.TriggerEventMethod("ShopBuy",
+            var ep  = EventProcessor.Instance;
+            var res = ep.TriggerEventMethod("ShopBuy",
                 new List<object> { _currentShopId, itemId, 1, "player" });
             var ok = ResultCode.IsOk(res);
+            if (ok && itemId == ITEM_SILVER_10PACK)
+            {
+                // 立即消耗兑换包（背包移除 1 个），并向银币钱包存入 10 银
+                ep.TriggerEventMethod("InventoryRemove",
+                    new List<object> { "player", ITEM_SILVER_10PACK, 1 });
+                ep.TriggerEventMethod("ShopAddWallet",
+                    new List<object> { "player", EssSystem.Core.Application.MultiManagers.ShopManager.ShopService.CURRENCY_SILVER, SILVER_10PACK_GRANT });
+                displayName = $"银币兑换包（+{SILVER_10PACK_GRANT} 银币）";
+            }
             if (_msgDao != null)
             {
                 _msgDao.Text = ok

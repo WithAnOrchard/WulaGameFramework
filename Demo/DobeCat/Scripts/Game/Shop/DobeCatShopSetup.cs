@@ -87,6 +87,7 @@ namespace Demo.DobeCat.Game.Shop
                 ("premium_food_cake",     "生日蛋糕",     "特别食物，好感度 +10。"),
                 ("premium_action_pack",   "动作扩展包",   "解锁全新 Idle 变体动作。"),
                 ("premium_celebrate_fx",  "庆祝特效",     "专属庆祝粒子特效。"),
+                ("coin_silver_10pack",    "银币兑换包",   "使用1枚金币兑换10枚银币。购买后自动兑换，不会占用背包格。"),
             })
             {
                 ep.TriggerEventMethod("InventoryRegisterItem", new List<object>
@@ -120,7 +121,7 @@ namespace Demo.DobeCat.Game.Shop
                         // ── 基础蔬菜（5-10金）──────────────────────
                         new ShopStock { ItemId = "seed_radish",         BasePrice =  5, Stock = -1 },
                         new ShopStock { ItemId = "seed_carrot",         BasePrice =  8, Stock = -1 },
-                        new ShopStock { ItemId = "seed_turnip",         BasePrice =  8, Stock = -1 },
+                        // 注：seed_turnip（大头菜种子）已移除——DobeCatCropSetup 没有 crop_turnip 配置，避免买了无法种植
                         new ShopStock { ItemId = "seed_green_pepper",   BasePrice =  8, Stock = -1 },
                         new ShopStock { ItemId = "seed_bean",           BasePrice =  8, Stock = -1 },
                         new ShopStock { ItemId = "seed_wheat",          BasePrice = 10, Stock = -1 },
@@ -155,6 +156,7 @@ namespace Demo.DobeCat.Game.Shop
                     Policy      = new ShopPolicy { BuyMarkupRatio = 1.0f },
                     Stock       = new List<ShopStock>
                     {
+                        new ShopStock { ItemId = "coin_silver_10pack",    BasePrice =   1, Stock = -1 },
                         new ShopStock { ItemId = "premium_hat_festival",   BasePrice =  50, Stock = -1 },
                         new ShopStock { ItemId = "premium_food_sushi",     BasePrice =  30, Stock = -1 },
                         new ShopStock { ItemId = "premium_food_cake",      BasePrice =  60, Stock = -1 },
