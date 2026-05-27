@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using EssSystem.Core.Application.SingleManagers.DialogueManager;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao;
 using UnityEngine;
 
-namespace Demo.DobeCat.Game
+namespace Demo.DobeCat.Game.Pet
 {
     /// <summary>
     /// DobeCat 所有对话文本内容的集中注册处。

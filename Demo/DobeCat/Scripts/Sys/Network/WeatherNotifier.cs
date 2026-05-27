@@ -1,10 +1,10 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 using EssSystem.Core.Base.Util;
 using Demo.DobeCat.Game.Pet;
 
-namespace Demo.DobeCat.Game
+namespace Demo.DobeCat.Sys.Network
 {
     /// <summary>
     /// 拉取实时天气并展示到对话气泡。完全免费，无需任何 API Key。

@@ -1,10 +1,10 @@
-using Demo.DobeCat.Sys.Platform.Windows;
+﻿using Demo.DobeCat.Sys.Platform.Windows;
 using UnityEngine;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using Win32 = Demo.DobeCat.Sys.Platform.Windows.Win32Native;
 #endif
 
-namespace Demo.DobeCat.Sys
+namespace Demo.DobeCat.Sys.Platform
 {
     /// <summary>
     /// 根据用户键鼠活跃状态动态调整 Application.targetFrameRate，降低桌宠空闲时的 CPU 占用。

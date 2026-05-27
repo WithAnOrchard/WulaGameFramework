@@ -1,11 +1,11 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.MultiManagers.ShopManager;
 using BiliBiliDanmu;
 using BiliBiliLive;
 
-namespace Demo.DobeCat.Game
+namespace Demo.DobeCat.Game.Live
 {
     /// <summary>
     /// 直播经济控制器 —— 将直播行为映射为游戏内货币。

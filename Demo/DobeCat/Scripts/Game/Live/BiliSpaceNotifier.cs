@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -8,7 +8,7 @@ using EssSystem.Manager.NetworkManager;
 using Demo.DobeCat.Game.Pet;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 
-namespace Demo.DobeCat.Game
+namespace Demo.DobeCat.Game.Live
 {
     /// <summary>
     /// Polls Bilibili space dynamics and videos for watched UIDs.

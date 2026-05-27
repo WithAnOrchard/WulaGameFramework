@@ -1,8 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
 
-namespace Demo.DobeCat.Sys
+namespace Demo.DobeCat.Sys.Audio
 {
     /// <summary>
     /// 桌宠音效控制器。通过 AudioManager.EVT_PLAY_SFX 触发对应音效。

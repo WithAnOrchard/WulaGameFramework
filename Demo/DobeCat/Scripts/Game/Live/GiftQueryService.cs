@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -8,7 +8,7 @@ using EssSystem.Core.Base.Util;
 using UnityEngine;
 using Demo.DobeCat.Sys.Auth;
 
-namespace Demo.DobeCat.Game
+namespace Demo.DobeCat.Game.Live
 {
     /// <summary>礼物记录数据模型。</summary>
     public struct GiftRecord
