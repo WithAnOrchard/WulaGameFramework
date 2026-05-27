@@ -106,10 +106,10 @@ namespace Demo.DobeCat.Sys.UI
                 .SetPosition(PW / 2f, PH - 21f);
             root.AddChild(titleBar);
 
-            // 图标小方块
+            // 图标（注册后手动赋 sprite）
             titleBar.AddChild(new UIPanelComponent("tp-icon")
-                .SetBackgroundColor(CACC).SetSize(20f, 20f)
-                .SetPosition(24f, 21f));
+                .SetSize(28f, 28f).SetPosition(24f, 21f)
+                .SetBackgroundColor(Color.white));
 
             titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
                 .SetSize(300f, 42f).SetPosition(190f, 21f)
@@ -172,6 +172,20 @@ namespace Demo.DobeCat.Sys.UI
             // ── 注册到 UIManager ──
             _rootEntity = UIService.Instance.RegisterUIEntity("tp-root", root, canvasT);
             if (_rootEntity == null) return;
+
+            // 标题栏图标
+            var iconEnt = UIService.Instance.GetUIEntity("tp-icon") as UIPanelEntity;
+            if (iconEnt != null)
+            {
+                var iconImg = iconEnt.GetImage();
+                if (iconImg != null)
+                {
+                    var spr = Resources.Load<Sprite>("UI/icon");
+                    if (spr == null) { var all = Resources.LoadAll<Sprite>("UI/icon"); spr = all != null && all.Length > 0 ? all[0] : null; }
+                    if (spr != null) { iconImg.sprite = spr; iconImg.color = Color.white; iconImg.preserveAspect = true; }
+                    iconImg.raycastTarget = false;
+                }
+            }
 
             // 标题栏加 UIDraggable
             var titleBarEntity = UIService.Instance.GetUIEntity("tp-titlebar");

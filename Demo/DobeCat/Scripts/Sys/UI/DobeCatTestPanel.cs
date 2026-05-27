@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using BiliBiliDanmu;
 using BiliBiliLive;
+using Demo.DobeCat.Sys.Auth;
 using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
@@ -128,9 +129,8 @@ namespace Demo.DobeCat.Sys.UI
             }
             else
             {
-                sb.Append("服务: ").AppendLine(_discovery.ServerBaseUrl);
-                sb.Append("自身: ").Append(_discovery.AdvertisedHost).Append(':').Append(_discovery.AdvertisedPort)
-                  .Append("  id=").AppendLine(Truncate(_discovery.RoomId, 18));
+                sb.Append("自身: ").Append(!string.IsNullOrEmpty(AuthSession.Nickname) ? AuthSession.Nickname : "(未知)")
+                  .Append("  uid=").AppendLine(AuthSession.Mid > 0 ? AuthSession.Mid.ToString() : "?");
                 var rooms = _discovery.LatestRooms;
                 if (rooms == null || rooms.Count == 0)
                 {
@@ -145,9 +145,8 @@ namespace Demo.DobeCat.Sys.UI
                         var r = rooms[i];
                         var marker = r.IsSelf ? "● " : "  ";
                         sb.Append(marker)
-                          .Append(Truncate(r.Name, 14)).Append(' ')
-                          .Append(r.Host).Append(':').Append(r.Port)
-                          .Append("  ttl=").AppendLine($"{r.TtlRemaining:0}s");
+                          .Append(Truncate(r.Name, 20))
+                          .Append("  uid=").AppendLine(r.BiliUid > 0 ? r.BiliUid.ToString() : "?");
                     }
                     if (rooms.Count > n) sb.AppendLine($"  ...（还有 {rooms.Count - n} 个）");
                 }

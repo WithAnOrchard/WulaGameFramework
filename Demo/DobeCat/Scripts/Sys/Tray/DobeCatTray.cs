@@ -122,7 +122,7 @@ namespace Demo.DobeCat.Sys.Tray
             var lifeSub  = new List<SystemTray.MenuItemDef>();
 
             // 天气
-            var weatherInfo = Demo.DobeCat.Game.WeatherNotifier.LastWeatherInfo;
+            var weatherInfo = Demo.DobeCat.Sys.Network.WeatherNotifier.LastWeatherInfo;
             lifeSub.Add(string.IsNullOrEmpty(weatherInfo)
                 ? SystemTray.MenuItemDef.Disabled("🌤 天气: 拉取中...")
                 : SystemTray.MenuItemDef.Item($"🌤 {weatherInfo}", () =>
@@ -272,6 +272,8 @@ namespace Demo.DobeCat.Sys.Tray
         private void Quit()
         {
             try { _tray?.Dispose(); } catch { /* swallow */ }
+            // Process.Kill() 会跳过 OnApplicationQuit，所以在 Kill 之前同步写注册表。
+            Demo.DobeCat.DobeCatGameManager.ResetSavedResolutionInRegistry();
             // 先走标准 Quit，再用强杀兜底（Forms 线程 / 其它后台资源可能阻塞退出）。
             Application.Quit();
             try

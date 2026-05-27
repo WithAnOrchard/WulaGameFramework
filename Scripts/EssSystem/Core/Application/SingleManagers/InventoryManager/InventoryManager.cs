@@ -49,6 +49,10 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         [Tooltip("Inspector「添加随机物品」按钮的目标 Inventory ID")]
         [SerializeField] private string _editorTargetInventoryId = "player";
 
+        [Header("Runtime Behavior")]
+        [Tooltip("Start() 时是否自动打开 Hotbar UI（关闭后由业务侧自行 Open）")]
+        public bool AutoOpenHotbar = true;
+
         #endregion
 
         /// <summary>底层 Service（同等于 InventoryService.Instance，但 Inspector 里可见）</summary>
@@ -85,6 +89,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         /// <summary>Awake 之后所有 Manager / EventProcessor 都注册完了，在 Start 里安全自动打开 Hotbar。</summary>
         private void Start()
         {
+            if (!AutoOpenHotbar) return;
             // 启动后自动打开 Hotbar——快捷栏一直可见
             var result = OpenInventoryUI(new List<object> { ID_HOTBAR, CFG_HOTBAR });
             if (!ResultCode.IsOk(result))

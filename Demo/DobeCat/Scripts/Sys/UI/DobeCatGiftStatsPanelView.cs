@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
@@ -6,6 +6,7 @@ using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
 using Demo.DobeCat.Game;
+using Demo.DobeCat.Game.Live;
 
 namespace Demo.DobeCat.Sys.UI
 {
@@ -136,6 +137,20 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity = UIService.Instance.RegisterUIEntity("gift-root", root, canvasT);
             if (_rootEntity == null) return;
 
+            // 标题栏图标
+            var iconEnt = UIService.Instance.GetUIEntity("gift-icon") as UIPanelEntity;
+            if (iconEnt != null)
+            {
+                var iconImg = iconEnt.GetImage();
+                if (iconImg != null)
+                {
+                    var spr = Resources.Load<Sprite>("UI/icon");
+                    if (spr == null) { var all = Resources.LoadAll<Sprite>("UI/icon"); spr = all != null && all.Length > 0 ? all[0] : null; }
+                    if (spr != null) { iconImg.sprite = spr; iconImg.color = Color.white; iconImg.preserveAspect = true; }
+                    iconImg.raycastTarget = false;
+                }
+            }
+
             // 标题栏拖拽
             var titleEntity = UIService.Instance.GetUIEntity("gift-titlebar");
             if (titleEntity != null)
@@ -184,8 +199,8 @@ namespace Demo.DobeCat.Sys.UI
                 .SetPosition(pw / 2f, ph - 22f);
 
             bar.AddChild(new UIPanelComponent("gift-icon")
-                .SetBackgroundColor(t.Accent).SetSize(18f, 18f)
-                .SetPosition(22f, 22f));
+                .SetSize(28f, 28f).SetPosition(22f, 22f)
+                .SetBackgroundColor(Color.white));
 
             bar.AddChild(new UITextComponent("gift-title", text: "礼物统计")
                 .SetSize(300f, 44f).SetPosition(pw / 2f, 22f)

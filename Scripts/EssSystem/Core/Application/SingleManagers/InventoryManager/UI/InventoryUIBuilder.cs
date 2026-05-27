@@ -159,12 +159,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var tc = config.TitleConfig;
             var text = !string.IsNullOrEmpty(tc.Text) ? tc.Text : (config.DisplayName ?? inventoryId);
 
-            // UITextSpec.Position 用左下角约定 → UITextComponent 用中心约定，转换：减去 (PanelW/2, PanelH/2)
-            var posX = tc.Position.x - pc.Size.x * 0.5f;
-            var posY = tc.Position.y - pc.Size.y * 0.5f;
-
+            // UITextSpec.Position 约定 = rect 中心相对父面板 bottom-left（与 UITextComponent.SetPosition
+            // 在 UIEntityFactory 里 anchor=(0,0)+pivot=(0.5,0.5) 的语义一致）——直接送入即可，
+            // 历史代码减去 (PanelW/2, PanelH/2) 的“转换”是 bug，会把文本推到面板左下区。
             var titleText = new UITextComponent($"{inventoryId}_Title", $"{inventoryId}_Title")
-                .SetPosition(posX, posY)
+                .SetPosition(tc.Position.x, tc.Position.y)
                 .SetColor(tc.TextColor)
                 .SetAlignment(tc.Alignment)
                 .SetText(text);
@@ -211,8 +210,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 slotBtn.AddChild(iconPanel);
 
                 // 名称（slot 顶部）
+                // 注：子组件 Position 是 rect 中心相对父组件 bottom-left（与图标 (SlotW*0.5, SlotH*0.5)
+                //     表示 slot 中心是同一约定）。早期版本写成 (0, SlotH*0.38)，结果把文字 rect 中心
+                //     锚到了 slot 左边缘 → 视觉偏移。这里改用 SlotCenter + 偏移修正。
                 var nameText = new UITextComponent($"{inventoryId}_Slot_{i}_NameText", $"Slot_{i}_Name")
-                    .SetPosition(0f, sc.SlotHeight * 0.38f)
+                    .SetPosition(sc.SlotWidth * 0.5f, sc.SlotHeight * 0.5f + sc.SlotHeight * 0.38f)
                     .SetColor(Color.white)
                     .SetAlignment(TextAnchor.MiddleCenter)
                     .SetText(string.Empty);
@@ -222,7 +224,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
 
                 // 数量（slot 底部右对齐）
                 var stackText = new UITextComponent($"{inventoryId}_Slot_{i}_StackText", $"Slot_{i}_Stack")
-                    .SetPosition(-sc.SlotWidth * 0.08f, -sc.SlotHeight * 0.34f)
+                    .SetPosition(sc.SlotWidth * 0.5f - sc.SlotWidth * 0.08f, sc.SlotHeight * 0.5f - sc.SlotHeight * 0.34f)
                     .SetColor(new Color(1f, 0.85f, 0.4f, 1f))
                     .SetAlignment(TextAnchor.MiddleRight)
                     .SetText(string.Empty);
@@ -325,11 +327,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             string initialText)
         {
             cfg = cfg ?? new UITextSpec();
-            var posX = cfg.Position.x - dp.Width  * 0.5f;
-            var posY = cfg.Position.y - dp.Height * 0.5f;
-
+            // 与 BuildTitle 同理：Position 已是「rect 中心 / 父面板 bottom-left」约定，不需要减去面板一半。
             var t = new UITextComponent(daoId, name)
-                .SetPosition(posX, posY)
+                .SetPosition(cfg.Position.x, cfg.Position.y)
                 .SetColor(cfg.TextColor)
                 .SetAlignment(cfg.Alignment)
                 .SetText(initialText ?? string.Empty);

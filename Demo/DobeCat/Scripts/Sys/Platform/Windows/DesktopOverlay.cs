@@ -25,8 +25,17 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             if (IsWindowCaptureMode == capture) return;
             IsWindowCaptureMode = capture;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            if (capture) ApplyWindowCapture();
-            else          ApplyOverlay(Display.main.systemWidth, Display.main.systemHeight);
+            if (capture)
+                ApplyWindowCapture();
+            else
+            {
+                // 切回叠加：使用 Enter() 缓存的工作区尺寸，而非 Display.main（含任务栏）
+                var wa = Win32Native.GetPrimaryWorkArea();
+                var w = wa.right - wa.left;
+                var h = wa.bottom - wa.top;
+                if (w <= 0 || h <= 0) { w = Display.main.systemWidth; h = Display.main.systemHeight; }
+                ApplyOverlay(w, h);
+            }
 #endif
             Debug.Log($"[DesktopOverlay] 显示模式切换 → {(capture ? "窗口捕捉" : "桌面叠加")}");
         }
@@ -38,25 +47,78 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         public static IEnumerator Enter()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            // 使用 SPI_GETWORKAREA 获取真实可用区（排除任务栏），避免多显示器 DPI 偏差
             var workArea = Win32Native.GetPrimaryWorkArea();
             var w = workArea.right  - workArea.left;
             var h = workArea.bottom - workArea.top;
             if (w <= 0 || h <= 0) { w = Display.main.systemWidth; h = Display.main.systemHeight; }
             _workAreaLeft = workArea.left;
             _workAreaTop  = workArea.top;
+
+            // 步骤 1：立即隐藏窗口 + 预启用 DWM 透明
+            //   - 隐藏确保任何内容都不会在正确样式应用前被看见
+            //   - DWM 预启用确保 resize 后第一帧已处于透明合成状态
+            var hwnd = GetHwnd();
+            if (hwnd != System.IntPtr.Zero)
+            {
+                var ex = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_EXSTYLE);
+                Win32Native.SetWindowLong(hwnd, Win32Native.GWL_EXSTYLE, ex | Win32Native.WS_EX_LAYERED);
+                var m = new Win32Native.MARGINS
+                    { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
+                Win32Native.DwmExtendFrameIntoClientArea(hwnd, ref m);
+                Win32Native.ShowWindow(hwnd, Win32Native.SW_HIDE);
+            }
+
+            // 步骤 2：仅在分辨率不匹配时才 resize（稳定状态跳过，零 SwapChain 重建）
+            if (Screen.width != w || Screen.height != h)
+                Screen.SetResolution(w, h, false);
+
+            // 步骤 3：等多帧让 Unity 完成异步 SetResolution（windowed resize 是异步的）
+            //   单一 yield null 不够 —— Unity 可能在我们 ApplyOverlay 之后才完成 resize
+            //   并把 WS_POPUP 重置回 WS_OVERLAPPEDWINDOW（标题栏、任务栏图标全部回来）
+            yield return null;
+            yield return null;
+            yield return null;
+
+            // 步骤 4：应用完整叠加样式并显示
+            ApplyOverlay(w, h);
+            SetClickThrough(false); // 登录阶段禁用穿透，RunAfterLogin 中重新启用
+
+            Debug.Log($"[DesktopOverlay] 已进入桌面叠加模式 {w}×{h}");
+
+            // 步骤 5：永久看门狗 —— Unity 在 ExclusiveFullscreen fallback / 窗口聚焦切换 等场景下
+            //   可能反复重置窗口样式（标题栏 / 任务栏图标重新出现）。每 500ms 检查一次，
+            //   样式被重置就立即重应用。协程随 DobeCatGameManager 销毁自动结束。
+            while (true)
+            {
+                yield return new WaitForSeconds(0.5f);
+                // 窗口捕捉模式下样式与 overlay 不同，跳过检查
+                if (IsWindowCaptureMode) continue;
+                if (!IsOverlayApplied(w, h))
+                {
+                    Debug.LogWarning("[DesktopOverlay] 样式/矩形被重置，重新应用覆盖层");
+                    ApplyOverlay(w, h);
+                }
+            }
 #else
             var w = Display.main.systemWidth;
             var h = Display.main.systemHeight;
+            yield return null;
+            Debug.Log($"[DesktopOverlay] 已进入桌面叠加模式 {w}×{h}（非 Windows，仅记录尺寸）");
 #endif
-            Screen.SetResolution(w, h, false);
+        }
 
-            yield return null; // 等 Unity 完成分辨率切换后再操作窗口
-
+        /// <summary>将窗口居中于主显示器工作区（用于登录窗口定位）。</summary>
+        public static void CenterWindow(int w, int h)
+        {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            ApplyOverlay(w, h);
+            var hwnd = GetHwnd();
+            if (hwnd == System.IntPtr.Zero) return;
+            var wa = Win32Native.GetPrimaryWorkArea();
+            var x = wa.left + (wa.right  - wa.left - w) / 2;
+            var y = wa.top  + (wa.bottom - wa.top  - h) / 2;
+            Win32Native.SetWindowPos(hwnd, System.IntPtr.Zero, x, y, 0, 0,
+                Win32Native.SWP_NOSIZE | Win32Native.SWP_NOZORDER | Win32Native.SWP_NOACTIVATE);
 #endif
-            Debug.Log($"[DesktopOverlay] 已进入桌面叠加模式 {w}×{h}");
         }
 
         /// <summary>
@@ -115,6 +177,42 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         private static int _workAreaLeft;
         private static int _workAreaTop;
 
+        /// <summary>
+        /// 检查窗口是否仍处于完整覆盖层状态：
+        /// 样式（WS_POPUP + WS_EX_TOOLWINDOW + WS_EX_TOPMOST）+ 矩形（覆盖工作区，位置正确）。
+        /// </summary>
+        private static bool IsOverlayApplied(int expectedW, int expectedH)
+        {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            var hwnd = GetHwnd();
+            if (hwnd == System.IntPtr.Zero) return true; // 找不到句柄不重应用
+
+            var style = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_STYLE);
+            var ex    = Win32Native.GetWindowLong(hwnd, Win32Native.GWL_EXSTYLE);
+            bool styleOk = (style & Win32Native.WS_POPUP) != 0
+                        && (ex & Win32Native.WS_EX_TOOLWINDOW) != 0
+                        && (ex & Win32Native.WS_EX_TOPMOST)    != 0;
+            if (!styleOk) return false;
+
+            // 矩形检查：宽高与工作区一致、位置在工作区左上角（允许 ±2px 误差以兼容 DPI 缩放）
+            if (Win32Native.GetWindowRect(hwnd, out var rect))
+            {
+                int actualW = rect.right - rect.left;
+                int actualH = rect.bottom - rect.top;
+                if (System.Math.Abs(actualW - expectedW) > 2 ||
+                    System.Math.Abs(actualH - expectedH) > 2 ||
+                    System.Math.Abs(rect.left - _workAreaLeft) > 2 ||
+                    System.Math.Abs(rect.top  - _workAreaTop)  > 2)
+                {
+                    return false;
+                }
+            }
+            return true;
+#else
+            return true;
+#endif
+        }
+
         private static System.IntPtr GetHwnd()
         {
             if (_hwnd != System.IntPtr.Zero) return _hwnd;
@@ -145,9 +243,13 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             { cxLeftWidth = -1, cxRightWidth = -1, cyTopHeight = -1, cyBottomHeight = -1 };
             Win32Native.DwmExtendFrameIntoClientArea(hwnd, ref margins);
 
+            // 关键：WS_EX_TOOLWINDOW 在已可见窗口上设置不会立即从任务栏移除，
+            // 必须 SW_HIDE → SWP_SHOWWINDOW 才能触发样式真正生效（MSDN 明确要求）。
+            // 同时确保窗口不被 Windows 当成普通应用（失焦时不被发到后面）。
+            Win32Native.ShowWindow(hwnd, Win32Native.SW_HIDE);
             Win32Native.SetWindowPos(hwnd, Win32Native.HWND_TOPMOST,
                 _workAreaLeft, _workAreaTop, w, h,
-                Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW);
+                Win32Native.SWP_FRAMECHANGED | Win32Native.SWP_SHOWWINDOW | Win32Native.SWP_NOACTIVATE);
         }
 
         private static void ApplyWindowCapture()

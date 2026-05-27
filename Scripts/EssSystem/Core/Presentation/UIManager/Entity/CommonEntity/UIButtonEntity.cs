@@ -28,7 +28,17 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             _button = gameObject.GetComponent<Button>() ?? gameObject.AddComponent<Button>();
             _image = gameObject.GetComponent<Image>() ?? gameObject.AddComponent<Image>();
             _legacyText = GetComponentInChildren<Text>();
-            _text = GetComponentInChildren<TextMeshProUGUI>() ?? CreateTextComponent();
+            _text = GetComponentInChildren<TextMeshProUGUI>();
+            // 仅在既无 legacy 又无 TMP 时才尝试创建 TMP；UIEntityFactory 已为 Button 创建 legacy Text，
+            // 正常路径下走 _legacyText，避免 TMP Essentials 未导入时的 NullReferenceException 中断 Awake。
+            if (_text == null && _legacyText == null)
+            {
+                try { _text = CreateTextComponent(); }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[UIButtonEntity] 创建 TMP Text 失败（请在 Editor 中 Window → TextMeshPro → Import TMP Essential Resources）: {e.Message}");
+                }
+            }
             if (_text != null) _text.raycastTarget = false;
             _button.onClick.AddListener(OnButtonClick);
         }

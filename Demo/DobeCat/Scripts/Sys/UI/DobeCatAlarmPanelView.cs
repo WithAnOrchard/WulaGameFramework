@@ -26,7 +26,6 @@ namespace Demo.DobeCat.Sys.UI
         private UIInput     _hourInput;
         private UIInput     _minuteInput;
         private UIInput     _labelInput;
-        private bool        _initialized;
         private Vector2     _savedPos = new Vector2(780f, 20f);
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
@@ -96,12 +95,10 @@ namespace Demo.DobeCat.Sys.UI
                 _rootEntity = null;
             }
             _hourInput = null; _minuteInput = null; _labelInput = null;
-            _initialized = false;
         }
 
         private void BuildUI()
         {
-            _initialized = true;
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) { Debug.LogWarning("[AlarmPanel] Canvas 未就绪"); return; }
 

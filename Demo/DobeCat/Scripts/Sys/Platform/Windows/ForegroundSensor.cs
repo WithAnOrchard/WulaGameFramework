@@ -1,5 +1,6 @@
-using System.Text;
+﻿using System.Text;
 using UnityEngine;
+using Demo.DobeCat.Sys.Platform;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif

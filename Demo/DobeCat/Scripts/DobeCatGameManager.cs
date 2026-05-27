@@ -16,8 +16,11 @@ using Demo.DobeCat.Sys.UI;
 using Demo.DobeCat.Game.Farm;
 using Demo.DobeCat.Game.Shop;
 using Demo.DobeCat.Game;
+using Demo.DobeCat.Game.Live;
 using Demo.DobeCat.Sys.Network;
 using Demo.DobeCat.Sys;
+using Demo.DobeCat.Sys.Audio;
+using Demo.DobeCat.Sys.Platform;
 using Demo.DobeCat.Sys.Platform.Windows;
 
 namespace Demo.DobeCat
@@ -132,6 +135,7 @@ namespace Demo.DobeCat
         private ActionsClient _actions;
         private bool _wasBKey;
         private bool _backpackOpen;
+        private Demo.DobeCat.Game.Pet.PetHUD _petHud;
 
         protected override void Awake()
         {
@@ -142,14 +146,17 @@ namespace Demo.DobeCat
             // 日志写入文件 — 尽早挂载，捕获完整启动日志
             gameObject.AddComponent<DobeCatLogger>();
             Application.runInBackground = true;
-            Screen.SetResolution(460, 400, false);
+            Debug.Log($"[STARTUP] 当前分辨率（Awake 执行前）: {Screen.width}×{Screen.height}, fullscreen={Screen.fullScreen}");
             // 主题 & 礼物统计
             DobeCatTheme.LoadSaved();
             gameObject.AddComponent<GiftQueryService>();
             gameObject.AddComponent<DobeCatGiftStatsPanelView>();
             EnsureCamera();
+            // 始终叠加层架构：Awake 同帧同时创建登录 UGUI 面板 + 启动叠加层协程
+            // 登录面板作为透明叠加层上的居中 UGUI Canvas，无独立窗口、无任务栏、无可切换
             ShowLoginScreen();
-            Debug.Log("[DobeCatGameManager] Awake 完成，登录屏已创建。");
+            StartCoroutine(Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.Enter());
+            Debug.Log("[DobeCatGameManager] Awake 完成，登录面板 + 叠加层协程已启动。");
         }
 
         private void ShowLoginScreen()
@@ -164,8 +171,8 @@ namespace Demo.DobeCat
         /// <summary>登录通过后的初始化序列 —— 桌宠、网络、托盘、面板全在这里串起来。</summary>
         private void RunAfterLogin()
         {
-            // 0) 切换到全屏无边框透明叠加层（等一帧让 Unity 完成分辨率切换）
-            StartCoroutine(Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.Enter());
+            // 0) 叠加层已在启动时 Enter()，此处重新启用点击穿透，交给 PetClickThroughDriver 动态管理
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(true);
 
             // 1) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
@@ -186,7 +193,6 @@ namespace Demo.DobeCat
             EnsureTray(); // 必须晚于 EnsureRoomDiscovery，否则 Tray 拿不到 _discovery
             EnsureFarmWorld();
             DobeCatGameContext.OnContextChanged += OnGameContextChanged;
-            StartCoroutine(SuppressAutoHotbar());
 
             if (_autoOpenTestPanel)
             {
@@ -202,7 +208,11 @@ namespace Demo.DobeCat
             holder.AddComponent<FarmWorldController>();
 
             if (_pet != null)
+            {
                 _pet.AddComponent<HotbarSelectionDriver>();
+                _petHud = _pet.AddComponent<Demo.DobeCat.Game.Pet.PetHUD>();
+                _petHud.OnBackpackToggleRequested = ToggleBackpack;
+            }
 
             var shopHolder = new GameObject("ShopWindow");
             shopHolder.transform.SetParent(transform);
@@ -212,6 +222,9 @@ namespace Demo.DobeCat
             syncHolder.transform.SetParent(transform);
             var sync = syncHolder.AddComponent<PlayerDataSync>();
             sync.ServerBaseUrl = _roomDiscoveryServerUrl;
+            // 登录后立即从服务器拉取存档（背包/钱包/农场）；
+            // 协程内部等待 2 帧 + 3 次 3s 间隔重试，足够 DataExchangeSession 拿到 token。
+            sync.FetchAndRestore();
 
             // 直播经济：陪伴时长 / 弹幕 → 银币；礼物 → 金币
             var econHolder = new GameObject("LiveEconomy");
@@ -229,36 +242,36 @@ namespace Demo.DobeCat
             weatherHolder.AddComponent<WeatherNotifier>();
         }
 
-        private System.Collections.IEnumerator SuppressAutoHotbar()
-        {
-            // InventoryManager.Start() 在下一帧自动开启 Hotbar，我们再等一帧就将它关掉
-            yield return null;
-            yield return null;
-            if (!DobeCatGameContext.IsActive && EventProcessor.HasInstance)
-                EventProcessor.Instance.TriggerEventMethod(
-                    "CloseInventoryUI", new List<object> { "hotbar" });
-        }
-
         private void OnGameContextChanged(bool active)
         {
             if (!EventProcessor.HasInstance) return;
             var ep = EventProcessor.Instance;
             if (active)
             {
-                ep.TriggerEventMethod("OpenInventoryUI",
-                    new List<object> { "hotbar", "Hotbar" });
+                // Hotbar 由 PetHUD 在手动模式按键/滚轮时自行管理，此处不再强制打开
             }
             else
             {
-                ep.TriggerEventMethod("CloseInventoryUI",
-                    new List<object> { "hotbar" });
+                // Hotbar 可见性由 PetHUD.Update 根据 AI 状态自动決定，不在这里强制关闭
                 if (_backpackOpen)
                 {
                     _backpackOpen = false;
                     ep.TriggerEventMethod("CloseInventoryUI",
                         new List<object> { "player" });
                 }
+                _petHud?.SetBackpackOpen(false);
             }
+        }
+
+        /// <summary>背包开关（B 键 / 宠物 HUD 按钮共用入口，保证 _backpackOpen 单点管理）。</summary>
+        private void ToggleBackpack()
+        {
+            if (!EventProcessor.HasInstance) return; // 背包无需游戏上下文，随时可开
+            _backpackOpen = !_backpackOpen;
+            EventProcessor.Instance.TriggerEventMethod(
+                _backpackOpen ? "OpenInventoryUI" : "CloseInventoryUI",
+                new List<object> { "player", "PlayerBackPack" });
+            _petHud?.SetBackpackOpen(_backpackOpen);
         }
 
         private System.Collections.IEnumerator OpenTestPanelDelayed()
@@ -301,15 +314,8 @@ namespace Demo.DobeCat
 #else
             var bKey = Input.GetKey(KeyCode.B);
 #endif
-            if (bKey && !_wasBKey && DobeCatGameContext.IsActive)
-            {
-                _backpackOpen = !_backpackOpen;
-                if (EventProcessor.HasInstance)
-                    EventProcessor.Instance.TriggerEventMethod(
-                        _backpackOpen ? "OpenInventoryUI" : "CloseInventoryUI",
-                        new System.Collections.Generic.List<object>
-                            { "player", "PlayerBackPack" });
-            }
+            // B 键仅在手动模式下生效（AI 模式屏蔽所有手动按键）
+            if (bKey && !_wasBKey && (_petHud == null || _petHud.IsManualMode)) ToggleBackpack();
             _wasBKey = bKey;
         }
 
@@ -510,7 +516,8 @@ namespace Demo.DobeCat
             _ = UIManager.Instance;
             _ = EssSystem.Core.Presentation.AudioManager.AudioManager.Instance;
             _ = EssSystem.Core.Application.SingleManagers.DialogueManager.DialogueManager.Instance;
-            _ = EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.Instance; // OpenInventoryUI / CloseInventoryUI / RegisterItem
+            var inv = EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.Instance; // OpenInventoryUI / CloseInventoryUI / RegisterItem
+            inv.AutoOpenHotbar = false; // 押制 Start() 里的自动开启，避免登录后 Hotbar 闪一帧；DobeCat 由 OnGameContextChanged 按需开关
             _ = DanmuManager.Instance;
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
@@ -549,6 +556,87 @@ namespace Demo.DobeCat
             LiveStatusService.Instance.StartPolling(_liveRoomId, _livePollIntervalSeconds);
             Debug.Log($"[DobeCatGameManager] 开播状态轮询启动: room={_liveRoomId}, interval={_livePollIntervalSeconds}s");
         }
+
+        private void OnApplicationQuit()
+        {
+            // Screen.SetResolution 是异步的，退出时来不及生效。
+            // 直接写注册表，把 Unity 保存的分辨率覆盖为登录窗口大小，
+            // 避免下次启动时先出现全屏白色窗口。
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+            ResetSavedResolutionInRegistry();
+#endif
+        }
+
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+        public static void ResetSavedResolutionInRegistry()
+        {
+            try
+            {
+                var subKeyPath = $@"Software\{Application.companyName}\{Application.productName}";
+                Debug.Log($"[QUIT] 注册表路径: HKCU\\{subKeyPath}");
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(subKeyPath, writable: true);
+                if (key == null)
+                {
+                    Debug.LogWarning($"[QUIT] 未找到注册表键: {subKeyPath}，无法重置分辨率。");
+                    return;
+                }
+
+                // 保存全屏叠加层分辨率，下次启动 Unity 直接以此分辨率创建窗口，Enter() 无需 SetResolution，零闪烁。
+                var wa = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetPrimaryWorkArea();
+                int targetW = wa.right  - wa.left;
+                int targetH = wa.bottom - wa.top;
+                int cx = wa.left;  // 叠加层定位于工作区左上角
+                int cy = wa.top;
+
+                var names = key.GetValueNames();
+                Debug.Log($"[QUIT] 找到 {names.Length} 个注册表值，开始扫描...");
+                int changed = 0;
+                foreach (var name in names)
+                {
+                    if (name.StartsWith("Screenmanager Resolution Width"))
+                    {
+                        var old = key.GetValue(name);
+                        key.SetValue(name, targetW, Microsoft.Win32.RegistryValueKind.DWord);
+                        Debug.Log($"[QUIT] Width  {name}: {old} → {targetW}");
+                        changed++;
+                    }
+                    else if (name.StartsWith("Screenmanager Resolution Height"))
+                    {
+                        var old = key.GetValue(name);
+                        key.SetValue(name, targetH, Microsoft.Win32.RegistryValueKind.DWord);
+                        Debug.Log($"[QUIT] Height {name}: {old} → {targetH}");
+                        changed++;
+                    }
+                    else if (name.StartsWith("Screenmanager Fullscreen mode"))
+                    {
+                        var old = key.GetValue(name);
+                        key.SetValue(name, 3, Microsoft.Win32.RegistryValueKind.DWord);
+                        Debug.Log($"[QUIT] Fullscreen {name}: {old} → 3 (Windowed)");
+                        changed++;
+                    }
+                    else if (name.StartsWith("Screenmanager Window Position X"))
+                    {
+                        var old = key.GetValue(name);
+                        key.SetValue(name, cx, Microsoft.Win32.RegistryValueKind.DWord);
+                        Debug.Log($"[QUIT] PosX {name}: {old} → {cx}");
+                        changed++;
+                    }
+                    else if (name.StartsWith("Screenmanager Window Position Y"))
+                    {
+                        var old = key.GetValue(name);
+                        key.SetValue(name, cy, Microsoft.Win32.RegistryValueKind.DWord);
+                        Debug.Log($"[QUIT] PosY {name}: {old} → {cy}");
+                        changed++;
+                    }
+                }
+                Debug.Log($"[QUIT] 注册表重置完成，共修改 {changed} 个键。（分辨率: {targetW}×{targetH}, 位置: {cx},{cy}）");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[QUIT] 重置分辨率注册表失败: {e.Message}");
+            }
+        }
+#endif
 
         private void TryAutoConnectDanmu()
         {
