@@ -3,6 +3,7 @@ using EssSystem.Core.Base;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Theme;
 using BiliBiliDanmu;
+using BiliBiliDanmu.UI;
 using BiliBiliLive;
 using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
@@ -268,7 +269,7 @@ namespace Demo.DobeCat
         private System.Collections.IEnumerator OpenTestPanelDelayed()
         {
             yield return null; // 等下一帧
-            DobeCatTestPanel.Open();
+            DanmuTestPanelView.Instance?.Show();
             Debug.Log("[DobeCatGameManager] 测试面板自动打开");
         }
 
@@ -467,7 +468,10 @@ namespace Demo.DobeCat
             holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
 
             // 让测试面板拿到 client 引用，刷新 IP / 房间列表
-            Demo.DobeCat.Sys.UI.DobeCatTestPanel.Instance.AttachDiscovery(_discovery);
+            if (DanmuTestPanelView.Instance is Demo.DobeCat.Sys.UI.IDobeCatTestPanel dobeCatPanel)
+                dobeCatPanel.AttachDiscovery(_discovery);
+            else
+                Debug.LogWarning("[DobeCatGameManager] DanmuTestPanelView 不支持 AttachDiscovery，房间发现功能不可用");
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。

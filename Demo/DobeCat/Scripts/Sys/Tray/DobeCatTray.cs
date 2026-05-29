@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BiliBiliDanmu.UI;
 using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Base.Event;
@@ -151,7 +152,7 @@ namespace Demo.DobeCat.Sys.Tray
                 SystemTray.MenuItemDef.Item("🎁 查看礼物统计",
                     () => Demo.DobeCat.Sys.UI.DobeCatGiftStatsPanelView.Show()),
                 SystemTray.MenuItemDef.Item("💬 弹幕面板",
-                    () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()),
+                    () => BiliBiliDanmu.UI.DanmuTestPanelView.Instance?.Show()),
             };
 
             // ── 二级：互动玩法 ──────────────────────────────────────────────

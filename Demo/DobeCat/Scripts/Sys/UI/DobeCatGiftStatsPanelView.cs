@@ -199,7 +199,7 @@ namespace Demo.DobeCat.Sys.UI
         }
 
         private static (UIPanelComponent bar, UIButtonComponent closeX)
-            BuildTitleBar(DobeCatThemeData t, float pw, float ph)
+            BuildTitleBar(DefaultUIThemeData t, float pw, float ph)
         {
             var bar = new UIPanelComponent("gift-titlebar")
                 .SetBackgroundColor(t.Header).SetSize(pw, 44f)
