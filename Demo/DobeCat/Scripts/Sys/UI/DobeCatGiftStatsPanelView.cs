@@ -100,7 +100,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DefaultUITheme.Current;
+            var t = DefaultUITheme.Instance.Current;
             const float PW = 460f, PH = 580f;
 
             var root = new UIPanelComponent("gift-root")
@@ -184,15 +184,15 @@ namespace Demo.DobeCat.Sys.UI
             _byGiftBtn.OnClick += _ =>
             {
                 _viewByGift = true;
-                _byGiftBtn.SetButtonColor(DefaultUITheme.Current.Accent);
-                _byPersonBtn.SetButtonColor(DefaultUITheme.Current.ButtonBg);
+                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
+                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
                 RefreshView();
             };
             _byPersonBtn.OnClick += _ =>
             {
                 _viewByGift = false;
-                _byGiftBtn.SetButtonColor(DefaultUITheme.Current.ButtonBg);
-                _byPersonBtn.SetButtonColor(DefaultUITheme.Current.Accent);
+                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
+                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
                 RefreshView();
             };
             fetchBtn.OnClick += _ => DoFetch();

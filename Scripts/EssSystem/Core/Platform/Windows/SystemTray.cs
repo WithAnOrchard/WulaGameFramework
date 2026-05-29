@@ -1,56 +1,43 @@
-﻿#if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using UnityEngine;
 
-namespace Demo.DobeCat.Sys.Platform.Windows
+namespace EssSystem.Core.Platform.Windows
 {
     /// <summary>
-    /// Windows 系统托盘图标 —— 纯 Win32 P/Invoke 实现，不依赖 System.Windows.Forms。
-    /// <list type="bullet">
-    /// <item>独立线程跑 Win32 消息循环（<see cref="TrayNative.GetMessage"/>）。</item>
-    /// <item>右键 / 双击 → 主线程 action 队列，Update 中 pump。</item>
-    /// <item>菜单使用 <see cref="TrayNative.CreatePopupMenu"/> + <see cref="TrayNative.TrackPopupMenu"/>。</item>
-    /// </list>
+    /// Windows 系统托盘集成器（Win32 原生实现）。
+    /// <para>独立线程消息泵、递归子菜单、从 .exe 自动提取图标。</para>
     /// </summary>
     public class SystemTray : IDisposable
     {
-        private const string WindowClassName = "DobeCatTrayWnd";
+        private const string WindowClassName = "DobeCat_SystemTray_Wnd";
         private const uint TrayIconId = 1;
-        // 菜单项 ID 从 1 开始（0 在 TPM_RETURNCMD 模式下表示 "没有选中"）
-        private const int FirstMenuId = 1;
 
-        public string Tooltip = "DobeCat";
+        private Thread _trayThread;
+        private IntPtr _hWnd;
+        private Queue<Action> _mainThreadQueue = new Queue<Action>();
+        private List<MenuItemDef> _items = new List<MenuItemDef>();
+        private bool _disposed;
+        private string _tooltip = "Application";
+
+        public string Tooltip
+        {
+            get => _tooltip;
+            set => _tooltip = value ?? "Application";
+        }
 
         public event Action OnDoubleClick;
 
-        private readonly List<MenuItemDef> _items = new List<MenuItemDef>();
-        private readonly ConcurrentQueue<Action> _mainThreadQueue = new ConcurrentQueue<Action>();
-        private Thread _thread;
-        private IntPtr _hWnd;
-        private IntPtr _hIcon;
-        private ushort _classAtom;
-        private TrayNative.WndProcDelegate _wndProcKeepAlive; // 防 GC
-        private volatile bool _disposed;
-
-        public SystemTray AddItem(string text, Action onClick)
+        public SystemTray()
         {
-            lock (_items) _items.Add(MenuItemDef.Item(text, onClick));
-            return this;
+            _trayThread = new Thread(ThreadProc) { IsBackground = true };
+            _trayThread.Start();
         }
 
-        public SystemTray AddSeparator()
-        {
-            lock (_items) _items.Add(MenuItemDef.Separator());
-            return this;
-        }
-
-        /// <summary>原子替换整张菜单。线程安全：可在 Unity 主线程调；下次右键即生效。
-        /// 传入 <c>Text=null</c> 的项 = 分隔符；<c>Enabled=false</c> = 灰色不可点。</summary>
-        public void SetItems(IEnumerable<MenuItemDef> items)
+        public void SetItems(List<MenuItemDef> items)
         {
             lock (_items)
             {
@@ -59,32 +46,24 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             }
         }
 
-        /// <summary>外部（如桌宠右键）请求弹出托盘右键菜单。线程安全，菜单会在 tray 线程跑 TrackPopupMenu。</summary>
         public void RequestShowMenu()
         {
-            if (_hWnd == IntPtr.Zero) return;
-            TrayNative.PostMessage(_hWnd, TrayNative.WM_USER_SHOW_MENU, IntPtr.Zero, IntPtr.Zero);
+            if (_hWnd != IntPtr.Zero)
+                TrayNative.PostMessage(_hWnd, TrayNative.WM_USER_SHOW_MENU, IntPtr.Zero, IntPtr.Zero);
         }
 
         public void Start()
         {
-            if (_thread != null) return;
-            _thread = new Thread(ThreadProc)
-            {
-                IsBackground = true,
-                Name = "DobeCat.SystemTray",
-            };
-            _thread.SetApartmentState(ApartmentState.STA);
-            _thread.Start();
+            // 托盘已在 ThreadProc 中启动
         }
 
-        /// <summary>Unity 主线程每帧调用，抽取菜单回调。</summary>
         public void PumpMainThread()
         {
-            while (_mainThreadQueue.TryDequeue(out var act))
+            while (_mainThreadQueue.Count > 0)
             {
+                var act = _mainThreadQueue.Dequeue();
                 try { act?.Invoke(); }
-                catch (Exception e) { Debug.LogException(e); }
+                catch (Exception e) { Debug.LogError("[SystemTray] 主线程回调异常：" + e); }
             }
         }
 
@@ -92,64 +71,50 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         {
             if (_disposed) return;
             _disposed = true;
-            // 投递 WM_DESTROY 到托盘线程触发 GetMessage 返回 0
-            if (_hWnd != IntPtr.Zero)
-            {
-                try { TrayNative.PostMessage(_hWnd, TrayNative.WM_DESTROY, IntPtr.Zero, IntPtr.Zero); }
-                catch { /* swallow */ }
-            }
-        }
 
-        // ─────────────────────────────────────────────────────────
-        //  Tray Thread
-        // ─────────────────────────────────────────────────────────
+            if (_hWnd != IntPtr.Zero)
+                TrayNative.PostMessage(_hWnd, TrayNative.WM_DESTROY, IntPtr.Zero, IntPtr.Zero);
+
+            if (_trayThread != null && _trayThread.IsAlive)
+                _trayThread.Join(2000);
+        }
 
         private void ThreadProc()
         {
             try
             {
-                var hInst = TrayNative.GetModuleHandle(null);
-                _wndProcKeepAlive = WndProc;
-
                 // 1) 注册窗口类
-                var wc = new TrayNative.WNDCLASSEX
+                var hInst = TrayNative.GetModuleHandle(null);
+                var wndClass = new TrayNative.WNDCLASS
                 {
-                    cbSize = (uint)Marshal.SizeOf(typeof(TrayNative.WNDCLASSEX)),
-                    lpfnWndProc = _wndProcKeepAlive,
-                    hInstance = hInst,
                     lpszClassName = WindowClassName,
+                    lpfnWndProc = WndProc,
                 };
-                _classAtom = TrayNative.RegisterClassEx(ref wc);
-                if (_classAtom == 0)
+                if (TrayNative.RegisterClass(ref wndClass) == 0)
                 {
-                    Debug.LogError("[SystemTray] RegisterClassEx 失败");
+                    Debug.LogError("[SystemTray] RegisterClass 失败");
                     return;
                 }
 
-                // 2) 创建隐藏宿主窗口
-                _hWnd = TrayNative.CreateWindowEx(
-                    0, WindowClassName, "DobeCatTrayHost", TrayNative.WS_OVERLAPPED,
-                    TrayNative.CW_USEDEFAULT, TrayNative.CW_USEDEFAULT, 0, 0,
-                    IntPtr.Zero, IntPtr.Zero, hInst, IntPtr.Zero);
+                // 2) 创建隐藏窗口
+                _hWnd = TrayNative.CreateWindowEx(0, WindowClassName, "DobeCat Tray",
+                    0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, hInst, IntPtr.Zero);
                 if (_hWnd == IntPtr.Zero)
                 {
                     Debug.LogError("[SystemTray] CreateWindowEx 失败");
                     return;
                 }
 
-                // 3) 注册托盘图标 —— 优先从 .exe 提取嵌入图标，失败时回退到系统默认
-                _hIcon = LoadExeIcon();
+                // 3) 添加托盘图标
+                var hIcon = LoadExeIcon();
                 var nid = new TrayNative.NOTIFYICONDATA
                 {
                     cbSize = (uint)Marshal.SizeOf(typeof(TrayNative.NOTIFYICONDATA)),
                     hWnd = _hWnd,
                     uID = TrayIconId,
-                    uFlags = TrayNative.NIF_MESSAGE | TrayNative.NIF_ICON | TrayNative.NIF_TIP,
+                    uFlags = TrayNative.NIF_ICON | TrayNative.NIF_MESSAGE,
                     uCallbackMessage = TrayNative.WM_TRAYICON,
-                    hIcon = _hIcon,
-                    szTip = Tooltip ?? "DobeCat",
-                    // 必须给 ByValTStr 字段赋非 null 值，否则 Marshal 抛异常 / Shell 拒绝
-                    szInfo = string.Empty,
+                    hIcon = hIcon,
                     szInfoTitle = string.Empty,
                 };
                 if (!TrayNative.Shell_NotifyIcon(TrayNative.NIM_ADD, ref nid))
@@ -157,7 +122,6 @@ namespace Demo.DobeCat.Sys.Platform.Windows
                     Debug.LogError("[SystemTray] Shell_NotifyIcon NIM_ADD 失败");
                     return;
                 }
-
 
                 // 4) 消息循环
                 while (TrayNative.GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)

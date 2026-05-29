@@ -26,6 +26,7 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $scriptsRoot = Join-Path $projectRoot 'Scripts'
 $rootAgent   = Join-Path $projectRoot 'Agent.md'
+$eventsDoc   = Join-Path $projectRoot 'Events.md'
 
 $errors   = New-Object System.Collections.ArrayList
 $warnings = New-Object System.Collections.ArrayList
@@ -178,20 +179,20 @@ foreach ($d in $moduleDirs.Keys) {
 }
 
 # ----------------------------------------------------------------------
-# [5] Assets/Agent.md global Event index coverage
+# [5] Events.md global Event index coverage
 # ----------------------------------------------------------------------
-Write-Host '[5/6] Checking Assets/Agent.md global Event index...'
-if (-not (Test-Path $rootAgent)) {
-    Add-Err '  [ERR] Assets/Agent.md not found'
+Write-Host '[5/6] Checking Events.md global Event index...'
+if (-not (Test-Path $eventsDoc)) {
+    Add-Err '  [ERR] Events.md not found'
 } else {
-    $rootContent = Read-Utf8 $rootAgent
+    $eventsContent = Read-Utf8 $eventsDoc
     foreach ($fqn in $constMap.Keys) {
         $info = $constMap[$fqn]
         if ($info.IsAlias) { continue }
         # Allow generic suffix in docs, e.g. "Service<T>.EVT_INITIALIZED" matches FQN "Service.EVT_INITIALIZED"
         $pattern = [regex]::Escape($info.Class) + '(?:<[^>]+>)?\.' + [regex]::Escape($info.Name)
-        if ($rootContent -notmatch $pattern) {
-            Add-Warn "  [WARN] Assets/Agent.md global index missing: $fqn (= '$($info.Value)')"
+        if ($eventsContent -notmatch $pattern) {
+            Add-Warn "  [WARN] Events.md global index missing: $fqn (= '$($info.Value)')"
         }
     }
 }

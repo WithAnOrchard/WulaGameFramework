@@ -45,7 +45,7 @@ fi
 echo "[pre-commit] Checking Event and Manager documentation updates ..."
 # Check if Events.md is being committed
 if git diff --cached --name-only | grep -q "^Assets/Events.md$"; then
-    echo "[pre-commit] Events.md was modified. Checking if Managers.md and Agent.md are also updated..."
+    echo "[pre-commit] Events.md was modified. Checking if Managers.md is also updated..."
     
     # Check if Managers.md is also being committed
     if ! git diff --cached --name-only | grep -q "^Assets/Scripts/EssSystem/Managers.md$"; then
@@ -53,19 +53,11 @@ if git diff --cached --name-only | grep -q "^Assets/Events.md$"; then
         echo "[pre-commit] WARNING: Events.md was modified but Managers.md was not updated!" >&2
         echo "[pre-commit] Please update Managers.md with new Manager information if applicable." >&2
     fi
-    
-    # Check if Agent.md is also being committed
-    if ! git diff --cached --name-only | grep -q "^Assets/Agent.md$"; then
-        echo "" >&2
-        echo "[pre-commit] WARNING: Events.md was modified but Agent.md global index was not updated!" >&2
-        echo "[pre-commit] Please update Assets/Agent.md with new Event entries if applicable." >&2
-    fi
 fi
 
 # Check if any Agent.md files were modified
 if git diff --cached --name-only | grep -q "Agent.md$"; then
-    echo "[pre-commit] Agent.md files were modified. Verifying Event documentation..."
-    # The agent_lint check above already validates this
+    echo "[pre-commit] Agent.md files were modified."
 fi
 
 echo "[pre-commit] All checks passed!"

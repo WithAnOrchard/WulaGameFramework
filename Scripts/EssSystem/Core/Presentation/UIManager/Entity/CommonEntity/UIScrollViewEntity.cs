@@ -23,6 +23,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             base.Awake();
             _scrollRect        = GetComponent<ScrollRect>();
             _contentTransform  = transform.Find("Viewport/Content") as RectTransform;
+            Debug.Log($"[UIScrollViewEntity] Awake: _scrollRect={(_scrollRect != null ? "成功" : "null")}, _contentTransform={(_contentTransform != null ? "成功" : "null")}");
         }
 
         // ─── 公共 API ────────────────────────────────────────────────────────
@@ -30,8 +31,22 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         /// <summary>设置纯文本内容（自动滚到底部）。</summary>
         public void SetText(string text)
         {
+            Debug.Log($"[UIScrollViewEntity] SetText: 输入文本长度={text?.Length ?? 0}");
             _contentText ??= EnsureContentText();
-            if (_contentText != null) _contentText.text = text;
+            Debug.Log($"[UIScrollViewEntity] SetText: _contentText={(_contentText != null ? "非null" : "null")}");
+            if (_contentText != null) 
+            { 
+                _contentText.text = text;
+                _contentText.SetAllDirty();  // 强制重新计算 Text 的尺寸
+                Debug.Log($"[UIScrollViewEntity] SetText: 文本已设置，当前内容长度={_contentText.text?.Length ?? 0}");
+                
+                // 强制重新计算布局
+                if (_contentTransform != null)
+                {
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(_contentTransform);
+                    Debug.Log($"[UIScrollViewEntity] SetText: 布局已重建，ContentTransform 大小={_contentTransform.rect.size}");
+                }
+            }
             ScrollToBottom();
         }
 
@@ -54,10 +69,23 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
 
         private Text EnsureContentText()
         {
-            if (_contentTransform == null) return null;
+            Debug.Log($"[UIScrollViewEntity] EnsureContentText: _contentTransform={(_contentTransform != null ? "非null" : "null")}");
+            if (_contentTransform == null) 
+            {
+                Debug.LogError("[UIScrollViewEntity] EnsureContentText: _contentTransform 为 null，无法创建 ContentText");
+                return null;
+            }
+            
+            Debug.Log($"[UIScrollViewEntity] EnsureContentText: _contentTransform 大小={_contentTransform.rect.size}");
+            
             var existing = _contentTransform.GetComponentInChildren<Text>();
-            if (existing != null) return existing;
+            if (existing != null) 
+            {
+                Debug.Log("[UIScrollViewEntity] EnsureContentText: 找到现有的 Text 组件");
+                return existing;
+            }
 
+            Debug.Log("[UIScrollViewEntity] EnsureContentText: 创建新的 ContentText");
             var go = new GameObject("ContentText");
             go.transform.SetParent(_contentTransform, false);
             var rt = go.AddComponent<RectTransform>();
@@ -68,13 +96,24 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             var t = go.AddComponent<Text>();
             t.font               = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             t.fontSize           = 11;
-            t.color              = new Color(0.58f, 0.61f, 0.70f);
+            t.color              = Color.white;  // 改为白色，确保可见
             t.alignment          = TextAnchor.UpperLeft;
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             t.verticalOverflow   = VerticalWrapMode.Overflow;
             t.raycastTarget      = false;
+            
+            // 确保 CanvasRenderer 存在
+            go.AddComponent<CanvasRenderer>();
 
-            go.AddComponent<LayoutElement>().flexibleWidth = 1;
+            var le = go.AddComponent<LayoutElement>();
+            le.flexibleWidth = 1;
+            le.flexibleHeight = 1;  // 允许高度自动扩展
+            le.preferredHeight = -1;  // -1 表示使用 Text 的 preferred height
+            
+            // 强制 Text 组件计算其 preferred height
+            t.SetAllDirty();
+            
+            Debug.Log($"[UIScrollViewEntity] EnsureContentText: ContentText 创建完成，颜色={t.color}, preferredHeight={t.preferredHeight}");
             return t;
         }
     }

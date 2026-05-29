@@ -38,7 +38,20 @@
 
 ---
 
-## ResourceManager Event（30+ 个）
+## ResourceManager Event（40+ 个）
+
+### 同步资源加载
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `ResourceManager.EVT_GET_PREFAB` | `GetPrefab` | Core/Foundation/ResourceManager | 同步加载 Prefab，参数 `[string path]` → `Ok(GameObject)` |
+| `ResourceManager.EVT_GET_SPRITE` | `GetSprite` | Core/Foundation/ResourceManager | 同步加载 Sprite，参数 `[string path]` → `Ok(Sprite)` |
+| `ResourceManager.EVT_GET_AUDIO_CLIP` | `GetAudioClip` | Core/Foundation/ResourceManager | 同步加载 AudioClip，参数 `[string path]` → `Ok(AudioClip)` |
+| `ResourceManager.EVT_GET_TEXTURE` | `GetTexture` | Core/Foundation/ResourceManager | 同步加载 Texture，参数 `[string path]` → `Ok(Texture)` |
+| `ResourceManager.EVT_GET_MATERIAL` | `GetMaterial` | Core/Foundation/ResourceManager | 同步加载 Material，参数 `[string path]` → `Ok(Material)` |
+| `ResourceManager.EVT_GET_RULE_TILE` | `GetRuleTile` | Core/Foundation/ResourceManager | 同步加载 RuleTile，参数 `[string path]` → `Ok(RuleTile)` |
+| `ResourceManager.EVT_GET_ANIMATION_CLIP` | `GetAnimationClip` | Core/Foundation/ResourceManager | 同步加载 AnimationClip，参数 `[string path]` → `Ok(AnimationClip)` |
+| `ResourceManager.EVT_GET_EXTERNAL_SPRITE` | `GetExternalSprite` | Core/Foundation/ResourceManager | 同步加载外部图片，参数 `[string path]` → `Ok(Sprite)` |
 
 ### 异步资源加载
 
@@ -57,28 +70,100 @@
 | `ResourceManager.EVT_UNLOAD_RESOURCE` | `UnloadResource` | Core/Foundation/ResourceManager | 卸载单个资源，参数 `[string path]` |
 | `ResourceManager.EVT_UNLOAD_ALL_RESOURCES` | `UnloadAllResources` | Core/Foundation/ResourceManager | 全量卸载，参数 `[]` |
 
+### 异步资源获取（Service 级别）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `ResourceManager.EVT_GET_PREFAB_ASYNC` | `GetPrefabAsync` | Core/Foundation/ResourceManager | 异步获取 Prefab，参数 `[string path]` → `Ok(GameObject)` |
+| `ResourceManager.EVT_GET_SPRITE_ASYNC` | `GetSpriteAsync` | Core/Foundation/ResourceManager | 异步获取 Sprite，参数 `[string path]` → `Ok(Sprite)` |
+| `ResourceManager.EVT_GET_AUDIO_CLIP_ASYNC` | `GetAudioClipAsync` | Core/Foundation/ResourceManager | 异步获取 AudioClip，参数 `[string path]` → `Ok(AudioClip)` |
+| `ResourceManager.EVT_GET_TEXTURE_ASYNC` | `GetTextureAsync` | Core/Foundation/ResourceManager | 异步获取 Texture，参数 `[string path]` → `Ok(Texture)` |
+| `ResourceManager.EVT_GET_MATERIAL_ASYNC` | `GetMaterialAsync` | Core/Foundation/ResourceManager | 异步获取 Material，参数 `[string path]` → `Ok(Material)` |
+| `ResourceManager.EVT_GET_RULE_TILE_ASYNC` | `GetRuleTileAsync` | Core/Foundation/ResourceManager | 异步获取 RuleTile，参数 `[string path]` → `Ok(RuleTile)` |
+| `ResourceManager.EVT_GET_ANIMATION_CLIP_ASYNC` | `GetAnimationClipAsync` | Core/Foundation/ResourceManager | 异步获取 AnimationClip，参数 `[string path]` → `Ok(AnimationClip)` |
+| `ResourceManager.EVT_GET_EXTERNAL_SPRITE_ASYNC` | `GetExternalSpriteAsync` | Core/Foundation/ResourceManager | 异步获取外部图片，参数 `[string path]` → `Ok(Sprite)` |
+
 ### SpriteService 专用 Event
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
-| `SpriteService.EVT_GET_SPRITE_ASYNC` | `GetSpriteAsync` | Core/Foundation/ResourceManager | 异步获取 Sprite，参数 `[string path]` → `Ok(Sprite)` / `Fail("加载中")` |
-| `SpriteService.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/Foundation/ResourceManager | 异步加载 Sprite，参数 `[string path]` → `Ok(Sprite)` / `Fail("加载中")` |
 | `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` | `RegisterSpriteToCache` | Core/Foundation/ResourceManager | 注册 Sprite 到缓存，参数 `[string spriteId, Sprite sprite]` → `Ok()` / `Fail(msg)` |
+| `SpriteService.EVT_GET_SPRITE_ASYNC` | `GetSpriteAsync` | Core/Foundation/ResourceManager | 异步获取 Sprite，参数 `[string path]` → `Ok(Sprite)` |
+| `SpriteService.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/Foundation/ResourceManager | 异步加载 Sprite，参数 `[string path]` → `Ok(Sprite)` |
+| `SpriteSheetService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/Foundation/ResourceManager | 批量注册多精灵图集子图入缓存，参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
+
+### ModelAnimationService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `ModelAnimationService.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/Foundation/ResourceManager | 取 FBX/Model 内全部 AnimationClip，参数 `[string modelPath]` → `Ok(List<AnimationClip>)` |
+| `ModelAnimationService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/Foundation/ResourceManager | 枚举已索引的所有 FBX/Model 路径，参数 `[]` → `Ok(List<string>)` |
+
+### MaterialService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `MaterialService.EVT_GET_MATERIAL_ASYNC` | `GetMaterialAsync` | Core/Foundation/ResourceManager | 异步获取 Material，参数 `[string path]` → `Ok(Material)` |
+| `MaterialService.EVT_LOAD_MATERIAL_ASYNC` | `LoadMaterialAsync` | Core/Foundation/ResourceManager | 异步加载 Material，参数 `[string path]` → `Ok(Material)` |
+
+### ExternalImageService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `ExternalImageService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/Foundation/ResourceManager | 外部图片加载成功**广播**，参数 `[string url, Sprite sprite]` |
+| `ExternalImageService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/Foundation/ResourceManager | 外部图片加载失败**广播**，参数 `[string url, string error]` |
+| `ExternalImageService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` | `LoadExternalImageAsync` | Core/Foundation/ResourceManager | 外部图片加载底层（内部），参数 `[string url]` |
+
+### AnimationClipService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `AnimationClipService.EVT_LOAD_ANIMATION_CLIP_ASYNC` | `LoadAnimationClipAsync` | Core/Foundation/ResourceManager | 异步加载 AnimationClip，参数 `[string path]` → `Ok(AnimationClip)` |
+| `AnimationClipService.EVT_GET_ANIMATION_CLIP_ASYNC` | `GetAnimationClipAsync` | Core/Foundation/ResourceManager | 异步获取 AnimationClip，参数 `[string path]` → `Ok(AnimationClip)` |
+
+### PrefabService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `PrefabService.EVT_LOAD_PREFAB_ASYNC` | `LoadPrefabAsync` | Core/Foundation/ResourceManager | 异步加载 Prefab，参数 `[string path]` → `Ok(GameObject)` |
+| `PrefabService.EVT_GET_PREFAB_ASYNC` | `GetPrefabAsync` | Core/Foundation/ResourceManager | 异步获取 Prefab，参数 `[string path]` → `Ok(GameObject)` |
+
+### RuleTileService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `RuleTileService.EVT_LOAD_RULE_TILE_ASYNC` | `LoadRuleTileAsync` | Core/Foundation/ResourceManager | 异步加载 RuleTile，参数 `[string path]` → `Ok(RuleTile)` |
+| `RuleTileService.EVT_GET_RULE_TILE_ASYNC` | `GetRuleTileAsync` | Core/Foundation/ResourceManager | 异步获取 RuleTile，参数 `[string path]` → `Ok(RuleTile)` |
+
+### AudioClipService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `AudioClipService.EVT_GET_AUDIO_CLIP_ASYNC` | `GetAudioClipAsync` | Core/Foundation/ResourceManager | 异步获取 AudioClip，参数 `[string path]` → `Ok(AudioClip)` |
+| `AudioClipService.EVT_LOAD_AUDIO_CLIP_ASYNC` | `LoadAudioClipAsync` | Core/Foundation/ResourceManager | 异步加载 AudioClip，参数 `[string path]` → `Ok(AudioClip)` |
+
+### TextureService 专用 Event
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `TextureService.EVT_GET_TEXTURE_ASYNC` | `GetTextureAsync` | Core/Foundation/ResourceManager | 异步获取 Texture，参数 `[string path]` → `Ok(Texture)` |
+| `TextureService.EVT_LOAD_TEXTURE_ASYNC` | `LoadTextureAsync` | Core/Foundation/ResourceManager | 异步加载 Texture，参数 `[string path]` → `Ok(Texture)` |
 
 ### ResourceService 内部 Event
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
 | `ResourceService.EVT_DATA_LOADED` | `OnResourceDataLoaded` | Core/Foundation/ResourceManager | 启动后跳预加载（内部） |
-| `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` | `LoadExternalImageAsync` | Core/Foundation/ResourceManager | 外部图片加载底层（内部） |
 | `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | Core/Foundation/ResourceManager | 写预加载配置（内部） |
-| `ResourceService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/Foundation/ResourceManager | 外部图片加载成功**广播** |
-| `ResourceService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/Foundation/ResourceManager | 外部图片加载失败**广播** |
-| `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/Foundation/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
 | `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/Foundation/ResourceManager | 资源全部预加载/索引完成后**广播** |
-| `ResourceService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/Foundation/ResourceManager | 批量注册多精灵图集子图入缓存，参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
 | `ResourceService.EVT_GET_REFCOUNT_STATS` | `GetRefCountStats` | Core/Foundation/ResourceManager | 获取资源引用计数统计，参数 `[]` → `Ok(Dictionary)` |
 | `ResourceService.EVT_CLEANUP_UNUSED_ASSETS` | `CleanupUnusedAssets` | Core/Foundation/ResourceManager | 清理超时未使用的资源，参数 `[]` → `Ok()` |
+| `ResourceService.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/Foundation/ResourceManager | 取 FBX 内全部 AnimationClip，参数 `[string modelPath]` → `Ok(List<AnimationClip>)` |
+| `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/Foundation/ResourceManager | 枚举所有已索引的 FBX 路径，参数 `[]` → `Ok(List<string>)` |
+| `ResourceService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/Foundation/ResourceManager | 批量注册多精灵图集子图入缓存，参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
+| `ResourceService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/Foundation/ResourceManager | 外部图片加载成功**广播** |
+| `ResourceService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/Foundation/ResourceManager | 外部图片加载失败**广播** |
+| `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` | `LoadExternalImageAsync` | Core/Foundation/ResourceManager | 外部图片加载底层（内部） |
 
 ---
 
@@ -288,6 +373,88 @@
 | `LiveStatusService.EVT_LIVE_STARTED` | `OnLiveStarted` | Manager/LiveStatusManager | 开播**广播**（0/2 → 1 状态边沿触发），参数 `[long roomId, string title, LiveRoomInfo info]` |
 | `LiveStatusService.EVT_LIVE_ENDED` | `OnLiveEnded` | Manager/LiveStatusManager | 下播**广播**（1 → 0/2 状态边沿触发），参数 `[long roomId, string title, LiveRoomInfo info]` |
 | `LiveStatusService.EVT_STATUS_POLLED` | `OnLiveStatusPolled` | Manager/LiveStatusManager | 每次轮询都触发**广播**（无论状态是否变更），参数 `[long roomId, int liveStatus, string title, LiveRoomInfo info]` |
+
+---
+
+## FarmManager Event（农场系统）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `FarmManager.EVT_REGISTER_FARM_CONFIG` | `RegisterFarmConfig` | Core/Application/MultiManagers/FarmManager | 注册农场配置，参数 `[FarmConfig]` |
+| `FarmManager.EVT_REGISTER_CROP_CONFIG` | `RegisterCropConfig` | Core/Application/MultiManagers/FarmManager | 注册作物配置，参数 `[CropConfig]` |
+| `FarmManager.EVT_SPAWN_FARM` | `SpawnFarm` | Core/Application/MultiManagers/FarmManager | 实例化农场，参数 `[string configId, Vector3 worldPosition, string? instanceId]` → `Ok(FarmInstance)` |
+| `FarmManager.EVT_PLANT_CROP` | `PlantCrop` | Core/Application/MultiManagers/FarmManager | 种植作物，参数 `[string instanceId, int row, int col, string cropConfigId, string? inventoryId]` |
+| `FarmManager.EVT_WATER_CROP` | `WaterCrop` | Core/Application/MultiManagers/FarmManager | 浇水，参数 `[string instanceId, int row, int col]` |
+| `FarmManager.EVT_FERTILIZE` | `FertilizeCrop` | Core/Application/MultiManagers/FarmManager | 施肥，参数 `[string instanceId, int row, int col, float? boostSeconds]` |
+| `FarmManager.EVT_REMOVE_PEST` | `RemovePest` | Core/Application/MultiManagers/FarmManager | 除虫，参数 `[string instanceId, int row, int col]` |
+| `FarmManager.EVT_HARVEST_CROP` | `HarvestCrop` | Core/Application/MultiManagers/FarmManager | 收获，参数 `[string instanceId, int row, int col, string? inventoryId]` |
+| `FarmManager.EVT_QUERY_SLOT` | `QueryFarmSlot` | Core/Application/MultiManagers/FarmManager | 查询槽位，参数 `[string instanceId, int row, int col]` → `Ok(FarmSlot)` |
+| `FarmManager.EVT_CLEAR_SLOT` | `ClearFarmSlot` | Core/Application/MultiManagers/FarmManager | 清除槽位，参数 `[string instanceId, int row, int col]` |
+
+### FarmService 广播
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `FarmService.EVT_ON_FARM_SPAWNED` | `OnFarmSpawned` | Core/Application/MultiManagers/FarmManager | 农场生成**广播** |
+| `FarmService.EVT_ON_CROP_STAGE_CHANGED` | `OnCropStageChanged` | Core/Application/MultiManagers/FarmManager | 作物阶段变化**广播** |
+| `FarmService.EVT_ON_PEST_SPAWNED` | `OnPestSpawned` | Core/Application/MultiManagers/FarmManager | 害虫生成**广播** |
+| `FarmService.EVT_ON_PEST_REMOVED` | `OnPestRemoved` | Core/Application/MultiManagers/FarmManager | 害虫移除**广播** |
+| `FarmService.EVT_ON_CROP_PLANTED` | `OnCropPlanted` | Core/Application/MultiManagers/FarmManager | 作物种植**广播** |
+| `FarmService.EVT_ON_CROP_HARVESTED` | `OnCropHarvested` | Core/Application/MultiManagers/FarmManager | 作物收获**广播** |
+| `FarmService.EVT_ON_CROP_FERTILIZED` | `OnCropFertilized` | Core/Application/MultiManagers/FarmManager | 作物施肥**广播** |
+| `FarmService.EVT_ON_CROP_WATERED` | `OnCropWatered` | Core/Application/MultiManagers/FarmManager | 作物浇水**广播** |
+| `FarmService.EVT_ON_CROP_WILTED` | `OnCropWilted` | Core/Application/MultiManagers/FarmManager | 作物枯萎**广播** |
+
+---
+
+## ShopManager Event（商店系统）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `ShopService.EVT_REGISTER_ITEM` | `RegisterShopItem` | Core/Application/MultiManagers/ShopManager | 注册商店物品，参数 `[ShopItem item]` |
+| `ShopService.EVT_REGISTER_SHOP` | `ShopRegister` | Core/Application/MultiManagers/ShopManager | 注册商店，参数 `[Shop shop]` |
+| `ShopService.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/Application/MultiManagers/ShopManager | 注册货币类型，参数 `[string currencyId, string name]` |
+| `ShopService.EVT_BUY_ITEM` | `BuyShopItem` | Core/Application/MultiManagers/ShopManager | 购买物品，参数 `[string playerId, string itemId, int count]` |
+| `ShopService.EVT_SELL_ITEM` | `SellShopItem` | Core/Application/MultiManagers/ShopManager | 出售物品，参数 `[string playerId, string itemId, int count]` |
+| `ShopService.EVT_INIT_WALLET` | `ShopInitWallet` | Core/Application/MultiManagers/ShopManager | 初始化钱包，参数 `[string playerId, string currencyId, int amount]` |
+| `ShopService.EVT_ADD_WALLET` | `ShopAddWallet` | Core/Application/MultiManagers/ShopManager | 添加货币，参数 `[string playerId, string currencyId, int amount]` |
+| `ShopService.EVT_GET_WALLET` | `ShopGetWallet` | Core/Application/MultiManagers/ShopManager | 获取钱包余额，参数 `[string playerId, string currencyId]` → `Ok(int amount)` |
+| `ShopService.EVT_QUERY_WALLET` | `QueryShopWallet` | Core/Application/MultiManagers/ShopManager | 查询钱包，参数 `[string playerId, string currencyId]` → `Ok(int amount)` |
+
+---
+
+## NetworkManager Event（网络系统）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `NetworkManager.EVT_HOST_START` | `NetHostStart` | Core/Foundation/NetworkManager | 启动主机，参数 `[ushort? port]` |
+| `NetworkManager.EVT_SERVER_START` | `NetServerStart` | Core/Foundation/NetworkManager | 启动服务器，参数 `[ushort? port]` |
+| `NetworkManager.EVT_CLIENT_CONNECT` | `NetClientConnect` | Core/Foundation/NetworkManager | 客户端连接，参数 `[string address, ushort? port]` |
+| `NetworkManager.EVT_DISCONNECT` | `NetDisconnect` | Core/Foundation/NetworkManager | 断开连接，参数 `[]` |
+| `NetworkManager.EVT_SEND_TO_SERVER` | `NetSendToServer` | Core/Foundation/NetworkManager | 发送至服务器，参数 `[string topic, object payload]` |
+| `NetworkManager.EVT_SEND_TO_ALL` | `NetSendToAll` | Core/Foundation/NetworkManager | 广播给所有，参数 `[string topic, object payload]` |
+| `NetworkManager.EVT_SEND_TO_PEER` | `NetSendToPeer` | Core/Foundation/NetworkManager | 发送至对等，参数 `[int connectionId, string topic, object payload]` |
+| `NetworkManager.EVT_BROADCAST` | `NetBroadcast` | Core/Foundation/NetworkManager | 对等广播，参数 `[string topic, object payload]` |
+
+### NetworkService 广播
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `NetworkService.EVT_NET_STATUS_CHANGED` | `OnNetworkStatusChanged` | Core/Foundation/NetworkManager | 网络状态变化**广播** |
+| `NetworkService.EVT_NET_MESSAGE` | `OnNetworkMessage` | Core/Foundation/NetworkManager | 网络消息**广播** |
+| `NetworkService.EVT_NET_ERROR` | `OnNetworkError` | Core/Foundation/NetworkManager | 网络错误**广播** |
+| `NetworkService.EVT_PEER_JOINED` | `OnNetworkPeerJoined` | Core/Foundation/NetworkManager | 对等加入**广播** |
+| `NetworkService.EVT_PEER_LEFT` | `OnNetworkPeerLeft` | Core/Foundation/NetworkManager | 对等离开**广播** |
+
+---
+
+## SkillManager Event（技能系统）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `SkillManager.EVT_REGISTER_SKILL` | `RegisterSkill` | Core/Application/MultiManagers/SkillManager | 注册技能，参数 `[SkillConfig config]` |
+| `SkillManager.EVT_LEARN_SKILL` | `LearnSkill` | Core/Application/MultiManagers/SkillManager | 学习技能，参数 `[string characterId, string skillId]` |
+| `SkillManager.EVT_CAST_SKILL` | `CastSkill` | Core/Application/MultiManagers/SkillManager | 释放技能，参数 `[string characterId, string skillId]` |
 
 ---
 

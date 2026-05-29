@@ -26,6 +26,7 @@ namespace BiliBiliDanmu.UI
         // 根实体 — SetActive 控制显隐
         private UIEntity _rootEntity;
         private bool     _initialized;
+        private string _pendingDetailText; // 缓存待设置的文本
 
         // 获取当前主题颜色
         private Color GetThemeColor(System.Func<DefaultUIThemeData, Color> selector)
@@ -48,19 +49,22 @@ namespace BiliBiliDanmu.UI
         { 
             set 
             { 
+                _pendingDetailText = value;
+                Debug.Log($"[DanmuTestPanelView] DetailText setter: 开始设置，_detailEntity={(_detailEntity != null ? "非null" : "null")}");
                 if (_detailEntity == null) 
                 {
                     _detailEntity = UIService.Instance?.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
+                    Debug.Log($"[DanmuTestPanelView] DetailText setter: 从 UIService 获取，结果={(_detailEntity != null ? "成功" : "null")}");
                     if (_detailEntity == null)
                     {
-                        Debug.LogWarning($"[DanmuTestPanelView] DetailText setter: _detailEntity 仍为 null，无法设置文本");
+                        Debug.LogWarning($"[DanmuTestPanelView] DetailText setter: _detailEntity 仍为 null，缓存文本待后续设置");
                         return;
                     }
                 }
-                Debug.Log($"[DanmuTestPanelView] DetailText setter: 设置文本，长度={value?.Length ?? 0}");
+                Debug.Log($"[DanmuTestPanelView] DetailText setter: 调用 SetText，长度={value?.Length ?? 0}");
                 _detailEntity.SetText(value); 
             } 
-            get => ""; 
+            get => _pendingDetailText ?? ""; 
         }
         internal string LogText    
         { 
@@ -87,13 +91,29 @@ namespace BiliBiliDanmu.UI
         private void Awake()
         {
             Instance = this;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("tp-root");
+        }
+
+        private void RebuildUI()
+        {
+            if (!_initialized) return;
+            var wasOpen = IsOpen;
+            if (_rootEntity != null && _rootEntity.gameObject != null)
+                Destroy(_rootEntity.gameObject);
+            if (UIService.HasInstance) UIService.Instance.DestroyUIEntity("tp-root");
+            _rootEntity = null;
+            _detailEntity = null;
+            _logEntity = null;
+            _initialized = false;
+            if (wasOpen) Show();
         }
 
         // ─── 公共 API ────────────────────────────────────────────────────────
@@ -231,7 +251,23 @@ namespace BiliBiliDanmu.UI
         /// <summary>获取 Canvas Transform。子类可重写以使用自定义 Canvas。</summary>
         protected virtual Transform GetCanvasTransform()
         {
-            // 使用 OverlayCanvasProvider（ConstantPixelSize，避免字体模糊）
+            // 检查是否在 DobeCat 环境中，如果是则使用 DobeCatCanvasProvider
+            try
+            {
+                var dobeCatCanvasProviderType = System.Type.GetType("Demo.DobeCat.Sys.UI.DobeCatCanvasProvider");
+                if (dobeCatCanvasProviderType != null)
+                {
+                    var method = dobeCatCanvasProviderType.GetMethod("GetOrCreate", 
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (method != null)
+                    {
+                        return (Transform)method.Invoke(null, null);
+                    }
+                }
+            }
+            catch { /* 不在 DobeCat 环境中，使用默认 */ }
+
+            // 默认使用 OverlayCanvasProvider（ConstantPixelSize，避免字体模糊）
             return EssSystem.Core.Presentation.UIManager.OverlayCanvasProvider.GetOrCreate("DanmuTestCanvas", 50);
         }
 
@@ -240,9 +276,11 @@ namespace BiliBiliDanmu.UI
         {
             yield return null; // 等待一帧
             
+            Debug.Log("[DanmuTestPanelView] GetScrollViewEntitiesDelayed: 开始获取 ScrollView 实体");
             _detailEntity = UIService.Instance.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
             _logEntity    = UIService.Instance.GetUIEntity("tp-log-sv")    as UIScrollViewEntity;
             
+            Debug.Log($"[DanmuTestPanelView] GetScrollViewEntitiesDelayed: _detailEntity={(_detailEntity != null ? "成功" : "null")}, _logEntity={(_logEntity != null ? "成功" : "null")}");
             if (_detailEntity == null) Debug.LogWarning("[DanmuTestPanelView] Failed to get tp-detail-sv entity after delay");
             if (_logEntity == null) Debug.LogWarning("[DanmuTestPanelView] Failed to get tp-log-sv entity after delay");
             
@@ -265,6 +303,25 @@ namespace BiliBiliDanmu.UI
                     _detailEntity = detailGo.GetComponent<UIScrollViewEntity>();
                     if (_detailEntity != null) Debug.Log("[DanmuTestPanelView] Found tp-detail-sv via Transform.Find");
                 }
+            }
+            
+            // 如果 _detailEntity 现在已初始化，应用缓存的文本
+            if (_detailEntity != null && !string.IsNullOrEmpty(_pendingDetailText))
+            {
+                Debug.Log($"[DanmuTestPanelView] GetScrollViewEntitiesDelayed: 应用缓存的 DetailText，长度={_pendingDetailText.Length}");
+                Debug.Log($"[DanmuTestPanelView] _detailEntity 类型: {_detailEntity.GetType().Name}");
+                _detailEntity.SetText(_pendingDetailText);
+                Debug.Log($"[DanmuTestPanelView] SetText 已调用");
+            }
+            else
+            {
+                Debug.LogWarning($"[DanmuTestPanelView] 无法应用 DetailText: _detailEntity={_detailEntity}, _pendingDetailText={_pendingDetailText}");
+            }
+            
+            // 如果 _logEntity 现在已初始化，应用缓存的文本
+            if (_logEntity != null && !string.IsNullOrEmpty(_pendingDetailText))
+            {
+                Debug.Log($"[DanmuTestPanelView] GetScrollViewEntitiesDelayed: 应用缓存的 LogText");
             }
         }
     }

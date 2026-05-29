@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Foundation.NetworkManager;
 using EssSystem.Core.Presentation.CharacterManager;
+using EssSystem.Core.Platform;
 using EssSystem.Core.Platform.Windows;
 using NetMgr = EssSystem.Core.Foundation.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
@@ -23,7 +24,6 @@ using Demo.DobeCat.Game.Live;
 using Demo.DobeCat.Sys.Network;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
-using Demo.DobeCat.Sys.Platform;
 
 namespace Demo.DobeCat
 {
@@ -139,8 +139,13 @@ namespace Demo.DobeCat
             gameObject.AddComponent<DobeCatLogger>();
             Application.runInBackground = true;
             Debug.Log($"[STARTUP] 当前分辨率（Awake 执行前）: {Screen.width}×{Screen.height}, fullscreen={Screen.fullScreen}");
-            // 主题 & 礼物统计
+            
+            // 【关键】主题必须最早加载，在任何 UI 面板创建之前
+            // 因为 LoginScreen 等面板的静态属性会在类加载时访问 DefaultUITheme
             DefaultUITheme.Instance.LoadSaved();
+            Debug.Log($"[STARTUP] 主题已加载，当前索引: {DefaultUITheme.Instance.CurrentIndex}");
+            
+            // 礼物统计
             gameObject.AddComponent<GiftQueryService>();
             gameObject.AddComponent<DobeCatGiftStatsPanelView>();
             EnsureCamera();
@@ -269,7 +274,7 @@ namespace Demo.DobeCat
         private System.Collections.IEnumerator OpenTestPanelDelayed()
         {
             yield return null; // 等下一帧
-            DanmuTestPanelView.Instance?.Show();
+            DobeCatTestPanel.Open();
             Debug.Log("[DobeCatGameManager] 测试面板自动打开");
         }
 
@@ -387,7 +392,7 @@ namespace Demo.DobeCat
             _pet.AddComponent<PetInteractionController>();
 
             // 帧率控制器：空闲 10fps / 活跃 60fps（§2.2）
-            gameObject.AddComponent<PetFrameRateController>();
+            gameObject.AddComponent<FrameRateController>();
 
             // 音效控制器（§12.1 AudioManager）
             gameObject.AddComponent<PetSoundController>();
@@ -468,10 +473,7 @@ namespace Demo.DobeCat
             holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
 
             // 让测试面板拿到 client 引用，刷新 IP / 房间列表
-            if (DanmuTestPanelView.Instance is Demo.DobeCat.Sys.UI.IDobeCatTestPanel dobeCatPanel)
-                dobeCatPanel.AttachDiscovery(_discovery);
-            else
-                Debug.LogWarning("[DobeCatGameManager] DanmuTestPanelView 不支持 AttachDiscovery，房间发现功能不可用");
+            Demo.DobeCat.Sys.UI.DobeCatTestPanel.Instance.AttachDiscovery(_discovery);
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。
@@ -512,7 +514,8 @@ namespace Demo.DobeCat
             _ = BilibiliDanmuManager.Instance;
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
-            _ = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
+            var charMgr = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
+            charMgr.PreloadCharacterSprites("Characters/PixArt");  // 预加载宠物素材
             _ = EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager.Instance; // EntityManager 提供 Brain / Capabilities
             _ = EssSystem.Core.Application.MultiManagers.FarmManager.FarmManager.Instance;     // FarmManager 农场系统（HandleSpawnFarm / HandleQuerySlot 等）
             _ = EssSystem.Core.Application.MultiManagers.ShopManager.ShopManager.Instance;      // ShopManager 商店系统
@@ -573,7 +576,7 @@ namespace Demo.DobeCat
                 }
 
                 // 保存全屏叠加层分辨率，下次启动 Unity 直接以此分辨率创建窗口，Enter() 无需 SetResolution，零闪烁。
-                var wa = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetPrimaryWorkArea();
+                var wa = Win32Native.GetPrimaryWorkArea();
                 int targetW = wa.right  - wa.left;
                 int targetH = wa.bottom - wa.top;
                 int cx = wa.left;  // 叠加层定位于工作区左上角

@@ -154,6 +154,18 @@ namespace EssSystem.Core.Foundation.ResourceManager
         }
 
 
+        // ===== Sync getters (for AudioManager and other legacy code) =====
+        [Event(EVT_GET_AUDIO_CLIP)]
+        public List<object> GetAudioClip(List<object> data)
+        {
+            string path = data[0] as string;
+            if (string.IsNullOrEmpty(path)) return ResultCode.Fail("路径为空");
+            
+            var clip = Resources.Load<AudioClip>(path);
+            if (clip != null) return ResultCode.Ok(clip);
+            return ResultCode.Fail($"音频加载失败: {path}");
+        }
+
         // ===== Async getters =====
         [Event(EVT_GET_PREFAB_ASYNC)]         public List<object> GetPrefabAsync(List<object> d)        => GetAsyncFwd(d, "Prefab");
         [Event(EVT_GET_SPRITE_ASYNC)]         public List<object> GetSpriteAsync(List<object> d)        => GetAsyncFwd(d, "Sprite");

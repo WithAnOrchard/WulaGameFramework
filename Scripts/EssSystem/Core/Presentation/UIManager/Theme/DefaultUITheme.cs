@@ -36,81 +36,78 @@ namespace EssSystem.Core.Presentation.UIManager.Theme
         {
             return new[]
             {
-                // ── 0  深夜（冷蓝暗色）──────────────────────────────────────────
-                new DefaultUIThemeData
-                {
-                    Name        = "深夜",
-                    Background  = new Color(0.09f, 0.10f, 0.13f, 0.97f),
-                    Header      = new Color(0.05f, 0.06f, 0.09f, 1.00f),
-                    Accent      = new Color(0.27f, 0.56f, 0.98f, 1.00f),
-                    AccentAlt   = new Color(0.20f, 0.42f, 0.74f, 1.00f),
-                    ButtonBg    = new Color(0.16f, 0.18f, 0.24f, 1.00f),
-                    ButtonGreen = new Color(0.14f, 0.50f, 0.28f, 1.00f),
-                    ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
-                    Divider     = new Color(0.30f, 0.30f, 0.35f, 1.00f),
-                    ScrollBg    = new Color(0.05f, 0.06f, 0.09f, 0.97f),
-                    TextMain    = new Color(0.95f, 0.95f, 0.95f, 1.00f),
-                    TextSub     = new Color(0.65f, 0.65f, 0.70f, 1.00f),
-                    TextOnHeader= new Color(1.00f, 1.00f, 1.00f, 1.00f),
-                    Close       = new Color(0.85f, 0.35f, 0.35f, 1.00f),
-                },
-
-                // ── 1  暮光（暖棕暗色）──────────────────────────────────────────
-                new DefaultUIThemeData
-                {
-                    Name        = "暮光",
-                    Background  = new Color(0.13f, 0.11f, 0.08f, 0.97f),
-                    Header      = new Color(0.08f, 0.06f, 0.04f, 1.00f),
-                    Accent      = new Color(0.98f, 0.68f, 0.27f, 1.00f),
-                    AccentAlt   = new Color(0.74f, 0.51f, 0.20f, 1.00f),
-                    ButtonBg    = new Color(0.24f, 0.18f, 0.12f, 1.00f),
-                    ButtonGreen = new Color(0.28f, 0.50f, 0.14f, 1.00f),
-                    ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
-                    Divider     = new Color(0.40f, 0.34f, 0.20f, 1.00f),
-                    ScrollBg    = new Color(0.08f, 0.06f, 0.04f, 0.97f),
-                    TextMain    = new Color(0.96f, 0.91f, 0.80f, 1.00f),
-                    TextSub     = new Color(0.70f, 0.60f, 0.38f, 1.00f),
-                    TextOnHeader= new Color(0.886f, 0.757f, 0.486f, 1.00f),
-                    Close       = new Color(0.66f, 0.20f, 0.17f, 1.00f),
-                },
-
-                // ── 2  森林（绿色暗色）──────────────────────────────────────────
-                new DefaultUIThemeData
-                {
-                    Name        = "森林",
-                    Background  = new Color(0.08f, 0.12f, 0.10f, 0.97f),
-                    Header      = new Color(0.04f, 0.08f, 0.06f, 1.00f),
-                    Accent      = new Color(0.27f, 0.98f, 0.56f, 1.00f),
-                    AccentAlt   = new Color(0.20f, 0.74f, 0.42f, 1.00f),
-                    ButtonBg    = new Color(0.16f, 0.24f, 0.18f, 1.00f),
-                    ButtonGreen = new Color(0.14f, 0.50f, 0.28f, 1.00f),
-                    ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
-                    Divider     = new Color(0.30f, 0.35f, 0.30f, 1.00f),
-                    ScrollBg    = new Color(0.04f, 0.08f, 0.06f, 0.97f),
-                    TextMain    = new Color(0.95f, 0.95f, 0.95f, 1.00f),
-                    TextSub     = new Color(0.65f, 0.70f, 0.65f, 1.00f),
-                    TextOnHeader= new Color(1.00f, 1.00f, 1.00f, 1.00f),
-                    Close       = new Color(0.85f, 0.35f, 0.35f, 1.00f),
-                },
-
-                // ── 3  樱花（粉红暗色）──────────────────────────────────────────
-                new DefaultUIThemeData
-                {
-                    Name        = "樱花",
-                    Background  = new Color(0.13f, 0.08f, 0.11f, 0.97f),
-                    Header      = new Color(0.08f, 0.04f, 0.06f, 1.00f),
-                    Accent      = new Color(0.98f, 0.27f, 0.68f, 1.00f),
-                    AccentAlt   = new Color(0.74f, 0.20f, 0.51f, 1.00f),
-                    ButtonBg    = new Color(0.24f, 0.12f, 0.18f, 1.00f),
-                    ButtonGreen = new Color(0.28f, 0.50f, 0.14f, 1.00f),
-                    ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
-                    Divider     = new Color(0.40f, 0.20f, 0.34f, 1.00f),
-                    ScrollBg    = new Color(0.08f, 0.04f, 0.06f, 0.97f),
-                    TextMain    = new Color(0.96f, 0.80f, 0.91f, 1.00f),
-                    TextSub     = new Color(0.70f, 0.38f, 0.60f, 1.00f),
-                    TextOnHeader= new Color(0.886f, 0.486f, 0.757f, 1.00f),
-                    Close       = new Color(0.66f, 0.17f, 0.20f, 1.00f),
-                },
+               // ── 0  深夜（冷蓝暗色）──────────────────────────────────────────
+            new DefaultUIThemeData
+            {
+                Name        = "深夜",
+                Background  = new Color(0.09f, 0.10f, 0.13f, 0.97f),
+                Header      = new Color(0.05f, 0.06f, 0.09f, 1.00f),
+                Accent      = new Color(0.27f, 0.56f, 0.98f, 1.00f),
+                AccentAlt   = new Color(0.20f, 0.42f, 0.74f, 1.00f),
+                ButtonBg    = new Color(0.16f, 0.18f, 0.24f, 1.00f),
+                ButtonGreen = new Color(0.14f, 0.50f, 0.28f, 1.00f),
+                ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
+                Divider     = new Color(0.20f, 0.22f, 0.30f, 1.00f),
+                ScrollBg    = new Color(0.05f, 0.06f, 0.09f, 1.00f),
+                TextMain    = new Color(0.92f, 0.93f, 0.96f, 1.00f),
+                TextSub     = new Color(0.50f, 0.55f, 0.65f, 1.00f),
+                TextOnHeader= new Color(0.92f, 0.93f, 0.96f, 1.00f),
+                Close       = new Color(0.68f, 0.16f, 0.16f, 1.00f),
+            },
+            // ── 1  海洋（#2C80C5 蓝 + #FFFAE6 暖白）————————————————————————
+            new DefaultUIThemeData
+            {
+                Name        = "海洋",
+                Background  = new Color(0.173f,0.502f,0.773f,0.97f),  // #2C80C5 蓝面板
+                Header      = new Color(1.00f, 0.980f,0.902f,1.00f),  // #FFFAE6 奶白标题栏
+                Accent      = new Color(0.10f, 0.32f, 0.55f, 1.00f),  // 深蓝（icon在奶白头上可见）
+                AccentAlt   = new Color(1.00f, 0.980f,0.902f,1.00f),  // #FFFAE6
+                ButtonBg    = new Color(0.10f, 0.32f, 0.55f, 1.00f),  // 深蓝按钮（白字可读）
+                ButtonGreen = new Color(0.12f, 0.50f, 0.30f, 1.00f),
+                ButtonRed   = new Color(0.62f, 0.18f, 0.20f, 1.00f),
+                Divider     = new Color(1.00f, 0.980f,0.902f,0.65f),  // 奶白分隔线
+                ScrollBg    = new Color(0.09f, 0.32f, 0.56f, 0.96f),  // 深蓝背板（灰文字可读）
+                TextMain    = new Color(1.00f, 0.980f,0.902f,1.00f),  // #FFFAE6（在蓝面板上）
+                TextSub     = new Color(0.92f, 0.95f, 1.00f, 0.85f),
+                TextOnHeader= new Color(0.08f, 0.22f, 0.40f, 1.00f),  // 深蓝（在奶白头上清晰可见）
+                Close       = new Color(0.78f, 0.20f, 0.22f, 1.00f),
+            },
+            // ── 2  暮光（#363433 暖棕 + #E2C17C 金黄）──────────────────────
+            new DefaultUIThemeData
+            {
+                Name        = "暮光",
+                Background  = new Color(0.212f,0.204f,0.200f,0.97f),  // #363433
+                Header      = new Color(0.10f, 0.10f, 0.09f, 1.00f),
+                Accent      = new Color(0.886f,0.757f,0.486f,1.00f),  // #E2C17C
+                AccentAlt   = new Color(0.62f, 0.50f, 0.27f, 1.00f),
+                ButtonBg    = new Color(0.28f, 0.27f, 0.25f, 1.00f),
+                ButtonGreen = new Color(0.24f, 0.46f, 0.20f, 1.00f),
+                ButtonRed   = new Color(0.54f, 0.18f, 0.16f, 1.00f),
+                Divider     = new Color(0.40f, 0.34f, 0.20f, 1.00f),
+                ScrollBg    = new Color(0.11f, 0.10f, 0.09f, 1.00f),
+                TextMain    = new Color(0.96f, 0.91f, 0.80f, 1.00f),
+                TextSub     = new Color(0.70f, 0.60f, 0.38f, 1.00f),
+                TextOnHeader= new Color(0.886f,0.757f,0.486f,1.00f),  // 金 #E2C17C
+                Close       = new Color(0.66f, 0.20f, 0.17f, 1.00f),
+            },
+            // ── 3  星烛（深夜黑体 + 暮光暗头 + 金accent + 暖奶油文字）──────
+            new DefaultUIThemeData
+            {
+                Name        = "星烛",
+                Background  = new Color(0.09f, 0.10f, 0.13f, 0.97f),  // 深夜 黑体
+                Header      = new Color(0.10f, 0.10f, 0.09f, 1.00f),  // 暮光 暗暖头
+                Accent      = new Color(0.886f,0.757f,0.486f,1.00f),  // 暮光 金accent
+                AccentAlt   = new Color(0.27f, 0.56f, 0.98f, 1.00f),  // 深夜 电蓝
+                ButtonBg    = new Color(0.16f, 0.18f, 0.24f, 1.00f),  // 深夜 按钮
+                ButtonGreen = new Color(0.14f, 0.50f, 0.28f, 1.00f),
+                ButtonRed   = new Color(0.52f, 0.16f, 0.16f, 1.00f),
+                Divider     = new Color(0.40f, 0.34f, 0.20f, 1.00f),  // 暮光 金棕分隔
+                ScrollBg    = new Color(0.05f, 0.06f, 0.09f, 0.97f),
+                TextMain    = new Color(0.96f, 0.91f, 0.80f, 1.00f),  // 暮光 暖奶油文字
+                TextSub     = new Color(0.70f, 0.60f, 0.38f, 1.00f),  // 暮光 金棕次文字
+                TextOnHeader= new Color(0.886f,0.757f,0.486f,1.00f),  // 金（在暗头上）
+                Close       = new Color(0.66f, 0.20f, 0.17f, 1.00f),
+            },
             };
         }
 

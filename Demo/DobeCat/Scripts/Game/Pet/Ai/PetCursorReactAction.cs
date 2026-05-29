@@ -1,4 +1,5 @@
 using UnityEngine;
+using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
 using Demo.DobeCat.Game.Pet;
@@ -63,7 +64,7 @@ namespace Demo.DobeCat.Game.Pet.Ai
             if (cam == null) return Vector3.zero;
             Vector2 screenPos;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            screenPos = DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             screenPos = Input.mousePosition;
 #endif

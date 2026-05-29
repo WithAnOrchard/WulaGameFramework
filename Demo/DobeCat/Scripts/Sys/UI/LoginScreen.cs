@@ -109,7 +109,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) { Debug.LogWarning("[LoginScreen] Canvas 未就绪"); return; }
 
-            var t    = DefaultUITheme.Current;
+            var t    = DefaultUITheme.Instance.Current;
             var cBg  = t.Background;
             var cHdr = t.Header;
             var cAcc = t.Accent;

@@ -1,8 +1,8 @@
-﻿#if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN
 using System;
 using System.Runtime.InteropServices;
 
-namespace Demo.DobeCat.Sys.Platform.Windows
+namespace EssSystem.Core.Platform.Windows
 {
     /// <summary>系统托盘相关 Win32 P/Invoke 集合。</summary>
     internal static class TrayNative
@@ -85,9 +85,8 @@ namespace Demo.DobeCat.Sys.Platform.Windows
         public delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct WNDCLASSEX
+        public struct WNDCLASS
         {
-            public uint cbSize;
             public uint style;
             [MarshalAs(UnmanagedType.FunctionPtr)] public WndProcDelegate lpfnWndProc;
             public int cbClsExtra;
@@ -98,14 +97,13 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             public IntPtr hbrBackground;
             [MarshalAs(UnmanagedType.LPTStr)] public string lpszMenuName;
             [MarshalAs(UnmanagedType.LPTStr)] public string lpszClassName;
-            public IntPtr hIconSm;
         }
 
         [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "Shell_NotifyIconW")]
         public static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern ushort RegisterClassEx(ref WNDCLASSEX lpwcx);
+        public static extern ushort RegisterClass(ref WNDCLASS lpwc);
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         public static extern bool UnregisterClass(string lpClassName, IntPtr hInstance);

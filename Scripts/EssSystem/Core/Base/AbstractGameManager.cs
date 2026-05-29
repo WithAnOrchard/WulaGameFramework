@@ -127,7 +127,7 @@ namespace EssSystem.Core.Base
             // 筛选出 Manager<T> 类型的组件并注册到 ManagerRegistry
             foreach (var component in allComponents)
             {
-                if (component == this) continue;
+                if (component == null || component == this) continue;
 
                 var componentType = component.GetType();
                 if (IsManagerType(componentType))
@@ -168,7 +168,7 @@ namespace EssSystem.Core.Base
 
             foreach (var component in allComponents)
             {
-                if (component == this) continue;
+                if (component == null || component == this) continue;
 
                 var componentType = component.GetType();
                 if (IsManagerType(componentType))

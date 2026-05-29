@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
 using EssSystem.Core.Base.Event;
+using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Theme;
@@ -74,14 +75,14 @@ namespace Demo.DobeCat.Game.Pet
         private void Start()
         {
             DobeCatGameContext.OnContextChanged += OnContextChanged;
-            DobeCatTheme.OnThemeChanged         += RebuildQuickBar;
+            DefaultUITheme.OnThemeChanged         += RebuildQuickBar;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
             DobeCatGameContext.OnContextChanged -= OnContextChanged;
-            DobeCatTheme.OnThemeChanged         -= RebuildQuickBar;
+            DefaultUITheme.OnThemeChanged         -= RebuildQuickBar;
             DestroyQuickBar();
         }
 
@@ -163,8 +164,8 @@ namespace Demo.DobeCat.Game.Pet
             var currMask = 0;
             for (var i = 0; i < 9; i++)
             {
-                var main = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x31 + i);
-                var num  = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x61 + i);
+                var main = Win32Native.GetAsyncKeyState(0x31 + i);
+                var num  = Win32Native.GetAsyncKeyState(0x61 + i);
                 if (((main | num) & unchecked((short)0x8000)) != 0)
                     currMask |= 1 << i;
             }
@@ -387,7 +388,7 @@ namespace Demo.DobeCat.Game.Pet
         private static Vector2 GetCursorScreenPos()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            return DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             return Input.mousePosition;
 #endif

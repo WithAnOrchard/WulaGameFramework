@@ -1,6 +1,7 @@
 ﻿using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
+using EssSystem.Core.Platform.Windows;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -106,7 +107,7 @@ namespace Demo.DobeCat.Game.Pet
         private static Vector2 GetCursorPos()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            return DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             return Input.mousePosition;
 #endif
@@ -115,7 +116,7 @@ namespace Demo.DobeCat.Game.Pet
         private static bool IsLeftDown()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
+            return (Win32Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
 #else
             return Input.GetMouseButton(0);
 #endif

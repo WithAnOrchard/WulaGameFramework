@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
+using EssSystem.Core.Platform.Windows;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -333,7 +334,7 @@ namespace Demo.DobeCat.Game.Pet
         private bool IsUserActive()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetIdleSeconds() < _idleThreshold;
+            return Win32Native.GetIdleSeconds() < _idleThreshold;
 #else
             return Input.anyKey || Input.GetAxis("Mouse X") != 0f || Input.GetAxis("Mouse Y") != 0f;
 #endif

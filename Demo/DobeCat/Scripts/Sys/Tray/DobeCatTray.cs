@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using BiliBiliDanmu.UI;
 using Demo.DobeCat.Sys.Network;
+using Demo.DobeCat.Sys.Tray;
+using Demo.DobeCat.Sys.UI;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Platform.Windows;
@@ -77,6 +78,7 @@ namespace Demo.DobeCat.Sys.Tray
 
         private void RebuildMenu()
         {
+#if UNITY_STANDALONE_WIN && !UNITY_EDITOR
             if (_tray == null) return;
 
             // ── 二级：桌宠设置 ──────────────────────────────────────────────
@@ -152,7 +154,7 @@ namespace Demo.DobeCat.Sys.Tray
                 SystemTray.MenuItemDef.Item("🎁 查看礼物统计",
                     () => Demo.DobeCat.Sys.UI.DobeCatGiftStatsPanelView.Show()),
                 SystemTray.MenuItemDef.Item("💬 弹幕面板",
-                    () => BiliBiliDanmu.UI.DanmuTestPanelView.Instance?.Show()),
+                    () => DobeCatTestPanel.Toggle()),
             };
 
             // ── 二级：互动玩法 ──────────────────────────────────────────────
@@ -185,6 +187,7 @@ namespace Demo.DobeCat.Sys.Tray
             };
 
             _tray.SetItems(items);
+#endif
         }
 
         private void FeedPet()
