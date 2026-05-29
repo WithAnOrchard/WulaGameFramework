@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
@@ -63,7 +63,7 @@ namespace Demo.DobeCat.Sys.UI
             EnsureEventSystem();
             BuildUI();
             // 加载缓存 token（若有）
-            if (_tokenDao != null) _tokenDao.SetText(AuthSession.Token ?? string.Empty);
+            if (_tokenDao != null) _tokenDao.SetText(BilibiliAuthSession.Token ?? string.Empty);
             DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
@@ -297,7 +297,7 @@ namespace Demo.DobeCat.Sys.UI
             _validating = true;
             SetInteractable(false);
             SetLoginBtnLabel("验证中...");
-            StartCoroutine(BilibiliAuthValidator.Validate(
+            StartCoroutine(BiliBiliDanmu.Auth.BilibiliAuthValidator.Validate(
                 token,
                 onSuccess: (uname, mid) =>
                 {
@@ -319,7 +319,7 @@ namespace Demo.DobeCat.Sys.UI
 
         private void FinishLogin(string token, string uname, long mid)
         {
-            if (!AuthSession.Login(token, uname, mid))
+            if (!BilibiliAuthSession.Login(token, uname, mid))
             {
                 if (_errorDao != null) _errorDao.SetText("Token 不能为空。");
                 return;

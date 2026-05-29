@@ -18,6 +18,19 @@ namespace Demo.DobeCat.Sys.UI
     {
         public static DobeCatSettingsPanelView Instance { get; private set; }
 
+        // ─── 静态快捷方法（替代 DobeCatSettingsPanel 包装类）─────────────────────
+        public static void Toggle() => EnsureView()._Toggle();
+        public static void Open()   => EnsureView().Show();
+        public static void Close()  => EnsureView().Hide();
+
+        private static DobeCatSettingsPanelView EnsureView()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("DobeCatSettingsPanelView");
+            Object.DontDestroyOnLoad(go);
+            return go.AddComponent<DobeCatSettingsPanelView>();
+        }
+
         // ─── PlayerPrefs keys ────────────────────────────────────────────────
         private const string PK_REM_SITBREAK = "Rem_SitBreak";
         private const string PK_REM_WATER    = "Rem_Water";
@@ -75,6 +88,11 @@ namespace Demo.DobeCat.Sys.UI
         public void Hide()
         {
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(false);
+        }
+
+        private void _Toggle()
+        {
+            if (IsOpen) Hide(); else Show();
         }
 
         // ─── UI Build ────────────────────────────────────────────────────────

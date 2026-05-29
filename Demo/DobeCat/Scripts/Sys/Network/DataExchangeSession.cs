@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Text;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -23,7 +23,7 @@ namespace Demo.DobeCat.Sys.Network
         [Tooltip("数据收发器 Base URL，例如 http://192.168.1.10:8765。留空则禁用。建议与 RoomDiscoveryClient 保持一致。")]
         public string ServerBaseUrl = "";
 
-        [Tooltip("启用后在 OnEnable 自动用当前 AuthSession.Token (=SESSDATA) 换取服务端 token；登录态变化时自动重换。")]
+        [Tooltip("启用后在 OnEnable 自动用当前 BilibiliAuthSession.Token (=SESSDATA) 换取服务端 token；登录态变化时自动重换。")]
         public bool AutoLogin = true;
 
         [Tooltip("Trust 模式：服务端以 --no-bilibili-check 启动时使用。会跳过 SESSDATA 校验，把本地 Mid/Nickname 直接报上去。仅用于本地联调。")]
@@ -61,24 +61,24 @@ namespace Demo.DobeCat.Sys.Network
         private void OnEnable()
         {
             _instance = this;
-            AuthSession.OnLogin += HandleAuthLogin;
-            if (AutoLogin && AuthSession.IsAuthenticated) StartCoroutine(LoginRoutine());
+            BilibiliAuthSession.OnLogin += HandleAuthLogin;
+            if (AutoLogin && BilibiliAuthSession.IsAuthenticated) StartCoroutine(LoginRoutine());
         }
 
         private void OnDisable()
         {
-            AuthSession.OnLogin -= HandleAuthLogin;
+            BilibiliAuthSession.OnLogin -= HandleAuthLogin;
             if (_instance == this) _instance = null;
         }
 
         private void HandleAuthLogin()
         {
-            if (AutoLogin && AuthSession.IsAuthenticated) StartCoroutine(LoginRoutine());
+            if (AutoLogin && BilibiliAuthSession.IsAuthenticated) StartCoroutine(LoginRoutine());
         }
 
         // ── 公开 API ──────────────────────────────────────────
 
-        /// <summary>用 <see cref="AuthSession"/> 的 SESSDATA 换 token。重复调用会替换当前 token。</summary>
+        /// <summary>用 <see cref="BilibiliAuthSession"/> 的 SESSDATA 换 token。重复调用会替换当前 token。</summary>
         public IEnumerator LoginRoutine()
         {
             if (string.IsNullOrEmpty(ServerBaseUrl))
@@ -86,7 +86,7 @@ namespace Demo.DobeCat.Sys.Network
                 Debug.LogWarning("[DataExchangeSession] ServerBaseUrl 为空，跳过登录。");
                 yield break;
             }
-            var sessdata = AuthSession.Token;
+            var sessdata = BilibiliAuthSession.Token;
             if (string.IsNullOrEmpty(sessdata))
             {
                 if (VerboseLog) Debug.Log("[DataExchangeSession] AuthSession 未登录，等待 OnLogin 再换 token。");
@@ -97,8 +97,8 @@ namespace Demo.DobeCat.Sys.Network
             var bodyDict = new System.Collections.Generic.Dictionary<string, object> { {"sessdata", sessdata} };
             if (TrustMode)
             {
-                bodyDict["mid"] = AuthSession.Mid;
-                bodyDict["uname"] = AuthSession.Nickname ?? "";
+                bodyDict["mid"] = BilibiliAuthSession.Mid;
+                bodyDict["uname"] = BilibiliAuthSession.Nickname ?? "";
             }
             var json = MiniJson.Serialize(bodyDict);
 

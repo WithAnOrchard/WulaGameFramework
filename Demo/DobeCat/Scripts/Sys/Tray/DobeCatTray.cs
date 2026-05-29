@@ -131,7 +131,7 @@ namespace Demo.DobeCat.Sys.Tray
 
             // 番茄钟
             lifeSub.Add(SystemTray.MenuItemDef.Item("🍅 番茄钟设置...",
-                () => Demo.DobeCat.Sys.UI.DobeCatPomodoroPanel.Toggle()));
+                () => Demo.DobeCat.Sys.UI.DobeCatPomodoroPanelView.Toggle()));
             if (reminder != null && reminder.PomodoroActive)
                 lifeSub.Add(SystemTray.MenuItemDef.Item("⏹ 取消番茄钟",
                     () => { Demo.DobeCat.Game.Pet.PetCompanionReminder.Instance?.StopPomodoro(); RebuildMenu(); }));
@@ -141,7 +141,7 @@ namespace Demo.DobeCat.Sys.Tray
             var alarmDisplay = reminder != null ? reminder.GetAlarmsDisplay() : "无闹钟";
             lifeSub.Add(SystemTray.MenuItemDef.Item(
                 $"⏰ 闹钟管理...  ({alarmDisplay})",
-                () => Demo.DobeCat.Sys.UI.DobeCatAlarmPanel.Toggle()));
+                () => Demo.DobeCat.Sys.UI.DobeCatAlarmPanelView.Toggle()));
             lifeSub.Add(SystemTray.MenuItemDef.Separator());
             lifeSub.Add(SystemTray.MenuItemDef.Item("喂食 (猫粮)", FeedPet));
 
@@ -149,7 +149,7 @@ namespace Demo.DobeCat.Sys.Tray
             var toolSub = new List<SystemTray.MenuItemDef>
             {
                 SystemTray.MenuItemDef.Item("🎁 查看礼物统计",
-                    () => Demo.DobeCat.Sys.UI.DobeCatGiftStatsPanelView.Instance?.Show()),
+                    () => Demo.DobeCat.Sys.UI.DobeCatGiftStatsPanelView.Show()),
                 SystemTray.MenuItemDef.Item("💬 弹幕面板",
                     () => Demo.DobeCat.Sys.UI.DobeCatTestPanel.Toggle()),
             };
@@ -175,7 +175,7 @@ namespace Demo.DobeCat.Sys.Tray
                 SystemTray.MenuItemDef.Sub("🌟 生活助手",  lifeSub.ToArray()),
                 SystemTray.MenuItemDef.Sub("🎮 互动玩法",  playSub.ToArray()),
                 SystemTray.MenuItemDef.Sub("🔧 工具",       toolSub.ToArray()),
-                SystemTray.MenuItemDef.Item("⚙ 设置面板",  () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanel.Toggle()),
+                SystemTray.MenuItemDef.Item("⚙ 设置面板",  () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanelView.Toggle()),
                 SystemTray.MenuItemDef.Separator(),
                 SystemTray.MenuItemDef.Item(autoLabel,
                     () => Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.Toggle()),

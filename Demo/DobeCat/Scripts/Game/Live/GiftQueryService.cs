@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 
 namespace Demo.DobeCat.Game.Live
 {
@@ -63,14 +63,14 @@ namespace Demo.DobeCat.Game.Live
                                            Action<List<GiftRecord>> onSuccess,
                                            Action<string> onError)
         {
-            if (!AuthSession.IsAuthenticated)
+            if (!BilibiliAuthSession.IsAuthenticated)
             {
                 onError?.Invoke("未登录，请先完成哔哩哔哩认证");
                 yield break;
             }
 
             var url  = $"{ApiUrl}?page=1&page_size={pageSize}&coin_type=all";
-            var task = FetchAsync(url, AuthSession.Token);
+            var task = FetchAsync(url, BilibiliAuthSession.Token);
             while (!task.IsCompleted) yield return null;
 
             if (task.IsFaulted)

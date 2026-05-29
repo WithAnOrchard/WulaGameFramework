@@ -11,7 +11,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.MultiManagers.FarmManager;
 using EssSystem.Core.Application.MultiManagers.FarmManager.Dao;
 using Demo.DobeCat.Game.Farm;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 
 namespace Demo.DobeCat.Sys.Network
 {
@@ -259,8 +259,8 @@ namespace Demo.DobeCat.Sys.Network
 
         private static string GetPlayerKey()
         {
-            if (AuthSession.IsAuthenticated && AuthSession.Mid > 0)
-                return $"player_{AuthSession.Mid}";
+            if (BilibiliAuthSession.IsAuthenticated && BilibiliAuthSession.Mid > 0)
+                return $"player_{BilibiliAuthSession.Mid}";
             return null;
         }
 

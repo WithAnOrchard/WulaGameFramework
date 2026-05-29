@@ -16,6 +16,19 @@ namespace Demo.DobeCat.Sys.UI
     {
         public static DobeCatAlarmPanelView Instance { get; private set; }
 
+        // ─── 静态快捷方法（替代 DobeCatAlarmPanel 包装类）─────────────────────
+        public static void Toggle() => EnsureView()._Toggle();
+        public static void Open()   => EnsureView().Show();
+        public static void Close()  => EnsureView().Hide();
+
+        private static DobeCatAlarmPanelView EnsureView()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("DobeCatAlarmPanelView");
+            Object.DontDestroyOnLoad(go);
+            return go.AddComponent<DobeCatAlarmPanelView>();
+        }
+
         // ─── 编辑区状态（跨重建保持）─────────────────────────────────────────
         private int    _editHour   = 8;
         private int    _editMinute = 0;
@@ -70,7 +83,7 @@ namespace Demo.DobeCat.Sys.UI
             Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
         }
         public void Hide()  { if (_rootEntity != null) _rootEntity.gameObject.SetActive(false); }
-        public void Toggle(){ if (IsOpen) Hide(); else Show(); }
+        private void _Toggle(){ if (IsOpen) Hide(); else Show(); }
 
         // ─── 构建 ─────────────────────────────────────────────────────────────
 

@@ -17,6 +17,18 @@ namespace Demo.DobeCat.Sys.UI
     {
         public static DobeCatGiftStatsPanelView Instance { get; private set; }
 
+        // ─── 静态快捷方法 ─────────────────────────────────────────────────────────
+        public static void Show() => EnsureInstance()._Show();
+        public static void Hide() => EnsureInstance()._Hide();
+
+        private static DobeCatGiftStatsPanelView EnsureInstance()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("DobeCatGiftStatsPanelView");
+            Object.DontDestroyOnLoad(go);
+            return go.AddComponent<DobeCatGiftStatsPanelView>();
+        }
+
         private UIEntity        _rootEntity;
         private UIScrollViewEntity _scrollEntity;
         private UITextComponent    _statusDao;
@@ -44,13 +56,13 @@ namespace Demo.DobeCat.Sys.UI
 
         // ─── 公共 API ─────────────────────────────────────────────────────────
 
-        public void Show()
+        private void _Show()
         {
             if (!_initialized) BuildUI();
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(true);
         }
 
-        public void Hide()
+        private void _Hide()
         {
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(false);
         }
@@ -62,7 +74,7 @@ namespace Demo.DobeCat.Sys.UI
             if (!_initialized) return;
             var wasOpen = IsOpen;
             DestroyUI();
-            if (wasOpen) Show();
+            if (wasOpen) _Show();
         }
 
         private void DestroyUI()

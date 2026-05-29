@@ -15,6 +15,19 @@ namespace Demo.DobeCat.Sys.UI
     {
         public static DobeCatTestPanelView Instance { get; private set; }
 
+        // ─── 静态快捷方法 ─────────────────────────────────────────────────────────
+        public static void Toggle() => EnsureInstance()._Toggle();
+        public static void Open()   => EnsureInstance().Show();
+        public static void Close()  => EnsureInstance().Hide();
+
+        private static DobeCatTestPanelView EnsureInstance()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("DobeCatTestPanelView");
+            Object.DontDestroyOnLoad(go);
+            return go.AddComponent<DobeCatTestPanelView>();
+        }
+
         // DAO 引用 — 赋值时自动通过 UIManager 事件链刷新显示
         private UITextComponent _statusDao;
         private UITextComponent _liveDao;
@@ -80,6 +93,7 @@ namespace Demo.DobeCat.Sys.UI
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(true);
         }
         public void Hide() { if (_rootEntity != null) _rootEntity.gameObject.SetActive(false); }
+        private void _Toggle() { if (IsOpen) Hide(); else Show(); }
 
         // ─── UI 构建（走 UIManager）─────────────────────────────────────────
         private void BuildUI()

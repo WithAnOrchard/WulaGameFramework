@@ -7,7 +7,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 using EssSystem.Core.Base.Util;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -104,7 +104,7 @@ namespace Demo.DobeCat.Sys.Network
         {
             if (string.IsNullOrEmpty(RoomId)) RoomId = GenerateDefaultRoomId();
             if (string.IsNullOrEmpty(RoomDisplayName))
-                RoomDisplayName = !string.IsNullOrEmpty(AuthSession.Nickname) ? AuthSession.Nickname : SystemInfo.deviceName;
+                RoomDisplayName = !string.IsNullOrEmpty(BilibiliAuthSession.Nickname) ? BilibiliAuthSession.Nickname : SystemInfo.deviceName;
             if (string.IsNullOrEmpty(AdvertisedHost)) AdvertisedHost = DetectLocalIPv4() ?? "127.0.0.1";
 
             _heartbeatCo = StartCoroutine(HeartbeatLoop());
@@ -178,7 +178,7 @@ namespace Demo.DobeCat.Sys.Network
                 {"data", new Dictionary<string, object>
                     {
                         {"name", RoomDisplayName},
-                        {"bili_uid", AuthSession.Mid},
+                        {"bili_uid", BilibiliAuthSession.Mid},
                         {"host", AdvertisedHost},
                         {"port", (long)AdvertisedPort},
                         {"player_count", (long)1}, // 至少自己；后续可由 NetworkService 提供真实值

@@ -15,6 +15,19 @@ namespace Demo.DobeCat.Sys.UI
     {
         public static DobeCatPomodoroPanelView Instance { get; private set; }
 
+        // ─── 静态快捷方法（替代 DobeCatPomodoroPanel 包装类）─────────────────────
+        public static void Toggle() => EnsureView()._Toggle();
+        public static void Open()   => EnsureView().Show();
+        public static void Close()  => EnsureView().Hide();
+
+        private static DobeCatPomodoroPanelView EnsureView()
+        {
+            if (Instance != null) return Instance;
+            var go = new GameObject("DobeCatPomodoroPanelView");
+            Object.DontDestroyOnLoad(go);
+            return go.AddComponent<DobeCatPomodoroPanelView>();
+        }
+
         private const string PK_POM_FOCUS = "Pom_FocusMin";
         private const string PK_POM_BREAK = "Pom_BreakMin";
 
@@ -68,7 +81,7 @@ namespace Demo.DobeCat.Sys.UI
             if (_rootEntity != null) _rootEntity.gameObject.SetActive(false);
         }
 
-        public void Toggle()
+        private void _Toggle()
         {
             if (IsOpen) Hide(); else Show();
         }

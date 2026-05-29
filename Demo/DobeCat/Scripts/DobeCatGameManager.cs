@@ -9,7 +9,7 @@ using EssSystem.Manager.NetworkManager;
 using EssSystem.Core.Presentation.CharacterManager;
 using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 using CharMgr = EssSystem.Core.Presentation.CharacterManager.CharacterManager;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Sys.Tray;
 using Demo.DobeCat.Sys.UI;
@@ -60,16 +60,6 @@ namespace Demo.DobeCat
 
         [Tooltip("桌宠移动速度（IMovable.MoveSpeed；玩家 WASD 与 wander 共用）。")]
         [SerializeField, Min(0.1f)] private float _wasdMoveSpeed = 4f;
-
-        // 已废弃，仅保留以保持旧场景反序列化兼容（不再使用）
-#pragma warning disable 414
-        [SerializeField, HideInInspector] private string _petSpritePath = "";
-#pragma warning restore 414
-
-        // 已移除 ESC 退出快捷键（避免误触关闭桌宠）；保留字段仅为旧场景反序列化兼容。
-#pragma warning disable 414
-        [SerializeField, HideInInspector] private KeyCode _quitKey = KeyCode.None;
-#pragma warning restore 414
 
         [Header("BiliBili Danmu — Mode")]
         [Tooltip("弹幕接入模式：\nPolling=零认证（仅文字弹幕，3s 延迟）\nToken=登录 cookie（实时 + 礼物 + SC）\nOpenLive=主播身份码（实时 + 礼物 + SC，仅自己直播间）")]
@@ -647,7 +637,7 @@ namespace Demo.DobeCat
                 Mode = _danmuMode,
                 RoomId = _danmuRoomId > 0 ? _danmuRoomId : _liveRoomId,
                 PollIntervalSeconds = _pollIntervalSeconds,
-                Sessdata = !string.IsNullOrEmpty(_sessdata) ? _sessdata : AuthSession.Token,
+                Sessdata = !string.IsNullOrEmpty(_sessdata) ? _sessdata : BilibiliAuthSession.Token,
                 BiliJct = _biliJct,
                 IdentityCode = _bilibiliIdentityCode,
                 AppId = _bilibiliAppId,
