@@ -172,6 +172,8 @@ Core/EssManagers/
 
 ## 初始化流程
 
+### 同步初始化（默认）
+
 ```
 AbstractGameManager.Awake()
   1. EnsureBaseManagers() → 确保 EventProcessor / DataManager / ResourceManager / UIManager / AudioManager 存在
@@ -179,6 +181,28 @@ AbstractGameManager.Awake()
   3. 按 [Manager(N)] 优先级排序（N 越小越先）
   4. 依次调用 Initialize()
 ```
+
+### 异步初始化（Phase 2.2 优化）
+
+启用 `AbstractGameManager._enableAsyncInitialization = true` 后：
+
+```
+AbstractGameManager.Awake()
+  1. EnsureBaseManagers() → 同步确保基础 Manager 存在
+  2. 启动协程 DiscoverAndInitializeManagersAsync()
+     - 每帧扫描 _maxFramesPerInitialization 个 Manager
+     - 按优先级排序后逐帧初始化
+     - 避免单帧卡顿
+```
+
+**优势**：
+- ✅ 减少单帧初始化时间
+- ✅ 提高游戏启动流畅度
+- ✅ 适合 Manager 数量多的项目
+
+**配置**：
+- `_enableAsyncInitialization`：启用异步初始化
+- `_maxFramesPerInitialization`：每帧最多处理的 Manager 数量（默认 1）
 
 ## 通信模式
 

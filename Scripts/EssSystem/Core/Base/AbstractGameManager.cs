@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -31,12 +32,29 @@ namespace EssSystem.Core.Base
         private bool _initialized = false;
 
         /// <summary>
+        /// 是否启用异步初始化（Phase 2.2 优化）
+        /// </summary>
+        [SerializeField] private bool _enableAsyncInitialization = false;
+
+        /// <summary>
+        /// 异步初始化的最大帧数（防止卡顿）
+        /// </summary>
+        [SerializeField] private int _maxFramesPerInitialization = 1;
+
+        /// <summary>
         /// 初始化所有 Manager
         /// </summary>
         protected virtual void Awake()
         {
             EnsureBaseManagers();
-            DiscoverAndInitializeManagers();
+            if (_enableAsyncInitialization)
+            {
+                StartCoroutine(DiscoverAndInitializeManagersAsync());
+            }
+            else
+            {
+                DiscoverAndInitializeManagers();
+            }
         }
 
         /// <summary>
@@ -132,6 +150,59 @@ namespace EssSystem.Core.Base
 
             _initialized = true;
             Debug.Log($"[AbstractGameManager] 共管理 {_managedManagers.Count} 个 Manager");
+        }
+
+        /// <summary>
+        /// 异步发现并初始化所有 Manager（Phase 2.2 优化）
+        /// </summary>
+        private IEnumerator DiscoverAndInitializeManagersAsync()
+        {
+            if (_initialized) yield break;
+
+            // 获取当前 GameObject 及所有子 GameObject 上的所有 MonoBehaviour 组件
+            var allComponents = GetComponentsInChildren<MonoBehaviour>();
+
+            // 筛选出 Manager<T> 类型的组件
+            var managers = new List<ManagerInfo>();
+            int processedThisFrame = 0;
+
+            foreach (var component in allComponents)
+            {
+                if (component == this) continue;
+
+                var componentType = component.GetType();
+                if (IsManagerType(componentType))
+                {
+                    var priority = GetManagerPriority(componentType);
+                    managers.Add(new ManagerInfo
+                    {
+                        Component = component,
+                        Type = componentType,
+                        Priority = priority
+                    });
+
+                    processedThisFrame++;
+                    if (processedThisFrame >= _maxFramesPerInitialization)
+                    {
+                        yield return null;
+                        processedThisFrame = 0;
+                    }
+                }
+            }
+
+            // 按优先级排序（数值越小越先执行）
+            managers.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+
+            // 异步初始化所有 Manager
+            foreach (var managerInfo in managers)
+            {
+                _managedManagers.Add(managerInfo.Component);
+                Debug.Log($"[AbstractGameManager] 发现并管理 Manager: {managerInfo.Type.Name} (优先级: {managerInfo.Priority})");
+                yield return null;
+            }
+
+            _initialized = true;
+            Debug.Log($"[AbstractGameManager] 异步初始化完成，共管理 {_managedManagers.Count} 个 Manager");
         }
 
         /// <summary>
