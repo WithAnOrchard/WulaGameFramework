@@ -346,6 +346,8 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
 | `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/ResourceManager | 资源全部预加载/索引完成后**广播** |
 | `ResourceService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/ResourceManager | 批量注册多精灵图集子图入缓存（命令），参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
+| `ResourceService.EVT_GET_REFCOUNT_STATS` | `GetRefCountStats` | Core/ResourceManager | 获取资源引用计数统计（Phase 1 优化），参数 `[]` → `Ok(Dictionary)` |
+| `ResourceService.EVT_CLEANUP_UNUSED_ASSETS` | `CleanupUnusedAssets` | Core/ResourceManager | 清理超时未使用的资源（Phase 1 优化），参数 `[]` → `Ok()` |
 | `CharacterService.EVT_FRAME_EVENT` | `OnCharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
 | `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
 | `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |

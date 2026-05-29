@@ -80,6 +80,10 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// data: [string sheetResourcePath]  ―  Resources/ 相对路径，不含扩展名，如 "Plants/Plants"
         /// 返回 Ok(int addedCount) / Fail(msg)。</summary>
         public const string EVT_REGISTER_SPRITE_SHEET = "RegisterSpriteSheet";
+        /// <summary>获取资源引用计数统计信息。返回 Ok(Dictionary&lt;string, object&gt;)。</summary>
+        public const string EVT_GET_REFCOUNT_STATS = "GetRefCountStats";
+        /// <summary>清理超时未使用的资源。返回 Ok()。</summary>
+        public const string EVT_CLEANUP_UNUSED_ASSETS = "CleanupUnusedAssets";
 
         // ============================================================
         // 类型分发表
@@ -126,6 +130,9 @@ namespace EssSystem.Core.Foundation.ResourceManager
         private readonly Dictionary<string, List<string>> _modelClipNames
             = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>资源引用计数管理器（Phase 1 优化）。</summary>
+        private ResourceRefCounter _refCounter;
+
         private bool _dataLoaded;
 
         // ============================================================
@@ -134,6 +141,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         protected override void Initialize()
         {
             base.Initialize();
+            _refCounter = new ResourceRefCounter(300f);
             Log("ResourceService 初始化完成", Color.green);
         }
 
@@ -391,6 +399,25 @@ namespace EssSystem.Core.Foundation.ResourceManager
         {
             foreach (var resource in _loadedResources.Values) Resources.UnloadAsset(resource);
             _loadedResources.Clear();
+            return ResultCode.Ok();
+        }
+
+        // ============================================================
+        // 引用计数统计 + 自动清理（Phase 1 优化）
+        // ============================================================
+        [Event(EVT_GET_REFCOUNT_STATS)]
+        public List<object> GetRefCountStats(List<object> data)
+        {
+            if (_refCounter == null) return ResultCode.Fail("引用计数管理器未初始化");
+            var stats = _refCounter.GetStats();
+            return ResultCode.Ok(stats);
+        }
+
+        [Event(EVT_CLEANUP_UNUSED_ASSETS)]
+        public List<object> CleanupUnusedAssets(List<object> data)
+        {
+            if (_refCounter == null) return ResultCode.Fail("引用计数管理器未初始化");
+            _refCounter.CleanupUnusedAssets();
             return ResultCode.Ok();
         }
 

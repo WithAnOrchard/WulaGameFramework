@@ -176,6 +176,30 @@ public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, Animati
 - **返回**: `ResultCode.Ok()`
 - **副作用**: 遍历 `Resources.UnloadAsset` + `_loadedResources.Clear()`
 
+#### `ResourceService.EVT_GET_REFCOUNT_STATS` — 获取资源引用计数统计（Phase 1 优化）
+- **常量**: `ResourceService.EVT_GET_REFCOUNT_STATS` = `"GetRefCountStats"`
+- **参数**: `[]`
+- **返回**: `ResultCode.Ok(Dictionary<string, object>)` —— 包含 `TotalCount`、`ActiveCount`、`InactiveCount`、`TotalRefCount`
+- **副作用**: 无；仅查询统计信息
+- **用途**: 调试/监控资源加载状态，检测内存泄漏
+- **示例**:
+  ```csharp
+  var r = EventProcessor.Instance.TriggerEventMethod("GetRefCountStats", new List<object>());
+  if (ResultCode.IsOk(r) && r.Count >= 2)
+  {
+      var stats = r[1] as Dictionary<string, object>;
+      Debug.Log($"资源统计: {stats["TotalCount"]} 总数, {stats["ActiveCount"]} 活跃");
+  }
+  ```
+
+#### `ResourceService.EVT_CLEANUP_UNUSED_ASSETS` — 清理超时未使用的资源（Phase 1 优化）
+- **常量**: `ResourceService.EVT_CLEANUP_UNUSED_ASSETS` = `"CleanupUnusedAssets"`
+- **参数**: `[]`
+- **返回**: `ResultCode.Ok()`
+- **副作用**: 扫描所有引用计数为 0 且超过 300 秒未访问的资源，调用 `Resources.UnloadAsset` 卸载
+- **触发时机**: 每 60 秒自动检查一次（内部节流）；也可主动调用
+- **用途**: 定期清理内存，防止长期运行时内存泄漏
+
 ### 命令类（Service 内部 — 一般不直调）
 
 > 给 façade 委托用。`EVT_GET_MODEL_CLIPS` / `EVT_GET_ALL_MODEL_PATHS` 没有 façade alias，跨模块直接 bare-string。
