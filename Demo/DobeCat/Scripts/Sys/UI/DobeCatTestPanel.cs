@@ -4,7 +4,7 @@ using System.Text;
 using BiliBiliDanmu;
 using BiliBiliDanmu.UI;
 using BiliBiliLive;
-using Demo.DobeCat.Sys.Auth;
+using BiliBiliDanmu.Auth;
 using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
@@ -46,13 +46,12 @@ namespace Demo.DobeCat.Sys.UI
         // ─── 覆盖 Open 方法，添加 DobeCat 特定更新 ────────────────────────────────────────────
         public new static void Toggle()
         {
-            BiliBiliDanmu.UI.DanmuTestPanel.Toggle();
+            DobeCatTestPanelView.Toggle();
         }
 
         public new static void Open()
         {
-            // 调用基类 Open（使用 EssSystem 的 DanmuTestPanelView）
-            BiliBiliDanmu.UI.DanmuTestPanel.Open();
+            DobeCatTestPanelView.Open();
             Instance.UpdateLiveStatus();
             Instance.UpdateDetail();
         }
@@ -60,7 +59,7 @@ namespace Demo.DobeCat.Sys.UI
         // ─── DobeCat 特定数据更新 ─────────────────────────────────────────────
         protected virtual void UpdateLiveStatus()
         {
-            var v = DanmuTestPanelView.Instance;
+            var v = DobeCatTestPanelView.Instance;
             if (v == null) return;
             if (!LiveStatusService.HasInstance) { v.LiveText = "开播轮询: 未启动"; return; }
             var s = LiveStatusService.Instance;
@@ -102,8 +101,8 @@ namespace Demo.DobeCat.Sys.UI
             }
             else
             {
-                sb.Append("自身: ").Append(!string.IsNullOrEmpty(AuthSession.Nickname) ? AuthSession.Nickname : "(未知)")
-                  .Append("  uid=").AppendLine(AuthSession.Mid > 0 ? AuthSession.Mid.ToString() : "?");
+                sb.Append("自身: ").Append(!string.IsNullOrEmpty(BilibiliAuthSession.Nickname) ? BilibiliAuthSession.Nickname : "(未知)")
+                  .Append("  uid=").AppendLine(BilibiliAuthSession.Mid > 0 ? BilibiliAuthSession.Mid.ToString() : "?");
                 var rooms = _discovery.LatestRooms;
                 if (rooms == null || rooms.Count == 0)
                 {
@@ -125,8 +124,10 @@ namespace Demo.DobeCat.Sys.UI
                 }
             }
 
-            if (DanmuTestPanelView.Instance != null)
-                DanmuTestPanelView.Instance.DetailText = sb.ToString();
+            // 确保 View 已初始化后再更新
+            var view = DobeCatTestPanelView.Instance;
+            if (view != null)
+                view.DetailText = sb.ToString();
         }
 
         private static string FormatRoomInfo(LiveRoomInfo info)
