@@ -26,7 +26,10 @@ namespace EssSystem.Core.Util
 
         private static readonly List<PerformanceRecord> _records = new();
         private static readonly Dictionary<string, Stopwatch> _activeStopwatches = new();
-        private static readonly long _warningThresholdMs = 16; // 60 FPS 对应 ~16.67ms
+        private static readonly long _warningThresholdMs = 16;
+        private const int MAX_RECORDS = 1000;
+
+        private static readonly Dictionary<string, (long sum, long min, long max, int count)> _statsCache = new();
 
         /// <summary>开始计时</summary>
         [Conditional("UNITY_EDITOR")]
@@ -57,6 +60,8 @@ namespace EssSystem.Core.Util
                 var elapsed = sw.ElapsedMilliseconds;
                 var isWarning = elapsed > _warningThresholdMs;
 
+                if (_records.Count >= MAX_RECORDS)
+                    _records.RemoveAt(0);
                 _records.Add(new PerformanceRecord
                 {
                     Name = name,
@@ -109,45 +114,42 @@ namespace EssSystem.Core.Util
 #endif
         }
 
-        /// <summary>获取指定操作的平均执行时间</summary>
+        /// <summary>获取指定操作的平均执行时间（避免GC）</summary>
         public static long GetAverageTime(string name)
         {
-            var matching = _records.FindAll(r => r.Name == name);
-            if (matching.Count == 0) return 0;
-
-            long total = 0;
-            foreach (var record in matching)
+            if (string.IsNullOrEmpty(name)) return 0;
+            long sum = 0; int count = 0;
+            for (int i = 0; i < _records.Count; i++)
             {
-                total += record.ElapsedMilliseconds;
+                var record = _records[i];
+                if (record.Name == name) { sum += record.ElapsedMilliseconds; count++; }
             }
-            return total / matching.Count;
+            return count > 0 ? sum / count : 0;
         }
 
-        /// <summary>获取指定操作的最大执行时间</summary>
+        /// <summary>获取指定操作的最大执行时间（避免GC）</summary>
         public static long GetMaxTime(string name)
         {
-            var matching = _records.FindAll(r => r.Name == name);
-            if (matching.Count == 0) return 0;
-
+            if (string.IsNullOrEmpty(name)) return 0;
             long max = 0;
-            foreach (var record in matching)
+            for (int i = 0; i < _records.Count; i++)
             {
-                if (record.ElapsedMilliseconds > max)
+                var record = _records[i];
+                if (record.Name == name && record.ElapsedMilliseconds > max)
                     max = record.ElapsedMilliseconds;
             }
             return max;
         }
 
-        /// <summary>获取指定操作的最小执行时间</summary>
+        /// <summary>获取指定操作的最小执行时间（避免GC）</summary>
         public static long GetMinTime(string name)
         {
-            var matching = _records.FindAll(r => r.Name == name);
-            if (matching.Count == 0) return 0;
-
+            if (string.IsNullOrEmpty(name)) return 0;
             long min = long.MaxValue;
-            foreach (var record in matching)
+            for (int i = 0; i < _records.Count; i++)
             {
-                if (record.ElapsedMilliseconds < min)
+                var record = _records[i];
+                if (record.Name == name && record.ElapsedMilliseconds < min)
                     min = record.ElapsedMilliseconds;
             }
             return min == long.MaxValue ? 0 : min;
