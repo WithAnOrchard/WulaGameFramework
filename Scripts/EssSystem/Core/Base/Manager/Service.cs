@@ -47,7 +47,16 @@ namespace EssSystem.Core.Base.Manager
         /// <summary>Service 初始化完成事件名（供 DataService 监听，实现自动注册）。</summary>
         public const string EVT_INITIALIZED = "OnServiceInitialized";
 
-        protected Service() => Initialize();
+        private bool _initialized;
+
+        protected Service()
+        {
+            if (!_initialized)
+            {
+                _initialized = true;
+                Initialize();
+            }
+        }
 
         /// <summary>供 Inspector 显示的数据摘要（不参与序列化）。</summary>
         [NonSerialized] public ServiceDataInspectorInfo InspectorInfo;
