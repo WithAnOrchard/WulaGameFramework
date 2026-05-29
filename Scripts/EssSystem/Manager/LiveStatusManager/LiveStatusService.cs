@@ -35,6 +35,13 @@ namespace BiliBiliLive
 
         #endregion
 
+        #region GC 优化
+
+        private static readonly List<object> _tempList3 = new List<object>(3);
+        private static readonly List<object> _tempList4 = new List<object>(4);
+
+        #endregion
+
         // 共享 HttpClient（避免端口耗尽）
         private static readonly HttpClient _httpClient = new HttpClient();
 
@@ -202,19 +209,32 @@ namespace BiliBiliLive
             if (ep == null) return;
 
             // 总是广播 polled（附带完整 LiveRoomInfo）
-            ep.TriggerEvent(EVT_STATUS_POLLED, new List<object> { info.RoomId, info.LiveStatus, info.Title, info });
+            _tempList4.Clear();
+            _tempList4.Add(info.RoomId);
+            _tempList4.Add(info.LiveStatus);
+            _tempList4.Add(info.Title);
+            _tempList4.Add(info);
+            ep.TriggerEvent(EVT_STATUS_POLLED, _tempList4);
 
             // 边沿检测：从 非1 → 1 = 开播；从 1 → 非1 = 下播
             if (prev == -1) return; // 第一次拉取不算转换
             if (prev != 1 && info.LiveStatus == 1)
             {
                 Log($"直播开始: {info.RoomId} {info.Title}", Color.green);
-                ep.TriggerEvent(EVT_LIVE_STARTED, new List<object> { info.RoomId, info.Title, info });
+                _tempList3.Clear();
+                _tempList3.Add(info.RoomId);
+                _tempList3.Add(info.Title);
+                _tempList3.Add(info);
+                ep.TriggerEvent(EVT_LIVE_STARTED, _tempList3);
             }
             else if (prev == 1 && info.LiveStatus != 1)
             {
                 Log($"直播结束: {info.RoomId}", Color.yellow);
-                ep.TriggerEvent(EVT_LIVE_ENDED, new List<object> { info.RoomId, info.Title, info });
+                _tempList3.Clear();
+                _tempList3.Add(info.RoomId);
+                _tempList3.Add(info.Title);
+                _tempList3.Add(info);
+                ep.TriggerEvent(EVT_LIVE_ENDED, _tempList3);
             }
         }
     }

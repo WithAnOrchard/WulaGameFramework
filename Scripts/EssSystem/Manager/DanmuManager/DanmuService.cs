@@ -70,6 +70,14 @@ namespace BiliBiliDanmu
 
         #endregion
 
+        #region GC 优化
+
+        private static readonly List<object> _tempList1 = new List<object>(1);
+        private static readonly List<object> _tempList3 = new List<object>(3);
+        private static readonly List<object> _emptyData = new List<object>(0);
+
+        #endregion
+
         // ─── 共享 HTTP ────────────────────────────────────────
         private static readonly HttpClient _httpClient = new HttpClient();
         // Token 模式专用 HTTP（CookieContainer 自动管理）
@@ -146,8 +154,13 @@ namespace BiliBiliDanmu
 
             Log($"[Polling] 开始轮询 room={cfg.RoomId} 间隔 {_pollInterval}s", Color.cyan);
             _ = PollLoopAsync(cfg.RoomId, _pollCts.Token);
+            var roomId = cfg.RoomId;
             MainThreadDispatcher.Enqueue(() =>
-                EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, new List<object> { cfg.RoomId }));
+            {
+                _tempList1.Clear();
+                _tempList1.Add(roomId);
+                EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, _tempList1);
+            });
             return Task.FromResult(true);
         }
 
@@ -193,9 +206,13 @@ namespace BiliBiliDanmu
                 var text = msg["text"].ToString();
                 var uname = msg["nickname"].ToString();
                 var uid = msg.Value<long>("uid");
+                var t = text; var u = uname; var userId = uid;
                 MainThreadDispatcher.Enqueue(() =>
-                    EventProcessor.Instance?.TriggerEvent(EVT_DANMAKU,
-                        new List<object> { uname, text, uid }));
+                {
+                    _tempList3.Clear();
+                    _tempList3.Add(u); _tempList3.Add(t); _tempList3.Add(userId);
+                    EventProcessor.Instance?.TriggerEvent(EVT_DANMAKU, _tempList3);
+                });
             }
         }
 
@@ -286,8 +303,13 @@ namespace BiliBiliDanmu
 
                 _activeRoomId = realRoomId;
                 Log($"[Token] 已连接 room={realRoomId} via {host}:{wssPort} (uid={_tokenUid})", Color.cyan);
+                var room = realRoomId;
                 MainThreadDispatcher.Enqueue(() =>
-                    EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, new List<object> { realRoomId }));
+                {
+                    _tempList1.Clear();
+                    _tempList1.Add(room);
+                    EventProcessor.Instance?.TriggerEvent(EVT_CONNECTED, _tempList1);
+                });
                 return true;
             }
             catch (Exception ex)
