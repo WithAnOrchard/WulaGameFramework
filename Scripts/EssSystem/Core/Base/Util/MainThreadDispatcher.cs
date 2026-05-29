@@ -30,9 +30,9 @@ namespace EssSystem.Core.Base.Util
         [Tooltip("每帧最大处理时间（毫秒），防止长时间阻塞")]
         [SerializeField] private float _maxTimePerFrameMs = 8f;
 
-        /// <summary>
-        /// 把 action 加入主线程执行队列
-        /// </summary>
+        public static int MaxCallbacksPerFrame => _instance != null ? _instance._maxCallbacksPerFrame : 64;
+        public static float MaxTimePerFrameMs => _instance != null ? _instance._maxTimePerFrameMs : 8f;
+
         public static void Enqueue(Action action)
         {
             if (action == null) return;
@@ -62,10 +62,12 @@ namespace EssSystem.Core.Base.Util
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             int processed = 0;
+            int maxCallbacks = _maxCallbacksPerFrame;
+            float maxTime = _maxTimePerFrameMs;
 
-            while (processed < _maxCallbacksPerFrame && _queue.TryDequeue(out var action))
+            while (processed < maxCallbacks && _queue.TryDequeue(out var action))
             {
-                if (stopwatch.ElapsedMilliseconds >= _maxTimePerFrameMs)
+                if (stopwatch.ElapsedMilliseconds >= maxTime)
                 {
                     Debug.LogWarning($"[MainThreadDispatcher] 达到每帧时间上限，剩余 {_queue.Count} 个回调将在下一帧处理");
                     break;
