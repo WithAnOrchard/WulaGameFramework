@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.CharacterManager;
-using EssSystem.Manager.NetworkManager;
-using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
+using EssSystem.Core.Foundation.NetworkManager;
+using NetMgr = EssSystem.Core.Foundation.NetworkManager.NetworkManager;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet

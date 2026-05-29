@@ -5,6 +5,7 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Game.Live;
 
@@ -198,7 +199,7 @@ namespace Demo.DobeCat.Sys.UI
         }
 
         private static (UIPanelComponent bar, UIButtonComponent closeX)
-            BuildTitleBar(DobeCatThemeData t, float pw, float ph)
+            BuildTitleBar(DefaultUIThemeData t, float pw, float ph)
         {
             var bar = new UIPanelComponent("gift-titlebar")
                 .SetBackgroundColor(t.Header).SetSize(pw, 44f)

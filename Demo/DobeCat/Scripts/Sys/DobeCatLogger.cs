@@ -1,4 +1,4 @@
-using EssSystem.Core.Foundation.FileLogger;
+using EssSystem.Core.Base.FileLogger;
 
 namespace Demo.DobeCat.Sys
 {
