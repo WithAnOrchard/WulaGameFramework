@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game.Pet;
 using UIInput = EssSystem.Core.Presentation.UIManager.Dao.CommonComponents.UIInputComponent;
 using UIInputEntity = EssSystem.Core.Presentation.UIManager.Entity.CommonEntity.UIInputEntity;

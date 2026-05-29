@@ -5,6 +5,7 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;

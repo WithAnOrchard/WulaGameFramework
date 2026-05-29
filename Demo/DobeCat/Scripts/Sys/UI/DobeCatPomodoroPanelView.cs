@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game.Pet;
 
 namespace Demo.DobeCat.Sys.UI
