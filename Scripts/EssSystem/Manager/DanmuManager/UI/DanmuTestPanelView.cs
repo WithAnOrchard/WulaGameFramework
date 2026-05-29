@@ -4,6 +4,7 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 
 namespace BiliBiliDanmu.UI
 {
@@ -26,16 +27,11 @@ namespace BiliBiliDanmu.UI
         private UIEntity _rootEntity;
         private bool     _initialized;
 
-        // 默认颜色（深色主题）
-        private static readonly Color CB   = new Color(0.12f, 0.12f, 0.14f, 0.95f); // 背景
-        private static readonly Color CH   = new Color(0.22f, 0.22f, 0.26f, 1f);    // 标题栏
-        private static readonly Color CX   = new Color(0.85f, 0.35f, 0.35f, 1f);    // 关闭按钮
-        private static readonly Color CTM  = new Color(0.95f, 0.95f, 0.95f, 1f);    // 主文本
-        private static readonly Color CTS  = new Color(0.65f, 0.65f, 0.70f, 1f);    // 次文本
-        private static readonly Color CDiv = new Color(0.30f, 0.30f, 0.35f, 1f);    // 分割线
-        private static readonly Color CSB  = new Color(0.08f, 0.08f, 0.10f, 1f);    // 滚动背景
-        private static readonly Color CACC = new Color(0.20f, 0.60f, 0.95f, 1f);    // 强调色
-        private static readonly Color CTH  = new Color(1f, 1f, 1f, 1f);              // 标题文字
+        // 获取当前主题颜色
+        private Color GetThemeColor(System.Func<DefaultUIThemeData, Color> selector)
+        {
+            return selector(DefaultUITheme.Instance.Current);
+        }
 
         // ─── 公共属性 ────────────────────────────────────────────────────────
         internal string StatusText
@@ -48,8 +44,42 @@ namespace BiliBiliDanmu.UI
             get => _liveDao?.Text ?? "";
             set { if (_liveDao != null) _liveDao.Text = value; }
         }
-        internal string DetailText { set => _detailEntity?.SetText(value); get => ""; }
-        internal string LogText    { set => _logEntity?.SetText(value);    get => ""; }
+        internal string DetailText 
+        { 
+            set 
+            { 
+                if (_detailEntity == null) 
+                {
+                    _detailEntity = UIService.Instance?.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
+                    if (_detailEntity == null)
+                    {
+                        Debug.LogWarning($"[DanmuTestPanelView] DetailText setter: _detailEntity 仍为 null，无法设置文本");
+                        return;
+                    }
+                }
+                Debug.Log($"[DanmuTestPanelView] DetailText setter: 设置文本，长度={value?.Length ?? 0}");
+                _detailEntity.SetText(value); 
+            } 
+            get => ""; 
+        }
+        internal string LogText    
+        { 
+            set 
+            { 
+                if (_logEntity == null) 
+                {
+                    _logEntity = UIService.Instance?.GetUIEntity("tp-log-sv") as UIScrollViewEntity;
+                    if (_logEntity == null)
+                    {
+                        Debug.LogWarning($"[DanmuTestPanelView] LogText setter: _logEntity 仍为 null，无法设置文本");
+                        return;
+                    }
+                }
+                Debug.Log($"[DanmuTestPanelView] LogText setter: 设置文本，长度={value?.Length ?? 0}");
+                _logEntity.SetText(value);    
+            } 
+            get => ""; 
+        }
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
 
@@ -85,12 +115,12 @@ namespace BiliBiliDanmu.UI
 
             // ── 根面板 ──
             var root = new UIPanelComponent("tp-root")
-                .SetBackgroundColor(CB).SetSize(PW, PH)
+                .SetBackgroundColor(GetThemeColor(t => t.Background)).SetSize(PW, PH)
                 .SetPosition(1920f - PW / 2f - 20f, 1080f - PH / 2f - 20f);
 
             // ── 标题栏（可拖拽）──
             var titleBar = new UIPanelComponent("tp-titlebar")
-                .SetBackgroundColor(CH).SetSize(PW, 42f)
+                .SetBackgroundColor(GetThemeColor(t => t.Header)).SetSize(PW, 42f)
                 .SetPosition(PW / 2f, PH - 21f);
             root.AddChild(titleBar);
 
@@ -101,11 +131,11 @@ namespace BiliBiliDanmu.UI
 
             titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
                 .SetSize(300f, 42f).SetPosition(190f, 21f)
-                .SetColor(CTH).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(GetThemeColor(t => t.TextOnHeader)).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
 
             // 关闭按钮：红色背景，缩小到半尺寸
             var closeXDao = new UIButtonComponent("tp-close-x", text: "X")
-                .SetSize(22f, 22f).SetPosition(PW - 19f, 21f).SetButtonColor(CX).SetFontSize(10);
+                .SetSize(22f, 22f).SetPosition(PW - 19f, 21f).SetButtonColor(GetThemeColor(t => t.Close)).SetFontSize(10);
             titleBar.AddChild(closeXDao);
 
             // ── 状态行 ──
@@ -114,52 +144,56 @@ namespace BiliBiliDanmu.UI
             y -= 10f;
             _statusDao = new UITextComponent("tp-status", text: "● 未连接")
                 .SetSize(392f, 18f).SetPosition(PW / 2f, y - 9f)
-                .SetColor(CTM).SetFontSize(12).SetAlignment(TextAnchor.MiddleLeft);
+                .SetColor(GetThemeColor(t => t.TextMain)).SetFontSize(12).SetAlignment(TextAnchor.MiddleLeft);
             root.AddChild(_statusDao);
 
             y -= 22f;
             _liveDao = new UITextComponent("tp-live", text: "开播轮询: 未启动")
                 .SetSize(392f, 16f).SetPosition(PW / 2f, y - 8f)
-                .SetColor(CTS).SetFontSize(11).SetAlignment(TextAnchor.MiddleLeft);
+                .SetColor(GetThemeColor(t => t.TextSub)).SetFontSize(11).SetAlignment(TextAnchor.MiddleLeft);
             root.AddChild(_liveDao);
 
             // ── 分割线 ──
             y -= 20f;
             root.AddChild(new UIPanelComponent("tp-div1")
-                .SetBackgroundColor(CDiv).SetSize(PW, 1f)
+                .SetBackgroundColor(GetThemeColor(t => t.Divider)).SetSize(PW, 1f)
                 .SetPosition(PW / 2f, y));
 
             // ── 直播 / 房间区 ──
             y -= 6f;
             root.AddChild(new UITextComponent("tp-detail-lbl", text: "直播 / 房间")
                 .SetSize(392f, 14f).SetPosition(PW / 2f, y - 7f)
-                .SetColor(CTS).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(GetThemeColor(t => t.TextSub)).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
             y -= 18f;
             const float detailH = 110f;
             root.AddChild(new UIScrollViewComponent("tp-detail-sv")
-                .SetBackgroundColor(CSB).SetSize(392f, detailH)
+                .SetBackgroundColor(GetThemeColor(t => t.ScrollBg)).SetSize(392f, detailH)
                 .SetPosition(PW / 2f, y - detailH / 2f));
             y -= detailH + 6f;
 
             // ── 分割线 ──
             root.AddChild(new UIPanelComponent("tp-div2")
-                .SetBackgroundColor(CDiv).SetSize(PW, 1f)
+                .SetBackgroundColor(GetThemeColor(t => t.Divider)).SetSize(PW, 1f)
                 .SetPosition(PW / 2f, y));
 
             // ── 弹幕日志区（剩余空间全给它）──
             y -= 6f;
             root.AddChild(new UITextComponent("tp-log-lbl", text: "弹幕日志")
                 .SetSize(392f, 14f).SetPosition(PW / 2f, y - 7f)
-                .SetColor(CTS).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(GetThemeColor(t => t.TextSub)).SetFontSize(10).SetAlignment(TextAnchor.MiddleLeft));
             y -= 18f;
             var logH = y - 8f;   // 剩余到底部留 8px 边距
             root.AddChild(new UIScrollViewComponent("tp-log-sv")
-                .SetBackgroundColor(CSB).SetSize(392f, logH)
+                .SetBackgroundColor(GetThemeColor(t => t.ScrollBg)).SetSize(392f, logH)
                 .SetPosition(PW / 2f, logH / 2f + 8f));
 
             // ── 注册到 UIManager ──
             _rootEntity = UIService.Instance.RegisterUIEntity("tp-root", root, canvasT);
-            if (_rootEntity == null) return;
+            if (_rootEntity == null) 
+            { 
+                Debug.LogError("[DanmuTestPanelView] Failed to register tp-root entity");
+                return;
+            }
 
             // 标题栏图标
             var iconEnt = UIService.Instance.GetUIEntity("tp-icon") as UIPanelEntity;
@@ -182,10 +216,6 @@ namespace BiliBiliDanmu.UI
             // 关闭按钮：只剩右上角 X
             closeXDao.OnClick += _ => Hide();
 
-            // ScrollView 实体引用
-            _detailEntity = UIService.Instance.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
-            _logEntity    = UIService.Instance.GetUIEntity("tp-log-sv")    as UIScrollViewEntity;
-
             // 锚定右上角
             var rt = _rootEntity.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
@@ -193,7 +223,9 @@ namespace BiliBiliDanmu.UI
             rt.anchoredPosition = new Vector2(-20f, -20f);
             rt.sizeDelta = new Vector2(PW, PH);
 
-            _rootEntity.gameObject.SetActive(false);
+            // ScrollView 实体引用（延迟一帧获取，确保所有子实体都已初始化）
+            Debug.Log("[DanmuTestPanelView] 启动 GetScrollViewEntitiesDelayed 协程");
+            StartCoroutine(GetScrollViewEntitiesDelayed());
         }
 
         /// <summary>获取 Canvas Transform。子类可重写以使用自定义 Canvas。</summary>
@@ -201,6 +233,39 @@ namespace BiliBiliDanmu.UI
         {
             // 使用 OverlayCanvasProvider（ConstantPixelSize，避免字体模糊）
             return EssSystem.Core.Presentation.UIManager.OverlayCanvasProvider.GetOrCreate("DanmuTestCanvas", 50);
+        }
+
+        /// <summary>延迟一帧获取 ScrollView 实体，确保所有子实体都已初始化并注册到缓存。</summary>
+        private System.Collections.IEnumerator GetScrollViewEntitiesDelayed()
+        {
+            yield return null; // 等待一帧
+            
+            _detailEntity = UIService.Instance.GetUIEntity("tp-detail-sv") as UIScrollViewEntity;
+            _logEntity    = UIService.Instance.GetUIEntity("tp-log-sv")    as UIScrollViewEntity;
+            
+            if (_detailEntity == null) Debug.LogWarning("[DanmuTestPanelView] Failed to get tp-detail-sv entity after delay");
+            if (_logEntity == null) Debug.LogWarning("[DanmuTestPanelView] Failed to get tp-log-sv entity after delay");
+            
+            // 如果仍然获取失败，尝试通过 Find 方式查找
+            if (_logEntity == null)
+            {
+                var logGo = _rootEntity?.transform.Find("tp-log-sv");
+                if (logGo != null)
+                {
+                    _logEntity = logGo.GetComponent<UIScrollViewEntity>();
+                    if (_logEntity != null) Debug.Log("[DanmuTestPanelView] Found tp-log-sv via Transform.Find");
+                }
+            }
+            
+            if (_detailEntity == null)
+            {
+                var detailGo = _rootEntity?.transform.Find("tp-detail-sv");
+                if (detailGo != null)
+                {
+                    _detailEntity = detailGo.GetComponent<UIScrollViewEntity>();
+                    if (_detailEntity != null) Debug.Log("[DanmuTestPanelView] Found tp-detail-sv via Transform.Find");
+                }
+            }
         }
     }
 }

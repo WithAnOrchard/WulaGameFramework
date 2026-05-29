@@ -25,7 +25,47 @@ namespace BiliBiliDanmu.UI
         private static DanmuTestPanel _instance;
         public static DanmuTestPanel Instance => _instance ?? (_instance = new DanmuTestPanel());
 
-        protected DanmuTestPanel() { }
+        private EventDelegate _connectedHandler;
+        private EventDelegate _disconnectedHandler;
+        private EventDelegate _danmakuHandler;
+        private EventDelegate _giftHandler;
+        private EventDelegate _scHandler;
+        private bool _listenersRegistered;
+
+        public DanmuTestPanel() { }
+
+        protected virtual void RegisterListeners()
+        {
+            if (_listenersRegistered) return;
+            if (!EventProcessor.HasInstance) return;
+
+            _connectedHandler = OnConnected;
+            _disconnectedHandler = OnDisconnected;
+            _danmakuHandler = OnDanmaku;
+            _giftHandler = OnGift;
+            _scHandler = OnSC;
+
+            var ep = EventProcessor.Instance;
+            ep.AddListener(DanmuService.EVT_CONNECTED, _connectedHandler);
+            ep.AddListener(DanmuService.EVT_DISCONNECTED, _disconnectedHandler);
+            ep.AddListener(DanmuService.EVT_DANMAKU, _danmakuHandler);
+            ep.AddListener(DanmuService.EVT_GIFT, _giftHandler);
+            ep.AddListener(DanmuService.EVT_SC, _scHandler);
+            _listenersRegistered = true;
+            Debug.Log("[DanmuTestPanel] 事件监听器已注册");
+        }
+
+        protected virtual void UnregisterListeners()
+        {
+            if (!_listenersRegistered || !EventProcessor.HasInstance) return;
+            var ep = EventProcessor.Instance;
+            ep.RemoveListener(DanmuService.EVT_CONNECTED, _connectedHandler);
+            ep.RemoveListener(DanmuService.EVT_DISCONNECTED, _disconnectedHandler);
+            ep.RemoveListener(DanmuService.EVT_DANMAKU, _danmakuHandler);
+            ep.RemoveListener(DanmuService.EVT_GIFT, _giftHandler);
+            ep.RemoveListener(DanmuService.EVT_SC, _scHandler);
+            _listenersRegistered = false;
+        }
 
         private static DanmuTestPanelView EnsureView()
         {
@@ -43,6 +83,7 @@ namespace BiliBiliDanmu.UI
 
         public static void Open()
         {
+            Instance.RegisterListeners();
             var view = EnsureView();
             view.Show();
             Instance.UpdateStatus();
@@ -51,6 +92,7 @@ namespace BiliBiliDanmu.UI
 
         public static void Close()
         {
+            Instance.UnregisterListeners();
             DanmuTestPanelView.Instance?.Hide();
         }
 
@@ -77,12 +119,17 @@ namespace BiliBiliDanmu.UI
 
         protected virtual void FlushLog()
         {
-            if (DanmuTestPanelView.Instance == null) return;
-            DanmuTestPanelView.Instance.LogText = _lines.Count == 0 ? "等待弹幕..." : string.Join("\n", _lines);
+            if (DanmuTestPanelView.Instance == null) 
+            { 
+                Debug.LogWarning("[DanmuTestPanel] FlushLog: DanmuTestPanelView.Instance 为 null");
+                return; 
+            }
+            var text = _lines.Count == 0 ? "等待弹幕..." : string.Join("\n", _lines);
+            Debug.Log($"[DanmuTestPanel] FlushLog: 更新日志，行数={_lines.Count}");
+            DanmuTestPanelView.Instance.LogText = text;
         }
 
-        // ─── 事件订阅（启动时由 EventProcessor 反射注册；面板未打开时静默空操作） ───
-        [EventListener(DanmuService.EVT_CONNECTED)]
+        // ─── 事件订阅（通过 RegisterListeners 手动注册） ───
         private List<object> OnConnected(string evt, List<object> data)
         {
             UpdateStatus();
@@ -90,7 +137,6 @@ namespace BiliBiliDanmu.UI
             return null;
         }
 
-        [EventListener(DanmuService.EVT_DISCONNECTED)]
         private List<object> OnDisconnected(string evt, List<object> data)
         {
             UpdateStatus();
@@ -98,17 +144,16 @@ namespace BiliBiliDanmu.UI
             return null;
         }
 
-        [EventListener(DanmuService.EVT_DANMAKU)]
         private List<object> OnDanmaku(string evt, List<object> data)
         {
             if (data == null || data.Count < 2) return null;
             var name = data[0] as string ?? "?";
             var text = data[1] as string ?? "";
+            Debug.Log($"[DanmuTestPanel] 收到弹幕: {name}: {text}");
             AppendLine($"[弹] {name}: {text}");
             return null;
         }
 
-        [EventListener(DanmuService.EVT_GIFT)]
         private List<object> OnGift(string evt, List<object> data)
         {
             if (data == null || data.Count < 3) return null;
@@ -120,7 +165,6 @@ namespace BiliBiliDanmu.UI
             return null;
         }
 
-        [EventListener(DanmuService.EVT_SC)]
         private List<object> OnSC(string evt, List<object> data)
         {
             if (data == null || data.Count < 2) return null;
