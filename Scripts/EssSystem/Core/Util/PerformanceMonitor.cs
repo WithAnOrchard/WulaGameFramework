@@ -29,8 +29,6 @@ namespace EssSystem.Core.Util
         private static readonly long _warningThresholdMs = 16;
         private const int MAX_RECORDS = 1000;
 
-        private static readonly Dictionary<string, (long sum, long min, long max, int count)> _statsCache = new();
-
         /// <summary>开始计时</summary>
         [Conditional("UNITY_EDITOR")]
         public static void StartTimer(string name)

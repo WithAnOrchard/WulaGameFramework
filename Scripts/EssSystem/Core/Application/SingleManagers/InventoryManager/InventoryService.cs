@@ -40,6 +40,12 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
 
         #endregion
 
+        #region GC 优化
+
+        private static readonly List<InventorySlot> _tempSlots = new List<InventorySlot>();
+
+        #endregion
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -231,14 +237,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             int remaining = amount;
             int removed = 0;
 
-            // 避免 GC：先收集未锁定的槽位索引，再遍历
-            var slotsToProcess = new List<InventorySlot>();
+            // 避免 GC：重用静态列表
+            _tempSlots.Clear();
             foreach (var slot in inv.FindSlotsOf(itemId))
             {
-                if (!slot.Locked) slotsToProcess.Add(slot);
+                if (!slot.Locked) _tempSlots.Add(slot);
             }
 
-            foreach (var slot in slotsToProcess)
+            foreach (var slot in _tempSlots)
             {
                 if (remaining <= 0) break;
                 int got = slot.Item.TryRemove(remaining);
