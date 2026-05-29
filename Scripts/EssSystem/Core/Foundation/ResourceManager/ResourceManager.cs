@@ -109,6 +109,15 @@ namespace EssSystem.Core.Foundation.ResourceManager
             EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_DATA_LOADED, new List<object>());
         }
 
+        protected override void OnManagerDestroy()
+        {
+            if (_resourceService != null)
+            {
+                _resourceService.UnloadAll(new List<object>());
+                Log("ResourceManager 销毁时已清理所有资源", Color.yellow);
+            }
+        }
+
         // ============================================================
         // R1: façade 转发 helpers — 把 6 个 sync getter / 4 个 async loader 收成单行
         // ============================================================

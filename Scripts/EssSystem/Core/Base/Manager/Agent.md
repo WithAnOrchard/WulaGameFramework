@@ -36,6 +36,15 @@ public class MyManager : Manager<MyManager>
         if (Service != null) Service.EnableLogging = _serviceEnableLogging;
     }
 
+    protected override void OnManagerDestroy()  // 可选（Phase 1.2 优化）
+    {
+        // Manager 销毁时的清理逻辑
+        if (Service != null)
+        {
+            Service.Cleanup();  // 调用 Service 清理方法
+        }
+    }
+
     // 子类如需 Start/FixedUpdate/LateUpdate 等，直接声明即可
     private void Start() { /* ... */ }
 }
@@ -44,9 +53,11 @@ public class MyManager : Manager<MyManager>
 **只保留必要的 virtual 钩子**：
 - `Awake()` — 调用 `Initialize()`
 - `Update()` — 每帧驱动 Inspector 同步
+- `OnDestroy()` — 调用 `OnManagerDestroy()`（Phase 1.2 优化）
 - `Initialize()` — 子类初始化入口
 - `UpdateServiceInspectorInfo()` — 子类同步 Service 数据到 Inspector
 - `SyncServiceLoggingSettings()` — 子类同步日志开关到 Service
+- `OnManagerDestroy()` — 子类清理入口（Phase 1.2 优化）
 
 > 之前的空生命周期占位（FixedUpdate/LateUpdate/OnEnable/OnDisable/Cleanup 等）已删除——子类需要时直接声明，Unity 反射自动调用。
 

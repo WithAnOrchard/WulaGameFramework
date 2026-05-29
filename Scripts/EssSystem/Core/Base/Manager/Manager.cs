@@ -63,11 +63,19 @@ namespace EssSystem.Core.Base.Manager
             SyncServiceLoggingSettings();
         }
 
+        protected virtual void OnDestroy()
+        {
+            OnManagerDestroy();
+        }
+
         /// <summary>子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。</summary>
         protected virtual void SyncServiceLoggingSettings() { }
 
         /// <summary>子类重写：调用 Service.UpdateInspectorInfo() 并赋值 <c>_serviceInspectorInfo</c>。</summary>
         protected virtual void UpdateServiceInspectorInfo() { }
+
+        /// <summary>Manager 销毁时的清理钩子（Phase 1.2 优化）。子类可重写以实现自定义清理逻辑。</summary>
+        protected virtual void OnManagerDestroy() { }
 
         /// <summary>初始化（Awake 内自动调用）。子类重写记得调用 <c>base.Initialize()</c>。</summary>
         protected override void Initialize() => base.Initialize();
