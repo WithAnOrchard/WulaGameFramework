@@ -92,21 +92,24 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     }
 
     /// <summary>
-    ///     Unity 销毁回调 — 清理静态单例引用，避免场景切换后 stale ref
-    /// </summary>
-    protected virtual void OnDestroy()
-    {
-        if (_instance == this) _instance = null;
-    }
+        ///     Unity 销毁回调 — 清理静态单例引用，避免场景切换后 stale ref
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                _instance = null;
+                _applicationIsQuitting = false;
+            }
+        }
 
-
-    /// <summary>
-    ///     Called when the application is quitting
-    /// </summary>
-    protected virtual void OnApplicationQuit()
-    {
-        _applicationIsQuitting = true;
-    }
+        /// <summary>
+        ///     Called when the application is quitting
+        /// </summary>
+        protected virtual void OnApplicationQuit()
+        {
+            _applicationIsQuitting = true;
+        }
 
 
     protected virtual void Initialize()

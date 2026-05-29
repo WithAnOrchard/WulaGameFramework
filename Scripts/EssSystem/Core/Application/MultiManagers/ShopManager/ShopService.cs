@@ -136,7 +136,7 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
 
         // ── 购买 ──────────────────────────────────────────────────
 
-        /// <summary>购买物品事务（校验 → 扣钱 → 发货）。返回 null=成功，否则为错误描述。</summary>
+        /// <summary>购买物品事务（校验 → 扣钱 → 发货 → 失败回滚）。返回 null=成功，否则为错误描述。</summary>
         public string BuyItem(string shopId, string itemId, int amount, string playerId)
         {
             if (!EventProcessor.HasInstance) return "EventProcessor 未就绪";
@@ -157,18 +157,43 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
 
             var ep = EventProcessor.Instance;
             var walletId = WalletId(playerId);
+
+            // 步骤1：扣款
             _tempList2.Clear();
             _tempList2.Add(walletId);
             _tempList2.Add(shop.CurrencyId);
             _tempList2.Add(totalCost);
-            ep.TriggerEventMethod("InventoryRemove", _tempList2);
+            var removeResult = ep.TriggerEventMethod("InventoryRemove", _tempList2);
+            string errMsg;
+            if (!ResultCode.IsOk(removeResult))
+            {
+                errMsg = removeResult?.Count >= 2 ? removeResult[1]?.ToString() : "未知错误";
+                LogWarning($"购买失败：扣款异常 - {errMsg}");
+                return $"扣款失败：{errMsg}";
+            }
+
+            // 步骤2：发货
             _tempList2.Clear();
             _tempList2.Add(playerId);
             _tempList2.Add(itemId);
             _tempList2.Add(amount);
-            ep.TriggerEventMethod("InventoryAdd", _tempList2);
+            var addResult = ep.TriggerEventMethod("InventoryAdd", _tempList2);
+            if (!ResultCode.IsOk(addResult))
+            {
+                // 发货失败，回滚扣款
+                _tempList2.Clear();
+                _tempList2.Add(walletId);
+                _tempList2.Add(shop.CurrencyId);
+                _tempList2.Add(totalCost);
+                ep.TriggerEventMethod("InventoryAdd", _tempList2);
+                errMsg = addResult?.Count >= 2 ? addResult[1]?.ToString() : "未知错误";
+                LogWarning($"购买回滚：发货异常，已退款 {totalCost} {shop.CurrencyId}");
+                return $"发货失败：{errMsg}，已退款";
+            }
+
+            // 步骤3：扣减库存
             if (stock.Stock > 0) stock.Stock -= amount;
-            Log($"购买: {playerId} 买 {itemId}×{amount}，花 {totalCost} {shop.CurrencyId}", Color.green);
+            Log($"购买成功: {playerId} 买 {itemId}×{amount}，花 {totalCost} {shop.CurrencyId}", Color.green);
             return null;
         }
     }
