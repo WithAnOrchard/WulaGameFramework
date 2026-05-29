@@ -95,6 +95,9 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // Phase 1 优化：Unload 方法的静态缓存列表，避免每次分配
         private static readonly List<ResourceKey> _toRemoveCache = new List<ResourceKey>();
 
+        // Phase 1 优化：外部图片加载结果的静态字典缓存，避免每次分配
+        private static readonly Dictionary<string, object> _externalLoadResultDict = new Dictionary<string, object>(2);
+
         /// <summary>FBX/Model 路径（Resources 相对、不含扩展名）→ 内含 clip 名列表。</summary>
         private readonly Dictionary<string, List<string>> _modelClipNames
             = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -206,15 +209,25 @@ namespace EssSystem.Core.Foundation.ResourceManager
                         _loadedResources[key] = sprite;
                         Log($"外部 Sprite 加载成功: {filePath}");
                         callback?.Invoke(sprite);
+                        var dict = _externalLoadResultDict;
+                        dict["path"] = filePath;
+                        dict["sprite"] = sprite;
                         EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOADED,
-                            new List<object> { new Dictionary<string, object> { ["path"] = filePath, ["sprite"] = sprite } });
+                            new List<object> { dict });
+                        dict["path"] = null;
+                        dict["sprite"] = null;
                     }
                     else
                     {
                         UnityEngine.Object.Destroy(tex);
                         callback?.Invoke(null);
+                        var dict = _externalLoadResultDict;
+                        dict["path"] = filePath;
+                        dict["error"] = "加载失败";
                         EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOAD_FAILED,
-                            new List<object> { new Dictionary<string, object> { ["path"] = filePath, ["error"] = "加载失败" } });
+                            new List<object> { dict });
+                        dict["path"] = null;
+                        dict["error"] = null;
                     }
                 });
             });
