@@ -23,6 +23,7 @@ using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Platform;
 using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Presentation.UIManager.Theme;
+using EssSystem.Manager.DanmuManager.UI;
 
 namespace Demo.DobeCat
 {
@@ -268,7 +269,7 @@ namespace Demo.DobeCat
         private System.Collections.IEnumerator OpenTestPanelDelayed()
         {
             yield return null; // 等下一帧
-            DobeCatTestPanel.Open();
+            DanmuTestPanel.Open();
             Debug.Log("[DobeCatGameManager] 测试面板自动打开");
         }
 
@@ -471,7 +472,8 @@ namespace Demo.DobeCat
             holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
 
             // 让测试面板拿到 client 引用，刷新 IP / 房间列表
-            Demo.DobeCat.Sys.UI.DobeCatTestPanel.Instance.AttachDiscovery(_discovery);
+            // DobeCatTestPanel 已删除，使用 EssSystem 的 DanmuTestPanel（不支持 AttachDiscovery）
+            // DanmuTestPanel.Instance.AttachDiscovery(_discovery);
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。
