@@ -693,23 +693,19 @@ namespace Demo.DobeCat.Game.Farm
                 new Vector2(0,0), new Vector2(1,0), new Vector2(0.5f,0),
                 new Vector2(0, 0), new Vector2(0, BorderPx));
 
-            // 标题栏：拦截点击 + 锚到顶端横向拉伸；UIDraggable 拖动整张面板
+            // 标题栏：锚到顶端横向拉伸（纯视觉，不再承担拖拽逻辑）
             var titleEntity = UIService.Instance.GetUIEntity(UI_TITLEBAR_ID);
             if (titleEntity != null)
             {
                 _titleBarRt = titleEntity.GetComponent<RectTransform>();
-                var tImg = titleEntity.GetComponent<Image>();
-                if (tImg != null) tImg.raycastTarget = true;
-
                 _titleBarRt.anchorMin        = new Vector2(0f, 1f);
                 _titleBarRt.anchorMax        = new Vector2(1f, 1f);
                 _titleBarRt.pivot            = new Vector2(0.5f, 1f);
                 _titleBarRt.sizeDelta        = new Vector2(0f, TitleBarH);
                 _titleBarRt.anchoredPosition = Vector2.zero;
-
-                var drag = titleEntity.gameObject.AddComponent<UIDraggable>();
-                drag.DragTarget = _panelRootRt;
             }
+            // 根面板挂 UIWindowBehavior：顶部拖移、四边/角缩放
+            _panelRootRt.gameObject.AddComponent<UIWindowBehavior>();
 
             // 关闭按钮：锚到标题栏右侧
             var closeEnt = UIService.Instance.GetUIEntity("farm-close-btn");

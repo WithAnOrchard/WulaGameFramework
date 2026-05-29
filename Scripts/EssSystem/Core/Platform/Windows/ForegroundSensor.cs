@@ -1,17 +1,14 @@
-﻿using System.Text;
+using System.Text;
 using UnityEngine;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
 using System.Runtime.InteropServices;
 #endif
 
-namespace Demo.DobeCat.Sys.Platform.Windows
+namespace EssSystem.Core.Platform.Windows
 {
     /// <summary>
-    /// 检测前台窗口标题与是否全屏，供 <see cref="PetFrameRateController"/> 等系统进行上下文感知。
+    /// 检测前台窗口标题与是否全屏，供 <see cref="EssSystem.Core.Platform.FrameRateController"/> 等系统进行上下文感知。
     /// 全屏独占应用（游戏 / 视频播放器等）前台时自动降帧，避免与游戏抢占资源。
-    /// 通用实现已迁移至 <see cref="EssSystem.Core.Platform.Windows.ForegroundSensor"/>；
-    /// 本类保留 DobeCat namespace 供场景序列化引用。
-    /// DESIGN.md §4.5 ForegroundSensor
     /// </summary>
     public class ForegroundSensor : MonoBehaviour
     {
@@ -27,7 +24,6 @@ namespace Demo.DobeCat.Sys.Platform.Windows
 
         /// <summary>
         /// 前台窗口是否为全屏独占应用（非 Unity 窗口且覆盖整个主工作区）。
-        /// 全屏时 <see cref="PetFrameRateController"/> 可进一步降帧。
         /// </summary>
         public bool IsFullscreen { get; private set; }
 
@@ -52,7 +48,6 @@ namespace Demo.DobeCat.Sys.Platform.Windows
             GetWindowText(hwnd, sb, sb.Capacity);
             ForegroundTitle = sb.ToString();
 
-            // Full-screen detection: window covers entire primary work area
             if (Win32Native.GetWindowRect(hwnd, out var rect))
             {
                 var wa = Win32Native.GetPrimaryWorkArea();

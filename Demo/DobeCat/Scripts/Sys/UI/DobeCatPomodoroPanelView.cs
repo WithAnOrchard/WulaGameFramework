@@ -149,15 +149,9 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity = UIService.Instance.RegisterUIEntity("pom-root", root, canvasT);
             if (_rootEntity == null) return;
 
-            // 可拖
-            var tEntity = UIService.Instance.GetUIEntity("pom-titlebar");
-            if (tEntity != null)
-            {
-                var img = tEntity.GetComponent<Image>();
-                if (img != null) img.raycastTarget = true;
-                tEntity.gameObject.AddComponent<UIDraggable>()
-                    .DragTarget = _rootEntity.GetComponent<RectTransform>();
-            }
+            var wb = _rootEntity.gameObject.AddComponent<UIWindowBehavior>();
+            wb.EnableTopBar   = true;
+            wb.TitleBarHeight = 36f; // pom-titlebar 高度
 
             var rt = _rootEntity.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);

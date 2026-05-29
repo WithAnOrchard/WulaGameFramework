@@ -5,15 +5,16 @@ using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
 
-namespace Demo.DobeCat.Sys.UI
+namespace BiliBiliDanmu.UI
 {
     /// <summary>
-    /// DobeCatTestPanel 的 uGUI 渲染载体。
-    /// 数据由静态类 <see cref="DobeCatTestPanel"/> 注入；本类负责构建窗口并暴露文本属性。
+    /// 弹幕测试面板的通用 uGUI 渲染载体。
+    /// <para>数据由 <see cref="DanmuTestPanel"/> 注入；本类负责构建窗口并暴露文本属性。</para>
+    /// <para>使用默认颜色方案（深色主题），不依赖业务层主题系统。</para>
     /// </summary>
-    public class DobeCatTestPanelView : MonoBehaviour
+    public class DanmuTestPanelView : MonoBehaviour
     {
-        public static DobeCatTestPanelView Instance { get; private set; }
+        public static DanmuTestPanelView Instance { get; private set; }
 
         // DAO 引用 — 赋值时自动通过 UIManager 事件链刷新显示
         private UITextComponent _statusDao;
@@ -25,7 +26,16 @@ namespace Demo.DobeCat.Sys.UI
         private UIEntity _rootEntity;
         private bool     _initialized;
 
-        // 颜色由 DobeCatTheme 提供，不再使用静态常量。
+        // 默认颜色（深色主题）
+        private static readonly Color CB   = new Color(0.12f, 0.12f, 0.14f, 0.95f); // 背景
+        private static readonly Color CH   = new Color(0.22f, 0.22f, 0.26f, 1f);    // 标题栏
+        private static readonly Color CX   = new Color(0.85f, 0.35f, 0.35f, 1f);    // 关闭按钮
+        private static readonly Color CTM  = new Color(0.95f, 0.95f, 0.95f, 1f);    // 主文本
+        private static readonly Color CTS  = new Color(0.65f, 0.65f, 0.70f, 1f);    // 次文本
+        private static readonly Color CDiv = new Color(0.30f, 0.30f, 0.35f, 1f);    // 分割线
+        private static readonly Color CSB  = new Color(0.08f, 0.08f, 0.10f, 1f);    // 滚动背景
+        private static readonly Color CACC = new Color(0.20f, 0.60f, 0.95f, 1f);    // 强调色
+        private static readonly Color CTH  = new Color(1f, 1f, 1f, 1f);              // 标题文字
 
         // ─── 公共属性 ────────────────────────────────────────────────────────
         internal string StatusText
@@ -43,34 +53,17 @@ namespace Demo.DobeCat.Sys.UI
 
         public bool IsOpen => _rootEntity != null && _rootEntity.gameObject.activeSelf;
 
-
         // ─── 生命周期 ────────────────────────────────────────────────────────
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("tp-root");
-        }
-
-        private void RebuildUI()
-        {
-            if (!_initialized) return;
-            var wasOpen = IsOpen;
-            _initialized = false;
-            // 直接通过 _rootEntity 引用销毁 GameObject —— UIService 缓存可能已被延迟 OnDestroy 清空
-            if (_rootEntity != null && _rootEntity.gameObject != null)
-                Destroy(_rootEntity.gameObject);
-            if (UIService.HasInstance) UIService.Instance.DestroyUIEntity("tp-root");
-            _rootEntity = null; _detailEntity = null; _logEntity = null;
-            _statusDao = null; _liveDao = null;
-            if (wasOpen) Show();
         }
 
         // ─── 公共 API ────────────────────────────────────────────────────────
@@ -86,12 +79,7 @@ namespace Demo.DobeCat.Sys.UI
         {
             _initialized = true;
             var canvasT = GetCanvasTransform();
-            if (canvasT == null) { Debug.LogWarning("[TestPanelView] UIManager Canvas 未就绪"); return; }
-
-            var t = DobeCatTheme.Current;
-            var CB   = t.Background; var CH = t.Header; var CX  = t.Close;
-            var CTM  = t.TextMain;   var CTS = t.TextSub; var CDiv = t.Divider;
-            var CSB  = t.ScrollBg;   var CACC = t.Accent;
+            if (canvasT == null) { Debug.LogWarning("[DanmuTestPanelView] UIManager Canvas 未就绪"); return; }
 
             const float PW = 420f, PH = 500f;
 
@@ -113,7 +101,7 @@ namespace Demo.DobeCat.Sys.UI
 
             titleBar.AddChild(new UITextComponent("tp-title", text: "弹幕测试面板")
                 .SetSize(300f, 42f).SetPosition(190f, 21f)
-                .SetColor(t.TextOnHeader).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
+                .SetColor(CTH).SetFontSize(13).SetAlignment(TextAnchor.MiddleLeft));
 
             // 关闭按钮：红色背景，缩小到半尺寸
             var closeXDao = new UIButtonComponent("tp-close-x", text: "X")
@@ -208,6 +196,11 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity.gameObject.SetActive(false);
         }
 
-        private static Transform GetCanvasTransform() => DobeCatCanvasProvider.GetOrCreate();
+        /// <summary>获取 Canvas Transform。子类可重写以使用自定义 Canvas。</summary>
+        protected virtual Transform GetCanvasTransform()
+        {
+            // 使用 OverlayCanvasProvider（ConstantPixelSize，避免字体模糊）
+            return EssSystem.Core.Presentation.UIManager.OverlayCanvasProvider.GetOrCreate("DanmuTestCanvas", 50);
+        }
     }
 }

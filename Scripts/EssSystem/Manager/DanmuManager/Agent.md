@@ -1,4 +1,4 @@
-# DanmuManager / B 站直播弹幕接入
+# BilibiliDanmuManager / B 站直播弹幕接入
 
 ## 概述
 
@@ -26,8 +26,8 @@
 ## 模块结构（Manager + Service + Dao + Net，严格遵循框架约定）
 
 ```
-DanmuManager/
-├── DanmuManager.cs             ← 门面（[Manager(50)]）：Inspector + 生命周期 + 调用 Service
+BilibiliDanmuManager/
+├── BilibiliDanmuManager.cs     ← 门面（[Manager(50)]）：Inspector + 生命周期 + 调用 Service
 ├── DanmuService.cs             ← 业务（Service<>）：HTTP 鉴权、长连接生命周期、广播 EVT_*
 ├── Agent.md
 ├── Dao/                         ← 纯数据类（仅依赖 `MiniJson` + `System.*`）
@@ -49,7 +49,7 @@ DanmuManager/
 
 **职责严格分层**：
 - 所有 EVT_* 常量定义在 `DanmuService`（按约定：广播事件归 Service）
-- `DanmuManager` 不持有任何业务状态，只是 Inspector 配置 + 生命周期钩子
+- `BilibiliDanmuManager` 不持有任何业务状态，只是 Inspector 配置 + 生命周期钩子
 - `Dao` 只含纯数据，不引用 `Net`
 - `Net` 只对 `Dao` 单向依赖（读模型 + 触发底层事件）
 - 业务层**禁止**直接 `using BiliBiliDanmu.Net` —— 网络层是 Service 的私有细节
@@ -70,9 +70,9 @@ DanmuManager/
 
 ```csharp
 // 经 Manager 封装（Inspector 友好）
-DanmuManager.Instance.ConnectAsync();   // 用 Inspector 当前配置连接
-DanmuManager.Instance.Disconnect();     // 幂等断开
-DanmuManager.Instance.Reconnect();      // ContextMenu 也可触发
+BilibiliDanmuManager.Instance.ConnectAsync();   // 用 Inspector 当前配置连接
+BilibiliDanmuManager.Instance.Disconnect();     // 幂等断开
+BilibiliDanmuManager.Instance.Reconnect();      // ContextMenu 也可触发
 
 // 直接走 Service（绕过 Inspector，自定义参数）
 DanmuService.Instance.IsConnected;
@@ -115,7 +115,7 @@ DanmuService.Instance.Disconnect();
   [EventListener(DanmuService.EVT_DISCONNECTED)]
   void OnDc(List<object> data) {
       var err = data[0] as Exception;
-      if (err != null) DanmuManager.Instance.Reconnect();
+      if (err != null) BilibiliDanmuManager.Instance.Reconnect();
   }
   ```
 

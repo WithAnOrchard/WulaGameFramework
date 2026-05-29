@@ -151,15 +151,9 @@ namespace Demo.DobeCat.Sys.UI
                 }
             }
 
-            // 标题栏拖拽
-            var titleEntity = UIService.Instance.GetUIEntity("gift-titlebar");
-            if (titleEntity != null)
-            {
-                var img = titleEntity.GetComponent<Image>();
-                if (img != null) img.raycastTarget = true;
-                titleEntity.gameObject.AddComponent<UIDraggable>()
-                    .DragTarget = _rootEntity.GetComponent<RectTransform>();
-            }
+            var wb = _rootEntity.gameObject.AddComponent<UIWindowBehavior>();
+            wb.EnableTopBar   = true;
+            wb.TitleBarHeight = 44f; // gift-titlebar 高度
 
             _scrollEntity = UIService.Instance.GetUIEntity("gift-sv") as UIScrollViewEntity;
 

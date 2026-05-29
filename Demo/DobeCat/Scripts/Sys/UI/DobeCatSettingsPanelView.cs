@@ -170,15 +170,9 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity = UIService.Instance.RegisterUIEntity("cfg-root", root, canvasT);
             if (_rootEntity == null) return;
 
-            // Draggable title bar
-            var titleEntity = UIService.Instance.GetUIEntity("cfg-titlebar");
-            if (titleEntity != null)
-            {
-                var img = titleEntity.GetComponent<Image>();
-                if (img != null) img.raycastTarget = true;
-                titleEntity.gameObject.AddComponent<UIDraggable>()
-                    .DragTarget = _rootEntity.GetComponent<RectTransform>();
-            }
+            var wb = _rootEntity.gameObject.AddComponent<UIWindowBehavior>();
+            wb.EnableTopBar   = true;
+            wb.TitleBarHeight = 44f; // cfg-titlebar 高度
 
             // Anchor: bottom-left
             var rt = _rootEntity.GetComponent<RectTransform>();

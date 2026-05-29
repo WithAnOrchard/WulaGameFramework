@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using BiliBiliDanmu;
+using BiliBiliDanmu.UI;
 using BiliBiliLive;
 using Demo.DobeCat.Sys.Auth;
 using Demo.DobeCat.Sys.Network;
@@ -11,32 +12,25 @@ using UnityEngine;
 namespace Demo.DobeCat.Sys.UI
 {
     /// <summary>
-    /// DobeCat 弹幕测试面板（运行时通过 UIManager 动态注册）。
+    /// DobeCat 弹幕测试面板（继承 EssSystem 通用版本，扩展 LiveStatus 和 RoomDiscovery 功能）。
     /// <list type="bullet">
-    /// <item>右上角浮窗，显示 B 站弹幕连接状态 + 最近 N 条弹幕 / 礼物。</item>
+    /// <item>基础弹幕/礼物显示由 <see cref="BiliBiliDanmu.UI.DanmuTestPanel"/> 提供。</item>
+    /// <item>扩展 Detail 区域显示 LiveStatus 直播信息和 RoomDiscovery 多人房间列表。</item>
     /// <item>由托盘菜单 <see cref="Toggle"/> 显隐。</item>
-    /// <item><c>[EventListener]</c> 绑定 DanmuService 广播 → 实时更新文本（事件本身始终注册，面板未打开时空操作）。</item>
     /// </list>
     /// </summary>
-    public static class DobeCatTestPanel
+    public class DobeCatTestPanel : BiliBiliDanmu.UI.DanmuTestPanel
     {
-        private const int MaxLines = 18;
+        private static DobeCatTestPanel _instance;
+        public static new DobeCatTestPanel Instance => _instance ?? (_instance = new DobeCatTestPanel());
 
-        private static readonly Queue<string> _lines = new Queue<string>();
-
-        private static DobeCatTestPanelView EnsureView()
-        {
-            if (DobeCatTestPanelView.Instance != null) return DobeCatTestPanelView.Instance;
-            var go = new GameObject("DobeCatTestPanelView");
-            UnityEngine.Object.DontDestroyOnLoad(go);
-            return go.AddComponent<DobeCatTestPanelView>();
-        }
+        protected DobeCatTestPanel() { }
 
         // 房间发现客户端（外部注入；可空）
-        private static RoomDiscoveryClient _discovery;
+        private RoomDiscoveryClient _discovery;
 
         /// <summary>由 <see cref="DobeCatGameManager"/> 调用，注入房间发现客户端，开启面板内房间列表显示。</summary>
-        public static void AttachDiscovery(RoomDiscoveryClient client)
+        public void AttachDiscovery(RoomDiscoveryClient client)
         {
             if (_discovery != null) _discovery.OnRoomsChanged -= HandleRoomsChanged;
             _discovery = client;
@@ -44,50 +38,29 @@ namespace Demo.DobeCat.Sys.UI
             UpdateDetail();
         }
 
-        private static void HandleRoomsChanged(IReadOnlyList<RoomDiscoveryClient.RoomInfo> rooms)
+        private void HandleRoomsChanged(IReadOnlyList<RoomDiscoveryClient.RoomInfo> rooms)
         {
             UpdateDetail();
         }
 
-        // ─── 公共 API ────────────────────────────────────────────
-        public static void Toggle()
+        // ─── 覆盖 Open 方法，添加 DobeCat 特定更新 ────────────────────────────────────────────
+        public new static void Toggle()
         {
-            if (IsOpen()) Close(); else Open();
+            BiliBiliDanmu.UI.DanmuTestPanel.Toggle();
         }
 
-        public static void Open()
+        public new static void Open()
         {
-            var view = EnsureView();
-            view.Show();
-            UpdateStatus();
-            UpdateLiveStatus();
-            UpdateDetail();
-            FlushLog();
+            // 调用基类 Open（使用 EssSystem 的 DanmuTestPanelView）
+            BiliBiliDanmu.UI.DanmuTestPanel.Open();
+            Instance.UpdateLiveStatus();
+            Instance.UpdateDetail();
         }
 
-        public static void Close()
+        // ─── DobeCat 特定数据更新 ─────────────────────────────────────────────
+        protected virtual void UpdateLiveStatus()
         {
-            DobeCatTestPanelView.Instance?.Hide();
-        }
-
-        private static bool IsOpen()
-            => DobeCatTestPanelView.Instance != null && DobeCatTestPanelView.Instance.IsOpen;
-
-
-        // ─── 数据更新 ─────────────────────────────────────────────
-        private static void UpdateStatus()
-        {
-            var v = DobeCatTestPanelView.Instance;
-            if (v == null) return;
-            var s = DanmuService.HasInstance ? DanmuService.Instance : null;
-            v.StatusText = s != null && s.IsConnected
-                ? $"已连接 · 房间 {s.RoomId}"
-                : "未连接";
-        }
-
-        private static void UpdateLiveStatus()
-        {
-            var v = DobeCatTestPanelView.Instance;
+            var v = DanmuTestPanelView.Instance;
             if (v == null) return;
             if (!LiveStatusService.HasInstance) { v.LiveText = "开播轮询: 未启动"; return; }
             var s = LiveStatusService.Instance;
@@ -102,7 +75,7 @@ namespace Demo.DobeCat.Sys.UI
             v.LiveText = $"房间 {s.RoomId} · {statusLabel}";
         }
 
-        private static void UpdateDetail()
+        protected virtual void UpdateDetail()
         {
             var sb = new StringBuilder(256);
 
@@ -152,8 +125,8 @@ namespace Demo.DobeCat.Sys.UI
                 }
             }
 
-            if (DobeCatTestPanelView.Instance != null)
-                DobeCatTestPanelView.Instance.DetailText = sb.ToString();
+            if (DanmuTestPanelView.Instance != null)
+                DanmuTestPanelView.Instance.DetailText = sb.ToString();
         }
 
         private static string FormatRoomInfo(LiveRoomInfo info)
@@ -165,7 +138,6 @@ namespace Demo.DobeCat.Sys.UI
             var liveTime = string.IsNullOrEmpty(info.LiveTime) || info.LiveTime.StartsWith("0000")
                 ? "--"
                 : info.LiveTime;
-            // 多行详情（公开接口全部字段）
             var lines = new List<string>
             {
                 $"标题: {Truncate(info.Title, 40)}",
@@ -184,61 +156,9 @@ namespace Demo.DobeCat.Sys.UI
             return s.Length <= max ? s : s.Substring(0, max) + "…";
         }
 
-        private static void AppendLine(string line)
-        {
-            _lines.Enqueue(line);
-            while (_lines.Count > MaxLines) _lines.Dequeue();
-            FlushLog();
-        }
-
-        private static void FlushLog()
-        {
-            if (DobeCatTestPanelView.Instance == null) return;
-            DobeCatTestPanelView.Instance.LogText = _lines.Count == 0 ? "等待弹幕..." : string.Join("\n", _lines);
-        }
-
-        // ─── 事件订阅（启动时由 EventProcessor 反射注册；面板未打开时静默空操作） ───
-        [EventListener(DanmuService.EVT_CONNECTED)]
-        private static List<object> OnConnected(string evt, List<object> data)
-        {
-            UpdateStatus();
-            AppendLine("[系统] 连接成功");
-            return null;
-        }
-
-        [EventListener(DanmuService.EVT_DISCONNECTED)]
-        private static List<object> OnDisconnected(string evt, List<object> data)
-        {
-            UpdateStatus();
-            AppendLine("[系统] 连接已断开");
-            return null;
-        }
-
-        [EventListener(DanmuService.EVT_DANMAKU)]
-        private static List<object> OnDanmaku(string evt, List<object> data)
-        {
-            if (data == null || data.Count < 2) return null;
-            var name = data[0] as string ?? "?";
-            var text = data[1] as string ?? "";
-            AppendLine($"[弹] {name}: {text}");
-            return null;
-        }
-
-        [EventListener(DanmuService.EVT_GIFT)]
-        private static List<object> OnGift(string evt, List<object> data)
-        {
-            if (data == null || data.Count < 3) return null;
-            var name = data[0] as string ?? "?";
-            var gift = data[1] as string ?? "?";
-            var n = 1;
-            try { n = Convert.ToInt32(data[2]); } catch { /* keep 1 */ }
-            AppendLine($"[礼] {name} × {gift} ×{n}");
-            return null;
-        }
-
         // ─── LiveStatus 事件钩子 ─────────────────────────────────
         [EventListener(LiveStatusService.EVT_LIVE_STARTED)]
-        private static List<object> OnLiveStarted(string evt, List<object> data)
+        private List<object> OnLiveStarted(string evt, List<object> data)
         {
             UpdateLiveStatus();
             UpdateDetail();
@@ -260,7 +180,7 @@ namespace Demo.DobeCat.Sys.UI
         }
 
         [EventListener(LiveStatusService.EVT_LIVE_ENDED)]
-        private static List<object> OnLiveEnded(string evt, List<object> data)
+        private List<object> OnLiveEnded(string evt, List<object> data)
         {
             UpdateLiveStatus();
             UpdateDetail();
@@ -270,9 +190,8 @@ namespace Demo.DobeCat.Sys.UI
         }
 
         [EventListener(LiveStatusService.EVT_STATUS_POLLED)]
-        private static List<object> OnLiveStatusPolled(string evt, List<object> data)
+        private List<object> OnLiveStatusPolled(string evt, List<object> data)
         {
-            // 每次轮询都刷新状态 + 详情贴机
             UpdateLiveStatus();
             UpdateDetail();
             return null;

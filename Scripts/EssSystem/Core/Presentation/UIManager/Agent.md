@@ -133,6 +133,18 @@ new UIPanelComponent(...)
 - **副作用**: 查 `_uiEntityCache[daoId]` 转发到 `UIEntity.OnDaoPropertyChanged(propName, value)`
 - **触发方**: `UIComponent.NotifyEntityPropertyChanged`（DAO 层不依赖 UIManager 类型，通过事件解耦广播）
 
+#### `UIManager.EVT_ADD_WINDOW_BEHAVIOR` — 附加窗口交互行为
+- **常量**: `UIManager.EVT_ADD_WINDOW_BEHAVIOR` = `"AddUIWindowBehavior"`
+- **参数**: `[string daoId]`
+- **返回**: `ResultCode.Ok(UIWindowBehavior)` / `ResultCode.Fail("参数无效")` / `ResultCode.Fail("UIEntity 不存在: {daoId}")`
+- **副作用**: 向 daoId 对应的 UIEntity GameObject 附加 `UIWindowBehavior` 组件（幂等，已有则复用）
+- **用途**: 赋予任意注册面板仿原生窗口行为：内部拖拽移动、四边/四角拖拽缩放（附系统光标切换）、滚轮缩放、双击复位
+- **示例**:
+  ```csharp
+  EventProcessor.Instance.TriggerEventMethod(
+      "AddUIWindowBehavior", new List<object> { "inv" });
+  ```
+
 ## Inspector 字段
 
 | 字段 | 默认 | 说明 |

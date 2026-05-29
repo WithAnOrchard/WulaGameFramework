@@ -378,6 +378,7 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
 | `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |
 | `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/UIManager | UIComponent 属性变更广播（`[daoId, propName, value]`，UIService 内转发给 UIEntity） |
+| `UIManager.EVT_ADD_WINDOW_BEHAVIOR` | `AddUIWindowBehavior` | Core/UIManager | 向已注册面板附加窗口行为（拖拽/缩放/滚轮/双击复位）；data: `[daoId]` → `Ok(UIWindowBehavior)` |
 | `DanmuService.EVT_CONNECTED` | `OnDanmuConnected` | DanmuManager | B 站长连接握手成功**广播**，参数 `[long roomId]` |
 | `DanmuService.EVT_DISCONNECTED` | `OnDanmuDisconnected` | DanmuManager | B 站长连接断开**广播**，参数 `[Exception errorOrNull]` |
 | `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |

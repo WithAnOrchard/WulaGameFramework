@@ -13,7 +13,7 @@ namespace BiliBiliDanmu
     /// 业务订阅方只需 <c>[EventListener(DanmuService.EVT_DANMAKU)]</c>，无需感知模式。
     /// </summary>
     [Manager(50)]
-    public class DanmuManager : Manager<DanmuManager>
+    public class BilibiliDanmuManager : Manager<BilibiliDanmuManager>
     {
         #region Inspector
 
@@ -21,7 +21,7 @@ namespace BiliBiliDanmu
         [Tooltip("三选一：Polling=零认证 / Token=登录态 / OpenLive=主播身份码")]
         [SerializeField] private DanmuMode _mode = DanmuMode.Polling;
 
-        [Tooltip("Initialize 后是否立即按当前 Mode 发起连接。\n注意：DanmuManager 是自动创建的单例，Inspector 默认值通常用不上；\n业务方一般在自己的 GameManager 里用 DanmuService.Instance.ConnectAsync(config) 显式控制。")]
+        [Tooltip("Initialize 后是否立即按当前 Mode 发起连接。\n注意：BilibiliDanmuManager 是自动创建的单例，Inspector 默认值通常用不上；\n业务方一般在自己的 GameManager 里用 DanmuService.Instance.ConnectAsync(config) 显式控制。")]
         [SerializeField] private bool _autoConnect = false;
 
         [Header("Polling / Token 共用：直播间号")]
@@ -68,7 +68,7 @@ namespace BiliBiliDanmu
             base.Initialize();
             if (Service != null) _serviceEnableLogging = Service.EnableLogging;
             if (_autoConnect) _ = ConnectAsync();
-            Log($"DanmuManager 初始化完成 (Mode={_mode})", Color.green);
+            Log($"BilibiliDanmuManager 初始化完成 (Mode={_mode})", Color.green);
         }
 
         protected override void UpdateServiceInspectorInfo()

@@ -289,15 +289,9 @@ namespace Demo.DobeCat.Sys.UI
             _rootEntity = UIService.Instance.RegisterUIEntity("alm-root", root, canvasT);
             if (_rootEntity == null) return;
 
-            // 可拖
-            var tbar = UIService.Instance.GetUIEntity("alm-titlebar");
-            if (tbar != null)
-            {
-                var img = tbar.GetComponent<Image>();
-                if (img != null) img.raycastTarget = true;
-                tbar.gameObject.AddComponent<UIDraggable>()
-                    .DragTarget = _rootEntity.GetComponent<UnityEngine.RectTransform>();
-            }
+            var wb = _rootEntity.gameObject.AddComponent<UIWindowBehavior>();
+            wb.EnableTopBar   = true;
+            wb.TitleBarHeight = TITLE_H; // 36px — alm-titlebar 高度
 
             var rt = _rootEntity.GetComponent<UnityEngine.RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 0f);

@@ -28,6 +28,8 @@ namespace EssSystem.Core.Presentation.UIManager
         public const string EVT_GET_UI_GAMEOBJECT    = "GetUIGameObject";
         /// <summary>UIComponent 属性变更广播。data: [daoId, propName, value]，UIService 内部转发给对应 UIEntity。</summary>
         public const string EVT_DAO_PROPERTY_CHANGED = "UIDaoPropertyChanged";
+        /// <summary>向已注册面板附加 UIWindowBehavior（拖拽/边缘缩放/滚轮缩放/双击复位）。data: [daoId]。</summary>
+        public const string EVT_ADD_WINDOW_BEHAVIOR  = "AddUIWindowBehavior";
 
         // ============================================================
         // Inspector 字段
@@ -108,6 +110,16 @@ namespace EssSystem.Core.Presentation.UIManager
             var value = data.Count > 2 ? data[2] : null;
             UIService.Instance.GetUIEntity(daoId)?.OnDaoPropertyChanged(propName, value);
             return ResultCode.Ok();
+        }
+
+        [Event(EVT_ADD_WINDOW_BEHAVIOR)]
+        public List<object> AddWindowBehavior(List<object> data)
+        {
+            if (!TryGetId(data, out var daoId)) return ResultCode.Fail("参数无效");
+            var go = UIService.Instance.GetUIEntity(daoId)?.gameObject;
+            if (go == null) return ResultCode.Fail($"UIEntity 不存在: {daoId}");
+            var b = go.GetComponent<Entity.UIWindowBehavior>() ?? go.AddComponent<Entity.UIWindowBehavior>();
+            return ResultCode.Ok(b);
         }
 
         [Event(EVT_HOT_RELOAD)]

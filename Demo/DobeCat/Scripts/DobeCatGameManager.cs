@@ -480,7 +480,7 @@ namespace Demo.DobeCat
             holder.SetActive(true); // 此刻 OnEnable 触发，协程读到的已是 Inspector 配置
 
             // 让测试面板拿到 client 引用，刷新 IP / 房间列表
-            DobeCatTestPanel.AttachDiscovery(_discovery);
+            Demo.DobeCat.Sys.UI.DobeCatTestPanel.Instance.AttachDiscovery(_discovery);
         }
 
         /// <summary>用户从托盘点了"加入 xxx 房间"。
@@ -518,7 +518,7 @@ namespace Demo.DobeCat
             _ = EssSystem.Core.Application.SingleManagers.DialogueManager.DialogueManager.Instance;
             var inv = EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.Instance; // OpenInventoryUI / CloseInventoryUI / RegisterItem
             inv.AutoOpenHotbar = false; // 押制 Start() 里的自动开启，避免登录后 Hotbar 闪一帧；DobeCat 由 OnGameContextChanged 按需开关
-            _ = DanmuManager.Instance;
+            _ = BilibiliDanmuManager.Instance;
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
             _ = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置

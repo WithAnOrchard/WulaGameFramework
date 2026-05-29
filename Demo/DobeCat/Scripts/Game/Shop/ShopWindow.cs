@@ -7,6 +7,7 @@ using EssSystem.Core.Application.MultiManagers.ShopManager;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
 using Demo.DobeCat.Game.Farm;
 using Demo.DobeCat.Sys.UI;
+using EssSystem.Core.Presentation.UIManager.Entity;
 
 namespace Demo.DobeCat.Game.Shop
 {
@@ -174,10 +175,9 @@ namespace Demo.DobeCat.Game.Shop
             // title bar drag (UIButtonComponent has raycastTarget=true by default)
             var tbGoRes   = ep.TriggerEventMethod("GetUIGameObject", new List<object> { "shop-titlebar" });
             var rootGoRes = ep.TriggerEventMethod("GetUIGameObject", new List<object> { "shop-root" });
-            if (ResultCode.IsOk(tbGoRes)   && tbGoRes[1]   is GameObject tbGo &&
-                ResultCode.IsOk(rootGoRes) && rootGoRes[1] is GameObject rootGo)
+            if (ResultCode.IsOk(rootGoRes) && rootGoRes[1] is GameObject rootGo)
             {
-                tbGo.AddComponent<UIDraggable>().DragTarget = rootGo.GetComponent<RectTransform>();
+                rootGo.AddComponent<UIWindowBehavior>();
                 // override anchor to top-left
                 var rt = rootGo.GetComponent<RectTransform>();
                 rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);

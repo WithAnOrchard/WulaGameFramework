@@ -1,10 +1,11 @@
 using System;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 
 namespace Demo.DobeCat.Sys.UI
 {
-    /// <summary>DobeCat UI 主题全部语义颜色。</summary>
-    public struct DobeCatThemeData
+    /// <summary>DobeCat UI 主题全部语义颜色。实现 <see cref="IThemeData"/>。</summary>
+    public struct DobeCatThemeData : IThemeData
     {
         public string Name;
         public Color Background;   // 面板背景

@@ -244,15 +244,9 @@ namespace Demo.DobeCat.Sys.UI
             rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = new Vector2(PW, PH);
 
-            // Header 加 UIDraggable，让用户可拖动整个面板
-            var headerEntity = UIService.Instance.GetUIEntity("login-header");
-            if (headerEntity != null)
-            {
-                var img = headerEntity.GetComponent<Image>();
-                if (img != null) img.raycastTarget = true;
-                var drag = headerEntity.gameObject.AddComponent<UIDraggable>();
-                drag.DragTarget = rt;
-            }
+            var wb = _rootEntity.gameObject.AddComponent<UIWindowBehavior>();
+            wb.EnableTopBar   = true;
+            wb.TitleBarHeight = titleBarH; // 44px
 
             _tokenEntity = UIService.Instance.GetUIEntity("login-token") as UIInputEntity;
 
