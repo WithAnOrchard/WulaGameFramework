@@ -42,6 +42,14 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         #endregion
 
+        #region GC 优化
+
+        private static readonly List<object> _tempList2 = new List<object>(2);
+        private static readonly List<object> _tempList3 = new List<object>(3);
+        private static readonly List<object> _emptyData = new List<object>(0);
+
+        #endregion
+
         // ─── 活动会话状态（运行时，不持久化） ───
         private string _activeDialogueId;
         private string _activeLineId;
@@ -129,10 +137,14 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
             Log($"开始对话: {dialogueId} → {_activeLineId}", Color.cyan);
 
-            EventProcessor.Instance.TriggerEvent(EVT_STARTED,
-                new List<object> { _activeDialogueId, _activeConfigId });
-            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED,
-                new List<object> { _activeDialogueId, _activeLineId });
+            _tempList2.Clear();
+            _tempList2.Add(_activeDialogueId);
+            _tempList2.Add(_activeConfigId);
+            EventProcessor.Instance.TriggerEvent(EVT_STARTED, _tempList2);
+            _tempList2.Clear();
+            _tempList2.Add(_activeDialogueId);
+            _tempList2.Add(_activeLineId);
+            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED, _tempList2);
 
             return true;
         }
@@ -158,8 +170,10 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             if (next == null) { EndDialogue(); return false; }
 
             _activeLineId = next.Id;
-            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED,
-                new List<object> { _activeDialogueId, _activeLineId });
+            _tempList2.Clear();
+            _tempList2.Add(_activeDialogueId);
+            _tempList2.Add(_activeLineId);
+            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED, _tempList2);
             return true;
         }
 
@@ -180,9 +194,16 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             // 1) 广播事件
             if (!string.IsNullOrEmpty(opt.EventName))
             {
-                var args = new List<object>();
-                if (opt.EventArgs != null) args.AddRange(opt.EventArgs);
-                EventProcessor.Instance.TriggerEvent(opt.EventName, args);
+                if (opt.EventArgs != null && opt.EventArgs.Count > 0)
+                {
+                    _tempList3.Clear();
+                    _tempList3.AddRange(opt.EventArgs);
+                    EventProcessor.Instance.TriggerEvent(opt.EventName, _tempList3);
+                }
+                else
+                {
+                    EventProcessor.Instance.TriggerEvent(opt.EventName, _emptyData);
+                }
             }
 
             // 2) 运行时回调
@@ -226,8 +247,10 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
                 _activeLineId = opt.NextLineId;
             }
 
-            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED,
-                new List<object> { _activeDialogueId, _activeLineId });
+            _tempList2.Clear();
+            _tempList2.Add(_activeDialogueId);
+            _tempList2.Add(_activeLineId);
+            EventProcessor.Instance.TriggerEvent(EVT_LINE_CHANGED, _tempList2);
             return true;
         }
 
@@ -241,7 +264,9 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             _activeConfigId = null;
 
             Log($"结束对话: {endedId}", Color.cyan);
-            EventProcessor.Instance.TriggerEvent(EVT_ENDED, new List<object> { endedId });
+            _tempList2.Clear();
+            _tempList2.Add(endedId);
+            EventProcessor.Instance.TriggerEvent(EVT_ENDED, _tempList2);
         }
 
         #endregion

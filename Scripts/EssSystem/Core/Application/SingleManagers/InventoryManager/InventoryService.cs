@@ -231,7 +231,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             int remaining = amount;
             int removed = 0;
 
-            foreach (var slot in inv.FindSlotsOf(itemId).Where(s => !s.Locked).ToList())
+            // 避免 GC：先收集未锁定的槽位索引，再遍历
+            var slotsToProcess = new List<InventorySlot>();
+            foreach (var slot in inv.FindSlotsOf(itemId))
+            {
+                if (!slot.Locked) slotsToProcess.Add(slot);
+            }
+
+            foreach (var slot in slotsToProcess)
             {
                 if (remaining <= 0) break;
                 int got = slot.Item.TryRemove(remaining);
