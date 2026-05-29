@@ -4,9 +4,9 @@ using UnityEngine;
 using UnityEngine.Networking;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
-using EssSystem.Manager.NetworkManager;
+using EssSystem.Core.Foundation.NetworkManager;
 using Demo.DobeCat.Game.Pet;
-using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
+using NetMgr = EssSystem.Core.Foundation.NetworkManager.NetworkManager;
 
 namespace Demo.DobeCat.Game.Live
 {
