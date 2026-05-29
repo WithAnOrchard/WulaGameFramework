@@ -21,6 +21,14 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
 
         #endregion
 
+        #region GC 优化
+
+        private static readonly List<object> _tempList1 = new List<object>(2);
+        private static readonly List<object> _tempList2 = new List<object>(3);
+        private static readonly List<object> _tempList3 = new List<object>(1);
+
+        #endregion
+
         #region 事件名称
 
         public const string EVT_REGISTER_SHOP     = "ShopRegister";
@@ -45,8 +53,16 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
             if (amount <= 0) return null;
             var walletId = WalletId(playerId);
             var ep = EventProcessor.Instance;
-            ep.TriggerEventMethod("InventoryCreate", new List<object> { walletId, $"{playerId}钱包", 9999 });
-            ep.TriggerEventMethod("InventoryAdd",    new List<object> { walletId, currencyId, amount });
+            _tempList2.Clear();
+            _tempList2.Add(walletId);
+            _tempList2.Add($"{playerId}钱包");
+            _tempList2.Add(9999);
+            ep.TriggerEventMethod("InventoryCreate", _tempList2);
+            _tempList2.Clear();
+            _tempList2.Add(walletId);
+            _tempList2.Add(currencyId);
+            _tempList2.Add(amount);
+            ep.TriggerEventMethod("InventoryAdd", _tempList2);
             Log($"充值: {walletId} +{amount} {currencyId}", Color.green);
             return null;
         }
@@ -91,9 +107,17 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
             if (!EventProcessor.HasInstance) return "EventProcessor 未就绪";
             var ep       = EventProcessor.Instance;
             var walletId = WalletId(playerId);
-            ep.TriggerEventMethod("InventoryCreate", new List<object> { walletId, $"{playerId}钱包", 5 });
+            _tempList2.Clear();
+            _tempList2.Add(walletId);
+            _tempList2.Add($"{playerId}钱包");
+            _tempList2.Add(5);
+            ep.TriggerEventMethod("InventoryCreate", _tempList2);
             if (GetWalletBalance(playerId, currencyId) > 0) return null;
-            ep.TriggerEventMethod("InventoryAdd", new List<object> { walletId, currencyId, initialAmount });
+            _tempList2.Clear();
+            _tempList2.Add(walletId);
+            _tempList2.Add(currencyId);
+            _tempList2.Add(initialAmount);
+            ep.TriggerEventMethod("InventoryAdd", _tempList2);
             Log($"钱包初始化: {walletId} +{initialAmount} {currencyId}", Color.green);
             return null;
         }
@@ -102,8 +126,9 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
         public int GetWalletBalance(string playerId, string currencyId)
         {
             if (!EventProcessor.HasInstance) return 0;
-            var res = EventProcessor.Instance.TriggerEventMethod("InventoryQuery",
-                new List<object> { WalletId(playerId) });
+            _tempList1.Clear();
+            _tempList1.Add(WalletId(playerId));
+            var res = EventProcessor.Instance.TriggerEventMethod("InventoryQuery", _tempList1);
             if (!ResultCode.IsOk(res) || res.Count < 2) return 0;
             var inv = res[1] as Inventory;
             return inv?.CountOf(currencyId) ?? 0;
@@ -131,8 +156,17 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
                 return $"金币不足（需 {totalCost}，现有 {balance}）";
 
             var ep = EventProcessor.Instance;
-            ep.TriggerEventMethod("InventoryRemove", new List<object> { WalletId(playerId), shop.CurrencyId, totalCost });
-            ep.TriggerEventMethod("InventoryAdd",    new List<object> { playerId, itemId, amount });
+            var walletId = WalletId(playerId);
+            _tempList2.Clear();
+            _tempList2.Add(walletId);
+            _tempList2.Add(shop.CurrencyId);
+            _tempList2.Add(totalCost);
+            ep.TriggerEventMethod("InventoryRemove", _tempList2);
+            _tempList2.Clear();
+            _tempList2.Add(playerId);
+            _tempList2.Add(itemId);
+            _tempList2.Add(amount);
+            ep.TriggerEventMethod("InventoryAdd", _tempList2);
             if (stock.Stock > 0) stock.Stock -= amount;
             Log($"购买: {playerId} 买 {itemId}×{amount}，花 {totalCost} {shop.CurrencyId}", Color.green);
             return null;
