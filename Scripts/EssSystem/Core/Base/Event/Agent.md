@@ -155,6 +155,56 @@ EventProcessor.Instance.CleanupEmptyListeners();
 
 移除所有空的监听器列表（当所有监听器都被移除后），释放内存。
 
+## 类型化事件处理器（Phase 2 性能优化）
+
+`TypedEventProcessor` 提供高性能的类型化事件处理，避免 `List<object>` 装箱和拆箱开销。
+
+### 使用场景
+
+- 每帧多次触发的事件（坐标同步、状态更新等）
+- 参数类型固定的事件
+- 需要最小化 GC 的关键路径
+
+### 基本用法
+
+```csharp
+// 注册监听器（单参数）
+TypedEventProcessor.AddListener<Vector3>("OnPlayerMove", (evt, pos) =>
+{
+    Debug.Log($"玩家移动到: {pos}");
+});
+
+// 触发事件
+TypedEventProcessor.TriggerEvent<Vector3>("OnPlayerMove", new Vector3(1, 2, 3));
+
+// 移除监听器
+TypedEventProcessor.RemoveListener<Vector3>("OnPlayerMove", handler);
+```
+
+### 支持的签名
+
+- **无参数**: `EventAction` / `EventFunc<T>`
+- **单参数**: `EventAction<T>` / `EventFunc<T, TResult>`
+- **双参数**: `EventAction<T1, T2>` / `EventFunc<T1, T2, TResult>`
+- **三参数**: `EventAction<T1, T2, T3>`
+
+### 性能优势
+
+- ✅ 无装箱开销（直接传递强类型参数）
+- ✅ 无 `List<object>` 分配
+- ✅ 直接委托调用（比反射快）
+- ✅ 适合高频事件（每帧多次）
+
+### 与 EventProcessor 的区别
+
+| 特性 | EventProcessor | TypedEventProcessor |
+|---|---|---|
+| 参数类型 | `List<object>` | 强类型泛型 |
+| 装箱开销 | 有 | 无 |
+| 内存分配 | 每次触发 | 仅注册时 |
+| 适用场景 | 通用事件 | 高频事件 |
+| 返回值 | `List<object>` | 强类型 |
+
 ## 注意事项
 
 - `Event` 类已重命名为 `EventBase`（避免与 namespace `EssSystem.Core.Event` 同名冲突）
