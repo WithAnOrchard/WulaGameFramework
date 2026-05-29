@@ -23,6 +23,13 @@ namespace EssSystem.Core.Base.Util
         private static readonly ConcurrentQueue<Action> _queue = new ConcurrentQueue<Action>();
         private static readonly object _spawnLock = new object();
 
+        [Header("Performance")]
+        [Tooltip("每帧最大处理回调数量，防止队列积压时卡帧")]
+        [SerializeField] private int _maxCallbacksPerFrame = 64;
+
+        [Tooltip("每帧最大处理时间（毫秒），防止长时间阻塞")]
+        [SerializeField] private float _maxTimePerFrameMs = 8f;
+
         /// <summary>
         /// 把 action 加入主线程执行队列
         /// </summary>
@@ -40,8 +47,6 @@ namespace EssSystem.Core.Base.Util
             lock (_spawnLock)
             {
                 if (_instance != null) return;
-
-                // 仅在运行时创建，编辑器模式下也要求有 Application 存在
                 if (!UnityEngine.Application.isPlaying) return;
 
                 var go = new GameObject("[MainThreadDispatcher]");
@@ -53,16 +58,28 @@ namespace EssSystem.Core.Base.Util
 
         private void Update()
         {
-            while (_queue.TryDequeue(out var action))
+            if (_queue.IsEmpty) return;
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            int processed = 0;
+
+            while (processed < _maxCallbacksPerFrame && _queue.TryDequeue(out var action))
             {
+                if (stopwatch.ElapsedMilliseconds >= _maxTimePerFrameMs)
+                {
+                    Debug.LogWarning($"[MainThreadDispatcher] 达到每帧时间上限，剩余 {_queue.Count} 个回调将在下一帧处理");
+                    break;
+                }
+
                 try
                 {
                     action?.Invoke();
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[MainThreadDispatcher] 执行主线程回调时发生异常: {ex}");
+                    Debug.LogError($"[MainThreadDispatcher] 执行主线程回调时发生异常: {ex.Message}\n{ex.StackTrace}");
                 }
+                processed++;
             }
         }
 

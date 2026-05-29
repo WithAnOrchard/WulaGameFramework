@@ -22,7 +22,6 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     {
         get
         {
-            // 快速路径：_instance 已初始化，无锁访问（优化 Phase 1.2）
             if (_instance != null)
                 return _instance;
 
@@ -31,35 +30,31 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
                 return null;
             }
 
-            // 慢速路径：_instance 未初始化，需要加锁
             lock (_lock)
             {
-                if (_instance == null)
+                if (_instance != null)
+                    return _instance;
+
+                var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include);
+                if (all.Length > 1)
                 {
-                    // Unity 2022+ 推荐 API；FindFirstObjectByType 比旧的 FindObjectOfType 快 30%+
-                    _instance = (T)FindAnyObjectByType(typeof(T), FindObjectsInactive.Include);
+                    Debug.LogError("[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");
+                    _instance = (T)all[0];
+                    return _instance;
+                }
 
-                    var all = FindObjectsByType(typeof(T), FindObjectsInactive.Include);
-                    if (all.Length > 1)
-                    {
-                        Debug.LogError("[SingletonMono] 出现严重错误 - 不应该有超过1个单例！重新打开场景可能会修复此问题。");
-                        return _instance;
-                    }
-
-                    if (_instance == null)
-                    {
-                        var singleton = new GameObject();
-                        _instance = singleton.AddComponent<T>();
-                        singleton.name = $"(singleton_mono) {typeof(T)}";
-
-                        DontDestroyOnLoad(singleton);
-
-                        Debug.Log($"[SingletonMono] 场景中需要 {typeof(T)} 的实例，因此创建了 '{singleton}' 并设置了DontDestroyOnLoad。");
-                    }
-                    else
-                    {
-                        Debug.Log($"[SingletonMono] 使用已创建的实例: {_instance.gameObject.name}");
-                    }
+                if (all.Length == 1)
+                {
+                    _instance = (T)all[0];
+                    Debug.Log($"[SingletonMono] 使用已创建的实例: {_instance.gameObject.name}");
+                }
+                else
+                {
+                    var singleton = new GameObject();
+                    _instance = singleton.AddComponent<T>();
+                    singleton.name = $"(singleton_mono) {typeof(T)}";
+                    DontDestroyOnLoad(singleton);
+                    Debug.Log($"[SingletonMono] 场景中需要 {typeof(T)} 的实例，因此创建了 '{singleton}' 并设置了DontDestroyOnLoad。");
                 }
 
                 return _instance;

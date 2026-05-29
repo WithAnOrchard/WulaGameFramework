@@ -215,9 +215,9 @@ namespace EssSystem.Core.Base.Manager
         /// <summary>获取所有分类名。</summary>
         public IEnumerable<string> GetCategories() => _dataStorage.Keys;
 
-        /// <summary>获取分类下的全部数据（不存在返回空字典）。</summary>
+        /// <summary>获取分类下的全部数据（不存在返回null而不是新字典，避免GC）。</summary>
         public Dictionary<string, object> GetCategoryData(string category) =>
-            _dataStorage.TryGetValue(category, out var c) ? c : new Dictionary<string, object>();
+            _dataStorage.TryGetValue(category, out var c) ? c : null;
 
         #endregion
 

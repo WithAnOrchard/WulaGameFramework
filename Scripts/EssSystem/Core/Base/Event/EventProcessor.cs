@@ -175,17 +175,14 @@ namespace EssSystem.Core.Base.Event
         /// <returns>事件结果</returns>
         public List<object> TriggerEvent(string eventName, List<object> data = null)
         {
-            // TODO#1: 应用退出期间静默跳过所有事件分发，避免访问已销毁的 Unity Object
             if (ApplicationLifecycle.IsQuitting) return _emptyData;
 
             if (string.IsNullOrEmpty(eventName))
             {
                 LogError("事件名称不能为空或null");
-                return _emptyData;   // 重用只读空表，免一次 alloc
+                return _emptyData;
             }
 
-            // C-E3 + D-E4: TryGetValue 一次查找；没监听器不再 LogWarning——
-            // 广播 fire-and-forget 没人订阅是合法状态。调用方可用 HasListener 显式检查。
             if (!_eventListeners.TryGetValue(eventName, out var registeredListeners) || registeredListeners.Count == 0)
             {
                 if (!_silentEvents.Contains(eventName))

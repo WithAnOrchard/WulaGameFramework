@@ -126,11 +126,11 @@ if ($VerbosePreference -eq 'Continue') {
     }
 }
 
-# Same-string-multi-source warning (potential _eventMethods key collision)
+# Same-string-multi-source info (expected: façade + Service both define same event)
 foreach ($val in $valueToFqn.Keys) {
     $list = $valueToFqn[$val]
     if ($list.Count -gt 1) {
-        Add-Warn "  [WARN] same string '$val' declared by multiple constants: $($list -join ', ') (single handler dict, last wins)"
+        Write-Host "  [INFO] same string '$val' declared by multiple constants: $($list -join ', ') (façade + Service, single handler dict, last wins)" -ForegroundColor DarkGray
     }
 }
 
