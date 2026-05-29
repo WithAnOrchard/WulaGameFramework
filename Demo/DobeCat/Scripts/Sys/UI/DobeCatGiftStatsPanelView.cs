@@ -45,13 +45,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.Instance.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.Instance.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             DestroyUI();
         }
 

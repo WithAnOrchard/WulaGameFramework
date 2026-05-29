@@ -74,14 +74,14 @@ namespace Demo.DobeCat.Game.Pet
         private void Start()
         {
             DobeCatGameContext.OnContextChanged += OnContextChanged;
-            DefaultUITheme.Instance.OnThemeChanged         += RebuildQuickBar;
+            DefaultUITheme.OnThemeChanged         += RebuildQuickBar;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
             DobeCatGameContext.OnContextChanged -= OnContextChanged;
-            DefaultUITheme.Instance.OnThemeChanged         -= RebuildQuickBar;
+            DefaultUITheme.OnThemeChanged         -= RebuildQuickBar;
             DestroyQuickBar();
         }
 

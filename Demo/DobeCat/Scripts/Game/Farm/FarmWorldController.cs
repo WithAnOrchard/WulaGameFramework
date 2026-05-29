@@ -83,13 +83,13 @@ namespace Demo.DobeCat.Game.Farm
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.Instance.OnThemeChanged += RebuildPanelUI;
+            DefaultUITheme.OnThemeChanged += RebuildPanelUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.Instance.OnThemeChanged -= RebuildPanelUI;
+            DefaultUITheme.OnThemeChanged -= RebuildPanelUI;
             if (UIService.HasInstance)
             {
                 UIService.Instance.DestroyUIEntity(UI_PANEL_BG_ID);

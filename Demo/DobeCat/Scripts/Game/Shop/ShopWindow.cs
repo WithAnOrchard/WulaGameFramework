@@ -54,13 +54,13 @@ namespace Demo.DobeCat.Game.Shop
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.Instance.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.Instance.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             if (_initialized && EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod(
                     "DestroyUIEntity", new List<object> { "shop-root" });

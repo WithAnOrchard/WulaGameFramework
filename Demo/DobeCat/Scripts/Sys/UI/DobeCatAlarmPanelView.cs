@@ -51,14 +51,14 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.Instance.OnThemeChanged += OnThemeChanged;
+            DefaultUITheme.OnThemeChanged += OnThemeChanged;
             UIInputEntity.OnAnyInputSelected += OnInputFocused;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.Instance.OnThemeChanged -= OnThemeChanged;
+            DefaultUITheme.OnThemeChanged -= OnThemeChanged;
             UIInputEntity.OnAnyInputSelected -= OnInputFocused;
             DestroyPanel();
         }

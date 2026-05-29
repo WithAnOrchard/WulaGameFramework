@@ -65,7 +65,7 @@ namespace Demo.DobeCat.Sys.UI
             BuildUI();
             // 加载缓存 token（若有）
             if (_tokenDao != null) _tokenDao.SetText(BilibiliAuthSession.Token ?? string.Empty);
-            DefaultUITheme.Instance.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void Update()
@@ -82,7 +82,7 @@ namespace Demo.DobeCat.Sys.UI
 
         private void OnDestroy()
         {
-            DefaultUITheme.Instance.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(false);
         }
 
