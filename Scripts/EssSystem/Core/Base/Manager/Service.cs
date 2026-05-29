@@ -82,6 +82,7 @@ namespace EssSystem.Core.Base.Manager
         // M6: 批量写盘 — BeginBatch() 期间 SetData/RemoveData 仅标 dirty，Dispose 时一次性 flush。
         private int _batchDepth = 0;
         private readonly HashSet<string> _pendingDirtyCategories = new();
+        private readonly object _batchLock = new object();
 
         #endregion
 
@@ -114,9 +115,14 @@ namespace EssSystem.Core.Base.Manager
         /// <summary>手动 flush 累积的 dirty categories（batch 期间或调过之后）。</summary>
         public void FlushPendingWrites()
         {
-            if (_pendingDirtyCategories.Count == 0) return;
-            foreach (var category in _pendingDirtyCategories) SaveCategoryData(category);
-            _pendingDirtyCategories.Clear();
+            HashSet<string> toFlush;
+            lock (_batchLock)
+            {
+                if (_pendingDirtyCategories.Count == 0) return;
+                toFlush = new HashSet<string>(_pendingDirtyCategories);
+                _pendingDirtyCategories.Clear();
+            }
+            foreach (var category in toFlush) SaveCategoryData(category);
         }
 
         /// <summary>SetData/RemoveData 后调。根据是否处于 batch 作用域路由到立即写盘或延后。
@@ -124,22 +130,30 @@ namespace EssSystem.Core.Base.Manager
         private void OnCategoryDataChanged(string category)
         {
             _inspectorDirty = true;
-            if (IsTransientCategory(category)) return;   // C2
-            if (_batchDepth > 0)
-                _pendingDirtyCategories.Add(category);
-            else
-                SaveCategoryData(category);
+            if (IsTransientCategory(category)) return;
+            lock (_batchLock)
+            {
+                if (_batchDepth > 0)
+                    _pendingDirtyCategories.Add(category);
+                else
+                    SaveCategoryData(category);
+            }
         }
 
         private sealed class BatchScope : IDisposable
         {
             private Service<T> _svc;
-            public BatchScope(Service<T> svc) { _svc = svc; svc._batchDepth++; }
+            public BatchScope(Service<T> svc) { _svc = svc; lock (_svc._batchLock) { _svc._batchDepth++; } }
             public void Dispose()
             {
                 if (_svc == null) return;
-                _svc._batchDepth--;
-                if (_svc._batchDepth == 0) _svc.FlushPendingWrites();
+                bool shouldFlush;
+                lock (_svc._batchLock)
+                {
+                    _svc._batchDepth--;
+                    shouldFlush = _svc._batchDepth == 0;
+                }
+                if (shouldFlush) _svc.FlushPendingWrites();
                 _svc = null;
             }
         }
