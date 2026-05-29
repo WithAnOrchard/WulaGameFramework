@@ -131,9 +131,34 @@ return ResultCode.Fail("参数无效");   // 失败
 
 调用方用 `ResultCode.IsOk(result)` 判断。
 
+## 监听器管理（Phase 1.3 优化）
+
+### 获取监听器统计信息
+
+```csharp
+var stats = EventProcessor.Instance.GetListenerStats();
+Debug.Log($"总事件数: {stats["TotalEventNames"]}");
+Debug.Log($"总监听器数: {stats["TotalListeners"]}");
+Debug.Log($"总监听器方法数: {stats["TotalListenerMethods"]}");
+```
+
+返回字典包含：
+- `TotalEventNames` — 有监听器的事件名数量
+- `TotalListeners` — 所有监听器总数
+- `TotalListenerMethods` — 标注 `[EventListener]` 的方法总数
+
+### 清理空监听器列表
+
+```csharp
+EventProcessor.Instance.CleanupEmptyListeners();
+```
+
+移除所有空的监听器列表（当所有监听器都被移除后），释放内存。
+
 ## 注意事项
 
 - `Event` 类已重命名为 `EventBase`（避免与 namespace `EssSystem.Core.Event` 同名冲突）
 - 监听器内异常已被 try-catch 隔离，不影响其他监听器
 - `TriggerEvent` 找不到事件名只 LogWarning，不抛异常
 - Target 缓存：第一次解析后缓存到 `_eventMethods` 中，后续调用零反射查找
+- 监听器统计和清理用于调试和内存优化（Phase 1.3）

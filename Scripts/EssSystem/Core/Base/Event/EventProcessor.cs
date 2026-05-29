@@ -580,6 +580,53 @@ namespace EssSystem.Core.Base.Event
         }
 
         /// <summary>
+        ///     获取监听器统计信息（Phase 1.3 优化）
+        /// </summary>
+        public Dictionary<string, object> GetListenerStats()
+        {
+            var stats = new Dictionary<string, object>
+            {
+                { "TotalEventNames", _eventListeners?.Count ?? 0 },
+                { "TotalListeners", 0 },
+                { "TotalListenerMethods", _listenerMethods?.Count ?? 0 }
+            };
+
+            int totalListeners = 0;
+            if (_eventListeners != null)
+            {
+                foreach (var list in _eventListeners.Values)
+                {
+                    if (list != null) totalListeners += list.Count;
+                }
+            }
+            stats["TotalListeners"] = totalListeners;
+            return stats;
+        }
+
+        /// <summary>
+        ///     清理空的监听器列表（Phase 1.3 优化）
+        /// </summary>
+        public void CleanupEmptyListeners()
+        {
+            if (_eventListeners == null) return;
+
+            var emptyEvents = new List<string>();
+            foreach (var kvp in _eventListeners)
+            {
+                if (kvp.Value == null || kvp.Value.Count == 0)
+                    emptyEvents.Add(kvp.Key);
+            }
+
+            foreach (var eventName in emptyEvents)
+            {
+                _eventListeners.Remove(eventName);
+            }
+
+            if (emptyEvents.Count > 0)
+                Log($"清理了 {emptyEvents.Count} 个空监听器列表", Color.yellow);
+        }
+
+        /// <summary>
         ///     Event方法信息
         /// </summary>
         private class EventMethodInfo
