@@ -12,15 +12,17 @@ UI/
 └── DanmuTestPanelView.cs   ← 面板视图（MonoBehaviour）
 ```
 
-## 事件订阅
+## Event API
 
 本模块仅订阅（[EventListener]），不定义事件。订阅来自 `DanmuService` 的事件：
 
-- `DanmuService.EVT_CONNECTED` — 连接成功
-- `DanmuService.EVT_DISCONNECTED` — 连接断开
-- `DanmuService.EVT_DANMAKU` — 弹幕消息
-- `DanmuService.EVT_GIFT` — 礼物事件
-- `DanmuService.EVT_SC` — 超级留言
+| 事件 | 用途 |
+|---|---|
+| `DanmuService.EVT_CONNECTED` | 连接成功时更新状态 |
+| `DanmuService.EVT_DISCONNECTED` | 连接断开时更新状态 |
+| `DanmuService.EVT_DANMAKU` | 接收弹幕消息 |
+| `DanmuService.EVT_GIFT` | 接收礼物事件 |
+| `DanmuService.EVT_SC` | 接收超级留言 |
 
 ## 使用示例
 
