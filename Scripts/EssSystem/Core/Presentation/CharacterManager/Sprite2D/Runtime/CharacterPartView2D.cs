@@ -291,10 +291,10 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 
             try
             {
-                // §4.1 跨模块 bare-string façade 调用 ResourceManager.EVT_GET_SPRITE；
-                //      ResourceManager.GetSprite 内部加 type tag 转发 EVT_GET_RESOURCE。
+                // §4.1 跨模块 bare-string façade 调用 ResourceManager.EVT_GET_SPRITE_ASYNC；
+                //      ResourceManager.GetSpriteAsync 内部加 type tag 转发到 SpriteService。
                 var result = EventProcessor.Instance.TriggerEventMethod(
-                    "GetSprite",
+                    "GetSpriteAsync",
                     new List<object> { spriteId });
 
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))

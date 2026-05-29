@@ -267,9 +267,9 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             }
             try
             {
-                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_SPRITE
+                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_SPRITE_ASYNC
                 var result = EventProcessor.Instance.TriggerEventMethod(
-                    "GetSprite", new List<object> { spriteId });
+                    "GetSpriteAsync", new List<object> { spriteId });
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                 {
                     var sp = result[1] as Sprite;

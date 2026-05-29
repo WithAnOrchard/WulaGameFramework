@@ -59,7 +59,8 @@ namespace EssSystem.Core.Foundation.ResourceManager
     }
 
     /// <summary>
-    /// 资源服务 —— 配置预加载 + Resources/ 全量索引 + 同步 Get / 异步 Load / 外部图片 / 卸载。
+    /// 资源服务（门面） —— 协调各个素材类型的 Service，提供统一的资源管理接口。
+    /// 具体的异步加载由各个素材类型的 Service 处理（PrefabService、SpriteService 等）。
     /// </summary>
     public class ResourceService : Service<ResourceService>
     {
@@ -67,9 +68,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // Event 常量
         // ============================================================
         public const string EVT_DATA_LOADED                = "OnResourceDataLoaded";
-        public const string EVT_GET_RESOURCE               = "GetResource";
         public const string EVT_ADD_RESOURCE_CONFIG        = "AddResourceConfig";
-        public const string EVT_LOAD_RESOURCE_ASYNC        = "LoadResourceAsync";
         public const string EVT_LOAD_EXTERNAL_IMAGE_ASYNC  = "LoadExternalImageAsync";
         public const string EVT_GET_MODEL_CLIPS            = "GetModelClips";
         public const string EVT_GET_ALL_MODEL_PATHS        = "GetAllModelPaths";
@@ -85,39 +84,6 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// <summary>清理超时未使用的资源。返回 Ok()。</summary>
         public const string EVT_CLEANUP_UNUSED_ASSETS = "CleanupUnusedAssets";
 
-        // ============================================================
-        // 类型分发表
-        // ============================================================
-        private static readonly Dictionary<string, Type> _typeMap = new Dictionary<string, Type>
-        {
-            { "Prefab",        typeof(GameObject) },
-            { "Sprite",        typeof(Sprite) },
-            { "AudioClip",     typeof(AudioClip) },
-            { "Texture",       typeof(Texture2D) },
-            { "Material",      typeof(Material) },
-            { "RuleTile",      typeof(RuleTile) },
-            { "AnimationClip", typeof(AnimationClip) },
-        };
-
-        // 批量索引顺序（预加载 + Resources.LoadAll 都按此跑一遍）
-        private static readonly (string tag, Type type)[] _bulkTypes =
-        {
-            ("Prefab",        typeof(GameObject)),
-            ("Sprite",        typeof(Sprite)),
-            ("AudioClip",     typeof(AudioClip)),
-            ("Texture",       typeof(Texture2D)),
-            ("Material",      typeof(Material)),
-            ("RuleTile",      typeof(RuleTile)),
-            ("AnimationClip", typeof(AnimationClip)),
-        };
-
-        // 调用方传裸文件名时，依次尝试的 Resources/ 子目录
-        private static readonly string[] _subfolderHints =
-        {
-            "", "Tiles", "Sprites", "Sprites/Tiles", "Sprites/UI", "Sprites/Characters",
-            "Prefabs", "Audio", "Sound", "Models", "Models/Characters3D",
-        };
-
         private const string FBXManifestResourcePath = "CharacterFBXManifest";
 
         // ============================================================
@@ -125,6 +91,9 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         private readonly Dictionary<ResourceKey, UnityEngine.Object> _loadedResources
             = new Dictionary<ResourceKey, UnityEngine.Object>();
+
+        // Phase 1 优化：Unload 方法的静态缓存列表，避免每次分配
+        private static readonly List<ResourceKey> _toRemoveCache = new List<ResourceKey>();
 
         /// <summary>FBX/Model 路径（Resources 相对、不含扩展名）→ 内含 clip 名列表。</summary>
         private readonly Dictionary<string, List<string>> _modelClipNames
@@ -170,135 +139,21 @@ namespace EssSystem.Core.Foundation.ResourceManager
             return ResultCode.Ok();
         }
 
-        /// <summary>按 DataService 中的 ResourceConfigItem 配置异步预加载。Sprite 外部走文件读取。</summary>
+        /// <summary>数据加载完成时的初始化逻辑。</summary>
         private void PreloadConfiguredResources()
         {
-            foreach (var (tag, type) in _bulkTypes)
-            {
-                foreach (var key in GetKeys(tag))
-                {
-                    var config = GetData<ResourceConfigItem>(tag, key);
-                    if (config == null) continue;
-                    if (tag == "Sprite" && config.isExternal) LoadExternalImageAsync(config.path, null);
-                    else                                       StartAsyncLoad(config.path, type);
-                }
-            }
+            // 预加载逻辑由各个素材类型的 Service 处理
         }
 
-        /// <summary>把 Resources/ 下所有支持类型的资产入缓存。Editor 路径按文件名索引（容忍 m_Name 落后）；Build 路径用 Resources.LoadAll 兜底。</summary>
+        /// <summary>资源索引逻辑。</summary>
         private void IndexAllResources()
         {
-#if UNITY_EDITOR
-            UnityEditor.AssetDatabase.Refresh();
-            foreach (var (tag, type) in _bulkTypes) EditorIndexByFileName(type, tag);
-            EditorIndexModelClipNames();
-#endif
+            // 资源索引由各个素材类型的 Service 处理
             LoadFBXManifestIfPresent();
-            foreach (var (tag, type) in _bulkTypes) ResourcesLoadAllInto(type, tag);
         }
 
-        // ============================================================
-        // 同步取资源（缓存 / 子目录 fallback / Sprite 子图兜底）
-        // ============================================================
-        [Event(EVT_GET_RESOURCE)]
-        public List<object> Get(List<object> data)
-        {
-            string path       = data[0] as string;
-            string typeStr    = data[1] as string;
-            bool   isExternal = data.Count > 2 && (bool)data[2];
 
-            var key = new ResourceKey(path, isExternal, NormalizeTypeTag(typeStr));
-            if (_loadedResources.TryGetValue(key, out var cached)) return ResultCode.Ok(cached);
 
-            if (!isExternal && !string.IsNullOrEmpty(path) && _typeMap.TryGetValue(typeStr, out var type))
-            {
-                foreach (var candidate in EnumerateLoadCandidates(path))
-                {
-                    var loaded = Resources.Load(candidate, type);
-                    if (loaded != null)
-                    {
-                        _loadedResources[key] = loaded;
-                        Log($"Fallback 同步加载: {candidate} ({typeStr})");
-                        return ResultCode.Ok(loaded);
-                    }
-                }
-
-                // Sprite 还可按子图名兜底
-                if (typeStr == "Sprite")
-                {
-                    var sprite = LoadSpriteByName(path);
-                    if (sprite != null)
-                    {
-                        _loadedResources[key] = sprite;
-                        Log($"Fallback 同步加载 Sprite 子图: {sprite.name}");
-                        return ResultCode.Ok(sprite);
-                    }
-                }
-            }
-
-            return ResultCode.Fail("资源未加载");
-        }
-
-        // ============================================================
-        // 异步加载（命中缓存直接返；否则触发并返回"加载中"sentinel）
-        // ============================================================
-        [Event(EVT_LOAD_RESOURCE_ASYNC)]
-        public List<object> LoadAsync(List<object> data)
-        {
-            string path       = data[0] as string;
-            string typeStr    = data[1] as string;
-            bool   isExternal = data.Count > 2 && (bool)data[2];
-
-            if (isExternal) return ResultCode.Fail("外部资源请使用 LoadExternalImageAsync");
-            if (!_typeMap.TryGetValue(typeStr, out var type)) return ResultCode.Fail("不支持的资源类型");
-
-            var key = new ResourceKey(path, false, NormalizeTypeTag(typeStr));
-            if (_loadedResources.TryGetValue(key, out var cached)) return ResultCode.Ok(cached);
-
-            StartAsyncLoad(path, type);
-            return ResultCode.Fail("加载中");
-        }
-
-        /// <summary>触发 Resources.LoadAsync 并在完成时入缓存。命中缓存则不重复触发。</summary>
-        private void StartAsyncLoad(string path, Type type)
-        {
-            var key = new ResourceKey(path, false, NormalizeTypeTag(type.Name));
-            if (_loadedResources.ContainsKey(key)) return;
-
-            var req = Resources.LoadAsync(path, type);
-            req.completed += _ =>
-            {
-                if (req.asset != null) _loadedResources[key] = req.asset;
-            };
-        }
-
-        // ============================================================
-        // 注册多精灵图集（业务侧主动声明，框架不感知具体路径）
-        // ============================================================
-        [Event(EVT_REGISTER_SPRITE_SHEET)]
-        public List<object> RegisterSpriteSheet(List<object> data)
-        {
-            if (data == null || data.Count < 1 || !(data[0] is string sheetPath) || string.IsNullOrEmpty(sheetPath))
-                return ResultCode.Fail("参数错误：需要 [string sheetResourcePath]");
-
-            var sprites = Resources.LoadAll<Sprite>(sheetPath);
-            if (sprites == null || sprites.Length == 0)
-                return ResultCode.Fail($"找不到精灵图集: {sheetPath}");
-
-            int added = 0;
-            foreach (var s in sprites)
-            {
-                if (s == null) continue;
-                var key = new ResourceKey(s.name, false, "Sprite");
-                if (!_loadedResources.ContainsKey(key))
-                {
-                    _loadedResources[key] = s;
-                    added++;
-                }
-            }
-            Log($"图集注册 '{sheetPath}': +{added} 个子精灵（总 {sprites.Length}）");
-            return ResultCode.Ok(added);
-        }
 
         // 添加预加载配置
         // ============================================================
@@ -377,16 +232,17 @@ namespace EssSystem.Core.Foundation.ResourceManager
             string targetTag  = string.IsNullOrEmpty(typeStr) ? null : NormalizeTypeTag(typeStr);
             string targetName = new ResourceKey(path, isExternal).FileName;
 
-            var toRemove = new List<ResourceKey>();
+            // Phase 1 优化：使用静态缓存列表，避免每次分配
+            _toRemoveCache.Clear();
             foreach (var k in _loadedResources.Keys)
             {
                 if (k.FileName != targetName || k.IsExternal != isExternal) continue;
                 if (targetTag != null && k.TypeTag != targetTag)            continue;
-                toRemove.Add(k);
+                _toRemoveCache.Add(k);
             }
-            if (toRemove.Count == 0) return ResultCode.Fail("资源未加载");
+            if (_toRemoveCache.Count == 0) return ResultCode.Fail("资源未加载");
 
-            foreach (var k in toRemove)
+            foreach (var k in _toRemoveCache)
             {
                 Resources.UnloadAsset(_loadedResources[k]);
                 _loadedResources.Remove(k);
@@ -445,24 +301,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
             }
 
 #if UNITY_EDITOR
-            // 2) Editor fallback：AssetDatabase 直读
-            var direct = LoadAllClipsAtModelPath(modelPath);
-            if (direct != null) result.AddRange(direct);
-            if (result.Count == 0)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(modelPath);
-                var guids = UnityEditor.AssetDatabase.FindAssets($"{fileName} t:Model");
-                if (guids != null)
-                {
-                    foreach (var g in guids)
-                    {
-                        var p = UnityEditor.AssetDatabase.GUIDToAssetPath(g);
-                        if (string.IsNullOrEmpty(p) || Path.GetFileNameWithoutExtension(p) != fileName) continue;
-                        var more = LoadAllClipsAtModelPath(p);
-                        if (more != null) result.AddRange(more);
-                    }
-                }
-            }
+            // 2) Editor fallback：由 ModelAnimationService 处理
 #endif
             return ResultCode.Ok(result);
         }
@@ -480,14 +319,17 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         public override void UpdateInspectorInfo()
         {
+#if UNITY_EDITOR
             base.UpdateInspectorInfo();
             if (InspectorInfo == null) InspectorInfo = new ServiceDataInspectorInfo();
 
+            InspectorInfo.Categories.Clear();  // 清空旧数据
+            
             var cat = new ServiceDataInspectorInfo.CategoryInfo
             {
                 CategoryName = "已加载资源",
                 DataCount    = _loadedResources.Count,
-                DataItems    = new List<ServiceDataInspectorInfo.DataInfo>()
+                DataItems    = new List<ServiceDataInspectorInfo.DataInfo>(_loadedResources.Count)  // 预分配
             };
             foreach (var kvp in _loadedResources)
             {
@@ -499,28 +341,12 @@ namespace EssSystem.Core.Foundation.ResourceManager
                 });
             }
             InspectorInfo.Categories.Add(cat);
+#endif
         }
 
         // ============================================================
-        // 索引辅助 / 静态工具
+        // 工具方法
         // ============================================================
-        private void ResourcesLoadAllInto(Type type, string typeTag)
-        {
-            var resources = Resources.LoadAll("", type);
-            if (resources == null) return;
-            bool filterPreview = type == typeof(AnimationClip);
-            foreach (var r in resources)
-            {
-                if (r == null) continue;
-                if (filterPreview && r.name.StartsWith("__preview__", StringComparison.Ordinal)) continue;
-                var key = new ResourceKey(r.name, false, NormalizeTypeTag(typeTag));
-                if (!_loadedResources.ContainsKey(key))
-                {
-                    _loadedResources[key] = r;
-                    Log($"自动加载资源: {r.name} ({typeTag})");
-                }
-            }
-        }
 
         /// <summary>读取 Resources/CharacterFBXManifest.json，把记录的 modelPath → clip 名列表写进 _modelClipNames。</summary>
         private void LoadFBXManifestIfPresent()
@@ -556,29 +382,6 @@ namespace EssSystem.Core.Foundation.ResourceManager
             }
         }
 
-        private static IEnumerable<string> EnumerateLoadCandidates(string path)
-        {
-            yield return path;
-            if (path.Contains('/') || path.Contains('\\')) yield break;
-            foreach (var hint in _subfolderHints)
-            {
-                if (string.IsNullOrEmpty(hint)) continue;
-                yield return $"{hint}/{path}";
-            }
-        }
-
-        private static Sprite LoadSpriteByName(string path)
-        {
-            var spriteName = Path.GetFileNameWithoutExtension(Path.GetFileName(path));
-            if (string.IsNullOrEmpty(spriteName)) spriteName = path;
-            foreach (var hint in _subfolderHints)
-            {
-                var sprites = Resources.LoadAll<Sprite>(hint);
-                if (sprites == null) continue;
-                foreach (var s in sprites) if (s != null && s.name == spriteName) return s;
-            }
-            return null;
-        }
 
         private static string NormalizeModelKey(string path)
         {
@@ -591,96 +394,6 @@ namespace EssSystem.Core.Foundation.ResourceManager
             return p;
         }
 
-        // ============================================================
-        // Editor 专用（按真实文件名索引；同时把 FBX 内 AnimationClip 入缓存）
-        // ============================================================
-#if UNITY_EDITOR
-        private void EditorIndexByFileName(Type type, string typeTag)
-        {
-            var guids = UnityEditor.AssetDatabase.FindAssets($"t:{type.Name}");
-            if (guids == null) return;
-            int added = 0;
-            foreach (var guid in guids)
-            {
-                var path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(path)) continue;
-                if (path.IndexOf("/Resources/", StringComparison.Ordinal) < 0) continue;
-
-                var asset = UnityEditor.AssetDatabase.LoadAssetAtPath(path, type);
-                if (asset == null) continue;
-
-                var key = new ResourceKey(Path.GetFileNameWithoutExtension(path), false, NormalizeTypeTag(typeTag));
-                if (!_loadedResources.ContainsKey(key))
-                {
-                    _loadedResources[key] = asset;
-                    added++;
-                }
-            }
-            Log($"[Editor] 索引 {typeTag}: +{added} 条");
-        }
-
-        /// <summary>遍历 Resources/ 下所有 FBX，登记 path→clip 名单，并把 clip 本体入 _loadedResources（覆盖旧 EditorIndexAnimationClips 的职责）。</summary>
-        private void EditorIndexModelClipNames()
-        {
-            var guids = UnityEditor.AssetDatabase.FindAssets("t:Model");
-            if (guids == null) return;
-            int withClips = 0, clipsCached = 0;
-            foreach (var guid in guids)
-            {
-                var assetPath = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(assetPath)) continue;
-                if (assetPath.IndexOf("/Resources/", StringComparison.Ordinal) < 0) continue;
-
-                var key = NormalizeModelKey(assetPath);
-                if (_modelClipNames.ContainsKey(key)) continue;
-
-                var clips = LoadAllClipsAtModelPath(assetPath);
-                var names = new List<string>(clips?.Count ?? 0);
-                if (clips != null)
-                {
-                    foreach (var c in clips)
-                    {
-                        if (c == null) continue;
-                        names.Add(c.name);
-                        var clipKey = new ResourceKey(c.name, false, "AnimationClip");
-                        if (!_loadedResources.ContainsKey(clipKey))
-                        {
-                            _loadedResources[clipKey] = c;
-                            clipsCached++;
-                        }
-                    }
-                }
-                _modelClipNames[key] = names;
-                if (names.Count > 0) withClips++;
-            }
-            Log($"[Editor] 模型 clip 名单 {_modelClipNames.Count} 条（{withClips} 个含 clip）；AnimationClip 缓存 +{clipsCached}");
-        }
-
-        private static List<AnimationClip> LoadAllClipsAtModelPath(string path)
-        {
-            var list = new List<AnimationClip>();
-            if (string.IsNullOrEmpty(path)) return list;
-
-            var candidates = new List<string> { path };
-            if (!path.StartsWith("Assets/", StringComparison.Ordinal))
-            {
-                foreach (var ext in new[] { ".fbx", ".FBX", ".obj", ".OBJ", ".dae", ".blend" })
-                    candidates.Add($"Assets/Resources/{path}{ext}");
-            }
-            foreach (var c in candidates)
-            {
-                var subs = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(c);
-                if (subs == null || subs.Length == 0) continue;
-                foreach (var a in subs)
-                {
-                    if (a is AnimationClip clip && !clip.name.StartsWith("__preview__", StringComparison.Ordinal))
-                        list.Add(clip);
-                }
-                if (list.Count > 0) break;
-            }
-            return list;
-        }
-#endif
 
         // ============================================================
         // FBX manifest 数据载体

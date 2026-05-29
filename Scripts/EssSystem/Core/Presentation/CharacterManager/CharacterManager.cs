@@ -79,9 +79,99 @@ namespace EssSystem.Core.Presentation.CharacterManager
                 Service.RegisterConfig(DefaultCharacterConfigs.BuildMage());
                 DefaultTreeCharacterConfigs.RegisterAll(Service);
             }
+            
             // _autoRegisterAllFBX 推迟到 ResourceService 加载完成后跑（OnResourcesLoaded）。
 
             Log("CharacterManager 初始化完成", Color.green);
+        }
+        
+        /// <summary>预加载所有已注册 CharacterConfig 中的 Sprite Sheet。供 DobeCat 等业务方调用。</summary>
+        public void PreloadCharacterSprites(string spriteSheetBasePath = "Characters/PixArt")
+        {
+            if (Service == null) 
+            {
+                Debug.LogError("[CharacterManager] Service 为空，无法预加载 Sprite");
+                return;
+            }
+            
+            // 收集所有需要的 Sprite Sheet 路径
+            var sheetPaths = new System.Collections.Generic.HashSet<string>();
+            var allConfigs = Service.GetAllConfigs();
+            var configList = new List<CharacterConfig>(allConfigs);
+            Debug.Log($"[CharacterManager] 开始预加载 Sprite，已注册配置数: {configList.Count}");
+            
+            if (configList.Count == 0)
+            {
+                Debug.LogWarning("[CharacterManager] 没有已注册的 CharacterConfig");
+                return;
+            }
+            
+            foreach (var config in configList)
+            {
+                if (config?.Parts == null) continue;
+                
+                foreach (var part in config.Parts)
+                {
+                    if (part?.Animations == null) continue;
+                    
+                    foreach (var action in part.Animations)
+                    {
+                        if (action?.SpriteIds != null)
+                        {
+                            foreach (var spriteId in action.SpriteIds)
+                            {
+                                if (!string.IsNullOrEmpty(spriteId))
+                                {
+                                    // 从 Sprite ID 推断 Sheet 路径
+                                    // 格式：{sheetPrefix}_{sheetVariant}_{actionName}_{frameIndex}
+                                    // 例如：Skin_warrior_1_Idle_0 -> Characters/PixArt/Skin/warrior_1
+                                    var parts_arr = spriteId.Split('_');
+                                    if (parts_arr.Length >= 3)
+                                    {
+                                        // 取前两个部分作为类别和变体（如 Skin, warrior_1）
+                                        var sheetPath = $"{spriteSheetBasePath}/{parts_arr[0]}/{parts_arr[1]}_{parts_arr[2]}";
+                                        sheetPaths.Add(sheetPath);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Debug.Log($"[CharacterManager] 需要预加载的 Sprite Sheet 数: {sheetPaths.Count}");
+            
+            // 预加载所有 Sprite Sheet 并注册到 SpriteService 缓存
+            int totalSprites = 0;
+            int failedCount = 0;
+            foreach (var sheetPath in sheetPaths)
+            {
+                var sprites = Resources.LoadAll<UnityEngine.Sprite>(sheetPath);
+                if (sprites != null && sprites.Length > 0)
+                {
+                    Log($"预加载 Sprite Sheet: {sheetPath} ({sprites.Length} 个子图)", Color.cyan);
+                    totalSprites += sprites.Length;
+                    
+                    // 将每个子图注册到 SpriteService 缓存中
+                    foreach (var sprite in sprites)
+                    {
+                        if (sprite != null && !string.IsNullOrEmpty(sprite.name))
+                        {
+                            // 通过 EventProcessor 触发 SpriteService 的注册
+                            EventProcessor.Instance.TriggerEventMethod(
+                                "RegisterSpriteToCache",
+                                new List<object> { sprite.name, sprite });
+                        }
+                    }
+                }
+                else
+                {
+                    failedCount++;
+                    Debug.LogWarning($"[CharacterManager] 预加载 Sprite Sheet 失败（路径可能不对）: {sheetPath}");
+                }
+            }
+            
+            Debug.Log($"[CharacterManager] Sprite 预加载完成，共 {totalSprites} 个子图，失败 {failedCount} 个 Sheet");
         }
 
         /// <summary>监听 ResourceManager.EVT_RESOURCES_LOADED 广播 —— 此时 _modelClipNames 就绪，FBX 扫描走 O(1) 缓存。</summary>
@@ -110,16 +200,35 @@ namespace EssSystem.Core.Presentation.CharacterManager
         [Event(EVT_CREATE_CHARACTER)]
         public List<object> CreateCharacter(List<object> data)
         {
-            if (!RequireService(out var fail)) return fail;
-            if (!TryGetString(data, 0, out var configId,   out fail)) return fail;
-            if (!TryGetString(data, 1, out var instanceId, out fail)) return fail;
+            if (!RequireService(out var fail)) 
+            {
+                Debug.LogError("[CharacterManager] Service 未就绪");
+                return fail;
+            }
+            if (!TryGetString(data, 0, out var configId,   out fail)) 
+            {
+                Debug.LogError("[CharacterManager] configId 参数缺失或类型错误");
+                return fail;
+            }
+            if (!TryGetString(data, 1, out var instanceId, out fail)) 
+            {
+                Debug.LogError("[CharacterManager] instanceId 参数缺失或类型错误");
+                return fail;
+            }
             var parent        = data.Count > 2 ? data[2] as Transform : null;
             var worldPosition = data.Count > 3 && data[3] is Vector3 v ? (Vector3?)v : null;
 
+            Debug.Log($"[CharacterManager] 开始创建角色: configId={configId}, instanceId={instanceId}");
             var character = Service.CreateCharacter(configId, instanceId, parent, worldPosition);
-            return character?.View != null
-                ? ResultCode.Ok(character.View.transform)   // 返根 Transform（Unity 中立类型）
-                : ResultCode.Fail($"CreateCharacter 失败: configId={configId}, instanceId={instanceId}");
+            
+            if (character?.View == null)
+            {
+                Debug.LogError($"[CharacterManager] CreateCharacter 失败: configId={configId}, instanceId={instanceId}, character={character}, view={character?.View}");
+                return ResultCode.Fail($"CreateCharacter 失败: configId={configId}, instanceId={instanceId}");
+            }
+            
+            Debug.Log($"[CharacterManager] 角色创建成功: {instanceId}");
+            return ResultCode.Ok(character.View.transform);   // 返根 Transform（Unity 中立类型）
         }
 
         [Event(EVT_DESTROY_CHARACTER)]

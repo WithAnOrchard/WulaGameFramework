@@ -20,11 +20,19 @@ namespace EssSystem.Core.Foundation.ResourceManager
         public const string EVT_GET_MATERIAL              = "GetMaterial";
         public const string EVT_GET_RULE_TILE             = "GetRuleTile";
         public const string EVT_GET_ANIMATION_CLIP        = "GetAnimationClip";
+        public const string EVT_GET_PREFAB_ASYNC          = "GetPrefabAsync";
+        public const string EVT_GET_SPRITE_ASYNC          = "GetSpriteAsync";
+        public const string EVT_GET_AUDIO_CLIP_ASYNC      = "GetAudioClipAsync";
+        public const string EVT_GET_TEXTURE_ASYNC         = "GetTextureAsync";
+        public const string EVT_GET_MATERIAL_ASYNC        = "GetMaterialAsync";
+        public const string EVT_GET_RULE_TILE_ASYNC       = "GetRuleTileAsync";
+        public const string EVT_GET_ANIMATION_CLIP_ASYNC  = "GetAnimationClipAsync";
         // §4.1 下跨模块调用走 bare-string，原 3 个 façade alias 已删除：
         //   EVT_GET_MODEL_CLIPS / EVT_GET_ALL_MODEL_PATHS / EVT_RESOURCES_LOADED
         // 调用侧直接传字符串（"GetModelClips" / "GetAllModelPaths" / "OnResourcesLoaded"）
         // 以 ResourceService.EVT_X 为定义方唯一权威。
         public const string EVT_GET_EXTERNAL_SPRITE       = "GetExternalSprite";
+        public const string EVT_GET_EXTERNAL_SPRITE_ASYNC = "GetExternalSpriteAsync";
         public const string EVT_LOAD_PREFAB_ASYNC         = "LoadPrefabAsync";
         public const string EVT_LOAD_SPRITE_ASYNC         = "LoadSpriteAsync";
         public const string EVT_LOAD_RULE_TILE_ASYNC      = "LoadRuleTileAsync";
@@ -61,18 +69,20 @@ namespace EssSystem.Core.Foundation.ResourceManager
 
         protected override void Update()
         {
-            // 不再每帧/节流刷新 Inspector — 只在资源数量变化（启动期预加载阶段）时刷新一次，
-            // 稳定后零分配。仍保留日志开关同步（无分配，O(1)）。
-            SyncServiceLoggingSettings();
-
+            // Inspector 同步节流 — 仅在 Editor 模式下运行，避免 Build 模式下的无谓开销
+            // Inspector 信息仅用于 Editor 调试，Build 模式下无意义
+            // 日志开关同步已在 Awake 中调用一次，无需每帧重复
+#if UNITY_EDITOR
             if (!_showServiceDataInInspector || _resourceService == null) return;
 
-            var count = _resourceService.GetLoadedResources().Count;
+            var loadedResources = _resourceService.GetLoadedResources();
+            var count = loadedResources.Count;
             if (count == _lastInspectorResourceCount) return;
 
             _lastInspectorResourceCount = count;
             UpdateServiceInspectorInfo();
-            UpdateDebugInfo();
+            UpdateDebugInfo(loadedResources);
+#endif
         }
 
         protected override void UpdateServiceInspectorInfo()
@@ -87,10 +97,9 @@ namespace EssSystem.Core.Foundation.ResourceManager
             if (_resourceService != null) _resourceService.EnableLogging = _serviceEnableLogging;
         }
 
-        private void UpdateDebugInfo()
+        private void UpdateDebugInfo(Dictionary<ResourceKey, UnityEngine.Object> loadedResources)
         {
             if (_resourceService == null) return;
-            var loadedResources = _resourceService.GetLoadedResources();
             _loadedResourceCount = loadedResources.Count;
             // 只在容量变化时重建数组，避免每次都 new string[]。
             if (_loadedResourcePaths == null || _loadedResourcePaths.Length != loadedResources.Count)
@@ -119,48 +128,51 @@ namespace EssSystem.Core.Foundation.ResourceManager
         }
 
         // ============================================================
-        // R1: façade 转发 helpers — 把 6 个 sync getter / 4 个 async loader 收成单行
+        // R1: façade 转发 helpers — 把异步方法转发到对应的 Service
         // ============================================================
 
-        /// <summary>同步取资源：转发到 ResourceService.EVT_GET_RESOURCE，命中返 Ok(资源)，未命中返 Fail。</summary>
-        private List<object> GetSync(List<object> data, string typeStr)
+        /// <summary>异步获取资源：转发到对应素材类型的 Service。</summary>
+        private List<object> GetAsyncFwd(List<object> data, string typeStr)
         {
             string path = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(
-                ResourceService.EVT_GET_RESOURCE,
-                new List<object> { path, typeStr, false });
-            if (ResultCode.IsOk(result) && result.Count >= 2) return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
+            if (string.IsNullOrEmpty(path)) return ResultCode.Fail("路径为空");
+            
+            // 转发到对应素材类型的 Service 的 GetAsync 事件
+            string eventName = $"Get{typeStr}Async";
+            return EventProcessor.Instance.TriggerEventMethod(eventName, data);
         }
 
-        /// <summary>异步加载：转发到 ResourceService.EVT_LOAD_RESOURCE_ASYNC，原样返回 Service 结果。</summary>
+        /// <summary>异步加载：转发到对应素材类型的 Service。</summary>
         private List<object> LoadAsyncFwd(List<object> data, string typeStr)
         {
             string path = data[0] as string;
-            return EventProcessor.Instance.TriggerEventMethod(
-                ResourceService.EVT_LOAD_RESOURCE_ASYNC,
-                new List<object> { path, typeStr, false });
+            if (string.IsNullOrEmpty(path)) return ResultCode.Fail("路径为空");
+            
+            // 转发到对应素材类型的 Service 的 LoadAsync 事件
+            string eventName = $"Load{typeStr}Async";
+            return EventProcessor.Instance.TriggerEventMethod(eventName, data);
         }
 
-        // ===== Sync getters =====
-        [Event(EVT_GET_PREFAB)]         public List<object> GetPrefab(List<object> d)        => GetSync(d, "Prefab");
-        [Event(EVT_GET_SPRITE)]         public List<object> GetSprite(List<object> d)        => GetSync(d, "Sprite");
-        [Event(EVT_GET_AUDIO_CLIP)]     public List<object> GetAudioClip(List<object> d)     => GetSync(d, "AudioClip");
-        [Event(EVT_GET_TEXTURE)]        public List<object> GetTexture(List<object> d)       => GetSync(d, "Texture");
-        [Event(EVT_GET_MATERIAL)]       public List<object> GetMaterial(List<object> d)      => GetSync(d, "Material");
-        [Event(EVT_GET_RULE_TILE)]      public List<object> GetRuleTile(List<object> d)      => GetSync(d, "RuleTile");
-        [Event(EVT_GET_ANIMATION_CLIP)] public List<object> GetAnimationClip(List<object> d) => GetSync(d, "AnimationClip");
 
-        /// <summary>外部 Sprite 走 isExternal=true 路径（与 GetSync 不同的第三参数）。</summary>
-        [Event(EVT_GET_EXTERNAL_SPRITE)]
-        public List<object> GetExternalSprite(List<object> data)
+        // ===== Async getters =====
+        [Event(EVT_GET_PREFAB_ASYNC)]         public List<object> GetPrefabAsync(List<object> d)        => GetAsyncFwd(d, "Prefab");
+        [Event(EVT_GET_SPRITE_ASYNC)]         public List<object> GetSpriteAsync(List<object> d)        => GetAsyncFwd(d, "Sprite");
+        [Event(EVT_GET_AUDIO_CLIP_ASYNC)]     public List<object> GetAudioClipAsync(List<object> d)     => GetAsyncFwd(d, "AudioClip");
+        [Event(EVT_GET_TEXTURE_ASYNC)]        public List<object> GetTextureAsync(List<object> d)       => GetAsyncFwd(d, "Texture");
+        [Event(EVT_GET_MATERIAL_ASYNC)]       public List<object> GetMaterialAsync(List<object> d)      => GetAsyncFwd(d, "Material");
+        [Event(EVT_GET_RULE_TILE_ASYNC)]      public List<object> GetRuleTileAsync(List<object> d)      => GetAsyncFwd(d, "RuleTile");
+        [Event(EVT_GET_ANIMATION_CLIP_ASYNC)] public List<object> GetAnimationClipAsync(List<object> d) => GetAsyncFwd(d, "AnimationClip");
+
+        /// <summary>外部 Sprite 异步获取走 ExternalImageService。</summary>
+        [Event(EVT_GET_EXTERNAL_SPRITE_ASYNC)]
+        public List<object> GetExternalSpriteAsync(List<object> data)
         {
             string filePath = data[0] as string;
-            var result = EventProcessor.Instance.TriggerEventMethod(
-                ResourceService.EVT_GET_RESOURCE,
-                new List<object> { filePath, "Sprite", true });
-            if (ResultCode.IsOk(result) && result.Count >= 2) return ResultCode.Ok(result[1]);
-            return ResultCode.Fail("获取失败");
+            if (string.IsNullOrEmpty(filePath)) return ResultCode.Fail("路径为空");
+            
+            return EventProcessor.Instance.TriggerEventMethod(
+                ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC,
+                new List<object> { filePath });
         }
 
         // ===== Async loaders =====

@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using Demo.DobeCat.Sys.Network;
-using Demo.DobeCat.Sys.Platform.Windows;
+
+using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
@@ -84,7 +84,7 @@ namespace Demo.DobeCat.Sys.Tray
                 petSub.Add(SystemTray.MenuItemDef.Item(
                     Ai.AiEnabled ? "✔ AI / 玩家控制" : "  AI / 玩家控制", ToggleAi));
             petSub.Add(SystemTray.MenuItemDef.Item(
-                Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode
+                EssSystem.Core.Platform.Windows.DesktopOverlay.IsWindowCaptureMode
                     ? "✔ 窗口捕捉模式 (OBS)" : "  窗口捕捉模式 (OBS)",
                 ToggleWindowCaptureMode));
             var bgVisible = Demo.DobeCat.Game.Pet.PetBackgroundLayer.Instance?.Visible ?? false;
@@ -122,7 +122,7 @@ namespace Demo.DobeCat.Sys.Tray
             var lifeSub  = new List<SystemTray.MenuItemDef>();
 
             // 天气
-            var weatherInfo = Demo.DobeCat.Sys.Network.WeatherNotifier.LastWeatherInfo;
+            var weatherInfo = EssSystem.Core.Foundation.NetworkManager.WeatherNotifier.LastWeatherInfo;
             lifeSub.Add(string.IsNullOrEmpty(weatherInfo)
                 ? SystemTray.MenuItemDef.Disabled("🌤 天气: 拉取中...")
                 : SystemTray.MenuItemDef.Item($"🌤 {weatherInfo}", () =>
@@ -162,7 +162,7 @@ namespace Demo.DobeCat.Sys.Tray
             };
 
             // ── 一级菜单 ─────────────────────────────────────────────────────
-            var autoLabel = Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.IsEnabled
+            var autoLabel = EssSystem.Core.Platform.Windows.AutoStartManager.IsEnabled
                 ? "✔ 开机自启" : "  开机自启";
             var items = new List<SystemTray.MenuItemDef>
             {
@@ -178,7 +178,7 @@ namespace Demo.DobeCat.Sys.Tray
                 SystemTray.MenuItemDef.Item("⚙ 设置面板",  () => Demo.DobeCat.Sys.UI.DobeCatSettingsPanelView.Toggle()),
                 SystemTray.MenuItemDef.Separator(),
                 SystemTray.MenuItemDef.Item(autoLabel,
-                    () => Demo.DobeCat.Sys.Platform.Windows.AutoStartManager.Toggle()),
+                    () => EssSystem.Core.Platform.Windows.AutoStartManager.Toggle()),
                 SystemTray.MenuItemDef.Separator(),
                 SystemTray.MenuItemDef.Item("退出 (Ctrl+Shift+Q)", Quit),
             };
@@ -246,8 +246,8 @@ namespace Demo.DobeCat.Sys.Tray
 
         private void ToggleWindowCaptureMode()
         {
-            var next = !Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.IsWindowCaptureMode;
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetWindowCaptureMode(next);
+            var next = !EssSystem.Core.Platform.Windows.DesktopOverlay.IsWindowCaptureMode;
+            EssSystem.Core.Platform.Windows.DesktopOverlay.SetWindowCaptureMode(next);
             RebuildMenu();
         }
 

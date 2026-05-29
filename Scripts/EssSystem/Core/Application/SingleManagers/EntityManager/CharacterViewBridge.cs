@@ -49,10 +49,28 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         public static Transform CreateCharacter(string configId, string instanceId,
             Transform parent = null, Vector3? worldPosition = null)
         {
-            if (!EventProcessor.HasInstance) return null;
+            if (!EventProcessor.HasInstance)
+            {
+                Debug.LogError($"[CharacterViewBridge] EventProcessor 未就绪，无法创建角色 {instanceId}");
+                return null;
+            }
+            
             var result = EventProcessor.Instance.TriggerEventMethod(
                 CREATE, new List<object> { configId, instanceId, parent, worldPosition ?? Vector3.zero });
-            return ResultCode.IsOk(result) && result.Count >= 2 && result[1] is Transform root ? root : null;
+            
+            if (!ResultCode.IsOk(result))
+            {
+                Debug.LogError($"[CharacterViewBridge] CreateCharacter 失败: configId={configId}, instanceId={instanceId}, result={string.Join(",", result ?? new List<object>())}");
+                return null;
+            }
+            
+            if (result.Count < 2 || !(result[1] is Transform root))
+            {
+                Debug.LogError($"[CharacterViewBridge] CreateCharacter 返回值格式错误: 期望 [ok, Transform]，得到 {string.Join(",", result ?? new List<object>())}");
+                return null;
+            }
+            
+            return root;
         }
 
         /// <summary>销毁 Character 实例。</summary>

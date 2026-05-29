@@ -162,8 +162,8 @@ namespace Demo.DobeCat.Game.Pet
             var currMask = 0;
             for (var i = 0; i < 9; i++)
             {
-                var main = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x31 + i);
-                var num  = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x61 + i);
+                var main = EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(0x31 + i);
+                var num  = EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(0x61 + i);
                 if (((main | num) & unchecked((short)0x8000)) != 0)
                     currMask |= 1 << i;
             }
@@ -386,7 +386,7 @@ namespace Demo.DobeCat.Game.Pet
         private static Vector2 GetCursorScreenPos()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            return EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             return Input.mousePosition;
 #endif

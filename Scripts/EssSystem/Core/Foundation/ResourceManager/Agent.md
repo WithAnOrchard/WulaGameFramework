@@ -15,9 +15,15 @@
 
 ```
 Foundation/ResourceManager/
-├── ResourceManager.cs   Façade（公开 API：6 sync + 3 async + 4 配置/卸载）
-├── ResourceService.cs   底层（缓存 + 索引 + FBX manifest + 外部图片）
-└── Agent.md             本文档
+├── ResourceManager.cs           Façade（公开 API：6 sync + 3 async + 4 配置/卸载）
+├── ResourceService.cs           底层（缓存 + 索引 + FBX manifest + 外部图片）
+├── Services/
+│   ├── Sprite/
+│   │   ├── SpriteService.cs     Sprite 专用服务（异步加载 + 子图兜底 + 缓存注册）
+│   │   └── Agent.md             Sprite 服务文档
+│   └── Base/
+│       └── ResourceServiceBase.cs  服务基类
+└── Agent.md                     本文档
 ```
 
 ## 启动 / 数据流
@@ -44,101 +50,85 @@ Foundation/ResourceManager/
 public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, AnimationClip }
 ```
 
-> **FBX 模型**：`Resources/` 下 `.fbx` 根资产是 `GameObject`，用 `EVT_GET_PREFAB` 取。其内部的 `AnimationClip` 子资产在启动时按 `clip.name` 索引到全局缓存，用 `EVT_GET_ANIMATION_CLIP` 直接按名取。
+> **FBX 模型**：`Resources/` 下 `.fbx` 根资产是 `GameObject`，用 `EVT_GET_PREFAB_ASYNC` 异步加载。其内部的 `AnimationClip` 子资产在启动时按 `clip.name` 索引到全局缓存，用 `EVT_GET_ANIMATION_CLIP_ASYNC` 异步获取。
 
 ## Event API
 
-> 共 18 个：6 façade sync getter + 1 外部 sync + 3 façade async loader + 1 外部 async + 1 配置 + 2 卸载 + 4 Service 内部 + 3 广播。
-
-### 命令类（façade — 同步获取）
-
-> 缓存命中直接返；未命中且非外部 → 自动 fallback 按候选子目录 `Resources.Load`。子目录候选（按命中概率）：`""` / `Tiles` / `Sprites` / `Sprites/Tiles` / `Sprites/UI` / `Sprites/Characters` / `Prefabs` / `Audio` / `Sound` / `Models` / `Models/Characters3D`。路径已含 `/` 时只按原路径试一次，不叠加。
-
-#### `ResourceManager.EVT_GET_PREFAB` — 同步取 Prefab（含 FBX 根）
-- **常量**: `ResourceManager.EVT_GET_PREFAB` = `"GetPrefab"`
-- **参数**: `[string path]`（相对 `Resources/`，不带扩展名）
-- **返回**: `ResultCode.Ok(GameObject)` / `ResultCode.Fail("获取失败")`
-- **副作用**: 缓存命中无副作用；未命中走 fallback `Resources.Load<GameObject>` 后写回缓存
-- **示例**:
-  ```csharp
-  var r = EventProcessor.Instance.TriggerEventMethod(
-      "GetPrefab", new List<object> { "Prefabs/Player" });
-  if (ResultCode.IsOk(r)) { var prefab = r[1] as GameObject; }
-  ```
-
-#### `ResourceManager.EVT_GET_SPRITE` — 同步取 Sprite
-- **常量**: `ResourceManager.EVT_GET_SPRITE` = `"GetSprite"`
-- **参数**: `[string path]`
-- **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("获取失败")`
-- **副作用**: fallback 命中后写缓存。子图兜底：若按候选路径仍 miss 且 `typeStr=="Sprite"`，会 `Resources.LoadAll<Sprite>` 各 hint 子目录按 `sprite.name == fileName` 找匹配子图
-
-#### `ResourceManager.EVT_GET_AUDIO_CLIP` — 同步取 AudioClip
-- **常量**: `ResourceManager.EVT_GET_AUDIO_CLIP` = `"GetAudioClip"`
-- **参数**: `[string path]`
-- **返回**: `ResultCode.Ok(AudioClip)` / `ResultCode.Fail("获取失败")`
-- **副作用**: fallback 写缓存。`AudioManager` 内部走这条路加载 BGM / SFX
-
-#### `ResourceManager.EVT_GET_TEXTURE` — 同步取 Texture2D
-- **常量**: `ResourceManager.EVT_GET_TEXTURE` = `"GetTexture"`
-- **参数**: `[string path]`
-- **返回**: `ResultCode.Ok(Texture2D)` / `ResultCode.Fail("获取失败")`
-- **副作用**: fallback 写缓存
-
-#### `ResourceManager.EVT_GET_MATERIAL` — 同步取 Material
-- **常量**: `ResourceManager.EVT_GET_MATERIAL` = `"GetMaterial"`
-- **参数**: `[string path]`
-- **返回**: `ResultCode.Ok(Material)` / `ResultCode.Fail("获取失败")`
-- **副作用**: fallback 写缓存。`LightManager` 内部走这条路加载天空盒 Material
-
-#### `ResourceManager.EVT_GET_RULE_TILE` — 同步取 RuleTile
-- **常量**: `ResourceManager.EVT_GET_RULE_TILE` = `"GetRuleTile"`
-- **参数**: `[string path]`
-- **返回**: `ResultCode.Ok(RuleTile)` / `ResultCode.Fail("获取失败")`
-- **副作用**: fallback 写缓存。`MapManager` 通过这条路加载地形 RuleTile
-
-#### `ResourceManager.EVT_GET_ANIMATION_CLIP` — 按 clip 名取 AnimationClip（含 FBX 子资产）
-- **常量**: `ResourceManager.EVT_GET_ANIMATION_CLIP` = `"GetAnimationClip"`
-- **参数**: `[string clipName]`（FBX 内 take 名 / `.anim` 文件名）
-- **返回**: `ResultCode.Ok(AnimationClip)` / `ResultCode.Fail("获取失败")`
-- **副作用**: 启动时已把 Resources/ 下所有 AnimationClip（含 FBX 子资产）按 `clip.name` 入缓存；这里只查缓存，不会触发 Resources.Load
-
-#### `ResourceManager.EVT_GET_EXTERNAL_SPRITE` — 同步取外部图片缓存
-- **常量**: `ResourceManager.EVT_GET_EXTERNAL_SPRITE` = `"GetExternalSprite"`
-- **参数**: `[string filePath]`（操作系统绝对路径）
-- **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("获取失败")`
-- **副作用**: 仅查缓存（外部图片必须先经 `EVT_LOAD_EXTERNAL_SPRITE_ASYNC` 加载后才能命中）
+> 共 17 个：8 façade async getter + 3 Load 别名 + 1 外部 async + 1 配置 + 2 卸载 + 2 Service 内部 + 3 广播 + 3 SpriteService 专用。
 
 ### 命令类（façade — 异步加载）
 
 > 缓存命中直接返 `Ok(cached)`；否则触发 `Resources.LoadAsync` 并立刻返回 `Fail("加载中")` 作为 sentinel，回调写缓存后下次 `Get` 即可命中。
 
-#### `ResourceManager.EVT_LOAD_PREFAB_ASYNC` — 异步加载 Prefab
-- **常量**: `ResourceManager.EVT_LOAD_PREFAB_ASYNC` = `"LoadPrefabAsync"`
+#### `ResourceManager.EVT_GET_PREFAB_ASYNC` — 异步加载 Prefab
+- **常量**: `ResourceManager.EVT_GET_PREFAB_ASYNC` = `"GetPrefabAsync"`
 - **参数**: `[string path]`
 - **返回**: `ResultCode.Ok(GameObject)` / `ResultCode.Fail("加载中")`
 - **副作用**: 后台 `Resources.LoadAsync` 完成时入缓存
 
-#### `ResourceManager.EVT_LOAD_SPRITE_ASYNC` — 异步加载 Sprite
-- **常量**: `ResourceManager.EVT_LOAD_SPRITE_ASYNC` = `"LoadSpriteAsync"`
+#### `ResourceManager.EVT_GET_SPRITE_ASYNC` — 异步加载 Sprite
+- **常量**: `ResourceManager.EVT_GET_SPRITE_ASYNC` = `"GetSpriteAsync"`
 - **参数**: `[string path]`
 - **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("加载中")`
 - **副作用**: 同上
 
-#### `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` — 异步加载 RuleTile
-- **常量**: `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` = `"LoadRuleTileAsync"`
+#### `ResourceManager.EVT_GET_AUDIO_CLIP_ASYNC` — 异步加载 AudioClip
+- **常量**: `ResourceManager.EVT_GET_AUDIO_CLIP_ASYNC` = `"GetAudioClipAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(AudioClip)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同上
+
+#### `ResourceManager.EVT_GET_TEXTURE_ASYNC` — 异步加载 Texture
+- **常量**: `ResourceManager.EVT_GET_TEXTURE_ASYNC` = `"GetTextureAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(Texture)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同上
+
+#### `ResourceManager.EVT_GET_MATERIAL_ASYNC` — 异步加载 Material
+- **常量**: `ResourceManager.EVT_GET_MATERIAL_ASYNC` = `"GetMaterialAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(Material)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同上
+
+#### `ResourceManager.EVT_GET_RULE_TILE_ASYNC` — 异步加载 RuleTile
+- **常量**: `ResourceManager.EVT_GET_RULE_TILE_ASYNC` = `"GetRuleTileAsync"`
 - **参数**: `[string path]`
 - **返回**: `ResultCode.Ok(RuleTile)` / `ResultCode.Fail("加载中")`
 - **副作用**: 同上
 
-#### `ResourceManager.EVT_LOAD_EXTERNAL_SPRITE_ASYNC` — 异步加载外部图片
-- **常量**: `ResourceManager.EVT_LOAD_EXTERNAL_SPRITE_ASYNC` = `"LoadExternalSpriteAsync"`
+#### `ResourceManager.EVT_GET_ANIMATION_CLIP_ASYNC` — 异步加载 AnimationClip
+- **常量**: `ResourceManager.EVT_GET_ANIMATION_CLIP_ASYNC` = `"GetAnimationClipAsync"`
+- **参数**: `[string path, string clipName]`
+- **返回**: `ResultCode.Ok(AnimationClip)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同上
+
+#### `ResourceManager.EVT_LOAD_PREFAB_ASYNC` — 异步加载 Prefab（Load 别名）
+- **常量**: `ResourceManager.EVT_LOAD_PREFAB_ASYNC` = `"LoadPrefabAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(GameObject)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同 `EVT_GET_PREFAB_ASYNC`（别名方法）
+
+#### `ResourceManager.EVT_LOAD_SPRITE_ASYNC` — 异步加载 Sprite（Load 别名）
+- **常量**: `ResourceManager.EVT_LOAD_SPRITE_ASYNC` = `"LoadSpriteAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同 `EVT_GET_SPRITE_ASYNC`（别名方法）
+
+#### `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` — 异步加载 RuleTile（Load 别名）
+- **常量**: `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` = `"LoadRuleTileAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(RuleTile)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同 `EVT_GET_RULE_TILE_ASYNC`（别名方法）
+
+#### `ResourceManager.EVT_GET_EXTERNAL_SPRITE_ASYNC` — 异步加载外部图片
+- **常量**: `ResourceManager.EVT_GET_EXTERNAL_SPRITE_ASYNC` = `"GetExternalSpriteAsync"`
 - **参数**: `[string filePath]`（绝对路径）
 - **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("加载中")` / `ResultCode.Fail("文件不存在")`
 - **副作用**: 后台 `Task.Run` 读 bytes → `MainThreadDispatcher` 切回主线程组装 `Texture2D` + `Sprite` → 入缓存 → 广播 `EVT_EXTERNAL_IMAGE_LOADED` / `EVT_EXTERNAL_IMAGE_LOAD_FAILED`
 - **示例**:
   ```csharp
   EventProcessor.Instance.TriggerEventMethod(
-      "LoadExternalSpriteAsync",
+      "GetExternalSpriteAsync",
       new List<object> { "C:/Users/.../avatar.png" });
   ```
 
@@ -146,7 +136,41 @@ public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, Animati
 - **常量**: `ResourceService.EVT_REGISTER_SPRITE_SHEET` = `"RegisterSpriteSheet"`
 - **参数**: `[string sheetResourcePath]`（Resources/ 相对路径，不含扩展名，如 `"Plants/Plants"`）
 - **返回**: `ResultCode.Ok(int addedCount)` / `ResultCode.Fail(msg)`
-- **副作用**: `Resources.LoadAll<Sprite>(sheetPath)` 按 `sprite.name` 写入全局缓存，后续可用 `EVT_GET_SPRITE` 按子图名单张查询
+- **副作用**: `Resources.LoadAll<Sprite>(sheetPath)` 按 `sprite.name` 写入全局缓存，后续可用 `GetSpriteAsync` 按子图名单张查询
+
+### SpriteService 专用事件
+
+> `SpriteService` 是 `ResourceService` 的专用子服务，处理 Sprite 异步加载、子图兜底、缓存注册等。
+
+#### `SpriteService.EVT_GET_SPRITE_ASYNC` — 异步获取 Sprite
+- **常量**: `SpriteService.EVT_GET_SPRITE_ASYNC` = `"GetSpriteAsync"`
+- **参数**: `[string path]`（Sprite ID 或资源路径）
+- **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("加载中")`
+- **副作用**: 缓存命中直接返回；否则触发异步加载，完成后写入缓存
+- **特性**: 支持 Addressables 加载、Resources 加载、子图兜底（从 Sprite Sheet 中按名查找）
+
+#### `SpriteService.EVT_LOAD_SPRITE_ASYNC` — 异步加载 Sprite
+- **常量**: `SpriteService.EVT_LOAD_SPRITE_ASYNC` = `"LoadSpriteAsync"`
+- **参数**: `[string path]`
+- **返回**: `ResultCode.Ok(Sprite)` / `ResultCode.Fail("加载中")`
+- **副作用**: 同 `EVT_GET_SPRITE_ASYNC`
+
+#### `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` — 注册 Sprite 到缓存
+- **常量**: `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` = `"RegisterSpriteToCache"`
+- **参数**: `[string spriteId, Sprite sprite]`（Sprite ID 和 Sprite 对象）
+- **返回**: `ResultCode.Ok()` / `ResultCode.Fail(msg)`
+- **副作用**: 将 Sprite 按 spriteId 注册到全局缓存，后续 `GetSpriteAsync` 可直接命中
+- **用途**: 业务方（如 CharacterManager）预加载 Sprite Sheet 后，将子图逐个注册到缓存
+- **示例**:
+  ```csharp
+  var sprites = Resources.LoadAll<Sprite>("Characters/PixArt/Skin/warrior_1");
+  foreach (var sprite in sprites)
+  {
+      EventProcessor.Instance.TriggerEventMethod(
+          "RegisterSpriteToCache",
+          new List<object> { sprite.name, sprite });
+  }
+  ```
 
 ### 命令类（配置 / 卸载）
 
@@ -210,18 +234,6 @@ public enum ResourceType { Prefab, Sprite, AudioClip, Texture, RuleTile, Animati
 - **返回**: `ResultCode.Ok()` / `ResultCode.Ok(true)`（已加载过）
 - **副作用**: 跑 PreloadConfiguredResources + IndexAllResources + 广播 `EVT_RESOURCES_LOADED`。**幂等**：内部 `_dataLoaded` 标志去重
 - **触发**: `ResourceManager.Start()` 自动触发；`Demo` 也可在 `Start` 阶段主动触发以确保资源就绪
-
-#### `ResourceService.EVT_GET_RESOURCE` — 同步取（含 fallback）
-- **常量**: `ResourceService.EVT_GET_RESOURCE` = `"GetResource"`
-- **参数**: `[string path, string typeStr, bool isExternal?]`
-- **返回**: `ResultCode.Ok(asset)` / `ResultCode.Fail("资源未加载")`
-- **副作用**: façade 6 个 sync getter 都委托到这里
-
-#### `ResourceService.EVT_LOAD_RESOURCE_ASYNC` — 异步加载（含 sentinel）
-- **常量**: `ResourceService.EVT_LOAD_RESOURCE_ASYNC` = `"LoadResourceAsync"`
-- **参数**: `[string path, string typeStr, bool isExternal?]`
-- **返回**: `ResultCode.Ok(cached)` / `ResultCode.Fail("加载中")` / `ResultCode.Fail("不支持的资源类型")`
-- **副作用**: façade 3 个 async loader 都委托到这里
 
 #### `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` — 外部图片异步底层
 - **常量**: `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` = `"LoadExternalImageAsync"`
@@ -313,9 +325,32 @@ if (!ResultCode.IsOk(r) || r.Count < 2)
 var sprite = r[1] as Sprite;
 ```
 
+## SpriteService 使用指南
+
+### 职责分离
+
+- **ResourceManager / ResourceService**：通用资源加载框架
+- **SpriteService**：Sprite 专用服务，处理异步加载、子图兜底、缓存注册
+- **业务方（如 CharacterManager）**：负责预加载策略和路径配置
+
+### 预加载流程
+
+1. **业务方扫描配置**：遍历已注册的 CharacterConfig，收集需要的 Sprite Sheet 路径
+2. **业务方加载 Sheet**：`Resources.LoadAll<Sprite>(sheetPath)` 加载整个 Sprite Sheet
+3. **业务方注册子图**：逐个调用 `EVT_REGISTER_SPRITE_TO_CACHE` 将子图注册到缓存
+4. **运行时查询**：CharacterPartView 调用 `EVT_GET_SPRITE_ASYNC` 直接从缓存命中
+
+### 路径规范
+
+- **Sprite ID 格式**：`{category}_{variant}_{action}_{frameIndex}`
+  - 例：`Skin_warrior_1_Idle_0` → 类别 `Skin`，变体 `warrior_1`，动作 `Idle`，帧 `0`
+- **Sprite Sheet 路径**：`{basePath}/{category}/{variant}`
+  - 例：`Characters/PixArt/Skin/warrior_1` → 对应 `Resources/Characters/PixArt/Skin/warrior_1.png`
+
 ## 注意事项
 
 - 跨模块**只走 bare-string**（§4.1）；不要为读 `EVT_*` 常量而 `using` 本模块（Anti-Patterns §A2）
 - 卸载事件 façade 与 Service 同字符串：扫描期 Service 实现覆盖 façade，结果一致
 - FBX manifest（`Resources/CharacterFBXManifest.json`）由菜单 `Tools/Character/Rebuild FBX Manifest` 或 Build 预处理 `FBXManifestBuilder` 生成
 - Editor 路径按文件名索引、Build 路径按 `m_Name`：Build 前若做过文件改名，记得在 Project 窗口右键 Reimport 或重生成 FBX manifest
+- **SpriteService 预加载**：不应在 ResourceManager 中硬编码，而应由业务方（如 DobeCat）根据自己的资源结构调用 `CharacterManager.PreloadCharacterSprites(basePath)` 传入正确的路径

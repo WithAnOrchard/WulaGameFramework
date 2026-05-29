@@ -64,7 +64,7 @@ namespace Demo.DobeCat.Sys.UI
 
         private static void OnInputFocused()
         {
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
+            EssSystem.Core.Platform.Windows.DesktopOverlay.BringToForeground();
         }
 
         private void OnThemeChanged()
@@ -80,7 +80,7 @@ namespace Demo.DobeCat.Sys.UI
         {
             DestroyPanel();
             BuildAndShow();
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
+            EssSystem.Core.Platform.Windows.DesktopOverlay.BringToForeground();
         }
         public void Hide()  { if (_rootEntity != null) _rootEntity.gameObject.SetActive(false); }
         private void _Toggle(){ if (IsOpen) Hide(); else Show(); }

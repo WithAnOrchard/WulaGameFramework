@@ -108,8 +108,8 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             }
 
             var result = EventProcessor.Instance.TriggerEventMethod(
-                "GetResource",
-                new System.Collections.Generic.List<object> { spriteId, "Sprite", false });
+                "GetSprite",
+                new System.Collections.Generic.List<object> { spriteId, false });
             if (!ResultCode.IsOk(result) || result.Count < 2) return;
             if (result[1] is Sprite sprite) image.sprite = sprite;
         }

@@ -19,8 +19,14 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         private Text       _textLegacy;
         private Text       _placeholderLegacy;
 
-        private static readonly Font _builtinFont =
-            Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        private static Font _builtinFont;
+        
+        private static Font GetBuiltinFont()
+        {
+            if (_builtinFont == null)
+                _builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            return _builtinFont;
+        }
 
         protected override void Awake()
         {
@@ -43,7 +49,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             phRt.anchorMin = Vector2.zero; phRt.anchorMax = Vector2.one;
             phRt.offsetMin = new Vector2(6f, 2f); phRt.offsetMax = new Vector2(-6f, -2f);
             _placeholderLegacy = phGo.AddComponent<Text>();
-            _placeholderLegacy.font           = _builtinFont;
+            _placeholderLegacy.font           = GetBuiltinFont();
             _placeholderLegacy.color          = new Color(0.9f, 0.9f, 0.9f, 0.45f);
             _placeholderLegacy.fontSize       = 14;
             _placeholderLegacy.alignment      = TextAnchor.MiddleCenter;
@@ -57,7 +63,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             tRt.anchorMin = Vector2.zero; tRt.anchorMax = Vector2.one;
             tRt.offsetMin = new Vector2(6f, 2f); tRt.offsetMax = new Vector2(-6f, -2f);
             _textLegacy = tGo.AddComponent<Text>();
-            _textLegacy.font           = _builtinFont;
+            _textLegacy.font           = GetBuiltinFont();
             _textLegacy.color          = Color.white;
             _textLegacy.fontSize       = 14;
             _textLegacy.alignment      = TextAnchor.MiddleCenter;

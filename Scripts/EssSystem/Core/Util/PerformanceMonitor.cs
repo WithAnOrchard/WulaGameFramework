@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using UnityEngine;
 
 namespace EssSystem.Core.Util
 {
@@ -68,7 +67,7 @@ namespace EssSystem.Core.Util
 
                 if (isWarning)
                 {
-                    Debug.LogWarning($"[PerformanceMonitor] {name} 耗时 {elapsed}ms（超过阈值 {_warningThresholdMs}ms）");
+                    UnityEngine.Debug.LogWarning($"[PerformanceMonitor] {name} 耗时 {elapsed}ms（超过阈值 {_warningThresholdMs}ms）");
                 }
             }
         }
@@ -221,26 +220,26 @@ namespace EssSystem.Core.Util
         {
             var report = GetReport();
 
-            Debug.Log("========== 性能监控报告 ==========");
-            Debug.Log($"总记录数: {report["TotalRecords"]}");
-            Debug.Log($"警告数: {report["WarningCount"]}");
+            UnityEngine.Debug.Log("========== 性能监控报告 ==========");
+            UnityEngine.Debug.Log($"总记录数: {report["TotalRecords"]}");
+            UnityEngine.Debug.Log($"警告数: {report["WarningCount"]}");
 
             var operations = report["Operations"] as Dictionary<string, Dictionary<string, long>>;
             if (operations != null && operations.Count > 0)
             {
-                Debug.Log("\n操作统计:");
+                UnityEngine.Debug.Log("\n操作统计:");
                 foreach (var kvp in operations)
                 {
                     var stats = kvp.Value;
-                    Debug.Log($"  {kvp.Key}:");
-                    Debug.Log($"    执行次数: {stats["Count"]}");
-                    Debug.Log($"    总耗时: {stats["TotalMs"]}ms");
-                    Debug.Log($"    平均: {stats["AverageMs"]}ms");
-                    Debug.Log($"    最小: {stats["MinMs"]}ms");
-                    Debug.Log($"    最大: {stats["MaxMs"]}ms");
+                    UnityEngine.Debug.Log($"  {kvp.Key}:");
+                    UnityEngine.Debug.Log($"    执行次数: {stats["Count"]}");
+                    UnityEngine.Debug.Log($"    总耗时: {stats["TotalMs"]}ms");
+                    UnityEngine.Debug.Log($"    平均: {stats["AverageMs"]}ms");
+                    UnityEngine.Debug.Log($"    最小: {stats["MinMs"]}ms");
+                    UnityEngine.Debug.Log($"    最大: {stats["MaxMs"]}ms");
                 }
             }
-            Debug.Log("================================");
+            UnityEngine.Debug.Log("================================");
         }
 
         /// <summary>清空所有记录</summary>

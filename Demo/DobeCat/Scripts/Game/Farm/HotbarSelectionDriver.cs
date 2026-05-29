@@ -6,7 +6,7 @@ using EssSystem.Core.Base.Util;
 using UnityEngine;
 using UnityEngine.UI;
 using Demo.DobeCat.Game;
-using Demo.DobeCat.Sys.Platform.Windows;
+using EssSystem.Core.Platform.Windows;
 
 namespace Demo.DobeCat.Game.Farm
 {

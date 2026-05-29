@@ -191,8 +191,8 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
             {
                 
 
-                var result = EventProcessor.Instance.TriggerEventMethod("GetResource",
-                    new System.Collections.Generic.List<object> { spriteId, "Sprite", false });
+                var result = EventProcessor.Instance.TriggerEventMethod("GetSprite",
+                    new System.Collections.Generic.List<object> { spriteId, false });
 
                 if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
                 {

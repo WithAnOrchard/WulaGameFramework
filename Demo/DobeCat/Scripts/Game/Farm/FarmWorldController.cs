@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using EssSystem.Core.Application.MultiManagers.FarmManager;
@@ -12,7 +12,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Game;
-using Demo.DobeCat.Sys.Network;
+
 using Demo.DobeCat.Sys.UI;
 
 namespace Demo.DobeCat.Game.Farm

@@ -22,11 +22,16 @@ public class SingletonMono<T> : MonoBehaviour where T : MonoBehaviour
     {
         get
         {
+            // 快速路径：_instance 已初始化，无锁访问（优化 Phase 1.2）
+            if (_instance != null)
+                return _instance;
+
             if (_applicationIsQuitting || ApplicationLifecycle.IsQuitting)
             {
                 return null;
             }
 
+            // 慢速路径：_instance 未初始化，需要加锁
             lock (_lock)
             {
                 if (_instance == null)

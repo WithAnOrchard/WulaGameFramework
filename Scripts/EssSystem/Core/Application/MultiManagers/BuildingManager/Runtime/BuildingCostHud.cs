@@ -4,6 +4,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config;
+using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 // 本文件构造 UIComponent DAO（共享 DAO 层），但不 using UIManager 本体；
 // UI 注册 / 查询 / 销毁全部走 §4.1 bare-string 协议事件。

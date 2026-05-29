@@ -87,6 +87,8 @@ public enum CharacterRenderMode
 ## Event API
 
 > 共 10 个命令 + 1 个广播。所有命令返回 `Ok(instanceId)` 或 `Ok(Transform root)` 表示成功，`Fail(msg)` 表示失败。跨模块调用走 bare-string（§4.1）。
+>
+> **新增**：`PreloadCharacterSprites(basePath)` 公开方法供业务方调用，用于预加载 Sprite Sheet 并注册到 SpriteService 缓存。
 
 ### 命令类（生命周期）
 
@@ -248,6 +250,38 @@ CharacterConfigFactory.RegisterFBXModel("zombie", "Models/Characters3D/zombie",
 CharacterConfigFactory.RegisterAllFBXInResources("Models/Characters3D");
 ```
 
+## Sprite 预加载指南
+
+### 职责分离
+
+- **CharacterManager**：提供 `PreloadCharacterSprites(basePath)` 公开方法
+- **业务方（如 DobeCat）**：负责调用预加载，传入正确的资源路径
+
+### 预加载流程
+
+1. **业务方扫描配置**：遍历已注册的 CharacterConfig，收集需要的 Sprite Sheet 路径
+2. **业务方加载 Sheet**：`Resources.LoadAll<Sprite>(sheetPath)` 加载整个 Sprite Sheet
+3. **业务方注册子图**：逐个调用 `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` 将子图注册到缓存
+4. **运行时查询**：CharacterPartView 调用 `SpriteService.EVT_GET_SPRITE_ASYNC` 直接从缓存命中
+
+### 使用示例
+
+```csharp
+// 在 DobeCatGameManager 中调用
+if (CharMgr.HasInstance)
+{
+    CharMgr.Instance.PreloadCharacterSprites("Characters/PixArt");
+    Debug.Log("[DobeCatGameManager] Character Sprite 预加载已触发");
+}
+```
+
+### 路径规范
+
+- **Sprite ID 格式**：`{category}_{variant}_{action}_{frameIndex}`
+  - 例：`Skin_warrior_1_Idle_0` → 类别 `Skin`，变体 `warrior_1`，动作 `Idle`，帧 `0`
+- **Sprite Sheet 路径**：`{basePath}/{category}/{variant}`
+  - 例：`Characters/PixArt/Skin/warrior_1` → 对应 `Resources/Characters/PixArt/Skin/warrior_1.png`
+
 ## 注意事项
 
 - **跨模块只走 bare-string**（§4.1）；返 `Transform` / `GameObject` 等 Unity 中立类型，不返 `Character` / `CharacterView`（§A7）
@@ -258,3 +292,4 @@ CharacterConfigFactory.RegisterAllFBXInResources("Models/Characters3D");
   - Build 期依赖 `Resources/CharacterFBXManifest.json`（`FBXManifestBuilder` 生成）
 - **`CharacterAnimatorBinder` 是 3D 专属**（在 `Prefab3D/Runtime/`）—— 通过事件创建 Character 并锁外层位姿，2D 项目不需要
 - **预览面板** `CharacterPreviewPanel` 在 `Common/Runtime/Preview/`，2D/3D 都能预览
+- **Sprite 预加载不硬编码**：不应在 CharacterManager 中硬编码资源路径，而应由业务方根据自己的资源结构调用 `PreloadCharacterSprites(basePath)` 传入正确的路径

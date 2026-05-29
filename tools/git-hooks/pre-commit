@@ -4,6 +4,11 @@
 # Runs tools/agent_lint.ps1 -Strict; aborts commit on any error or warning.
 #
 # Install: run `pwsh tools/install-hooks.ps1` (or `powershell` on Windows)
+# 
+# Checks performed:
+#   1. Encoding: All files must be UTF-8
+#   2. Event consistency: EVT_XXX constants must be documented in Agent.md
+#   3. Manager updates: If Events.md changed, Managers.md must also be updated
 # ----------------------------------------------------------------------
 set -e
 
@@ -15,7 +20,7 @@ if command -v pwsh >/dev/null 2>&1; then
 elif command -v powershell >/dev/null 2>&1; then
     PS=powershell
 else
-    echo "[pre-commit] PowerShell not found; skipping agent_lint" >&2
+    echo "[pre-commit] PowerShell not found; skipping checks" >&2
     exit 0
 fi
 
@@ -24,16 +29,44 @@ echo "[pre-commit] Running tools/encoding_lint.ps1 -Strict ..."
 status=$?
 if [ $status -ne 0 ]; then
     echo "" >&2
-    echo "[pre-commit] FAIL: encoding_lint reported issues (非 UTF-8 / 替代字符)。Fix 或 --no-verify 跳过。" >&2
+    echo "[pre-commit] FAIL: encoding_lint reported issues (non-UTF-8 / replacement chars). Fix or --no-verify to skip." >&2
     exit $status
 fi
 
 echo "[pre-commit] Running tools/agent_lint.ps1 -Strict ..."
 "$PS" -NoProfile -ExecutionPolicy Bypass -File ./tools/agent_lint.ps1 -Strict
 status=$?
-
 if [ $status -ne 0 ]; then
     echo "" >&2
     echo "[pre-commit] FAIL: agent_lint reported issues. Fix or run with --no-verify to bypass." >&2
+    exit $status
 fi
-exit $status
+
+echo "[pre-commit] Checking Event and Manager documentation updates ..."
+# Check if Events.md is being committed
+if git diff --cached --name-only | grep -q "^Assets/Events.md$"; then
+    echo "[pre-commit] Events.md was modified. Checking if Managers.md and Agent.md are also updated..."
+    
+    # Check if Managers.md is also being committed
+    if ! git diff --cached --name-only | grep -q "^Assets/Scripts/EssSystem/Managers.md$"; then
+        echo "" >&2
+        echo "[pre-commit] WARNING: Events.md was modified but Managers.md was not updated!" >&2
+        echo "[pre-commit] Please update Managers.md with new Manager information if applicable." >&2
+    fi
+    
+    # Check if Agent.md is also being committed
+    if ! git diff --cached --name-only | grep -q "^Assets/Agent.md$"; then
+        echo "" >&2
+        echo "[pre-commit] WARNING: Events.md was modified but Agent.md global index was not updated!" >&2
+        echo "[pre-commit] Please update Assets/Agent.md with new Event entries if applicable." >&2
+    fi
+fi
+
+# Check if any Agent.md files were modified
+if git diff --cached --name-only | grep -q "Agent.md$"; then
+    echo "[pre-commit] Agent.md files were modified. Verifying Event documentation..."
+    # The agent_lint check above already validates this
+fi
+
+echo "[pre-commit] All checks passed!"
+exit 0

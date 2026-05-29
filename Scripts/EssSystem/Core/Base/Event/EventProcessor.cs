@@ -6,6 +6,7 @@ using System.Reflection;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Singleton;
 using EssSystem.Core.Base.Util;
+using EssSystem.Core.Base.ObjectPool;
 using UnityEngine;
 // ApplicationLifecycle 已在 EssSystem.Core.Util using 范围内
 
@@ -80,6 +81,10 @@ namespace EssSystem.Core.Base.Event
         /// <para>用于高频网络/坐标同步等会刷屏的事件。注册：<c>EventProcessor.Instance.SilenceEvent(name)</c>。</para></summary>
         private readonly HashSet<string> _silentEvents = new();
 
+        // 定期清理空监听器列表（Phase 1.3 优化）
+        private float _cleanupTimer;
+        private const float CLEANUP_INTERVAL = 60f;  // 每 60 秒清理一次
+
         /// <summary>把指定事件加入静默集；之后该事件不再产生 "触发事件 / 没监听器" 日志（仍正常分派）。</summary>
         public void SilenceEvent(string eventName)
         {
@@ -104,8 +109,17 @@ namespace EssSystem.Core.Base.Event
 
             // 扫描所有标注
             ScanEventAttributes();
+        }
 
-            Log("EventProcessor 初始化完成！", Color.green);
+        protected override void Update()
+        {
+            // 定期清理空监听器列表（Phase 1.3 优化）
+            _cleanupTimer += Time.deltaTime;
+            if (_cleanupTimer >= CLEANUP_INTERVAL)
+            {
+                _cleanupTimer = 0f;
+                CleanupEmptyListeners();
+            }
         }
 
         #region Event Bus (merged from EventManager)

@@ -17,11 +17,10 @@ using Demo.DobeCat.Game.Farm;
 using Demo.DobeCat.Game.Shop;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Game.Live;
-using Demo.DobeCat.Sys.Network;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
-using Demo.DobeCat.Sys.Platform;
-using Demo.DobeCat.Sys.Platform.Windows;
+using EssSystem.Core.Platform;
+using EssSystem.Core.Platform.Windows;
 
 namespace Demo.DobeCat
 {
@@ -145,7 +144,7 @@ namespace Demo.DobeCat
             // 始终叠加层架构：Awake 同帧同时创建登录 UGUI 面板 + 启动叠加层协程
             // 登录面板作为透明叠加层上的居中 UGUI Canvas，无独立窗口、无任务栏、无可切换
             ShowLoginScreen();
-            StartCoroutine(Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.Enter());
+            StartCoroutine(EssSystem.Core.Platform.Windows.DesktopOverlay.Enter());
             Debug.Log("[DobeCatGameManager] Awake 完成，登录面板 + 叠加层协程已启动。");
         }
 
@@ -162,7 +161,7 @@ namespace Demo.DobeCat
         private void RunAfterLogin()
         {
             // 0) 叠加层已在启动时 Enter()，此处重新启用点击穿透，交给 PetClickThroughDriver 动态管理
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(true);
+            EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(true);
 
             // 1) 房间发现开启时强制以 Host 启动，确保自己能被别人加入
             if (_roomDiscoveryEnabled && _netMode != NetworkRole.Host)
@@ -276,12 +275,12 @@ namespace Demo.DobeCat
             // 退出快捷键：Ctrl+Shift+Q
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
             var quit =
-                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
-                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_CONTROL) & 0x8000) != 0 &&
-                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
-                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_SHIFT) & 0x8000) != 0 &&
-                (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
-                     Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_Q) & 0x8000) != 0;
+                (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     EssSystem.Core.Platform.Windows.Win32Native.VK_CONTROL) & 0x8000) != 0 &&
+                (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     EssSystem.Core.Platform.Windows.Win32Native.VK_SHIFT) & 0x8000) != 0 &&
+                (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
+                     EssSystem.Core.Platform.Windows.Win32Native.VK_Q) & 0x8000) != 0;
 #else
             var quit = Input.GetKey(KeyCode.LeftControl)
                     && Input.GetKey(KeyCode.LeftShift)
@@ -299,8 +298,8 @@ namespace Demo.DobeCat
 
             // B 键：打开 / 关闭背包（全局，click-through 时也生效）
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            var bKey = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
-                Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_B) & 0x8000) != 0;
+            var bKey = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
+                EssSystem.Core.Platform.Windows.Win32Native.VK_B) & 0x8000) != 0;
 #else
             var bKey = Input.GetKey(KeyCode.B);
 #endif
@@ -572,7 +571,7 @@ namespace Demo.DobeCat
                 }
 
                 // 保存全屏叠加层分辨率，下次启动 Unity 直接以此分辨率创建窗口，Enter() 无需 SetResolution，零闪烁。
-                var wa = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetPrimaryWorkArea();
+                var wa = EssSystem.Core.Platform.Windows.Win32Native.GetPrimaryWorkArea();
                 int targetW = wa.right  - wa.left;
                 int targetH = wa.bottom - wa.top;
                 int cx = wa.left;  // 叠加层定位于工作区左上角

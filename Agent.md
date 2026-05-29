@@ -11,6 +11,15 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 - `EssSystem/Manager/` — 第三方/外置业务 Manager（目前仅 `DanmuManager`）
 - `GameManager.cs` — 项目入口（继承 `AbstractGameManager`）
 
+## 🔴 必读文档（按优先级）
+
+| 文档 | 内容 | 必读 |
+|---|---|---|
+| **`Managers.md`** | 所有 Manager 的优先级、路径、职责、依赖关系 | ⚠️ **必读** |
+| **`Events.md`** | 所有 Event 的完整定义、参数、返回值 | ⚠️ **必读** |
+| **`Anti-Patterns.md`** | 反模式黑名单、禁止事项 | ⚠️ **必读** |
+| `README.md` | 项目总览 / 快速上手 | 推荐 |
+
 ## 开始之前必读
 
 > 路径均以 `Assets/` 为根（即本文件所在目录）。AI Agent 读文件时请拼接完整 `Assets/...` 路径。
@@ -20,12 +29,10 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 项目总览 / 快速上手 | `README.md` |
 | **反模式 / 黑名单**（写代码前必看） | `Anti-Patterns.md` |
 | Core 架构 + 子模块入口 | `Scripts/EssSystem/Core/Agent.md` |
-| 单例基类 | `Scripts/EssSystem/Core/Singleton/Agent.md` |
-| 事件系统 | `Scripts/EssSystem/Core/Event/Agent.md` |
+| **Base 模块总体指南**（单例、Manager/Service、事件、日志等） | `Scripts/EssSystem/Core/Base/Agent.md` |
+| **Platform 模块指南**（帧率控制、桌面覆盖层、窗口检测等） | `Scripts/EssSystem/Core/Platform/Agent.md` |
+| **Foundation 模块指南**（数据持久化、资源加载、网络通讯） | `Scripts/EssSystem/Core/Foundation/Agent.md` |
 | Manager 系统总览 | `Scripts/EssSystem/Core/EssManagers/Agent.md` |
-| Manager / Service 基类 | `Scripts/EssSystem/Core/EssManagers/Manager/Agent.md` |
-| 数据持久化 | `Scripts/EssSystem/Core/EssManagers/Foundation/DataManager/Agent.md` |
-| 资源加载 | `Scripts/EssSystem/Core/EssManagers/Foundation/ResourceManager/Agent.md` |
 | UI 实体管理 | `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Agent.md` |
 | 音频系统 | `Scripts/EssSystem/Core/EssManagers/Presentation/AudioManager/Agent.md` |
 | 角色系统 | `Scripts/EssSystem/Core/EssManagers/Application/CharacterManager/Agent.md` |
@@ -34,8 +41,12 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 | 背包系统 | `Scripts/EssSystem/Core/EssManagers/Application/InventoryManager/Agent.md` |
 | 2D 地图系统 | `Scripts/EssSystem/Core/EssManagers/Application/MapManager/Agent.md` |
 | 对话系统 | `Scripts/EssSystem/Core/EssManagers/Application/DialogueManager/Agent.md` |
+| Presentation 层总览 | `Scripts/EssSystem/Core/Presentation/Agent.md` |
+| 输入系统 | `Scripts/EssSystem/Core/Presentation/InputManager/Agent.md` |
+| 相机系统 | `Scripts/EssSystem/Core/Presentation/CameraManager/Agent.md` |
+| 灯光系统 | `Scripts/EssSystem/Core/Presentation/LightManager/Agent.md` |
+| 特效系统 | `Scripts/EssSystem/Core/Presentation/EffectsManager/Agent.md` |
 | 弹幕系统（可选） | `Scripts/EssSystem/Manager/DanmuManager/Agent.md` |
-| 昼夜求生 Demo | `Scripts/Demo/DayNight/Agent.md` |
 
 ## 关键约定（核心铁律）
 
@@ -45,24 +56,21 @@ Unity + C# 轻量级游戏框架，核心思想：**Manager/Service 双层单例
 |---|---:|:---:|
 | `EventProcessor` | -30 | ⚠️ 必须最先 |
 | `DataManager` | -20 | ⚠️ 监听 Service 初始化事件 |
-| `ResourceManager` | 0 | |
-| `AudioManager` | 3 | Core/EssManagers/Foundation 下 |
-| `UIManager` | 5 | |
-| `InventoryManager` | 10 | Core/EssManagers 下 |
-| `CharacterManager` | 11 | Core/EssManagers 下 |
-| `MapManager` | 12 | Core/EssManagers 下 |
-| `EntityManager` | 13 | Core/EssManagers 下，依赖 CharacterManager + MapManager |
-| `BuildingManager` | 14 | Core/EssManagers 下，依赖 EntityManager |
-| `DialogueManager` | 15 | Core/EssManagers 下 |
+| `ResourceManager` | 0 | Core/Foundation 下 |
+| `AudioManager` | 3 | Core/Presentation 下 |
+| `UIManager` | 5 | Core/Presentation 下 |
+| `InventoryManager` | 10 | Core/Application 下 |
+| `CharacterManager` | 11 | Core/Presentation 下 |
+| `MapManager` | 12 | Core/Application 下 |
+| `EntityManager` | 13 | Core/Application 下，依赖 CharacterManager + MapManager |
+| `BuildingManager` | 14 | Core/Application 下，依赖 EntityManager |
+| `DialogueManager` | 15 | Core/Application 下 |
 | `SceneInstanceManager` | 16 | 子场景 / 副本管理（骨架，ToDo #3） |
 | `NpcManager` | 17 | NPC 配置 / 实例化 / 互动路由（骨架，ToDo #4 前置） |
 | `CraftingManager` | 18 | 装备制作 + 蓝图（骨架，ToDo #5） |
 | `ShopManager` | 19 | 商店交易（骨架，ToDo #4 后置） |
 | 其它业务 Manager | 20+ | 新增默认起步 |
-| `WaveSpawnManager`（Demo） | 20 | Demo/DayNight 下 |
-| `BaseDefenseManager`（Demo） | 21 | Demo/DayNight 下 |
-| `ConstructionManager`（Demo） | 22 | Demo/DayNight 下 |
-| `DayNightHudManager`（Demo） | 23 | Demo/DayNight 下，依赖 UIManager |
+| `DanmuManager` | 50 | 可选第三方模块（B 站弹幕直播集成） |
 
 ### 2. 通信路由
 
@@ -215,6 +223,8 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `AudioManager` 重构 | 从 `Manager/`（基类文件夹）迁到 `Presentation/AudioManager/`；namespace `EssSystem.Core.Presentation.AudioManager`；优先级 `[Manager(3)]`；全部 12 个事件改 `[Event(EVT_XXX)]`（去掉手动 `AddListener`）；音频加载走 `ResourceManager`（bare-string `"GetAudioClip"`）；调用方（EntityService / TribePlayerCombat / TribePlayerInteraction）改 bare-string §4.1 |
 | `UIEntity` 命名空间 | 从 `EssSystem.Core.UI.Entity.*` 收回到 `EssSystem.Core.Presentation.UIManager.Entity.*`（属于 UIManager 的私有实现） |
 | `EventProcessor.TriggerEventMethod` | catch 块解 `TargetInvocationException` → 暴露真实 `InnerException`，不再吞 listener 抛出的业务异常 |
+| `Manager.SyncServiceLoggingSettings()` | **仅在 Awake 时调用一次**，日志打印设置仅在重启后生效（不支持运行时实时同步）。Inspector 中的 `_serviceEnableLogging` 开关修改后需重启应用才能生效 |
+| **Presentation 层优化（Phase 2）** | `CharacterManager.PreloadCharacterSprites(basePath)` 改为 public 方法，由业务方负责调用和路径配置；Sprite ID 格式规范为 `{category}_{variant}_{action}_{frameIndex}`；新增 `SpriteService` 专用事件（`EVT_GET_SPRITE_ASYNC` / `EVT_LOAD_SPRITE_ASYNC` / `EVT_REGISTER_SPRITE_TO_CACHE`）；所有 Presentation 模块文档完善 |
 
 ## 工具脚本
 
@@ -298,7 +308,21 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 
 ### 全局 Event 索引
 
-为了让 AI 不必读所有 Agent.md 就能定位某个 Event，每次新增 Event 时**必须**同步更新本节。
+> ⚠️ **已移至 `Events.md`**。所有 Event 的完整定义、参数、返回值都在那里。本文件不再维护 Event 索引。
+
+**查询 Event 时**：
+1. 先查 `Events.md` 的全局索引表
+2. 再查对应模块的 `Agent.md` 的 `## Event API` 章节
+
+**新增 Event 时**：
+1. 在定义方（Manager / Service）用常量 `[Event(EVT_XXX)]`
+2. 在模块 `Agent.md` 的 `## Event API` 章节添加文档
+3. 在根目录 `Events.md` 的对应分组添加条目
+4. 运行 `agent_lint.ps1 -Strict` 检查一致性
+
+---
+
+## ❌ 已弃用的 Event 索引（仅作参考，请查 Events.md）
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
@@ -416,45 +440,41 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 | `InputManager.EVT_IS_DOWN` | `IsInputDown` | Core/InputManager | Action 本帧是否按下（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
 | `InputManager.EVT_IS_UP` | `IsInputUp` | Core/InputManager | Action 本帧是否抬起（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
 | `InputManager.EVT_GET_AXIS` | `GetInputAxis` | Core/InputManager | 取轴向值（查询），参数 `[axisName]` 或 `[negativeAction, positiveAction]`，返回 `Ok(float)` |
-| `InputManager.EVT_GET_MOVE_AXIS` | `GetInputMoveAxis` | Core/InputManager | 取 2D 移动向量（查询），返回 `Ok(Vector2)` |
-| `InputManager.EVT_GET_MOUSE_POS` | `GetMouseScreenPosition` | Core/InputManager | 鼠标屏幕坐标（查询），返回 `Ok(Vector2)` |
-| `InputManager.EVT_GET_MOUSE_SCROLL` | `GetMouseScroll` | Core/InputManager | 鼠标滚轮 delta（查询），返回 `Ok(float)` |
+| `InputManager.EVT_GET_MOVE_AXIS` | `GetInputMoveAxis` | Core/InputManager | 取 2D 移动向量（查询），参数 `[]`，返回 `Ok(Vector2)` |
+| `InputManager.EVT_GET_MOUSE_POS` | `GetMouseScreenPosition` | Core/InputManager | 鼠标屏幕坐标（查询），参数 `[]`，返回 `Ok(Vector2)` |
+| `InputManager.EVT_GET_MOUSE_SCROLL` | `GetMouseScroll` | Core/InputManager | 鼠标滚轮 delta（查询），参数 `[]`，返回 `Ok(float)` |
+| `SpriteService.EVT_GET_SPRITE_ASYNC` | `GetSpriteAsync` | Core/ResourceManager | 异步获取 Sprite（查询），参数 `[string path]`，返回 `Ok(Sprite)` / `Fail("加载中")` |
+| `SpriteService.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/ResourceManager | 异步加载 Sprite（命令），参数 `[string path]`，返回 `Ok(Sprite)` / `Fail("加载中")` |
+| `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` | `RegisterSpriteToCache` | Core/ResourceManager | 注册 Sprite 到缓存（命令），参数 `[string spriteId, Sprite sprite]`，返回 `Ok()` / `Fail(msg)` |
+| `LightManager.EVT_APPLY_PRESET` | `ApplyLightPreset` | Core/LightManager | 应用灯光预设（命令），参数 `[string presetId, float blendDuration?]` |
+| `LightManager.EVT_CAPTURE_PRESET` | `CaptureLightPreset` | Core/LightManager | 捕获当前灯光为预设（命令），参数 `[string presetId]` |
+| `LightManager.EVT_SET_SUN_INTENSITY` | `SetSunIntensity` | Core/LightManager | 设置太阳强度（命令），参数 `[float intensity]` |
+| `LightManager.EVT_SET_AMBIENT_LIGHT` | `SetAmbientLight` | Core/LightManager | 设置环境光（命令），参数 `[Color color]` |
+| `LightManager.EVT_SET_FOG` | `SetFog` | Core/LightManager | 设置雾（命令），参数 `[bool enabled, Color color?, float density?]` |
+| `EffectsManager.EVT_REGISTER_VFX` | `RegisterVFX` | Core/EffectsManager | 注册特效定义（命令），参数 `[string vfxId, string prefabPath]` |
+| `EffectsManager.EVT_PLAY_VFX` | `PlayVFX` | Core/EffectsManager | 播放特效（命令），参数 `[string vfxId, Vector3 position, Transform parent?, float duration?]` → `Ok(string instanceId)` |
+| `EffectsManager.EVT_STOP_VFX` | `StopVFX` | Core/EffectsManager | 停止特效（命令），参数 `[string instanceId]` |
+| `EffectsManager.EVT_CLEAR_ALL_VFX` | `ClearAllVFX` | Core/EffectsManager | 清理所有特效（命令），参数 `[]` |
+| `EffectsManager.EVT_SCREEN_FLASH` | `ScreenFlash` | Core/EffectsManager | 屏幕闪光（命令），参数 `[Color color, float duration]` |
+| `CharacterManager.EVT_SET_DIRECTION` | `SetCharacterDirection` | Core/CharacterManager | 设置朝向（sheet 模式选行）；data: `[instanceId, int direction]`（-1/0/+1） |
+| `CharacterManager.EVT_GET_PART_SPRITE_ID` | `GetCharacterPartSpriteId` | Core/CharacterManager | 查询部件当前帧的 spriteId；data: `[instanceId, partId, actionName?, frameIndex?]` → `Ok(string spriteId)` |
 | `InputManager.EVT_INPUT_DOWN` | `OnInputDown` | Core/InputManager | Action 本帧按下**广播**，参数 `[string actionName]` |
 | `InputManager.EVT_INPUT_UP` | `OnInputUp` | Core/InputManager | Action 本帧抬起**广播**，参数 `[string actionName]` |
-| `EffectsManager.EVT_REGISTER_VFX` | `RegisterVFX` | Core/EffectsManager | 注册 VFX 资源映射（命令），参数 `[string vfxId, string prefabPath]` |
 | `EffectsManager.EVT_UNREGISTER_VFX` | `UnregisterVFX` | Core/EffectsManager | 移除 VFX 注册（命令），参数 `[string vfxId]` |
-| `EffectsManager.EVT_PLAY_VFX` | `PlayVFX` | Core/EffectsManager | 播放 VFX（命令），参数 `[string vfxId, Vector3 worldPos, Quaternion? rot, float? autoDestroy]`，返回 `Ok(string instanceId)` |
-| `EffectsManager.EVT_STOP_VFX` | `StopVFX` | Core/EffectsManager | 停止单个 VFX 实例（命令），参数 `[string instanceId]` |
 | `EffectsManager.EVT_STOP_ALL_VFX` | `StopAllVFX` | Core/EffectsManager | 停止所有 VFX（命令） |
-| `EffectsManager.EVT_SCREEN_FLASH` | `PlayScreenFlash` | Core/EffectsManager | 屏幕闪光（命令），参数 `[Color color, float duration?]` |
 | `LightManager.EVT_SET_SUN_COLOR` | `SetSunColor` | Core/LightManager | 设置主光颜色（命令），参数 `[Color]` |
-| `LightManager.EVT_SET_SUN_INTENSITY` | `SetSunIntensity` | Core/LightManager | 设置主光强度（命令），参数 `[float]` |
 | `LightManager.EVT_SET_SUN_ROTATION` | `SetSunRotation` | Core/LightManager | 设置主光朝向（命令），参数 `[Vector3 euler]` |
-| `LightManager.EVT_SET_AMBIENT` | `SetAmbientLight` | Core/LightManager | 设置环境光（命令），参数 `[Color color, float intensity?]` |
-| `LightManager.EVT_SET_FOG` | `SetFog` | Core/LightManager | 设置雾（命令），参数 `[bool enable, Color? color, float? density]` |
 | `LightManager.EVT_SET_SKYBOX` | `SetSkybox` | Core/LightManager | 切换天空盒（命令），参数 `[string resourcesPath]`（走 ResourceManager `GetMaterial`） |
 | `LightManager.EVT_SET_BLOOM` | `SetBloom` | Core/LightManager | 设置 URP Bloom（命令），参数 `[float intensity, float? threshold]` |
 | `LightManager.EVT_SET_VIGNETTE` | `SetVignette` | Core/LightManager | 设置 URP Vignette（命令），参数 `[float intensity, Color? color]` |
 | `LightManager.EVT_SET_CHROMATIC_ABERRATION` | `SetChromaticAberration` | Core/LightManager | 设置 URP 色差（命令），参数 `[float strength]` |
 | `LightManager.EVT_SET_COLOR_ADJUSTMENTS` | `SetColorAdjustments` | Core/LightManager | 设置 URP 调色（命令），参数 `[float postExposure, float? saturation, float? contrast]` |
 | `LightManager.EVT_REGISTER_PRESET` | `RegisterLightPreset` | Core/LightManager | 注册灯光预设（命令），参数 `[LightPreset]` |
-| `LightManager.EVT_APPLY_PRESET` | `ApplyLightPreset` | Core/LightManager | 应用预设（命令），参数 `[string presetName, float duration?]`，支持插值过渡 |
 | `LightManager.EVT_REGISTER_LIGHT` | `RegisterLight` | Core/LightManager | 注册 3D 动态光（命令），参数 `[string lightId, Light]` |
 | `LightManager.EVT_SET_LIGHT_INTENSITY` | `SetLightIntensity` | Core/LightManager | 设置 3D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
 | `LightManager.EVT_REGISTER_LIGHT_2D` | `RegisterLight2D` | Core/LightManager | 注册 URP 2D Light2D（命令），参数 `[string lightId, Light2D]` |
 | `LightManager.EVT_SET_LIGHT_2D_INTENSITY` | `SetLight2DIntensity` | Core/LightManager | 设置 2D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
 | `LightManager.EVT_SET_LIGHT_2D_COLOR` | `SetLight2DColor` | Core/LightManager | 设置 2D 光颜色（命令），参数 `[string lightId, Color]` |
-| `DayNightGameManager.EVT_PHASE_CHANGED` | `DayNightPhaseChanged` | Demo/DayNight | 昼夜阶段切换**广播**，参数 `[bool isNight, int round, bool isBossNight]` |
-| `WaveSpawnService.EVT_WAVE_STARTED` | `OnWaveStarted` | Demo/DayNight | 波次开始**广播**，参数 `[int round, int waveIndex, int totalEnemies]` |
-| `WaveSpawnService.EVT_WAVE_CLEARED` | `OnWaveCleared` | Demo/DayNight | 波次清完**广播**，参数 `[int round, int waveIndex]` |
-| `BaseDefenseManager.EVT_DAMAGE_BASE` | `DamageBase` | Demo/DayNight | 对据点造成伤害（命令），参数 `[int amount]` |
-| `BaseDefenseManager.EVT_RESET_BASE` | `ResetBase` | Demo/DayNight | 重置据点 HP（命令） |
-| `BaseDefenseService.EVT_HP_CHANGED` | `OnBaseHpChanged` | Demo/DayNight | 据点 HP 变更**广播**，参数 `[int currentHp, int maxHp, int delta]` |
-| `BaseDefenseService.EVT_DESTROYED` | `OnBaseDestroyed` | Demo/DayNight | 据点击毁**广播**，无参 |
-| `ConstructionManager.EVT_PLACE` | `PlaceConstruction` | Demo/DayNight | 放置工事（命令），参数 `[string typeId, Vector3 position, float rotation?]` → `Ok(string instanceId)` |
-| `ConstructionManager.EVT_REMOVE` | `RemoveConstruction` | Demo/DayNight | 移除工事（命令），参数 `[string instanceId]` |
-| `ConstructionService.EVT_PLACED` | `OnConstructionPlaced` | Demo/DayNight | 工事已放置**广播**，参数 `[string instanceId, string typeId, Vector3 position]` |
-| `ConstructionService.EVT_REMOVED` | `OnConstructionRemoved` | Demo/DayNight | 工事已移除**广播**，参数 `[string instanceId]` |
 | `DialogueManager.EVT_OPEN_UI` | `OpenDialogueUI` | Core/DialogueManager | 打开对话 UI 并启动会话（命令），参数 `[string dialogueId, string configId?]` |
 | `DialogueManager.EVT_CLOSE_UI` | `CloseDialogueUI` | Core/DialogueManager | 结束对话并隐藏 UI（命令），无参 |
 | `DialogueService.EVT_REGISTER_DIALOGUE` | `RegisterDialogue` | Core/DialogueManager | 注册 `Dialogue`（命令），参数 `[Dialogue]` |
@@ -564,7 +584,7 @@ var mgr = new GameObject().AddComponent<XxxManager>();
 mgr.SetSomeField(...);
 ```
 
-参考 `@d:\Desktop\WulaFrameGameWork\WulaGameFramework\Assets\Scripts\Demo\DayNight\DayNightGameManager.cs:113-134` 的实现。
+参考 `@d:\Desktop\WulaFrameGameWork\WulaGameFramework\Assets\Scripts\Demo\DobeCat\DobeCatGameManager.cs` 的实现。
 
 ### 3. `[EventListener]` / `[Event]` 找不到 Target 时的行为
 

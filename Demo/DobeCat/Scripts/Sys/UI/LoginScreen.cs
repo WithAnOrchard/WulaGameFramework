@@ -70,19 +70,19 @@ namespace Demo.DobeCat.Sys.UI
         private void Update()
         {
             if (EventSystem.current == null) return;
-            var screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            var screenPos = EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
             if (_uiPointerData == null)
                 _uiPointerData = new PointerEventData(EventSystem.current);
             _uiPointerData.position = screenPos;
             _uiRaycastResults.Clear();
             EventSystem.current.RaycastAll(_uiPointerData, _uiRaycastResults);
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
+            EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
         }
 
         private void OnDestroy()
         {
             DobeCatTheme.OnThemeChanged -= RebuildUI;
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(false);
+            EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(false);
         }
 
         private void RebuildUI()

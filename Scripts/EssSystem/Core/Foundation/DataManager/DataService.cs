@@ -29,19 +29,28 @@ namespace EssSystem.Core.Foundation.DataManager
         private List<IServicePersistence> _serviceInstances;
 
         /// <summary>
+        /// Service 去重检查集合（O(1) 查询）— Phase 1.1 优化
+        /// </summary>
+        private HashSet<IServicePersistence> _serviceInstancesSet;
+
+        /// <summary>
+        /// 数据文件夹是否已创建 — Phase 1.2 延迟初始化
+        /// </summary>
+        private bool _dataFolderCreated = false;
+
+        /// <summary>
         /// 初始化数据服务
         /// </summary>
         protected override void Initialize()
         {
-            // 设置数据文件夹路径
+            // 设置数据文件夹路径（不立即创建，延迟到实际保存时）— Phase 1.2 优化
             _dataFolder = Path.Combine(UnityEngine.Application.persistentDataPath, DATA_FOLDER);
-
-            // 确保数据文件夹存在
-            if (!Directory.Exists(_dataFolder))
-                Directory.CreateDirectory(_dataFolder);
 
             // 初始化 Service 实例列表
             _serviceInstances = new List<IServicePersistence>();
+
+            // 初始化 Service 去重检查集合 — Phase 1.1 优化
+            _serviceInstancesSet = new HashSet<IServicePersistence>();
 
             // 注册 Service 初始化事件监听器（必须在base.Initialize()之前注册）
             // 不预注册自己，让后面 base.Initialize() 触发的 EVT_INITIALIZED 走同一条路径加入 — D3 避免 "Service 已存在" 噪音警告。
@@ -88,7 +97,8 @@ namespace EssSystem.Core.Foundation.DataManager
             if (data.Count > 0 && data[0] is IServicePersistence service)
             {
                 var serviceTypeName = service.GetType().Name;
-                if (!_serviceInstances.Contains(service))
+                // Phase 1.1 优化：使用 HashSet.Add() 替代 Contains() 检查，O(n) → O(1)
+                if (_serviceInstancesSet.Add(service))
                 {
                     _serviceInstances.Add(service);
                     Log($"Service 初始化并注册: {serviceTypeName}", Color.blue);
@@ -99,29 +109,50 @@ namespace EssSystem.Core.Foundation.DataManager
         }
 
         /// <summary>
-        /// 保存所有已注册 Service 的数据
+        /// 确保数据文件夹存在 — Phase 1.2 延迟初始化
         /// </summary>
-        private void SaveAllServiceData()
+        private void EnsureDataFolder()
         {
-            foreach (var serviceInstance in _serviceInstances)
-            {
-                SaveServiceData(serviceInstance);
-            }
+            if (_dataFolderCreated) return;
+
+            if (!Directory.Exists(_dataFolder))
+                Directory.CreateDirectory(_dataFolder);
+
+            _dataFolderCreated = true;
         }
 
         /// <summary>
-        /// 保存指定 Service 的数据 — 通过 IServicePersistence 接口直接调用，零反射
+        /// 保存所有已注册 Service 的数据 — Phase 1.3 优化：添加保存统计
         /// </summary>
-        private void SaveServiceData(IServicePersistence service)
+        private void SaveAllServiceData()
         {
-            try
+            int successCount = 0;
+            int failCount = 0;
+            var startTime = Time.realtimeSinceStartup;
+
+            foreach (var serviceInstance in _serviceInstances)
             {
-                service.SaveAllCategories();
-                Log($"保存Service数据: {service.GetType().Name}", Color.green);
+                try
+                {
+                    EnsureDataFolder();  // Phase 1.2 延迟创建
+                    serviceInstance.SaveAllCategories();
+                    successCount++;
+                }
+                catch (Exception ex)
+                {
+                    failCount++;
+                    LogWarning($"保存Service数据失败: {serviceInstance.GetType().Name} - {ex.Message}");
+                }
             }
-            catch (Exception ex)
+
+            var duration = Time.realtimeSinceStartup - startTime;
+            if (failCount > 0)
             {
-                LogWarning($"保存Service数据失败: {service.GetType().Name} - {ex.Message}");
+                LogWarning($"数据保存完成: {successCount} 成功, {failCount} 失败 (耗时 {duration:F3}s)");
+            }
+            else
+            {
+                Log($"所有 {successCount} 个 Service 数据保存成功 (耗时 {duration:F3}s)", Color.green);
             }
         }
     }

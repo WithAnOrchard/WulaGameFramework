@@ -46,11 +46,15 @@ namespace EssSystem.Core.Base.Manager
         {
             base.Awake();
             Initialize();
+            // 初始化时同步日志设置一次（仅在启动时，不在运行时实时同步）
+            SyncServiceLoggingSettings();
         }
 
         protected virtual void Update()
         {
-            // Inspector 同步节流 — 避免每帧 LINQ/new 分配（GC.Alloc 热点）。
+            // Inspector 同步节流 — 仅在 Editor 模式下运行，避免 Build 模式下的无谓开销
+            // Inspector 信息仅用于 Editor 调试，Build 模式下无意义
+#if UNITY_EDITOR
             if (_showServiceDataInInspector)
             {
                 var now = Time.unscaledTime;
@@ -60,15 +64,18 @@ namespace EssSystem.Core.Base.Manager
                     UpdateServiceInspectorInfo();
                 }
             }
-            SyncServiceLoggingSettings();
+#endif
         }
 
-        protected virtual void OnDestroy()
+        protected override void OnDestroy()
         {
             OnManagerDestroy();
         }
 
-        /// <summary>子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。</summary>
+        /// <summary>
+        /// 子类重写：将 <c>_serviceEnableLogging</c> 同步到关联 Service。
+        /// <para>仅在 Awake 中调用一次，日志打印设置仅在重启后生效。</para>
+        /// </summary>
         protected virtual void SyncServiceLoggingSettings() { }
 
         /// <summary>子类重写：调用 Service.UpdateInspectorInfo() 并赋值 <c>_serviceInspectorInfo</c>。</summary>
