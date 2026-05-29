@@ -91,9 +91,11 @@ namespace EssSystem.Core.Util
         }
 
         /// <summary>测量操作执行时间（带返回值）</summary>
-        [Conditional("UNITY_EDITOR")]
         public static T Measure<T>(string name, Func<T> func)
         {
+            if (func == null) return default;
+
+#if UNITY_EDITOR
             StartTimer(name);
             try
             {
@@ -103,6 +105,9 @@ namespace EssSystem.Core.Util
             {
                 StopTimer(name);
             }
+#else
+            return func.Invoke();
+#endif
         }
 
         /// <summary>获取指定操作的平均执行时间</summary>
