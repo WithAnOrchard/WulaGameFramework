@@ -22,6 +22,7 @@ using Demo.DobeCat.Game.Live;
 using Demo.DobeCat.Sys.Network;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
+using Demo.DobeCat.Sys.Platform;
 
 namespace Demo.DobeCat
 {
