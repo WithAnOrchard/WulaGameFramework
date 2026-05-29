@@ -22,7 +22,12 @@ namespace EssSystem.Core.Base
     public abstract class AbstractGameManager : MonoBehaviour
     {
         /// <summary>
-        /// 已管理的 Manager 列表
+        /// Manager 注册表（Phase 3 架构优化）
+        /// </summary>
+        private ManagerRegistry _managerRegistry = new();
+
+        /// <summary>
+        /// 已管理的 Manager 列表（保留向后兼容）
         /// </summary>
         private readonly List<MonoBehaviour> _managedManagers = new List<MonoBehaviour>();
 
@@ -119,37 +124,33 @@ namespace EssSystem.Core.Base
             // 获取当前 GameObject 及所有子 GameObject 上的所有 MonoBehaviour 组件
             var allComponents = GetComponentsInChildren<MonoBehaviour>();
 
-            // 筛选出 Manager<T> 类型的组件
-            var managers = new List<ManagerInfo>();
+            // 筛选出 Manager<T> 类型的组件并注册到 ManagerRegistry
             foreach (var component in allComponents)
             {
-                if (component == this) continue; // 跳过自身
+                if (component == this) continue;
 
                 var componentType = component.GetType();
                 if (IsManagerType(componentType))
                 {
                     var priority = GetManagerPriority(componentType);
-                    managers.Add(new ManagerInfo
-                    {
-                        Component = component,
-                        Type = componentType,
-                        Priority = priority
-                    });
+                    _managerRegistry.Register(component, priority);
+                    _managedManagers.Add(component);
                 }
             }
 
-            // 按优先级排序（数值越小越先执行）
-            managers.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+            // 按优先级获取所有 Manager
+            var sortedManagers = _managerRegistry.GetAllManagers();
 
             // 初始化所有 Manager
-            foreach (var managerInfo in managers)
+            foreach (var metadata in sortedManagers)
             {
-                _managedManagers.Add(managerInfo.Component);
-                Debug.Log($"[AbstractGameManager] 发现并管理 Manager: {managerInfo.Type.Name} (优先级: {managerInfo.Priority})");
+                _managerRegistry.MarkInitialized(metadata.Type);
+                Debug.Log($"[AbstractGameManager] 发现并管理 Manager: {metadata.Name} (优先级: {metadata.Priority})");
             }
 
             _initialized = true;
-            Debug.Log($"[AbstractGameManager] 共管理 {_managedManagers.Count} 个 Manager");
+            var stats = _managerRegistry.GetStats();
+            Debug.Log($"[AbstractGameManager] 共管理 {stats["TotalCount"]} 个 Manager");
         }
 
         /// <summary>
@@ -162,8 +163,7 @@ namespace EssSystem.Core.Base
             // 获取当前 GameObject 及所有子 GameObject 上的所有 MonoBehaviour 组件
             var allComponents = GetComponentsInChildren<MonoBehaviour>();
 
-            // 筛选出 Manager<T> 类型的组件
-            var managers = new List<ManagerInfo>();
+            // 筛选出 Manager<T> 类型的组件并注册到 ManagerRegistry
             int processedThisFrame = 0;
 
             foreach (var component in allComponents)
@@ -174,12 +174,8 @@ namespace EssSystem.Core.Base
                 if (IsManagerType(componentType))
                 {
                     var priority = GetManagerPriority(componentType);
-                    managers.Add(new ManagerInfo
-                    {
-                        Component = component,
-                        Type = componentType,
-                        Priority = priority
-                    });
+                    _managerRegistry.Register(component, priority);
+                    _managedManagers.Add(component);
 
                     processedThisFrame++;
                     if (processedThisFrame >= _maxFramesPerInitialization)
@@ -190,19 +186,20 @@ namespace EssSystem.Core.Base
                 }
             }
 
-            // 按优先级排序（数值越小越先执行）
-            managers.Sort((a, b) => a.Priority.CompareTo(b.Priority));
+            // 按优先级获取所有 Manager
+            var sortedManagers = _managerRegistry.GetAllManagers();
 
             // 异步初始化所有 Manager
-            foreach (var managerInfo in managers)
+            foreach (var metadata in sortedManagers)
             {
-                _managedManagers.Add(managerInfo.Component);
-                Debug.Log($"[AbstractGameManager] 发现并管理 Manager: {managerInfo.Type.Name} (优先级: {managerInfo.Priority})");
+                _managerRegistry.MarkInitialized(metadata.Type);
+                Debug.Log($"[AbstractGameManager] 发现并管理 Manager: {metadata.Name} (优先级: {metadata.Priority})");
                 yield return null;
             }
 
             _initialized = true;
-            Debug.Log($"[AbstractGameManager] 异步初始化完成，共管理 {_managedManagers.Count} 个 Manager");
+            var stats = _managerRegistry.GetStats();
+            Debug.Log($"[AbstractGameManager] 异步初始化完成，共管理 {stats["TotalCount"]} 个 Manager");
         }
 
         /// <summary>
@@ -257,6 +254,30 @@ namespace EssSystem.Core.Base
         public bool HasManager<T>() where T : MonoBehaviour
         {
             return _managedManagers.Any(m => m is T);
+        }
+
+        /// <summary>
+        /// 获取 Manager 注册表（Phase 3 架构优化）
+        /// </summary>
+        public ManagerRegistry GetManagerRegistry()
+        {
+            return _managerRegistry;
+        }
+
+        /// <summary>
+        /// 获取 Manager 统计信息（Phase 3 架构优化）
+        /// </summary>
+        public Dictionary<string, object> GetManagerStats()
+        {
+            return _managerRegistry.GetStats();
+        }
+
+        /// <summary>
+        /// 获取所有 Manager 的详细信息（Phase 3 架构优化）
+        /// </summary>
+        public List<Dictionary<string, object>> GetManagerDetails()
+        {
+            return _managerRegistry.GetDetailedInfo();
         }
 
         /// <summary>

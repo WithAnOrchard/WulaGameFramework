@@ -232,6 +232,42 @@ Application.quitting → DataService.SaveAllCategories() → 所有 IServicePers
 - `ResultCode.Ok(data?)` / `ResultCode.Fail(msg)`
 - `ResultCode.IsOk(result)`
 
+## Manager 注册表（Phase 3 架构优化）
+
+`ManagerRegistry` 实现 Manager 的集中管理和职责分离：
+
+```csharp
+// 获取注册表
+var registry = gameManager.GetManagerRegistry();
+
+// 查询 Manager
+var stats = registry.GetStats();
+Debug.Log($"总 Manager 数: {stats["TotalCount"]}");
+Debug.Log($"已初始化: {stats["InitializedCount"]}");
+
+// 获取详细信息
+var details = registry.GetDetailedInfo();
+foreach (var detail in details)
+{
+    Debug.Log($"{detail["Name"]}: {detail["Priority"]} ({detail["Category"]})");
+}
+
+// 按优先级范围查询
+var baseManagers = registry.GetBaseManagers();      // 优先级 < 0
+var businessManagers = registry.GetBusinessManagers(); // 优先级 >= 0
+```
+
+**职责分离**：
+- `AbstractGameManager`：生命周期管理（Awake/OnDestroy）
+- `ManagerRegistry`：Manager 的发现、注册、查询、统计
+
+**功能**：
+- ✅ 集中管理所有 Manager 的元数据
+- ✅ 支持按优先级查询
+- ✅ 支持按类型查询
+- ✅ 提供详细的统计信息
+- ✅ 支持基础/业务 Manager 分类
+
 ## 核心设计原则
 
 - **Manager 是薄壳**：只做事件路由 + 驱动 Service.Tick，不含业务逻辑
@@ -239,6 +275,7 @@ Application.quitting → DataService.SaveAllCategories() → 所有 IServicePers
 - **Capability 组合模式**：Entity 的能力通过 `IEntityCapability` 接口组合，不用继承
 - **数据驱动**：Config/Definition 是纯数据，运行时实例持有引用
 - **bare-string 事件**：跨模块调用走字符串事件，模块内直接调用 Service API
+- **职责分离**：AbstractGameManager 处理生命周期，ManagerRegistry 处理管理（Phase 3）
 
 ## 子模块文档
 
