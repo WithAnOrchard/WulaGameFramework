@@ -23,7 +23,7 @@ using Demo.DobeCat.Sys.Network;
 using EssSystem.Core.Platform;
 using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Presentation.UIManager.Theme;
-using EssSystem.Manager.DanmuManager.UI;
+using BiliBiliDanmu.UI;
 
 namespace Demo.DobeCat
 {
