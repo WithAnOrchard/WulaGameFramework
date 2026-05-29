@@ -34,9 +34,9 @@ namespace Demo.DobeCat.Sys.UI
         };
 
         // ─── 颜色由 DefaultUITheme 提供（BuildUI 内读 Current；事件处理器用属性）───
-        private static Color ColTabOn  => DefaultUITheme.Current.Accent;
-        private static Color ColTabOff => DefaultUITheme.Current.ButtonBg;
-        private static Color ColError  => DefaultUITheme.Current.ButtonRed;
+        private static Color ColTabOn  => DefaultUITheme.Instance.Current.Accent;
+        private static Color ColTabOff => DefaultUITheme.Instance.Current.ButtonBg;
+        private static Color ColError  => DefaultUITheme.Instance.Current.ButtonRed;
 
         public Action OnLoginComplete;
 

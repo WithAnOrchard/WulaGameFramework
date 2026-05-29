@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using EssSystem.Core.Application.MultiManagers.ShopManager;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
 using Demo.DobeCat.Game.Farm;
@@ -37,29 +38,29 @@ namespace Demo.DobeCat.Game.Shop
         private string _currentShopId     = DobeCatShopSetup.SHOP_SEED_STORE;
         private string _currentCurrencyId = CURRENCY_SILVER;
 
-        // ─── 颜色（全部读 DobeCatTheme.Current，跟随主题切换）──────────────
-        private static Color CB    => DobeCatTheme.Current.Background;
-        private static Color CH    => DobeCatTheme.Current.Header;
-        private static Color CX    => DobeCatTheme.Current.Close;
-        private static Color CTM   => DobeCatTheme.Current.TextMain;
-        private static Color CTS   => DobeCatTheme.Current.TextSub;
-        private static Color CDiv  => DobeCatTheme.Current.Divider;
-        private static Color CSB   => DobeCatTheme.Current.ScrollBg;
-        private static Color CRow  => DobeCatTheme.Current.ButtonBg;
-        private static Color CBuy  => DobeCatTheme.Current.Accent;
-        private static Color CTabOn  => DobeCatTheme.Current.Accent;
-        private static Color CTabOff => DobeCatTheme.Current.ButtonBg;
+        // ─── 颜色（全部读 DefaultUITheme.Current，跟随主题切换）──────────────
+        private static Color CB    => DefaultUITheme.Instance.Current.Background;
+        private static Color CH    => DefaultUITheme.Instance.Current.Header;
+        private static Color CX    => DefaultUITheme.Instance.Current.Close;
+        private static Color CTM   => DefaultUITheme.Instance.Current.TextMain;
+        private static Color CTS   => DefaultUITheme.Instance.Current.TextSub;
+        private static Color CDiv  => DefaultUITheme.Instance.Current.Divider;
+        private static Color CSB   => DefaultUITheme.Instance.Current.ScrollBg;
+        private static Color CRow  => DefaultUITheme.Instance.Current.ButtonBg;
+        private static Color CBuy  => DefaultUITheme.Instance.Current.Accent;
+        private static Color CTabOn  => DefaultUITheme.Instance.Current.Accent;
+        private static Color CTabOff => DefaultUITheme.Instance.Current.ButtonBg;
 
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             if (_initialized && EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod(
                     "DestroyUIEntity", new List<object> { "shop-root" });

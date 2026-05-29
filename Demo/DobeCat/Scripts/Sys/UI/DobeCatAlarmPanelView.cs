@@ -119,7 +119,7 @@ namespace Demo.DobeCat.Sys.UI
 
             var reminder = PetCompanionReminder.Instance;
             int count    = reminder?.AlarmCount ?? 0;
-            var t        = DobeCatTheme.Current;
+            var t        = DefaultUITheme.Instance.Current;
 
             // ── 动态高度 ──
             const float TITLE_H = 36f;

@@ -8,6 +8,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 using Demo.DobeCat.Game.Pet;
@@ -947,7 +948,7 @@ namespace Demo.DobeCat.Game.Farm
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DobeCatTheme.Current;
+            var t = DefaultUITheme.Instance.Current;
             var root = new UIPanelComponent(UI_TOOLTIP_ID)
                 .SetBackgroundColor(new Color(0.05f, 0.05f, 0.05f, 0.92f))
                 .SetSize(260f, 80f).SetPosition(-9999f, -9999f); // 初始在屏外
