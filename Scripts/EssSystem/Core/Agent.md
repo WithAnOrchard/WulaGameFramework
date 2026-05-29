@@ -277,6 +277,47 @@ var businessManagers = registry.GetBusinessManagers(); // 优先级 >= 0
 - **bare-string 事件**：跨模块调用走字符串事件，模块内直接调用 Service API
 - **职责分离**：AbstractGameManager 处理生命周期，ManagerRegistry 处理管理（Phase 3）
 
+## 性能监控（Phase 4 可维护性优化）
+
+`PerformanceMonitor` 提供性能追踪和调试功能：
+
+```csharp
+// 测量操作执行时间
+PerformanceMonitor.StartTimer("MyOperation");
+// ... 执行操作 ...
+PerformanceMonitor.StopTimer("MyOperation");
+
+// 或使用 Measure 方法
+PerformanceMonitor.Measure("MyOperation", () =>
+{
+    // ... 执行操作 ...
+});
+
+// 获取统计信息
+var avgTime = PerformanceMonitor.GetAverageTime("MyOperation");
+var maxTime = PerformanceMonitor.GetMaxTime("MyOperation");
+
+// 打印性能报告
+PerformanceMonitor.PrintReport();
+
+// 获取内存使用情况
+var memStats = PerformanceMonitor.GetMemoryStats();
+Debug.Log($"已分配内存: {memStats["AllocatedMemoryMB"]}MB");
+```
+
+**功能**：
+- ✅ 追踪关键操作的执行时间
+- ✅ 自动检测超过阈值的操作（默认 16ms）
+- ✅ 提供平均/最小/最大执行时间统计
+- ✅ 记录内存使用情况
+- ✅ 仅在编辑器模式启用（`[Conditional("UNITY_EDITOR")]`）
+
+**使用场景**：
+- 性能瓶颈分析
+- Manager 初始化时间监控
+- 事件分派性能测试
+- 内存泄漏检测
+
 ## 子模块文档
 
 - [Base/Singleton 指南](Base/Singleton/Agent.md)
