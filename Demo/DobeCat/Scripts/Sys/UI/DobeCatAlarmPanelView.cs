@@ -3,6 +3,8 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Theme;
+using EssSystem.Core.Platform.Windows;
 using Demo.DobeCat.Game.Pet;
 using UIInput = EssSystem.Core.Presentation.UIManager.Dao.CommonComponents.UIInputComponent;
 using UIInputEntity = EssSystem.Core.Presentation.UIManager.Entity.CommonEntity.UIInputEntity;
@@ -50,21 +52,21 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += OnThemeChanged;
+            DefaultUITheme.OnThemeChanged += OnThemeChanged;
             UIInputEntity.OnAnyInputSelected += OnInputFocused;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= OnThemeChanged;
+            DefaultUITheme.OnThemeChanged -= OnThemeChanged;
             UIInputEntity.OnAnyInputSelected -= OnInputFocused;
             DestroyPanel();
         }
 
         private static void OnInputFocused()
         {
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
+            DesktopOverlay.BringToForeground();
         }
 
         private void OnThemeChanged()
@@ -80,7 +82,7 @@ namespace Demo.DobeCat.Sys.UI
         {
             DestroyPanel();
             BuildAndShow();
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
+            DesktopOverlay.BringToForeground();
         }
         public void Hide()  { if (_rootEntity != null) _rootEntity.gameObject.SetActive(false); }
         private void _Toggle(){ if (IsOpen) Hide(); else Show(); }

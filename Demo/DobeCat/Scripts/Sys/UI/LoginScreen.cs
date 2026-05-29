@@ -5,6 +5,8 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Presentation.UIManager.Theme;
+using EssSystem.Core.Platform.Windows;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -64,25 +66,25 @@ namespace Demo.DobeCat.Sys.UI
             BuildUI();
             // 加载缓存 token（若有）
             if (_tokenDao != null) _tokenDao.SetText(BilibiliAuthSession.Token ?? string.Empty);
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void Update()
         {
             if (EventSystem.current == null) return;
-            var screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            var screenPos = DesktopOverlay.GetGlobalCursorScreenPos();
             if (_uiPointerData == null)
                 _uiPointerData = new PointerEventData(EventSystem.current);
             _uiPointerData.position = screenPos;
             _uiRaycastResults.Clear();
             EventSystem.current.RaycastAll(_uiPointerData, _uiRaycastResults);
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
+            DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
         }
 
         private void OnDestroy()
         {
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
-            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(false);
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
+            DesktopOverlay.SetClickThrough(false);
         }
 
         private void RebuildUI()
