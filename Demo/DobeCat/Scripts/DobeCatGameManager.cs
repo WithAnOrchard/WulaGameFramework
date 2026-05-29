@@ -20,6 +20,7 @@ using Demo.DobeCat.Game.Live;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
 using Demo.DobeCat.Sys.Network;
+using Demo.DobeCat.Sys.Platform;
 using EssSystem.Core.Platform;
 using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Presentation.UIManager.Theme;

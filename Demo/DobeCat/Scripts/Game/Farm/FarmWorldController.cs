@@ -12,6 +12,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Game;
+using Demo.DobeCat.Sys.Network;
 
 using Demo.DobeCat.Sys.UI;
 using EssSystem.Core.Presentation.UIManager.Theme;
