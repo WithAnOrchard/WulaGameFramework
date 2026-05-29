@@ -7,6 +7,7 @@ using BiliBiliLive;
 using BiliBiliDanmu.Auth;
 
 using EssSystem.Core.Base.Event;
+using Demo.DobeCat.Sys.Network;
 using UnityEngine;
 
 namespace Demo.DobeCat.Sys.UI

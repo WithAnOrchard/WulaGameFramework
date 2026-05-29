@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using EssSystem.Core.Platform.Windows;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Base.Event;
+using Demo.DobeCat.Sys.Network;
 using UnityEngine;
 
 namespace Demo.DobeCat.Sys.Tray
