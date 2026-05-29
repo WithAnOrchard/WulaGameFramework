@@ -5,6 +5,7 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys.UI;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -73,14 +74,14 @@ namespace Demo.DobeCat.Game.Pet
         private void Start()
         {
             DobeCatGameContext.OnContextChanged += OnContextChanged;
-            DobeCatTheme.OnThemeChanged         += RebuildQuickBar;
+            DefaultUITheme.Instance.OnThemeChanged         += RebuildQuickBar;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
             DobeCatGameContext.OnContextChanged -= OnContextChanged;
-            DobeCatTheme.OnThemeChanged         -= RebuildQuickBar;
+            DefaultUITheme.Instance.OnThemeChanged         -= RebuildQuickBar;
             DestroyQuickBar();
         }
 
@@ -264,7 +265,7 @@ namespace Demo.DobeCat.Game.Pet
 
             DestroyQuickBar();
 
-            var t      = DobeCatTheme.Current;
+            var t      = DefaultUITheme.Instance.Current;
             var totalW = QB_SIZE * 2 + QB_GAP;
 
             var root = new UIPanelComponent(QB_ROOT)

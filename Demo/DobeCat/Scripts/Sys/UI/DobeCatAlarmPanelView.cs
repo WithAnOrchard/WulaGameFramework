@@ -50,14 +50,14 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += OnThemeChanged;
+            DefaultUITheme.Instance.OnThemeChanged += OnThemeChanged;
             UIInputEntity.OnAnyInputSelected += OnInputFocused;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= OnThemeChanged;
+            DefaultUITheme.Instance.OnThemeChanged -= OnThemeChanged;
             UIInputEntity.OnAnyInputSelected -= OnInputFocused;
             DestroyPanel();
         }
@@ -117,7 +117,7 @@ namespace Demo.DobeCat.Sys.UI
 
             var reminder = PetCompanionReminder.Instance;
             int count    = reminder?.AlarmCount ?? 0;
-            var t        = DobeCatTheme.Current;
+            var t        = DefaultUITheme.Instance.Current;
 
             // ── 动态高度 ──
             const float TITLE_H = 36f;

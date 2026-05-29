@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
@@ -44,13 +44,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.Instance.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.Instance.OnThemeChanged -= RebuildUI;
             DestroyUI();
         }
 
@@ -99,7 +99,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DobeCatTheme.Current;
+            var t = DefaultUITheme.Instance.Current;
             const float PW = 460f, PH = 580f;
 
             var root = new UIPanelComponent("gift-root")
@@ -183,15 +183,15 @@ namespace Demo.DobeCat.Sys.UI
             _byGiftBtn.OnClick += _ =>
             {
                 _viewByGift = true;
-                _byGiftBtn.SetButtonColor(DobeCatTheme.Current.Accent);
-                _byPersonBtn.SetButtonColor(DobeCatTheme.Current.ButtonBg);
+                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
+                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
                 RefreshView();
             };
             _byPersonBtn.OnClick += _ =>
             {
                 _viewByGift = false;
-                _byGiftBtn.SetButtonColor(DobeCatTheme.Current.ButtonBg);
-                _byPersonBtn.SetButtonColor(DobeCatTheme.Current.Accent);
+                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
+                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
                 RefreshView();
             };
             fetchBtn.OnClick += _ => DoFetch();

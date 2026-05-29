@@ -32,9 +32,9 @@ namespace Demo.DobeCat.Sys.UI
         };
 
         // ─── 颜色由 DobeCatTheme 提供（BuildUI 内读 Current；事件处理器用属性）───
-        private static Color ColTabOn  => DobeCatTheme.Current.Accent;
-        private static Color ColTabOff => DobeCatTheme.Current.ButtonBg;
-        private static Color ColError  => DobeCatTheme.Current.ButtonRed;
+        private static Color ColTabOn  => DefaultUITheme.Instance.Current.Accent;
+        private static Color ColTabOff => DefaultUITheme.Instance.Current.ButtonBg;
+        private static Color ColError  => DefaultUITheme.Instance.Current.ButtonRed;
 
         public Action OnLoginComplete;
 
@@ -64,7 +64,7 @@ namespace Demo.DobeCat.Sys.UI
             BuildUI();
             // 加载缓存 token（若有）
             if (_tokenDao != null) _tokenDao.SetText(BilibiliAuthSession.Token ?? string.Empty);
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.Instance.OnThemeChanged += RebuildUI;
         }
 
         private void Update()
@@ -81,7 +81,7 @@ namespace Demo.DobeCat.Sys.UI
 
         private void OnDestroy()
         {
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.Instance.OnThemeChanged -= RebuildUI;
             EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(false);
         }
 
@@ -107,7 +107,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) { Debug.LogWarning("[LoginScreen] Canvas 未就绪"); return; }
 
-            var t    = DobeCatTheme.Current;
+            var t    = DefaultUITheme.Instance.Current;
             var cBg  = t.Background;
             var cHdr = t.Header;
             var cAcc = t.Accent;

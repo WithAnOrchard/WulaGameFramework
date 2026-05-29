@@ -21,6 +21,7 @@ using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
 using EssSystem.Core.Platform;
 using EssSystem.Core.Platform.Windows;
+using EssSystem.Core.Presentation.UIManager.Theme;
 
 namespace Demo.DobeCat
 {
@@ -137,7 +138,7 @@ namespace Demo.DobeCat
             Application.runInBackground = true;
             Debug.Log($"[STARTUP] 当前分辨率（Awake 执行前）: {Screen.width}×{Screen.height}, fullscreen={Screen.fullScreen}");
             // 主题 & 礼物统计
-            DobeCatTheme.LoadSaved();
+            DefaultUITheme.Instance.LoadSaved();
             gameObject.AddComponent<GiftQueryService>();
             gameObject.AddComponent<DobeCatGiftStatsPanelView>();
             EnsureCamera();
