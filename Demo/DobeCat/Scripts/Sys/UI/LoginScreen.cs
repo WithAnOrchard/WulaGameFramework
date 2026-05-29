@@ -33,10 +33,10 @@ namespace Demo.DobeCat.Sys.UI
             "OpenLive 模式需要主播身份码 + appKey，详见 B 站开放平台文档；M2 接入",
         };
 
-        // ─── 颜色由 DobeCatTheme 提供（BuildUI 内读 Current；事件处理器用属性）───
-        private static Color ColTabOn  => DobeCatTheme.Current.Accent;
-        private static Color ColTabOff => DobeCatTheme.Current.ButtonBg;
-        private static Color ColError  => DobeCatTheme.Current.ButtonRed;
+        // ─── 颜色由 DefaultUITheme 提供（BuildUI 内读 Current；事件处理器用属性）───
+        private static Color ColTabOn  => DefaultUITheme.Current.Accent;
+        private static Color ColTabOff => DefaultUITheme.Current.ButtonBg;
+        private static Color ColError  => DefaultUITheme.Current.ButtonRed;
 
         public Action OnLoginComplete;
 
@@ -109,7 +109,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) { Debug.LogWarning("[LoginScreen] Canvas 未就绪"); return; }
 
-            var t    = DobeCatTheme.Current;
+            var t    = DefaultUITheme.Current;
             var cBg  = t.Background;
             var cHdr = t.Header;
             var cAcc = t.Accent;

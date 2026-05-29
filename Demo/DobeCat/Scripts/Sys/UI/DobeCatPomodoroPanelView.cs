@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game.Pet;
 
 namespace Demo.DobeCat.Sys.UI
@@ -46,13 +47,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("pom-root");
         }
@@ -96,7 +97,7 @@ namespace Demo.DobeCat.Sys.UI
             _break = PlayerPrefs.GetInt(PK_POM_BREAK, 5);
 
             const float PW = 320f, PH = 220f;
-            var t = DobeCatTheme.Current;
+            var t = DefaultUITheme.Current;
 
             var root = new UIPanelComponent("pom-root")
                 .SetBackgroundColor(t.Background).SetSize(PW, PH)

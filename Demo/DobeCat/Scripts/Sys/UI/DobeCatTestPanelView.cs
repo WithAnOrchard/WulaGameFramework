@@ -4,6 +4,7 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using EssSystem.Core.Presentation.UIManager.Theme;
 
 namespace Demo.DobeCat.Sys.UI
 {
@@ -38,7 +39,7 @@ namespace Demo.DobeCat.Sys.UI
         private UIEntity _rootEntity;
         private bool     _initialized;
 
-        // 颜色由 DobeCatTheme 提供，不再使用静态常量。
+        // 颜色由 DefaultUITheme 提供，不再使用静态常量。
 
         // ─── 公共属性 ────────────────────────────────────────────────────────
         internal string StatusText
@@ -61,13 +62,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DobeCatTheme.OnThemeChanged += RebuildUI;
+            DefaultUITheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            DefaultUITheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("tp-root");
         }
@@ -102,7 +103,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = GetCanvasTransform();
             if (canvasT == null) { Debug.LogWarning("[TestPanelView] UIManager Canvas 未就绪"); return; }
 
-            var t = DobeCatTheme.Current;
+            var t = DefaultUITheme.Current;
             var CB   = t.Background; var CH = t.Header; var CX  = t.Close;
             var CTM  = t.TextMain;   var CTS = t.TextSub; var CDiv = t.Divider;
             var CSB  = t.ScrollBg;   var CACC = t.Accent;
