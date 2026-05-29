@@ -256,8 +256,8 @@ namespace EssSystem.Core.Util
             return new Dictionary<string, long>
             {
                 { "TotalMemoryMB", GC.GetTotalMemory(false) / (1024 * 1024) },
-                { "ReservedMemoryMB", Profiler.GetTotalReservedMemoryLong() / (1024 * 1024) },
-                { "AllocatedMemoryMB", Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024) }
+                { "ReservedMemoryMB", UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong() / (1024 * 1024) },
+                { "AllocatedMemoryMB", UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024) }
             };
         }
 
