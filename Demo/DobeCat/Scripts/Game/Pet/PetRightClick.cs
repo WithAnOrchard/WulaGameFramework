@@ -1,4 +1,4 @@
-using Demo.DobeCat.Sys.Tray;
+﻿using Demo.DobeCat.Sys.Tray;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -27,7 +27,7 @@ namespace Demo.DobeCat.Game.Pet
 
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
             // Win32 GetAsyncKeyState VK_RBUTTON = 0x02。click-through 时 Unity 收不到鼠标事件，必须走 Win32。
-            var down = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(0x02) & 0x8000) != 0;
+            var down = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x02) & 0x8000) != 0;
 #else
             var down = Input.GetMouseButton(1);
 #endif

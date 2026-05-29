@@ -5,7 +5,6 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
-using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -33,9 +32,9 @@ namespace Demo.DobeCat.Sys.UI
         };
 
         // ─── 颜色由 DobeCatTheme 提供（BuildUI 内读 Current；事件处理器用属性）───
-        private static Color ColTabOn  => DefaultUITheme.Instance.Current.Accent;
-        private static Color ColTabOff => DefaultUITheme.Instance.Current.ButtonBg;
-        private static Color ColError  => DefaultUITheme.Instance.Current.ButtonRed;
+        private static Color ColTabOn  => DobeCatTheme.Current.Accent;
+        private static Color ColTabOff => DobeCatTheme.Current.ButtonBg;
+        private static Color ColError  => DobeCatTheme.Current.ButtonRed;
 
         public Action OnLoginComplete;
 
@@ -65,25 +64,25 @@ namespace Demo.DobeCat.Sys.UI
             BuildUI();
             // 加载缓存 token（若有）
             if (_tokenDao != null) _tokenDao.SetText(BilibiliAuthSession.Token ?? string.Empty);
-            DefaultUITheme.OnThemeChanged += RebuildUI;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
         private void Update()
         {
             if (EventSystem.current == null) return;
-            var screenPos = EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            var screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
             if (_uiPointerData == null)
                 _uiPointerData = new PointerEventData(EventSystem.current);
             _uiPointerData.position = screenPos;
             _uiRaycastResults.Clear();
             EventSystem.current.RaycastAll(_uiPointerData, _uiRaycastResults);
-            EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
         }
 
         private void OnDestroy()
         {
-            DefaultUITheme.OnThemeChanged -= RebuildUI;
-            EssSystem.Core.Platform.Windows.DesktopOverlay.SetClickThrough(false);
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.SetClickThrough(false);
         }
 
         private void RebuildUI()
@@ -108,7 +107,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) { Debug.LogWarning("[LoginScreen] Canvas 未就绪"); return; }
 
-            var t    = DefaultUITheme.Instance.Current;
+            var t    = DobeCatTheme.Current;
             var cBg  = t.Background;
             var cHdr = t.Header;
             var cAcc = t.Accent;

@@ -1,11 +1,10 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
 using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
-using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Game.Live;
 
@@ -45,13 +44,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.OnThemeChanged += RebuildUI;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.OnThemeChanged -= RebuildUI;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             DestroyUI();
         }
 
@@ -100,7 +99,7 @@ namespace Demo.DobeCat.Sys.UI
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DefaultUITheme.Instance.Current;
+            var t = DobeCatTheme.Current;
             const float PW = 460f, PH = 580f;
 
             var root = new UIPanelComponent("gift-root")
@@ -184,22 +183,22 @@ namespace Demo.DobeCat.Sys.UI
             _byGiftBtn.OnClick += _ =>
             {
                 _viewByGift = true;
-                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
-                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
+                _byGiftBtn.SetButtonColor(DobeCatTheme.Current.Accent);
+                _byPersonBtn.SetButtonColor(DobeCatTheme.Current.ButtonBg);
                 RefreshView();
             };
             _byPersonBtn.OnClick += _ =>
             {
                 _viewByGift = false;
-                _byGiftBtn.SetButtonColor(DefaultUITheme.Instance.Current.ButtonBg);
-                _byPersonBtn.SetButtonColor(DefaultUITheme.Instance.Current.Accent);
+                _byGiftBtn.SetButtonColor(DobeCatTheme.Current.ButtonBg);
+                _byPersonBtn.SetButtonColor(DobeCatTheme.Current.Accent);
                 RefreshView();
             };
             fetchBtn.OnClick += _ => DoFetch();
         }
 
         private static (UIPanelComponent bar, UIButtonComponent closeX)
-            BuildTitleBar(DefaultUIThemeData t, float pw, float ph)
+            BuildTitleBar(DobeCatThemeData t, float pw, float ph)
         {
             var bar = new UIPanelComponent("gift-titlebar")
                 .SetBackgroundColor(t.Header).SetSize(pw, 44f)

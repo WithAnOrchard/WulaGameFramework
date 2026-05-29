@@ -4,7 +4,6 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
-using EssSystem.Core.Presentation.UIManager.Theme;
 
 namespace Demo.DobeCat.Sys.UI
 {
@@ -54,13 +53,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.OnThemeChanged += RebuildUI;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.OnThemeChanged -= RebuildUI;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("cfg-root");
         }
@@ -107,7 +106,7 @@ namespace Demo.DobeCat.Sys.UI
             const float PW = 400f, PH = 500f;
             float y = PH; // running cursor from top
 
-            var t    = DefaultUITheme.Instance.Current;
+            var t    = DobeCatTheme.Current;
             var CB   = t.Background; var CH = t.Header; var CX  = t.Close;
             var CTM  = t.TextMain;   var CTS = t.TextSub; var CDiv = t.Divider;
             var CBTN = t.ButtonBg;   var CGRN = t.ButtonGreen; var CRED = t.ButtonRed;
@@ -155,21 +154,21 @@ namespace Demo.DobeCat.Sys.UI
             y -= 6f;
             const int COLS = 4;
             float themeW = (PW - 24f) / COLS;
-            int totalThemes = DefaultUITheme.Instance.Presets.Length;
+            int totalThemes = DobeCatTheme.Presets.Length;
             int rows = Mathf.CeilToInt(totalThemes / (float)COLS);
             for (int i = 0; i < totalThemes; i++)
             {
                 int idx = i;
                 int row = idx / COLS;
                 int col = idx % COLS;
-                var isActive = DefaultUITheme.Instance.CurrentIndex == idx;
-                var tbtn = new UIButtonComponent($"cfg-theme-{idx}", text: DefaultUITheme.Instance.Presets[idx].Name)
+                var isActive = DobeCatTheme.CurrentIndex == idx;
+                var tbtn = new UIButtonComponent($"cfg-theme-{idx}", text: DobeCatTheme.Presets[idx].Name)
                     .SetSize(themeW - 4f, 28f)
                     .SetPosition(12f + themeW * col + themeW / 2f - 2f, y - 14f - row * 32f)
                     .SetButtonColor(isActive ? t.Accent : t.ButtonBg)
                     .SetFontSize(11);
                 root.AddChild(tbtn);
-                tbtn.OnClick += _ => DefaultUITheme.Instance.Apply(idx);
+                tbtn.OnClick += _ => DobeCatTheme.Apply(idx);
             }
             y -= rows * 32f + 4f;
 
@@ -217,7 +216,7 @@ namespace Demo.DobeCat.Sys.UI
                                   string pk, float pw, ref float y)
         {
             var enabled = PlayerPrefs.GetInt(pk, 1) == 1;
-            var tg = DefaultUITheme.Instance.Current;
+            var tg = DobeCatTheme.Current;
             var btn = new UIButtonComponent(id + "-btn", text: ToggleLabel(label, enabled))
                 .SetSize(pw - 24f, 26f).SetPosition(pw / 2f, y - 13f)
                 .SetButtonColor(enabled ? tg.ButtonGreen : tg.ButtonRed);
@@ -230,7 +229,7 @@ namespace Demo.DobeCat.Sys.UI
                 PlayerPrefs.SetInt(pk, next ? 1 : 0);
                 // 先更新 DAO 属性（驱动事件链）
                 btn.Text = ToggleLabel(label, next);
-                btn.SetButtonColor(next ? DefaultUITheme.Instance.Current.ButtonGreen : DefaultUITheme.Instance.Current.ButtonRed);
+                btn.SetButtonColor(next ? DobeCatTheme.Current.ButtonGreen : DobeCatTheme.Current.ButtonRed);
                 // 再直接强制同步 Entity，确保视觉一定刷新（兜底）
                 EssSystem.Core.Presentation.UIManager.Entity.UIEntity
                     .GetEntityById(btn.Id)?.SyncFromDao();

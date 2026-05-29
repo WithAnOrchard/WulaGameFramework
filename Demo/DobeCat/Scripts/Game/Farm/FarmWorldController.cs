@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using EssSystem.Core.Application.MultiManagers.FarmManager;
@@ -13,9 +13,7 @@ using UnityEngine.UI;
 using Demo.DobeCat.Game.Pet;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys.Network;
-
 using Demo.DobeCat.Sys.UI;
-using EssSystem.Core.Presentation.UIManager.Theme;
 
 namespace Demo.DobeCat.Game.Farm
 {
@@ -84,13 +82,13 @@ namespace Demo.DobeCat.Game.Farm
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.OnThemeChanged += RebuildPanelUI;
+            DobeCatTheme.OnThemeChanged += RebuildPanelUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.OnThemeChanged -= RebuildPanelUI;
+            DobeCatTheme.OnThemeChanged -= RebuildPanelUI;
             if (UIService.HasInstance)
             {
                 UIService.Instance.DestroyUIEntity(UI_PANEL_BG_ID);
@@ -632,7 +630,7 @@ namespace Demo.DobeCat.Game.Farm
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DefaultUITheme.Instance.Current;
+            var t = DobeCatTheme.Current;
             const float BorderPx = 2f;
             var borderColor = new Color(t.Header.r, t.Header.g, t.Header.b, 0.75f);
 
@@ -859,7 +857,7 @@ namespace Demo.DobeCat.Game.Farm
                 }
             }
 
-            var t        = DefaultUITheme.Instance.Current;
+            var t        = DobeCatTheme.Current;
             const float menuW   = 200f;
             const float titleH  = 24f;
             const float rowH    = 26f;
@@ -949,7 +947,7 @@ namespace Demo.DobeCat.Game.Farm
             var canvasT = DobeCatCanvasProvider.GetOrCreate();
             if (canvasT == null) return;
 
-            var t = DefaultUITheme.Instance.Current;
+            var t = DobeCatTheme.Current;
             var root = new UIPanelComponent(UI_TOOLTIP_ID)
                 .SetBackgroundColor(new Color(0.05f, 0.05f, 0.05f, 0.92f))
                 .SetSize(260f, 80f).SetPosition(-9999f, -9999f); // 初始在屏外

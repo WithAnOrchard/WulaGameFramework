@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
-using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game.Pet;
 using UIInput = EssSystem.Core.Presentation.UIManager.Dao.CommonComponents.UIInputComponent;
 using UIInputEntity = EssSystem.Core.Presentation.UIManager.Entity.CommonEntity.UIInputEntity;
@@ -51,21 +50,21 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.OnThemeChanged += OnThemeChanged;
+            DobeCatTheme.OnThemeChanged += OnThemeChanged;
             UIInputEntity.OnAnyInputSelected += OnInputFocused;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.OnThemeChanged -= OnThemeChanged;
+            DobeCatTheme.OnThemeChanged -= OnThemeChanged;
             UIInputEntity.OnAnyInputSelected -= OnInputFocused;
             DestroyPanel();
         }
 
         private static void OnInputFocused()
         {
-            EssSystem.Core.Platform.Windows.DesktopOverlay.BringToForeground();
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
         }
 
         private void OnThemeChanged()
@@ -81,7 +80,7 @@ namespace Demo.DobeCat.Sys.UI
         {
             DestroyPanel();
             BuildAndShow();
-            EssSystem.Core.Platform.Windows.DesktopOverlay.BringToForeground();
+            Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.BringToForeground();
         }
         public void Hide()  { if (_rootEntity != null) _rootEntity.gameObject.SetActive(false); }
         private void _Toggle(){ if (IsOpen) Hide(); else Show(); }
@@ -118,7 +117,7 @@ namespace Demo.DobeCat.Sys.UI
 
             var reminder = PetCompanionReminder.Instance;
             int count    = reminder?.AlarmCount ?? 0;
-            var t        = DefaultUITheme.Instance.Current;
+            var t        = DobeCatTheme.Current;
 
             // ── 动态高度 ──
             const float TITLE_H = 36f;

@@ -3,7 +3,6 @@ using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
-using EssSystem.Core.Presentation.UIManager.Theme;
 using Demo.DobeCat.Game.Pet;
 
 namespace Demo.DobeCat.Sys.UI
@@ -47,13 +46,13 @@ namespace Demo.DobeCat.Sys.UI
         private void Awake()
         {
             Instance = this;
-            DefaultUITheme.OnThemeChanged += RebuildUI;
+            DobeCatTheme.OnThemeChanged += RebuildUI;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            DefaultUITheme.OnThemeChanged -= RebuildUI;
+            DobeCatTheme.OnThemeChanged -= RebuildUI;
             if (_initialized && UIService.HasInstance)
                 UIService.Instance.DestroyUIEntity("pom-root");
         }
@@ -97,7 +96,7 @@ namespace Demo.DobeCat.Sys.UI
             _break = PlayerPrefs.GetInt(PK_POM_BREAK, 5);
 
             const float PW = 320f, PH = 220f;
-            var t = DefaultUITheme.Instance.Current;
+            var t = DobeCatTheme.Current;
 
             var root = new UIPanelComponent("pom-root")
                 .SetBackgroundColor(t.Background).SetSize(PW, PH)
@@ -196,7 +195,7 @@ namespace Demo.DobeCat.Sys.UI
         private void RefreshStartBtn()
         {
             if (_startBtn == null) return;
-            var t = DefaultUITheme.Instance.Current;
+            var t = DobeCatTheme.Current;
             var active = PetCompanionReminder.Instance?.PomodoroActive ?? false;
             _startBtn.Text = active ? "⏹ 取消番茄钟" : "🍅 启动番茄钟";
             _startBtn.SetButtonColor(active ? t.ButtonRed : t.ButtonGreen);

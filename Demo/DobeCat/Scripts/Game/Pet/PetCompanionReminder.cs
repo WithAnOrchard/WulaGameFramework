@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Demo.DobeCat.Sys;
 using Demo.DobeCat.Sys.Audio;
@@ -333,7 +333,7 @@ namespace Demo.DobeCat.Game.Pet
         private bool IsUserActive()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return EssSystem.Core.Platform.Windows.Win32Native.GetIdleSeconds() < _idleThreshold;
+            return Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetIdleSeconds() < _idleThreshold;
 #else
             return Input.anyKey || Input.GetAxis("Mouse X") != 0f || Input.GetAxis("Mouse Y") != 0f;
 #endif

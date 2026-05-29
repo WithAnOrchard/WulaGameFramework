@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Demo.DobeCat.Game.Pet.Ai;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Brain;
@@ -204,7 +204,7 @@ namespace Demo.DobeCat.Game.Pet
                         if (cam == null) return 0f;
                         Vector2 screenPos;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-                        screenPos = EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+                        screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
 #else
                         screenPos = UnityEngine.Input.mousePosition;
 #endif
@@ -245,14 +245,14 @@ namespace Demo.DobeCat.Game.Pet
         private static Vector2 GetWasdAxis()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            var l = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
-                         EssSystem.Core.Platform.Windows.Win32Native.VK_A) & 0x8000) != 0;
-            var r = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
-                         EssSystem.Core.Platform.Windows.Win32Native.VK_D) & 0x8000) != 0;
-            var u = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
-                         EssSystem.Core.Platform.Windows.Win32Native.VK_W) & 0x8000) != 0;
-            var d = (EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(
-                         EssSystem.Core.Platform.Windows.Win32Native.VK_S) & 0x8000) != 0;
+            var l = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_A) & 0x8000) != 0;
+            var r = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_D) & 0x8000) != 0;
+            var u = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_W) & 0x8000) != 0;
+            var d = (Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(
+                         Demo.DobeCat.Sys.Platform.Windows.Win32Native.VK_S) & 0x8000) != 0;
             return new Vector2((r ? 1 : 0) - (l ? 1 : 0), (u ? 1 : 0) - (d ? 1 : 0));
 #else
             return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));

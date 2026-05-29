@@ -186,7 +186,7 @@ namespace Demo.DobeCat.Game.Pet
             var userName = dm.UserName ?? "某位观众";
             string message = null;
 
-            switch (dm.InteractType)
+            switch (dm.InteractType.Value)
             {
                 case InteractTypeEnum.Enter:
                     // 进入直播间

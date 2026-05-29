@@ -4,7 +4,9 @@ using UnityEngine;
 using UnityEngine.Networking;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
+using EssSystem.Manager.NetworkManager;
 using Demo.DobeCat.Game.Pet;
+using NetMgr = EssSystem.Manager.NetworkManager.NetworkManager;
 
 namespace Demo.DobeCat.Game.Live
 {
@@ -61,15 +63,14 @@ namespace Demo.DobeCat.Game.Live
         private void OnEnable()
         {
             _netMsgDelegate ??= OnNetMessage;
-            // NetworkManager 已被移除，暂时注释掉网络消息监听
-            // if (EventProcessor.HasInstance)
-            //     EventProcessor.Instance.AddListener(NetworkService.EVT_NET_MESSAGE, _netMsgDelegate);
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.AddListener(NetworkService.EVT_NET_MESSAGE, _netMsgDelegate);
         }
 
         private void OnDisable()
         {
-            // if (_netMsgDelegate != null && EventProcessor.HasInstance)
-            //     EventProcessor.Instance.RemoveListener(NetworkService.EVT_NET_MESSAGE, _netMsgDelegate);
+            if (_netMsgDelegate != null && EventProcessor.HasInstance)
+                EventProcessor.Instance.RemoveListener(NetworkService.EVT_NET_MESSAGE, _netMsgDelegate);
         }
 
         private void OnDestroy()
@@ -250,16 +251,12 @@ namespace Demo.DobeCat.Game.Live
                 { "title", title },
                 { "url",   url   },
             };
-            // NetworkManager 已被移除，暂时注释掉网络广播
-            // EventProcessor.Instance.TriggerEventMethod(NetMgr.EVT_BROADCAST,
-            //     new List<object> { NET_TOPIC, payload });
+            EventProcessor.Instance.TriggerEventMethod(NetMgr.EVT_BROADCAST,
+                new List<object> { NET_TOPIC, payload });
         }
 
         private List<object> OnNetMessage(string eventName, List<object> data)
         {
-            // NetworkManager 已被移除，暂时禁用网络消息处理
-            return null;
-            /*
             if (data == null || data.Count < 3) return null;
             if (data[1] as string != NET_TOPIC) return null;
 
@@ -282,7 +279,6 @@ namespace Demo.DobeCat.Game.Live
                 PetSpeechBubble.Instance?.Show(msg, dur);
 
             return null;
-            */
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────

@@ -63,7 +63,7 @@ namespace Demo.DobeCat.Game.Pet.Ai
             if (cam == null) return Vector3.zero;
             Vector2 screenPos;
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            screenPos = EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            screenPos = Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             screenPos = Input.mousePosition;
 #endif

@@ -5,7 +5,6 @@ using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using Demo.DobeCat.Game;
 using Demo.DobeCat.Sys.UI;
-using EssSystem.Core.Presentation.UIManager.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -74,14 +73,14 @@ namespace Demo.DobeCat.Game.Pet
         private void Start()
         {
             DobeCatGameContext.OnContextChanged += OnContextChanged;
-            DefaultUITheme.OnThemeChanged         += RebuildQuickBar;
+            DobeCatTheme.OnThemeChanged         += RebuildQuickBar;
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
             DobeCatGameContext.OnContextChanged -= OnContextChanged;
-            DefaultUITheme.OnThemeChanged         -= RebuildQuickBar;
+            DobeCatTheme.OnThemeChanged         -= RebuildQuickBar;
             DestroyQuickBar();
         }
 
@@ -163,8 +162,8 @@ namespace Demo.DobeCat.Game.Pet
             var currMask = 0;
             for (var i = 0; i < 9; i++)
             {
-                var main = EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(0x31 + i);
-                var num  = EssSystem.Core.Platform.Windows.Win32Native.GetAsyncKeyState(0x61 + i);
+                var main = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x31 + i);
+                var num  = Demo.DobeCat.Sys.Platform.Windows.Win32Native.GetAsyncKeyState(0x61 + i);
                 if (((main | num) & unchecked((short)0x8000)) != 0)
                     currMask |= 1 << i;
             }
@@ -265,7 +264,7 @@ namespace Demo.DobeCat.Game.Pet
 
             DestroyQuickBar();
 
-            var t      = DefaultUITheme.Instance.Current;
+            var t      = DobeCatTheme.Current;
             var totalW = QB_SIZE * 2 + QB_GAP;
 
             var root = new UIPanelComponent(QB_ROOT)
@@ -387,7 +386,7 @@ namespace Demo.DobeCat.Game.Pet
         private static Vector2 GetCursorScreenPos()
         {
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
-            return EssSystem.Core.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
+            return Demo.DobeCat.Sys.Platform.Windows.DesktopOverlay.GetGlobalCursorScreenPos();
 #else
             return Input.mousePosition;
 #endif
