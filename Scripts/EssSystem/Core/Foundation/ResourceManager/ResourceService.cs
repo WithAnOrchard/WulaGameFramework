@@ -209,25 +209,21 @@ namespace EssSystem.Core.Foundation.ResourceManager
                         _loadedResources[key] = sprite;
                         Log($"外部 Sprite 加载成功: {filePath}");
                         callback?.Invoke(sprite);
-                        var dict = _externalLoadResultDict;
-                        dict["path"] = filePath;
-                        dict["sprite"] = sprite;
+                        _externalLoadResultDict.Clear();
+                        _externalLoadResultDict["path"] = filePath;
+                        _externalLoadResultDict["sprite"] = sprite;
                         EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOADED,
-                            new List<object> { dict });
-                        dict["path"] = null;
-                        dict["sprite"] = null;
+                            new List<object> { _externalLoadResultDict });
                     }
                     else
                     {
                         UnityEngine.Object.Destroy(tex);
                         callback?.Invoke(null);
-                        var dict = _externalLoadResultDict;
-                        dict["path"] = filePath;
-                        dict["error"] = "加载失败";
+                        _externalLoadResultDict.Clear();
+                        _externalLoadResultDict["path"] = filePath;
+                        _externalLoadResultDict["error"] = "加载失败";
                         EventProcessor.Instance.TriggerEventMethod(EVT_EXTERNAL_IMAGE_LOAD_FAILED,
-                            new List<object> { dict });
-                        dict["path"] = null;
-                        dict["error"] = null;
+                            new List<object> { _externalLoadResultDict });
                     }
                 });
             });
