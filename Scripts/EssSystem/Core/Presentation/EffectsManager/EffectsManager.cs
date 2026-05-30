@@ -182,9 +182,9 @@ namespace EssSystem.Core.Presentation.EffectsManager
             var path = Service?.GetRegistration(vfxId);
             if (string.IsNullOrEmpty(path)) return null;
 
-            // §4.1 跨模块 bare-string："GetPrefab"
+            // 使用异步方式加载 Prefab
             if (!EventProcessor.HasInstance) return null;
-            var r = EventProcessor.Instance.TriggerEventMethod("GetPrefab", new List<object> { path });
+            var r = EventProcessor.Instance.TriggerEventMethod("GetPrefabAsync", new List<object> { path });
             if (!ResultCode.IsOk(r) || r.Count < 2 || !(r[1] is GameObject go)) return null;
             _vfxPrefabs[vfxId] = go;
             return go;

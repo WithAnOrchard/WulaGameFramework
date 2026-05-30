@@ -13,9 +13,26 @@ namespace EssSystem.Core.Foundation.ResourceManager.Services.Sprite
         // ============================================================
         // Event 常量
         // ============================================================
+        public const string EVT_GET_SPRITE = "GetSprite";
         public const string EVT_GET_SPRITE_ASYNC = "GetSpriteAsync";
         public const string EVT_LOAD_SPRITE_ASYNC = "LoadSpriteAsync";
         public const string EVT_REGISTER_SPRITE_TO_CACHE = "RegisterSpriteToCache";
+        
+        // ============================================================
+        // 同步获取 Sprite（从缓存）
+        // ============================================================
+        [Event(EVT_GET_SPRITE)]
+        public List<object> GetFromCache(List<object> data)
+        {
+            string path = data[0] as string;
+            if (string.IsNullOrEmpty(path)) return ResultCode.Fail("路径为空");
+
+            var key = new ResourceKey(path, false, NormalizeTypeTag("Sprite"));
+            if (TryGetResource(key, out var cached)) 
+                return ResultCode.Ok(cached);
+
+            return ResultCode.Fail("Sprite 未加载");
+        }
 
         // ============================================================
         // 异步获取 Sprite

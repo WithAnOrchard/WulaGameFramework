@@ -87,6 +87,27 @@ namespace EssSystem.Core.Foundation.ResourceManager
         private const string FBXManifestResourcePath = "CharacterFBXManifest";
 
         // ============================================================
+        // 批量索引类型（预加载 + Resources.LoadAll 都按此顺序遍历）
+        // ============================================================
+        private static readonly (string tag, Type type)[] _bulkTypes =
+        {
+            ("Prefab",        typeof(GameObject)),
+            ("Sprite",        typeof(Sprite)),
+            ("AudioClip",     typeof(AudioClip)),
+            ("Texture",       typeof(Texture2D)),
+            ("Material",      typeof(Material)),
+            ("RuleTile",      typeof(RuleTile)),
+            ("AnimationClip", typeof(AnimationClip)),
+        };
+
+        // 调用链上的子文件夹提示（尝试 Resources.LoadAll 时按此顺序追加路径）
+        private static readonly string[] _subfolderHints =
+        {
+            "", "UI", "Sprites", "Sprites/Tiles", "Sprites/UI", "Sprites/Characters",
+            "Prefabs", "Audio", "Sound", "Models", "Models/Characters3D",
+        };
+
+        // ============================================================
         // 状态
         // ============================================================
         private readonly Dictionary<ResourceKey, UnityEngine.Object> _loadedResources
@@ -114,6 +135,19 @@ namespace EssSystem.Core.Foundation.ResourceManager
         {
             base.Initialize();
             _refCounter = new ResourceRefCounter(300f);
+            
+            // 强制初始化各个素材类型的 Service，确保它们的事件处理方法被注册到 EventProcessor
+            var _0 = Services.Sprite.SpriteService.Instance;
+            var _1 = Services.Sprite.SpriteSheetService.Instance;
+            var _2 = Services.Prefab.PrefabService.Instance;
+            var _3 = Services.Audio.AudioClipService.Instance;
+            var _4 = Services.Texture.TextureService.Instance;
+            var _5 = Services.Material.MaterialService.Instance;
+            var _6 = Services.RuleTile.RuleTileService.Instance;
+            var _7 = Services.Animation.AnimationClipService.Instance;
+            var _8 = Services.Animation.ModelAnimationService.Instance;
+            var _9 = Services.External.ExternalImageService.Instance;
+            
             Log("ResourceService 初始化完成", Color.green);
         }
 
@@ -151,8 +185,92 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// <summary>资源索引逻辑。</summary>
         private void IndexAllResources()
         {
-            // 资源索引由各个素材类型的 Service 处理
+            // 加载 FBX Manifest
             LoadFBXManifestIfPresent();
+            
+            // 批量预加载所有 Resources 下的资源
+            foreach (var (tag, type) in _bulkTypes)
+            {
+                ResourcesLoadAllInto(type, tag);
+            }
+        }
+        
+        /// <summary>
+        /// 批量将 Resources/{subdir}/ 下的指定类型资产全部加载进缓存。
+        /// </summary>
+        private void ResourcesLoadAllInto(Type type, string tag)
+        {
+            // 按子目录遍历
+            foreach (var hint in _subfolderHints)
+            {
+                var path = string.IsNullOrEmpty(hint) ? "" : hint;
+                try
+                {
+                    var resources = Resources.LoadAll(path, type);
+                    if (resources == null || resources.Length == 0) continue;
+
+                    int added = 0;
+                    foreach (var r in resources)
+                    {
+                        if (r == null) continue;
+                        var key = new ResourceKey(r.name, false, tag);
+                        if (!_loadedResources.ContainsKey(key))
+                        {
+                            _loadedResources[key] = r;
+                            added++;
+                            
+                            // 同步到对应的 Service 缓存
+                            SyncToService(tag, key, r);
+                        }
+                    }
+                    if (added > 0)
+                    {
+                        Log($"批量加载 {tag} from {path}: +{added} 个（总计 {resources.Length}）", Color.green);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"批量加载 {tag} from {path} 失败: {ex.Message}", Color.yellow);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 将资源同步到对应的 Service 缓存中。
+        /// </summary>
+        private void SyncToService(string tag, ResourceKey key, UnityEngine.Object resource)
+        {
+            try
+            {
+                switch (tag)
+                {
+                    case "Sprite":
+                        Services.Sprite.SpriteService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "Prefab":
+                        Services.Prefab.PrefabService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "AudioClip":
+                        Services.Audio.AudioClipService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "Texture":
+                        Services.Texture.TextureService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "Material":
+                        Services.Material.MaterialService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "RuleTile":
+                        Services.RuleTile.RuleTileService.Instance?.CacheResource(key, resource);
+                        break;
+                    case "AnimationClip":
+                        Services.Animation.AnimationClipService.Instance?.CacheResource(key, resource);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"同步资源到 Service 失败: {tag}/{key.FileName}: {ex.Message}", Color.yellow);
+            }
         }
 
 

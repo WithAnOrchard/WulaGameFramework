@@ -187,25 +187,66 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
 
         private static void LoadSpriteFromId(string spriteId, Image targetImage)
         {
-            try
-            {
+            if (string.IsNullOrEmpty(spriteId) || targetImage == null) return;
+            
+            EventProcessor.Instance.TriggerEventMethod("GetSpriteAsync",
+                new System.Collections.Generic.List<object> { spriteId });
                 
-
-                var result = EventProcessor.Instance.TriggerEventMethod("GetSprite",
-                    new System.Collections.Generic.List<object> { spriteId, false });
-
-                if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
-                {
-                    var sprite = result[1] as Sprite;
-                    if (sprite != null && targetImage != null)
-                    {
-                        targetImage.sprite = sprite;
-                    }
-                }
-            }
-            catch (System.Exception ex)
+            AsyncSpriteLoader.StartLoad(spriteId, targetImage);
+        }
+    }
+    
+    internal static class AsyncSpriteLoader
+    {
+        internal const int MaxAttempts = 100;
+        
+        public static void StartLoad(string spriteId, Image targetImage)
+        {
+            var helper = new GameObject("AsyncSpriteLoader").AddComponent<AsyncSpriteLoaderComponent>();
+            UnityEngine.Object.DontDestroyOnLoad(helper.gameObject);
+            helper.StartLoad(spriteId, targetImage);
+        }
+    }
+    
+    internal class AsyncSpriteLoaderComponent : MonoBehaviour
+    {
+        private string _spriteId;
+        private Image _targetImage;
+        private int _attempts;
+        
+        public void StartLoad(string spriteId, Image targetImage)
+        {
+            _spriteId = spriteId;
+            _targetImage = targetImage;
+            _attempts = 0;
+        }
+        
+        private void Update()
+        {
+            if (_targetImage == null)
             {
-                UnityEngine.Debug.LogError($"加载Sprite失败: {spriteId}, 错误: {ex.Message}");
+                Destroy(gameObject);
+                return;
+            }
+            
+            var result = EventProcessor.Instance.TriggerEventMethod("GetSprite",
+                new System.Collections.Generic.List<object> { _spriteId });
+            if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
+            {
+                var sprite = result[1] as Sprite;
+                if (sprite != null && _targetImage != null)
+                {
+                    _targetImage.sprite = sprite;
+                }
+                Destroy(gameObject);
+                return;
+            }
+            
+            _attempts++;
+            if (_attempts >= AsyncSpriteLoader.MaxAttempts)
+            {
+                Debug.LogWarning($"[AsyncSpriteLoader] Sprite加载超时: {_spriteId}");
+                Destroy(gameObject);
             }
         }
     }

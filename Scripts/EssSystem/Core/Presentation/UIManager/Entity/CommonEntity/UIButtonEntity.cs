@@ -147,24 +147,12 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
 
         private void LoadSpriteFromId(string spriteId)
         {
-            try
-            {
-                var result = EventProcessor.Instance.TriggerEventMethod("GetSprite",
-                    new System.Collections.Generic.List<object> { spriteId, false });
-
-                if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
-                {
-                    var sprite = result[1] as Sprite;
-                    if (sprite != null && _image != null)
-                    {
-                        _image.sprite = sprite;
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                UnityEngine.Debug.LogError($"加载Sprite失败: {spriteId}, 错误: {ex.Message}");
-            }
+            if (string.IsNullOrEmpty(spriteId) || _image == null) return;
+            
+            EventProcessor.Instance.TriggerEventMethod("GetSpriteAsync",
+                new System.Collections.Generic.List<object> { spriteId });
+                
+            AsyncSpriteLoader.StartLoad(spriteId, _image);
         }
 
         public Button GetButton()
