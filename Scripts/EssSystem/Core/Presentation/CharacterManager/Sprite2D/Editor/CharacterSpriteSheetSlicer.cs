@@ -211,9 +211,26 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
         /// </summary>
         public static string DerivePrefix(string assetPath)
         {
-            const string rootAssets = "Assets/Resources/Sprites/Characters/PixArt/";
             var p = (assetPath ?? string.Empty).Replace('\\', '/');
-            if (p.StartsWith(rootAssets)) p = p.Substring(rootAssets.Length);
+            
+            // 尝试多个可能的根目录
+            var possibleRoots = new[]
+            {
+                "Assets/Resources/Sprites/Characters/PixArt/",
+                "Assets/FrameworkResources/Sprites/Characters/PixArt/",
+                "Assets/Demo/DobeCat/Resources/Characters/PixArt/",
+                "Assets/DobeCat/Resources/Characters/PixArt/"
+            };
+            
+            foreach (var root in possibleRoots)
+            {
+                if (p.StartsWith(root))
+                {
+                    p = p.Substring(root.Length);
+                    break;
+                }
+            }
+            
             var dot = p.LastIndexOf('.');
             if (dot >= 0) p = p.Substring(0, dot);
             return p.Replace('/', '_');

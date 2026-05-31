@@ -33,7 +33,6 @@ namespace BiliBiliDanmu.Auth
                 req.SetRequestHeader("Cookie", "SESSDATA=" + sessdata.Trim());
                 req.SetRequestHeader("User-Agent",
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 BiliBiliDanmu/1.0");
-                req.SetRequestHeader("Referer", "https://www.bilibili.com");
                 req.timeout = Mathf.CeilToInt(TimeoutSec); // 双保险：先给底层 timeout
                 var op      = req.SendWebRequest();
                 var elapsed = 0f;

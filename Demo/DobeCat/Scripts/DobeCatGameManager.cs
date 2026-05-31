@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using EssSystem.Core.Base;
 using EssSystem.Core.Presentation.UIManager;
 using EssSystem.Core.Presentation.UIManager.Theme;
@@ -121,12 +121,17 @@ namespace Demo.DobeCat
         [Tooltip("启动时自动打开 DobeCatTestPanel，方便调试。生产环境改 false。")]
         [SerializeField] private bool _autoOpenTestPanel = true;
 
+        [Header("Pet Randomization")]
+        [Tooltip("是否启用部件随机化（启动时随机组合部件变体）。")]
+        [SerializeField] private bool _enablePetRandomization = true;
+
         private GameObject _pet;
         private RoomDiscoveryClient _discovery;
         private DataExchangeSession _dataSession;
         private ActionsClient _actions;
         private bool _wasBKey;
         private bool _backpackOpen;
+        private string _randomizedCharacterConfigId;
         private Demo.DobeCat.Game.Pet.PetHUD _petHud;
 
         protected override void Awake()
@@ -139,12 +144,12 @@ namespace Demo.DobeCat
             gameObject.AddComponent<DobeCatLogger>();
             Application.runInBackground = true;
             Debug.Log($"[STARTUP] 当前分辨率（Awake 执行前）: {Screen.width}×{Screen.height}, fullscreen={Screen.fullScreen}");
-            
+
             // 【关键】主题必须最早加载，在任何 UI 面板创建之前
             // 因为 LoginScreen 等面板的静态属性会在类加载时访问 DefaultUITheme
             DefaultUITheme.Instance.LoadSaved();
             Debug.Log($"[STARTUP] 主题已加载，当前索引: {DefaultUITheme.Instance.CurrentIndex}");
-            
+
             // 礼物统计
             gameObject.AddComponent<GiftQueryService>();
             gameObject.AddComponent<DobeCatGiftStatsPanelView>();
@@ -181,6 +186,13 @@ namespace Demo.DobeCat
             // 2) CharacterManager 须先于 SpawnPet 初始化（SpawnPet 可能用到 CharacterService）
             EnsureFrameworkManagers();
             DobeCatDialogueContent.EnsureRegistered(); // 注册所有对话内容
+            
+            // 3) 桌宠部件随机化
+            if (_enablePetRandomization)
+            {
+                PrepareRandomizedPetConfig();
+            }
+            
             if (_autoSpawnPet) SpawnPet();
             TryAutoConnectDanmu();
             TryStartLivePolling();
@@ -357,7 +369,14 @@ namespace Demo.DobeCat
             var ai = _pet.AddComponent<PetAiController>();
             ai.MoveSpeed = _wasdMoveSpeed;
             ai.CharacterInstanceId = charInstanceId;
-            ai.CharacterConfigId = _characterConfigId;
+            
+            // 优先使用随机化配置，否则使用默认配置
+            var activeConfigId = _enablePetRandomization && !string.IsNullOrEmpty(_randomizedCharacterConfigId)
+                ? _randomizedCharacterConfigId
+                : _characterConfigId;
+            ai.CharacterConfigId = activeConfigId;
+            
+            Debug.Log($"[DobeCatGameManager] 使用角色配置: {activeConfigId}");
             ai.AiEnabled = true;
             ai.Initialize(_petSpawnPos);
 
@@ -404,6 +423,37 @@ namespace Demo.DobeCat
             _pet.AddComponent<BoundsSensor>();
 
             Debug.Log("[DobeCatGameManager] 占位桌宠已生成");
+        }
+
+        /// <summary>
+        /// 准备随机化的桌宠配置：注册随机变体，注册到 CharacterService。
+        /// </summary>
+        private void PrepareRandomizedPetConfig()
+        {
+            if (!CharacterService.HasInstance)
+            {
+                Debug.LogError("[DobeCatGameManager] CharacterService 未就绪，无法随机化桌宠");
+                return;
+            }
+
+            // 注册默认变体配置
+            DobeCatPetRandomizer.RegisterDefaultConfigs();
+
+            // 随机选择变体
+            var selectedVariants = DobeCatPetRandomizer.Randomize();
+
+            if (selectedVariants.Count == 0)
+            {
+                Debug.LogWarning("[DobeCatGameManager] 随机化结果为空，使用默认配置");
+                return;
+            }
+
+            // 构建并注册 CharacterConfig
+            _randomizedCharacterConfigId = DobeCatPetConfigBuilder.RegisterRandomConfig(
+                CharacterService.Instance, 
+                selectedVariants);
+
+            Debug.Log($"[DobeCatGameManager] 随机化完成！选中的变体：\n{DobeCatPetRandomizer.GetSelectedVariantInfo()}");
         }
 
         private void EnsureTray()
@@ -515,7 +565,6 @@ namespace Demo.DobeCat
             _ = LiveStatusManager.Instance;
             _ = NetMgr.Instance;   // NetworkManager 自动单例（首次访问会触发 Reset → 自动安装 Mirror）
             var charMgr = CharMgr.Instance;  // CharacterManager 注册默认 Warrior / Mage / Tree 配置
-            charMgr.PreloadCharacterSprites("Characters/PixArt");  // 预加载宠物素材
             _ = EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager.Instance; // EntityManager 提供 Brain / Capabilities
             _ = EssSystem.Core.Application.MultiManagers.FarmManager.FarmManager.Instance;     // FarmManager 农场系统（HandleSpawnFarm / HandleQuerySlot 等）
             _ = EssSystem.Core.Application.MultiManagers.ShopManager.ShopManager.Instance;      // ShopManager 商店系统

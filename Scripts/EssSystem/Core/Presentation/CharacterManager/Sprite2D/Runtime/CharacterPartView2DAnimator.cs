@@ -265,24 +265,74 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
                 onLoaded(cached);
                 return;
             }
-            try
+            
+            // 尝试从 SpriteService 缓存获取
+            var cacheResult = EventProcessor.Instance.TriggerEventMethod(
+                "GetSprite", new List<object> { spriteId });
+            if (cacheResult != null && cacheResult.Count >= 2 && ResultCode.IsOk(cacheResult))
             {
-                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_SPRITE_ASYNC
-                var result = EventProcessor.Instance.TriggerEventMethod(
-                    "GetSpriteAsync", new List<object> { spriteId });
-                if (result != null && result.Count >= 2 && ResultCode.IsOk(result))
+                var sp = cacheResult[1] as Sprite;
+                if (sp != null)
                 {
-                    var sp = result[1] as Sprite;
-                    if (sp != null)
-                    {
-                        _spriteCache[spriteId] = sp;
-                        onLoaded(sp);
-                    }
+                    _spriteCache[spriteId] = sp;
+                    onLoaded(sp);
+                    return;
                 }
             }
-            catch (Exception ex)
+            
+            // 缓存不存在，尝试异步加载
+            TryLoadSpriteFromSheets(spriteId, onLoaded);
+        }
+        
+        private void TryLoadSpriteFromSheets(string spriteId, Action<Sprite> onLoaded)
+        {
+            // 从 spriteId 推断 sheet 路径
+            // 格式：{dirPrefix}_{sheetName}_{actionName}_{frameIndex}
+            var parts = spriteId.Split('_');
+            if (parts.Length < 3) return;
+            
+            string dirPrefix = parts[0];
+            string sheetName;
+            string actionName = parts[parts.Length - 2];
+            
+            if (parts.Length >= 4 && int.TryParse(parts[2], out _))
             {
-                Debug.LogError($"[CharacterPartView2DAnimator] 加载 Sprite 失败: {spriteId} → {ex.Message}");
+                // 如 Skin_warrior_1_Walk_0
+                sheetName = $"{parts[1]}_{parts[2]}";
+            }
+            else
+            {
+                // 如 Eyes_blue_Walk_0
+                sheetName = parts[1];
+            }
+            
+            var sheetPath = $"Characters/PixArt/{dirPrefix}/{sheetName}";
+            var sprites = UnityEngine.Resources.LoadAll<Sprite>(sheetPath);
+            if (sprites == null || sprites.Length == 0) return;
+            
+            // 注册所有 sprites 到缓存
+            var keyPrefix = $"{dirPrefix}_{sheetName}";
+            foreach (var sprite in sprites)
+            {
+                if (sprite == null) continue;
+                var cacheKey = $"{keyPrefix}_{sprite.name}";
+                EventProcessor.Instance.TriggerEventMethod(
+                    "RegisterSpriteToCache",
+                    new List<object> { cacheKey, sprite });
+            }
+            
+            // 查找并返回目标 sprite
+            var targetKey = spriteId;
+            foreach (var sprite in sprites)
+            {
+                if (sprite == null) continue;
+                var cacheKey = $"{keyPrefix}_{sprite.name}";
+                if (cacheKey == targetKey)
+                {
+                    _spriteCache[spriteId] = sprite;
+                    onLoaded(sprite);
+                    return;
+                }
             }
         }
 
