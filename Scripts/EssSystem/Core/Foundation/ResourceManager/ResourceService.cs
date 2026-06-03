@@ -371,7 +371,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
 
             foreach (var k in _toRemoveCache)
             {
-                Resources.UnloadAsset(_loadedResources[k]);
+                ReleaseOne(_loadedResources[k]);
                 _loadedResources.Remove(k);
             }
             return ResultCode.Ok();
@@ -380,9 +380,60 @@ namespace EssSystem.Core.Foundation.ResourceManager
         [Event(ResourceManager.EVT_UNLOAD_ALL_RESOURCES)]
         public List<object> UnloadAll(List<object> data)
         {
-            foreach (var resource in _loadedResources.Values) Resources.UnloadAsset(resource);
+            foreach (var resource in _loadedResources.Values)
+                ReleaseOne(resource);
             _loadedResources.Clear();
             return ResultCode.Ok();
+        }
+
+        /// <summary>
+        /// 按资源类型分派释放策略：
+        ///   GameObject / Component（运行时实例，scene 内） → Object.Destroy / DestroyImmediate
+        ///   GameObject / Component（prefab asset，persistent）→ 不 Destroy，只从 cache 移除
+        ///   AssetBundle                                     → bundle.Unload(true)
+        ///   其他 (Texture / AudioClip / Material / Mesh / TextAsset / 等) → Resources.UnloadAsset
+        /// null 直接跳过。
+        /// </summary>
+        private static void ReleaseOne(UnityEngine.Object resource)
+        {
+            if (resource == null) return;
+
+            if (resource is GameObject go)
+            {
+                // 区分 prefab asset（persistent）和 Instantiate 出来的实例
+                //   prefab asset 的 go.scene.IsValid() == false（不在任何 scene）
+                //   scene 内实例的 go.scene.IsValid() == true
+                // —— Destroy 不允许销毁 asset，会抛 "Destroying assets is not permitted"
+                if (go.scene.IsValid())
+                {
+                    // 必须 UnityEngine.Application 全限定 —— 项目存在 EssSystem.Core.Application 命名空间会遮蔽
+                    if (UnityEngine.Application.isPlaying)
+                        UnityEngine.Object.Destroy(go);
+                    else
+                        UnityEngine.Object.DestroyImmediate(go, allowDestroyingAssets: true);
+                }
+                // persistent asset：不销毁，仅从 cache 移除；内存由 Resources.UnloadUnusedAssets 后续清
+            }
+            else if (resource is Component comp)
+            {
+                // Component 走所属 GameObject 的归属判断
+                var ownerGo = comp.gameObject;
+                if (ownerGo != null && ownerGo.scene.IsValid())
+                {
+                    if (UnityEngine.Application.isPlaying)
+                        UnityEngine.Object.Destroy(comp);
+                    else
+                        UnityEngine.Object.DestroyImmediate(comp, allowDestroyingAssets: true);
+                }
+            }
+            else if (resource is AssetBundle bundle)
+            {
+                bundle.Unload(true);
+            }
+            else
+            {
+                Resources.UnloadAsset(resource);
+            }
         }
 
         // ============================================================
