@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Compilation;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -111,12 +112,16 @@ namespace EssSystem.Core.Presentation.LightManager.Editor
             {
                 Debug.Log($"[LightManagerInstaller] URP 安装成功：{_addRequest.Result.packageId}");
                 SyncDefineSymbol(true);   // 触发重编译
+
+                // 等编译完成后自动 Bootstrap URP 项目（一键建 Asset + Renderer + 设 Graphics/Quality）
+                CompilationPipeline.compilationFinished += OnCompilationFinished_AutoBootstrap;
+
                 EditorUtility.DisplayDialog("URP 安装成功",
                     $"已添加 {_addRequest.Result.packageId}。\n\n" +
-                    "Unity 即将重新编译，编译完成后 LightManager 即可启用。\n\n" +
-                    "首次使用 URP 还需创建 URP Asset：\n" +
-                    "  Assets → Create → Rendering → URP Asset (with Universal Renderer)\n" +
-                    "并把它指派到 Project Settings → Graphics → Scriptable Render Pipeline Settings。",
+                    "Unity 即将重新编译，编译完成后会自动：\n" +
+                    "  1. 创建 URP Asset / Renderer Data 到 Assets/Settings/URP/\n" +
+                    "  2. 指派到 Project Settings → Graphics / Quality\n\n" +
+                    "（也可以手动触发：Tools/EssSystem/LightManager/Bootstrap URP Project (3D/Forward) 或 (2D)）",
                     "OK");
             }
             else
@@ -128,6 +133,16 @@ namespace EssSystem.Core.Presentation.LightManager.Editor
                     "OK");
             }
             _addRequest = null;
+        }
+
+        /// <summary>
+        /// URP_INSTALLED 编译完成后自动调一次 Bootstrap。
+        /// </summary>
+        private static void OnCompilationFinished_AutoBootstrap(object _)
+        {
+            CompilationPipeline.compilationFinished -= OnCompilationFinished_AutoBootstrap;
+            Debug.Log("[LightManagerInstaller] URP 编译完成，自动 Bootstrap URP 项目资源...");
+            URPBootstrapper.Bootstrap(is2D: false);
         }
 
         // ============================================================

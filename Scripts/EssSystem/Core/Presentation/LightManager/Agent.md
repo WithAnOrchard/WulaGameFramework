@@ -47,7 +47,7 @@ LightManager.ApplyPreset
 
 ## Event API
 
-> 共 17 个命令。跨模块走 bare-string（§4.1）。
+> 共 21 个命令。跨模块走 bare-string（§4.1）。
 
 ### Sun（主光源 Directional Light）
 
@@ -143,11 +143,35 @@ LightManager.ApplyPreset
 - **返回**: `Ok(lightId)` / `Fail`
 - **副作用**: 写入运行时字典；外部 GameObject 销毁后字典里会留 null，下次 SET 会忽略
 
+#### `LightManager.EVT_UNREGISTER_LIGHT`
+- **常量**: `"UnregisterLight"`
+- **参数**: `[string lightId]`
+- **返回**: `Ok(lightId)` / `Fail`
+- **副作用**: 从 `_lights3D` 字典移除（不影响已播放的实例）
+
 #### `LightManager.EVT_SET_LIGHT_INTENSITY`
 - **常量**: `"SetLightIntensity"`
 - **参数**: `[string lightId, float intensity, float? duration]`
 - **返回**: `Ok(lightId)` / `Fail`
 - **副作用**: `duration > 0` 启动协程 Lerp；`= 0` 立即赋值
+
+#### `LightManager.EVT_SET_LIGHT_COLOR`
+- **常量**: `"SetLightColor"`
+- **参数**: `[string lightId, Color color, float? duration]`
+- **返回**: `Ok(lightId)` / `Fail`
+- **副作用**: `duration > 0` 启动协程 Lerp；`= 0` 立即赋值；用于光束变色 / 受击闪烁 / 技能染色
+
+#### `LightManager.EVT_SET_LIGHT_RANGE`
+- **常量**: `"SetLightRange"`
+- **参数**: `[string lightId, float range, float? duration]`
+- **返回**: `Ok(lightId)` / `Fail`
+- **副作用**: `duration > 0` 启动协程 Lerp；`= 0` 立即赋值；clamp 到 ≥0
+
+#### `LightManager.EVT_SET_LIGHT_SPOT_ANGLE`
+- **常量**: `"SetLightSpotAngle"`
+- **参数**: `[string lightId, float angle, float? duration]`
+- **返回**: `Ok(lightId)` / `Fail`
+- **副作用**: `duration > 0` 启动协程 Lerp；`= 0` 立即赋值；clamp 到 [0, 179] 度；**仅对 Spot Light 有意义**
 
 ### Dynamic 2D Lights（URP 2D Light2D）
 
@@ -240,6 +264,24 @@ EventProcessor.Instance.TriggerEventMethod("RegisterLight2D",
     new List<object> { "torch_01", torchLight });
 EventProcessor.Instance.TriggerEventMethod("SetLight2DIntensity",
     new List<object> { "torch_01", 0.6f, 0.4f });   // 0.4s lerp 到 0.6
+
+// 6) Z 轴打光特效（Cubic Demo）：Spot Light 从 +Z 射向目标
+//    业务侧封装见 Demo/Cubic/Scripts/VFX/CubicZAxisLightVFX.cs
+EventProcessor.Instance.TriggerEventMethod("RegisterLight",
+    new List<object> { "z_axis_spot", spotGO.GetComponent<Light>() });
+EventProcessor.Instance.TriggerEventMethod("SetLightIntensity",
+    new List<object> { "z_axis_spot", 12f, 0.25f });   // 0.25s 渐入到 12
+EventProcessor.Instance.TriggerEventMethod("SetLightSpotAngle",
+    new List<object> { "z_axis_spot", 35f });
+EventProcessor.Instance.TriggerEventMethod("SetLightRange",
+    new List<object> { "z_axis_spot", 8f });
+EventProcessor.Instance.TriggerEventMethod("SetBloom",
+    new List<object> { 1.8f });                        // URP Bloom 增强光晕
+// ...播完后
+EventProcessor.Instance.TriggerEventMethod("UnregisterLight",
+    new List<object> { "z_axis_spot" });
+EventProcessor.Instance.TriggerEventMethod("SetBloom",
+    new List<object> { 0f });
 ```
 
 ## 注意事项

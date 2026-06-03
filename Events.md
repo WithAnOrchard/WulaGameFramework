@@ -247,7 +247,7 @@
 
 ---
 
-## LightManager Event（17 个）
+## LightManager Event（21 个）
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
@@ -265,7 +265,11 @@
 | `LightManager.EVT_SET_COLOR_ADJUSTMENTS` | `SetColorAdjustments` | Core/Presentation/LightManager | 设置 URP 调色（命令），参数 `[float postExposure, float? saturation, float? contrast]` |
 | `LightManager.EVT_REGISTER_PRESET` | `RegisterLightPreset` | Core/Presentation/LightManager | 注册灯光预设（命令），参数 `[LightPreset]` |
 | `LightManager.EVT_REGISTER_LIGHT` | `RegisterLight` | Core/Presentation/LightManager | 注册 3D 动态光（命令），参数 `[string lightId, Light]` |
+| `LightManager.EVT_UNREGISTER_LIGHT` | `UnregisterLight` | Core/Presentation/LightManager | 反注册 3D 动态光（命令），参数 `[string lightId]` |
 | `LightManager.EVT_SET_LIGHT_INTENSITY` | `SetLightIntensity` | Core/Presentation/LightManager | 设置 3D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
+| `LightManager.EVT_SET_LIGHT_COLOR` | `SetLightColor` | Core/Presentation/LightManager | 设置 3D 光颜色（命令），参数 `[string lightId, Color color, float? duration]` |
+| `LightManager.EVT_SET_LIGHT_RANGE` | `SetLightRange` | Core/Presentation/LightManager | 设置 3D 光射程（命令），参数 `[string lightId, float range, float? duration]` |
+| `LightManager.EVT_SET_LIGHT_SPOT_ANGLE` | `SetLightSpotAngle` | Core/Presentation/LightManager | 设置 Spot Light 锥角（命令），参数 `[string lightId, float angle, float? duration]`（仅对 Spot 有意义） |
 | `LightManager.EVT_REGISTER_LIGHT_2D` | `RegisterLight2D` | Core/Presentation/LightManager | 注册 URP 2D Light2D（命令），参数 `[string lightId, Light2D]` |
 | `LightManager.EVT_SET_LIGHT_2D_INTENSITY` | `SetLight2DIntensity` | Core/Presentation/LightManager | 设置 2D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
 | `LightManager.EVT_SET_LIGHT_2D_COLOR` | `SetLight2DColor` | Core/Presentation/LightManager | 设置 2D 光颜色（命令），参数 `[string lightId, Color]` |
@@ -350,6 +354,32 @@
 | `DialogueService.EVT_STARTED` | `OnDialogueStarted` | Core/Application/DialogueManager | 对话启动**广播**，参数 `[string dialogueId, string configId]` |
 | `DialogueService.EVT_LINE_CHANGED` | `OnDialogueLineChanged` | Core/Application/DialogueManager | 当前行切换**广播**，参数 `[string dialogueId, string lineId]` |
 | `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/Application/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
+
+---
+
+## AutoUpdateManager Event（12 个）
+
+### 命令（业务侧 bare-string 调）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `AutoUpdateManager.EVT_CHECK_UPDATE` | `CheckForUpdate` | Core/Application/SingleManagers/AutoUpdateManager | 立即 GET 远端 manifest 检查更新（命令），参数 `[]` |
+| `AutoUpdateManager.EVT_BEGIN_DOWNLOAD` | `BeginUpdateDownload` | Core/Application/SingleManagers/AutoUpdateManager | 用户点"立即更新"开始下载（命令），参数 `[]` |
+| `AutoUpdateManager.EVT_BEGIN_INSTALL` | `BeginUpdateInstall` | Core/Application/SingleManagers/AutoUpdateManager | 下载完成用户点"立即安装"，启动外部 updater + 退出自身（命令），参数 `[]` |
+| `AutoUpdateManager.EVT_SKIP_VERSION` | `SkipUpdateVersion` | Core/Application/SingleManagers/AutoUpdateManager | 用户选"跳过此版本"，写入持久化（命令），参数 `[string version]` |
+
+### 广播（订阅）
+
+| 常量 | 字符串值 | 定义模块 | 用途 |
+|---|---|---|---|
+| `AutoUpdateService.EVT_CHECK_STARTED` | `OnUpdateCheckStarted` | Core/Application/SingleManagers/AutoUpdateManager | 开始检查更新**广播**，参数 `[]` |
+| `AutoUpdateService.EVT_AVAILABLE` | `OnUpdateAvailable` | Core/Application/SingleManagers/AutoUpdateManager | 远端有新版本**广播**，参数 `[UpdateManifest]` |
+| `AutoUpdateService.EVT_UP_TO_DATE` | `OnUpdateUpToDate` | Core/Application/SingleManagers/AutoUpdateManager | 已是最新**广播**，参数 `[]` |
+| `AutoUpdateService.EVT_DOWNLOAD_PROGRESS` | `OnUpdateDownloadProgress` | Core/Application/SingleManagers/AutoUpdateManager | 下载进度**广播**，参数 `[float 0..1]` |
+| `AutoUpdateService.EVT_DOWNLOADED` | `OnUpdateDownloaded` | Core/Application/SingleManagers/AutoUpdateManager | 下载完成**广播**，参数 `[string localPath]` |
+| `AutoUpdateService.EVT_INSTALLING` | `OnUpdateInstalling` | Core/Application/SingleManagers/AutoUpdateManager | 开始安装（已退出主进程）**广播**，参数 `[]` |
+| `AutoUpdateService.EVT_FAILED` | `OnUpdateFailed` | Core/Application/SingleManagers/AutoUpdateManager | 任意阶段失败**广播**，参数 `[string error]` |
+| `AutoUpdateService.EVT_SKIPPED` | `OnUpdateSkipped` | Core/Application/SingleManagers/AutoUpdateManager | 用户跳过当前版本**广播**，参数 `[]` |
 
 ---
 

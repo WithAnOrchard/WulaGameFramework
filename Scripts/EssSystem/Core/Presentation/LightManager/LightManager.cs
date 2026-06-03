@@ -47,7 +47,11 @@ namespace EssSystem.Core.Presentation.LightManager
 
         // —— Dynamic 3D Lights ——
         public const string EVT_REGISTER_LIGHT      = "RegisterLight";
+        public const string EVT_UNREGISTER_LIGHT    = "UnregisterLight";
         public const string EVT_SET_LIGHT_INTENSITY = "SetLightIntensity";
+        public const string EVT_SET_LIGHT_COLOR     = "SetLightColor";
+        public const string EVT_SET_LIGHT_RANGE     = "SetLightRange";
+        public const string EVT_SET_LIGHT_SPOT_ANGLE = "SetLightSpotAngle";
 
         // —— Dynamic 2D Lights（URP 2D Light2D）——
         public const string EVT_REGISTER_LIGHT_2D      = "RegisterLight2D";
@@ -375,6 +379,33 @@ namespace EssSystem.Core.Presentation.LightManager
             StartCoroutine(TweenLight3DIntensity(light, target, duration));
         }
 
+        public void UnregisterLight(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            _lights3D.Remove(id);
+        }
+
+        public void SetLightColor(string id, Color color, float duration = 0f)
+        {
+            if (!_lights3D.TryGetValue(id, out var light) || light == null) return;
+            if (duration <= 0f) { light.color = color; return; }
+            StartCoroutine(TweenLight3DColor(light, color, duration));
+        }
+
+        public void SetLightRange(string id, float range, float duration = 0f)
+        {
+            if (!_lights3D.TryGetValue(id, out var light) || light == null) return;
+            if (duration <= 0f) { light.range = Mathf.Max(0f, range); return; }
+            StartCoroutine(TweenLight3DRange(light, range, duration));
+        }
+
+        public void SetLightSpotAngle(string id, float angle, float duration = 0f)
+        {
+            if (!_lights3D.TryGetValue(id, out var light) || light == null) return;
+            if (duration <= 0f) { light.spotAngle = Mathf.Clamp(angle, 0f, 179f); return; }
+            StartCoroutine(TweenLight3DSpotAngle(light, angle, duration));
+        }
+
         public void RegisterLight2D(string id, Light2D light)
         {
             if (string.IsNullOrEmpty(id) || light == null) return;
@@ -404,6 +435,45 @@ namespace EssSystem.Core.Presentation.LightManager
                 yield return null;
             }
             if (light != null) light.intensity = target;
+        }
+
+        private IEnumerator TweenLight3DColor(Light light, Color target, float duration)
+        {
+            var from = light.color;
+            float t = 0f;
+            while (t < 1f && light != null)
+            {
+                t += Time.deltaTime / duration;
+                light.color = Color.Lerp(from, target, Mathf.Clamp01(t));
+                yield return null;
+            }
+            if (light != null) light.color = target;
+        }
+
+        private IEnumerator TweenLight3DRange(Light light, float target, float duration)
+        {
+            var from = light.range;
+            float t = 0f;
+            while (t < 1f && light != null)
+            {
+                t += Time.deltaTime / duration;
+                light.range = Mathf.Lerp(from, target, Mathf.Clamp01(t));
+                yield return null;
+            }
+            if (light != null) light.range = target;
+        }
+
+        private IEnumerator TweenLight3DSpotAngle(Light light, float target, float duration)
+        {
+            var from = light.spotAngle;
+            float t = 0f;
+            while (t < 1f && light != null)
+            {
+                t += Time.deltaTime / duration;
+                light.spotAngle = Mathf.Lerp(from, target, Mathf.Clamp01(t));
+                yield return null;
+            }
+            if (light != null) light.spotAngle = target;
         }
 
         private IEnumerator TweenLight2DIntensity(Light2D light, float target, float duration)
@@ -533,6 +603,41 @@ namespace EssSystem.Core.Presentation.LightManager
             SetLightIntensity(id, t, dur); return ResultCode.Ok(id);
         }
 
+        [Event(EVT_UNREGISTER_LIGHT)]
+        public List<object> OnUnregisterLight(List<object> data)
+        {
+            if (data == null || data.Count < 1 || !(data[0] is string id))
+                return ResultCode.Fail("参数 [string id]");
+            UnregisterLight(id); return ResultCode.Ok(id);
+        }
+
+        [Event(EVT_SET_LIGHT_COLOR)]
+        public List<object> OnSetLightColor(List<object> data)
+        {
+            if (data == null || data.Count < 2 || !(data[0] is string id) || !(data[1] is Color c))
+                return ResultCode.Fail("参数 [string id, Color, float? duration]");
+            var dur = data.Count > 2 && data[2] is float d ? d : 0f;
+            SetLightColor(id, c, dur); return ResultCode.Ok(id);
+        }
+
+        [Event(EVT_SET_LIGHT_RANGE)]
+        public List<object> OnSetLightRange(List<object> data)
+        {
+            if (data == null || data.Count < 2 || !(data[0] is string id) || !(data[1] is float r))
+                return ResultCode.Fail("参数 [string id, float range, float? duration]");
+            var dur = data.Count > 2 && data[2] is float d ? d : 0f;
+            SetLightRange(id, r, dur); return ResultCode.Ok(id);
+        }
+
+        [Event(EVT_SET_LIGHT_SPOT_ANGLE)]
+        public List<object> OnSetLightSpotAngle(List<object> data)
+        {
+            if (data == null || data.Count < 2 || !(data[0] is string id) || !(data[1] is float a))
+                return ResultCode.Fail("参数 [string id, float angle, float? duration]");
+            var dur = data.Count > 2 && data[2] is float d ? d : 0f;
+            SetLightSpotAngle(id, a, dur); return ResultCode.Ok(id);
+        }
+
         [Event(EVT_REGISTER_LIGHT_2D)]
         public List<object> OnRegisterLight2D(List<object> data)
         {
@@ -559,6 +664,7 @@ namespace EssSystem.Core.Presentation.LightManager
             SetLight2DColor(id, c); return ResultCode.Ok(id);
         }
     }
+}
 }
 
 #else   // ─── URP 未安装：stub 实现（不引用任何 URP 类型） ───────────
