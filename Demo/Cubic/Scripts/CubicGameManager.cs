@@ -1,5 +1,10 @@
 using UnityEngine;
 using EssSystem.Core.Base;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
+using EssSystem.Core.Application.SingleManagers.EntityManager;
+using EssSystem.Core.Presentation.CameraManager;
+using EssSystem.Core.Presentation.EffectsManager;
+using EssSystem.Core.Presentation.LightManager;
 using Demo.Cubic.Player;
 
 namespace Demo.Cubic
@@ -16,7 +21,8 @@ namespace Demo.Cubic
     {
         [Header("游戏设置")]
         [SerializeField] private CubicCharacterClass _initialClass = CubicCharacterClass.Warrior;
-        [SerializeField] private Vector3 _playerSpawnPos = new Vector3(-5, 0, 0);
+        [Tooltip("玩家初始 X 坐标（Y 会被 map.GetGroundY() 覆盖为贴地高度，Z 始终=0）")]
+        [SerializeField] private float _playerSpawnX = -5f;
 
         [Header("敌人生成")]
         [SerializeField] private CubicCharacterClass _enemyClass = CubicCharacterClass.Mage;
@@ -31,6 +37,11 @@ namespace Demo.Cubic
         protected override void Awake()
         {
             base.Awake();
+            EnsureFrameworkManager<SkillManager>("SkillManager");
+            EnsureFrameworkManager<EntityManager>("EntityManager");
+            EnsureFrameworkManager<CameraManager>("CameraManager");
+            EnsureFrameworkManager<EffectsManager>("EffectsManager");
+            EnsureFrameworkManager<LightManager>("LightManager");
             Debug.Log("[CubicGameManager] Cubic 游戏初始化...");
         }
 
@@ -49,6 +60,19 @@ namespace Demo.Cubic
             }
         }
 
+        /// <summary>
+        /// 确保框架 Manager 存在 —— CubicSkillRegistry / CubicVFXManager.Initialize()
+        /// 会通过 EventProcessor 触发对应 [Event] 方法，事件处理器挂在这些 Manager 上；
+        /// 场景里没有该组件时 EventProcessor 解析不到 Target，会 NRE。
+        /// </summary>
+        private void EnsureFrameworkManager<T>(string goName) where T : MonoBehaviour
+        {
+            if (GetComponentInChildren<T>(true) != null) return;
+            var go = new GameObject(goName);
+            go.transform.SetParent(transform, false);
+            go.AddComponent<T>();
+        }
+
         private void InitializeSystems()
         {
             Skill.CubicSkillRegistry.Initialize();
@@ -57,13 +81,21 @@ namespace Demo.Cubic
 
         /// <summary>
         /// 唯一的生成入口 - 调用 PlayerController.SpawnPlayer
+        /// <para>玩家 X 用 _playerSpawnX（Inspector 可调），Y 走 map.GetGroundY()（贴地），Z 强制 0（横版 2.5D 锁定 Z）。</para>
         /// </summary>
         private void CallSpawnPlayer()
         {
+            // 兜底：如果 _map 还是 null，主动拿一遍（防止 EnsureMap 时机问题）
+            if (_map == null) _map = gameObject.GetComponent<Map.CubicMap>() ?? gameObject.AddComponent<Map.CubicMap>();
+            float groundY = _map != null ? _map.GetGroundY() : 0f;
+            var spawnPos = new Vector3(_playerSpawnX, groundY, 0f);
+            string mapName = _map != null ? _map.name : "<null>";
+            Debug.Log($"[CubicGameManager] 玩家 spawn 位置 → {spawnPos} (groundY={groundY}, map={mapName})");
+
             var config = new PlayerController.SpawnConfig
             {
                 parent = null,
-                position = _playerSpawnPos,
+                position = spawnPos,
                 jobClass = _initialClass,
                 map = _map,
                 enemyClass = _enemyClass,
@@ -78,19 +110,18 @@ namespace Demo.Cubic
 
         public PlayerController GetPlayer() => PlayerController.Instance;
 
-        public Entity.CubicEntity GetPlayerEntity() => PlayerController.Instance?.GetEntity();
-
+        public Entities.CubicEntity GetPlayerEntity() => PlayerController.Instance?.GetEntity();
         public void SpawnEnemy()
         {
             if (_map == null) return;
-            var spawner = gameObject.GetComponent<Entity.EnemySpawner>();
+            var spawner = gameObject.GetComponent<Entities.EnemySpawner>();
             spawner?.SpawnEnemy();
         }
 
         public void SpawnEnemy(CubicCharacterClass jobClass, string skillId)
         {
             if (_map == null) return;
-            var spawner = gameObject.GetComponent<Entity.EnemySpawner>();
+            var spawner = gameObject.GetComponent<Entities.EnemySpawner>();
             spawner?.SpawnEnemy(jobClass, skillId);
         }
     }

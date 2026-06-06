@@ -1,11 +1,15 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Demo.Cubic.Utils;
 
-namespace Demo.Cubic.Entity
+namespace Demo.Cubic.Entities
 {
     /// <summary>
-    /// 敌人生成器
-    /// 负责创建敌人实体并初始化AI
+    /// 敌人生成器（3D 伪 2D 版）。
+    /// <para>
+    /// 3D 化改造点：默认预制体改用低多边形 cube（<see cref="Cubic3DStyle.CreateLowPolyCube"/>），
+    /// 物理换 3D <see cref="Rigidbody"/> + <see cref="BoxCollider"/>。
+    /// </para>
     /// </summary>
     public class EnemySpawner : MonoBehaviour
     {
@@ -32,9 +36,6 @@ namespace Demo.Cubic.Entity
             CleanupDeadEnemies();
         }
 
-        /// <summary>
-        /// 更新生成逻辑
-        /// </summary>
         private void UpdateSpawning()
         {
             if (_spawnedCount >= _maxEnemies) return;
@@ -47,25 +48,16 @@ namespace Demo.Cubic.Entity
             }
         }
 
-        /// <summary>
-        /// 清理已死亡的敌人
-        /// </summary>
         private void CleanupDeadEnemies()
         {
             _activeEnemies.RemoveAll(enemy => enemy == null);
         }
 
-        /// <summary>
-        /// 生成敌人
-        /// </summary>
         public GameObject SpawnEnemy()
         {
-            if (_enemyPrefab == null)
-            {
-                _enemyPrefab = CreateDefaultEnemyPrefab();
-            }
+            if (_enemyPrefab == null) _enemyPrefab = CreateDefaultEnemyPrefab();
 
-            var enemyObj = Instantiate(_enemyPrefab, new Vector3(_spawnX, _spawnY, 0), Quaternion.identity);
+            var enemyObj = Instantiate(_enemyPrefab, new Vector3(_spawnX, _spawnY, 0f), Quaternion.identity);
             _activeEnemies.Add(enemyObj);
 
             var enemy = enemyObj.GetComponent<CubicEnemy>();
@@ -77,13 +69,9 @@ namespace Demo.Cubic.Entity
 
             _spawnedCount++;
             Debug.Log($"[EnemySpawner] 敌人已生成 #{_spawnedCount}: {_enemyClass}");
-
             return enemyObj;
         }
 
-        /// <summary>
-        /// 生成指定职业的敌人
-        /// </summary>
         public GameObject SpawnEnemy(CubicCharacterClass jobClass, string skillId)
         {
             var previousClass = _enemyClass;
@@ -96,145 +84,63 @@ namespace Demo.Cubic.Entity
 
             _enemyClass = previousClass;
             _enemySkillId = previousSkill;
-
             return enemy;
         }
 
-        /// <summary>
-        /// 创建默认敌人预制体
-        /// </summary>
+        /// <summary>默认敌人预制体：低多边形 cube + 3D 物理。</summary>
         private GameObject CreateDefaultEnemyPrefab()
         {
             var enemyObj = new GameObject("Enemy_Cubic");
 
-            var rb = enemyObj.AddComponent<Rigidbody2D>();
-            rb.gravityScale = 3f;
-            
-            var collider = enemyObj.AddComponent<BoxCollider2D>();
-            collider.size = new Vector2(0.8f, 0.8f);
+            var rb = enemyObj.AddComponent<Rigidbody>();
+            rb.useGravity = true;
+            rb.linearDamping = 0.1f;
+            rb.angularDamping = 0.05f;
 
-            var renderer = enemyObj.AddComponent<SpriteRenderer>();
-            renderer.color = CubicClassColors.GetColor(_enemyClass);
-            renderer.sortingOrder = 10;
-            ApplyLitSpriteMaterial(renderer);   // 让敌人接收 LightManager 灯光
+            var collider = enemyObj.AddComponent<BoxCollider>();
+            collider.size = new Vector3(0.8f, 0.8f, 0.8f);
+            collider.center = new Vector3(0f, 0.4f, 0f);
 
-            int size = 32;
-            var texture = new Texture2D(size, size);
-            Color32[] colors = new Color32[size * size];
-            for (int i = 0; i < size * size; i++)
-            {
-                colors[i] = Color.white;
-            }
-            texture.SetPixels32(colors);
-            texture.Apply();
-            renderer.sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+            // 视觉：低多边形 cube + 略深一档的鼻锥
+            var visual = Cubic3DStyle.CreateLowPolyCube(
+                "Visual",
+                CubicClassColors.GetColor(_enemyClass),
+                new Vector3(0.8f, 0.8f, 0.8f)
+            );
+            visual.transform.SetParent(enemyObj.transform, false);
+            visual.transform.localPosition = new Vector3(0f, 0.4f, 0f);
 
-            enemyObj.transform.localScale = new Vector3(1.2f, 1.2f, 1);
+            var nose = Cubic3DStyle.CreateLowPolyCube(
+                "Nose",
+                CubicClassColors.GetColor(_enemyClass) * 0.7f,
+                new Vector3(0.18f, 0.18f, 0.5f)
+            );
+            nose.transform.SetParent(enemyObj.transform, false);
+            nose.transform.localPosition = new Vector3(0.3f, 0.5f, 0f);
+
+            enemyObj.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
 
             enemyObj.AddComponent<CubicEnemy>();
-
             return enemyObj;
         }
 
-        /// <summary>
-        /// 把 SpriteRenderer 切到 Cubic/SpriteLit 材质，自带 Z 轴光照 + 边缘 halo。
-        /// </summary>
-        private static void ApplyLitSpriteMaterial(SpriteRenderer r)
-        {
-            Shader sh = Shader.Find("Cubic/SpriteLit");
-            if (sh == null) sh = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
-            if (sh == null) sh = Shader.Find("Sprites/Default");
-            if (sh == null) sh = Shader.Find("Sprites/Diffuse");
-            if (sh != null) r.sharedMaterial = new Material(sh);
-        }
-
-        /// <summary>
-        /// 获取所有存活的敌人
-        /// </summary>
         public List<GameObject> GetActiveEnemies()
         {
             _activeEnemies.RemoveAll(e => e == null);
             return _activeEnemies;
         }
 
-        /// <summary>
-        /// 获取敌人数量
-        /// </summary>
         public int GetEnemyCount()
         {
             _activeEnemies.RemoveAll(e => e == null);
             return _activeEnemies.Count;
         }
 
-        /// <summary>
-        /// 设置敌人职业
-        /// </summary>
-        public void SetEnemyClass(CubicCharacterClass jobClass)
-        {
-            _enemyClass = jobClass;
-        }
-
-        /// <summary>
-        /// 设置敌人技能
-        /// </summary>
-        public void SetEnemySkill(string skillId)
-        {
-            _enemySkillId = skillId;
-        }
-
-        /// <summary>
-        /// 设置生成间隔
-        /// </summary>
-        public void SetSpawnInterval(float interval)
-        {
-            _spawnInterval = Mathf.Max(0.1f, interval);
-        }
-
-        /// <summary>
-        /// 设置最大敌人数量
-        /// </summary>
-        public void SetMaxEnemies(int maxCount)
-        {
-            _maxEnemies = Mathf.Max(0, maxCount);
-        }
-
-        /// <summary>
-        /// 设置生成X坐标
-        /// </summary>
-        public void SetSpawnX(float x)
-        {
-            _spawnX = x;
-        }
-
-        /// <summary>
-        /// 设置生成Y坐标
-        /// </summary>
-        public void SetSpawnY(float y)
-        {
-            _spawnY = y;
-        }
-
-        /// <summary>
-        /// 清理所有敌人
-        /// </summary>
-        public void ClearAllEnemies()
-        {
-            foreach (var enemy in _activeEnemies)
-            {
-                if (enemy != null)
-                {
-                    Destroy(enemy);
-                }
-            }
-            _activeEnemies.Clear();
-        }
-
-        /// <summary>
-        /// 重置生成计数
-        /// </summary>
-        public void ResetSpawnCount()
-        {
-            _spawnedCount = 0;
-        }
+        public void SetEnemyClass(CubicCharacterClass jobClass) => _enemyClass = jobClass;
+        public void SetEnemySkill(string skillId) => _enemySkillId = skillId;
+        public void SetSpawnInterval(float interval) => _spawnInterval = Mathf.Max(0.1f, interval);
+        public void SetMaxEnemies(int maxCount) => _maxEnemies = Mathf.Max(0, maxCount);
+        public void SetSpawnX(float x) => _spawnX = x;
+        public void SetSpawnY(float y) => _spawnY = y;
     }
 }

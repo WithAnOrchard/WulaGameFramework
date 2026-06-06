@@ -1,34 +1,23 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
+using EssSystem.Core.Base.Event;
 
 namespace Demo.Cubic.VFX
 {
     /// <summary>
-    /// Cubic VFX 特效管理器
-    /// 管理所有视觉特效的播放
+    /// Cubic VFX 桥接层 —— 走框架 <c>EffectsManager</c> 的 Event API（bare-string §4.1）。
+    /// <para>
+    /// 原 homegrown <c>CreateVFXEffect</c>（自己 new GameObject + AddComponent&lt;SpriteRenderer&gt; + 程序化贴图）、
+    /// <c>CreateScreenFlash</c>（自己 new Canvas + Image）全部删除 —— 这些都属于 §5/§7 反模式。
+    /// </para>
+    /// <para>
+    /// 调用方通过 <see cref="PlaySkillVFX(string, Vector3)"/> 触发特效，框架会按
+    /// <c>EVT_PLAY_VFX</c> → <c>ResourceManager.GetPrefab</c> → 对象池取/还 实例。
+    /// </para>
     /// </summary>
     public static class CubicVFXManager
     {
-        /// <summary>
-        /// 所有VFX特效定义
-        /// </summary>
-        public static readonly Dictionary<string, VFXInfo> VFXEffects = new Dictionary<string, VFXInfo>();
-
-        /// <summary>
-        /// VFX信息
-        /// </summary>
-        public class VFXInfo
-        {
-            public string Id;
-            public string DisplayName;
-            public Color Color;
-            public float Duration;
-            public string Description;
-        }
-
-        /// <summary>
-        /// 屏幕闪光类型
-        /// </summary>
+        /// <summary>屏幕闪光类型 —— 保留为业务公共 API，由 <see cref="PlayScreenFlash"/> 翻译为颜色+时长。</summary>
         public enum ScreenFlashType
         {
             Damage,
@@ -36,193 +25,133 @@ namespace Demo.Cubic.VFX
             Heal,
             Freeze,
             Poison,
-            Execute
+            Execute,
         }
 
+        private static bool _initialized;
+
+        // ════════════════════════════════════════════════════════════
+        //  vfxId → Resources 路径 占位映射
+        //  资源实际 prefab 留给用户在 Unity Editor 里拖入；本文件只登记映射
+        //  + 触发播放。具体路径与 VFX 视觉美术解耦。
+        // ════════════════════════════════════════════════════════════
+        private struct VfxRegistration
+        {
+            public string Id;
+            public string PrefabPath;
+            public float AutoDestroy;
+        }
+
+        private static readonly List<VfxRegistration> _registrations = new()
+        {
+            // ─── 战士 ────────────────────────────────────────────
+            new() { Id = "warrior_slash",     PrefabPath = "VFX/Cubic/WarriorSlash",     AutoDestroy = 0.4f },
+            new() { Id = "warrior_shout",     PrefabPath = "VFX/Cubic/WarriorShout",     AutoDestroy = 0.6f },
+            new() { Id = "warrior_whirlwind", PrefabPath = "VFX/Cubic/WarriorWhirlwind", AutoDestroy = 1.2f },
+            new() { Id = "warrior_hit",       PrefabPath = "VFX/Cubic/HitBlood",         AutoDestroy = 0.3f },
+
+            // ─── 魔法师 ──────────────────────────────────────────
+            new() { Id = "mage_fireball",  PrefabPath = "VFX/Cubic/MageFireball",  AutoDestroy = 0.8f },
+            new() { Id = "mage_frost_nova",PrefabPath = "VFX/Cubic/MageFrostNova",AutoDestroy = 0.6f },
+            new() { Id = "mage_lightning", PrefabPath = "VFX/Cubic/MageLightning", AutoDestroy = 0.5f },
+            new() { Id = "mage_impact",    PrefabPath = "VFX/Cubic/MageImpact",    AutoDestroy = 0.3f },
+
+            // ─── 弓箭手 ──────────────────────────────────────────
+            new() { Id = "archer_arrow",  PrefabPath = "VFX/Cubic/ArcherArrow",  AutoDestroy = 0.3f },
+            new() { Id = "archer_pierce",  PrefabPath = "VFX/Cubic/ArcherPierce", AutoDestroy = 0.5f },
+            new() { Id = "archer_dash",    PrefabPath = "VFX/Cubic/ArcherDash",    AutoDestroy = 0.3f },
+            new() { Id = "archer_hit",     PrefabPath = "VFX/Cubic/HitBlood",      AutoDestroy = 0.3f },
+
+            // ─── 圣骑士 ──────────────────────────────────────────
+            new() { Id = "paladin_holy",     PrefabPath = "VFX/Cubic/PaladinHoly",    AutoDestroy = 0.5f },
+            new() { Id = "paladin_hammer",   PrefabPath = "VFX/Cubic/PaladinHammer",  AutoDestroy = 0.6f },
+            new() { Id = "paladin_devotion", PrefabPath = "VFX/Cubic/PaladinDevotion",AutoDestroy = 1.5f },
+            new() { Id = "paladin_heal",     PrefabPath = "VFX/Cubic/PaladinHeal",    AutoDestroy = 0.6f },
+
+            // ─── 通用 ────────────────────────────────────────────
+            new() { Id = "hit_blood",  PrefabPath = "VFX/Cubic/HitBlood",  AutoDestroy = 0.3f },
+            new() { Id = "explosion",  PrefabPath = "VFX/Cubic/Explosion", AutoDestroy = 0.6f },
+            new() { Id = "shield",     PrefabPath = "VFX/Cubic/Shield",    AutoDestroy = 1.0f },
+        };
+
         /// <summary>
-        /// 初始化VFX系统
+        /// 初始化 —— 把全部 vfxId → prefabPath 注册到框架 EffectsManager（bare-string）。
+        /// 幂等，重复调用只生效一次。
         /// </summary>
         public static void Initialize()
         {
-            RegisterVFEffects();
-            Debug.Log($"[CubicVFXManager] VFX系统初始化完成，共 {VFXEffects.Count} 个特效");
-        }
-
-        /// <summary>
-        /// 注册VFX特效
-        /// </summary>
-        private static void RegisterVFEffects()
-        {
-            RegisterVFX("warrior_slash", "横扫斩", Color.red, 0.3f, "战士挥舞武器");
-            RegisterVFX("warrior_shout", "战吼", Color.yellow, 0.5f, "战士发出战吼");
-            RegisterVFX("warrior_whirlwind", "旋风斩", Color.red, 1f, "战士旋转攻击");
-            RegisterVFX("warrior_hit", "战士命中", Color.red, 0.2f, "命中特效");
-
-            RegisterVFX("mage_fireball", "火球", new Color(1, 0.5f, 0), 0.8f, "火球飞行");
-            RegisterVFX("mage_frost_nova", "冰霜新星", new Color(0.5f, 0.8f, 1), 0.5f, "冰霜爆发");
-            RegisterVFX("mage_lightning", "闪电链", new Color(0.6f, 0.2f, 1), 0.4f, "链式闪电");
-            RegisterVFX("mage_impact", "魔法命中", new Color(0.6f, 0.2f, 1), 0.2f, "魔法命中");
-
-            RegisterVFX("archer_arrow", "箭矢", Color.green, 0.3f, "箭矢飞行");
-            RegisterVFX("archer_pierce", "穿刺箭", Color.green, 0.4f, "穿透效果");
-            RegisterVFX("archer_dash", "疾风步", Color.green, 0.2f, "快速位移");
-            RegisterVFX("archer_hit", "弓箭命中", Color.green, 0.2f, "命中特效");
-
-            RegisterVFX("paladin_holy", "圣光斩", Color.yellow, 0.4f, "圣光攻击");
-            RegisterVFX("paladin_hammer", "正义之锤", Color.yellow, 0.5f, "锤击效果");
-            RegisterVFX("paladin_devotion", "奉献光环", Color.yellow, 2f, "治疗光环");
-            RegisterVFX("paladin_heal", "圣光治疗", Color.yellow, 0.5f, "治疗特效");
-
-            RegisterVFX("hit_blood", "命中血液", Color.red, 0.3f, "血液飞溅");
-            RegisterVFX("explosion", "爆炸", new Color(1, 0.5f, 0), 0.5f, "爆炸效果");
-            RegisterVFX("shield", "护盾", new Color(0.5f, 0.8f, 1), 1f, "护盾效果");
-            RegisterVFX("z_axis_light", "Z轴打光", new Color(1f, 0.85f, 0.45f), 1.35f, "从+Z方向投射的体积光束（URP菲涅尔光柱+Spot Light+Bloom增强）");
-        }
-
-        /// <summary>
-        /// 注册单个VFX
-        /// </summary>
-        private static void RegisterVFX(string id, string displayName, Color color, float duration, string description)
-        {
-            var vfx = new VFXInfo
+            if (_initialized) return;
+            if (!EventProcessor.HasInstance)
             {
-                Id = id,
-                DisplayName = displayName,
-                Color = color,
-                Duration = duration,
-                Description = description
-            };
+                Debug.LogWarning("[CubicVFXManager] EventProcessor 未就绪，跳过 VFX 注册");
+                return;
+            }
+            _initialized = true;
 
-            VFXEffects[id] = vfx;
+            foreach (var r in _registrations)
+            {
+                // §4.1 bare-string：消费方不 using EffectsManager 命名空间。
+                EventProcessor.Instance.TriggerEventMethod(
+                    "RegisterVFX",
+                    new List<object> { r.Id, r.PrefabPath });
+            }
+
+            Debug.Log($"[CubicVFXManager] VFX 注册完成，共 {_registrations.Count} 个（实际 prefab 资源由用户在 Unity Editor 拖入）");
+        }
+
+        /// <summary>查询某 vfxId 的自动回收时长（无 → 0）。</summary>
+        public static float GetAutoDestroy(string vfxId)
+        {
+            foreach (var r in _registrations)
+                if (r.Id == vfxId) return r.AutoDestroy;
+            return 0f;
         }
 
         /// <summary>
-        /// 播放技能特效
+        /// 播放指定 VFX 特效（不关心效果时长，框架按各自注册时长自动回收）。
         /// </summary>
         public static void PlaySkillVFX(string vfxId, Vector3 position)
         {
-            if (VFXEffects.TryGetValue(vfxId, out var vfx))
-            {
-                // Z 轴打光特效走专门管理器（URP 体积光束 + Spot Light + Bloom）
-                if (vfxId == "z_axis_light")
-                {
-                    CubicZAxisLightVFX.Play(position);
-                    Debug.Log($"[CubicVFXManager] 播放VFX: {vfx.DisplayName} at {position}");
-                    return;
-                }
-
-                CreateVFXEffect(vfx, position);
-                Debug.Log($"[CubicVFXManager] 播放VFX: {vfx.DisplayName} at {position}");
-            }
-            else
-            {
-                Debug.LogWarning($"[CubicVFXManager] VFX不存在: {vfxId}");
-            }
+            if (!EventProcessor.HasInstance) return;
+            var autoDestroy = GetAutoDestroy(vfxId);
+            EventProcessor.Instance.TriggerEventMethod(
+                "PlayVFX",
+                new List<object> { vfxId, position, null, autoDestroy });
         }
 
-        /// <summary>
-        /// 创建VFX效果（简化版，后续可以扩展为粒子系统）
-        /// </summary>
-        private static void CreateVFXEffect(VFXInfo vfx, Vector3 position)
+        /// <summary>播放 VFX（自定义旋转）。</summary>
+        public static void PlaySkillVFX(string vfxId, Vector3 position, Quaternion rotation)
         {
-            var vfxObj = new GameObject($"VFX_{vfx.DisplayName}");
-            vfxObj.transform.position = position;
-
-            var spriteRenderer = vfxObj.AddComponent<SpriteRenderer>();
-            spriteRenderer.color = vfx.Color;
-            spriteRenderer.sortingOrder = 100;
-
-            int size = 32;
-            var texture = new Texture2D(size, size);
-            Color32[] colors = new Color32[size * size];
-            for (int i = 0; i < size * size; i++)
-            {
-                int x = i % size;
-                int y = i / size;
-                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(size / 2f, size / 2f));
-                if (dist < size / 2f)
-                {
-                    colors[i] = Color.white;
-                }
-                else
-                {
-                    colors[i] = Color.clear;
-                }
-            }
-            texture.SetPixels32(colors);
-            texture.Apply();
-
-            spriteRenderer.sprite = Sprite.Create(
-                texture,
-                new Rect(0, 0, size, size),
-                new Vector2(0.5f, 0.5f),
-                size
-            );
-
-            float scale = 2f;
-            vfxObj.transform.localScale = new Vector3(scale, scale, 1);
-
-            UnityEngine.Object.Destroy(vfxObj, vfx.Duration);
+            if (!EventProcessor.HasInstance) return;
+            var autoDestroy = GetAutoDestroy(vfxId);
+            EventProcessor.Instance.TriggerEventMethod(
+                "PlayVFX",
+                new List<object> { vfxId, position, rotation, autoDestroy });
         }
 
-        /// <summary>
-        /// 播放屏幕闪光
-        /// </summary>
+        /// <summary>屏幕闪光 —— 走框架 <c>EVT_SCREEN_FLASH</c>，由 EffectsManager 建独立 overlay Canvas。</summary>
         public static void PlayScreenFlash(ScreenFlashType flashType)
         {
-            Color color;
-            float duration;
-
-            switch (flashType)
-            {
-                case ScreenFlashType.Damage:
-                    color = new Color(1, 0, 0, 0.3f);
-                    duration = 0.15f;
-                    break;
-                case ScreenFlashType.Crit:
-                    color = new Color(1, 1, 0, 0.4f);
-                    duration = 0.1f;
-                    break;
-                case ScreenFlashType.Heal:
-                    color = new Color(0, 1, 0, 0.3f);
-                    duration = 0.2f;
-                    break;
-                case ScreenFlashType.Freeze:
-                    color = new Color(0, 0.5f, 1, 0.4f);
-                    duration = 0.3f;
-                    break;
-                case ScreenFlashType.Poison:
-                    color = new Color(0.5f, 0, 1, 0.3f);
-                    duration = 0.5f;
-                    break;
-                case ScreenFlashType.Execute:
-                    color = Color.white;
-                    duration = 0.1f;
-                    break;
-                default:
-                    color = Color.white;
-                    duration = 0.1f;
-                    break;
-            }
-
-            CreateScreenFlash(color, duration);
+            if (!EventProcessor.HasInstance) return;
+            var (color, duration) = TranslateFlash(flashType);
+            EventProcessor.Instance.TriggerEventMethod(
+                "PlayScreenFlash",
+                new List<object> { color, duration });
         }
 
-        /// <summary>
-        /// 创建屏幕闪光效果
-        /// </summary>
-        private static void CreateScreenFlash(Color color, float duration)
+        // ─── 内部：把业务 flashType 翻译为框架协议的颜色 + 时长 ───
+        private static (Color color, float duration) TranslateFlash(ScreenFlashType t)
         {
-            var flashObj = new GameObject("ScreenFlash");
-            var canvas = flashObj.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 32767;
-
-            var image = flashObj.AddComponent<UnityEngine.UI.Image>();
-            image.color = color;
-            image.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
-
-            UnityEngine.Object.Destroy(flashObj, duration);
+            return t switch
+            {
+                ScreenFlashType.Damage  => (new Color(1f, 0f, 0f, 0.3f), 0.15f),
+                ScreenFlashType.Crit    => (new Color(1f, 1f, 0f, 0.4f), 0.1f),
+                ScreenFlashType.Heal    => (new Color(0f, 1f, 0f, 0.3f), 0.2f),
+                ScreenFlashType.Freeze  => (new Color(0f, 0.5f, 1f, 0.4f), 0.3f),
+                ScreenFlashType.Poison  => (new Color(0.5f, 0f, 1f, 0.3f), 0.5f),
+                ScreenFlashType.Execute => (Color.white, 0.1f),
+                _ => (Color.white, 0.1f),
+            };
         }
     }
 }
