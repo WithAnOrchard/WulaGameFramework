@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager
 {
@@ -21,7 +20,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         /// <summary>学习技能：data = [entityId, skillId]</summary>
         public const string EVT_LEARN_SKILL = "LearnSkill";
 
-        /// <summary>释放技能：data = [Entity caster, string skillId, Entity target?, Vector3 dir?, Vector3 pos?]</summary>
+        /// <summary>释放技能：data = [casterId, string skillId, targetId?, Vector3 dir?, Vector3 pos?]</summary>
         public const string EVT_CAST_SKILL = "CastSkill";
 
         // ─── 生命周期 ────────────────────────────────────────────────
@@ -63,15 +62,15 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         private List<object> OnCastSkill(string eventName, List<object> data)
         {
             if (data == null || data.Count < 2) return null;
-            var caster = data[0] as Entity;
+            var casterId = data[0] as string;
             var skillId = data[1] as string;
-            if (caster == null || skillId == null) return null;
+            if (casterId == null || skillId == null) return null;
 
-            var target = data.Count > 2 ? data[2] as Entity : null;
+            var targetId = data.Count > 2 ? data[2] as string : null;
             var dir = data.Count > 3 && data[3] is UnityEngine.Vector3 d ? d : UnityEngine.Vector3.zero;
             var pos = data.Count > 4 && data[4] is UnityEngine.Vector3 p ? p : UnityEngine.Vector3.zero;
 
-            var success = SkillService.Instance.CastSkill(caster, skillId, target, dir, pos);
+            var success = SkillService.Instance.CastSkill(casterId, skillId, targetId, dir, pos);
             return success ? new List<object> { ResultCode.OK } : new List<object> { ResultCode.Fail("技能释放失败") };
         }
     }

@@ -37,6 +37,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         public const string EVT_MOVE    = "InventoryMove";
         public const string EVT_CHANGED = "InventoryChanged";
         public const string EVT_QUERY   = "InventoryQuery";
+        public const string EVT_COUNT_ITEM = "InventoryCountItem";
 
         #endregion
 
@@ -462,6 +463,23 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 if (args == null || args.Count < 1) return ResultCode.Fail("参数不足");
                 var inv = GetInventory(args[0]?.ToString());
                 return inv == null ? ResultCode.Fail("容器不存在") : ResultCode.Ok(inv);
+            }
+            catch (Exception ex) { return ResultCode.Fail(ex.Message); }
+        }
+
+        /// <summary>事件: 查询容器中指定物品数量</summary>
+        /// <param name="args">[inventoryId, itemId]</param>
+        [Event(EVT_COUNT_ITEM)]
+        public List<object> CountItem(List<object> args)
+        {
+            try
+            {
+                if (args == null || args.Count < 2) return ResultCode.Fail("参数不足");
+                var inv = GetInventory(args[0]?.ToString());
+                if (inv == null) return ResultCode.Fail("容器不存在");
+                var itemId = args[1]?.ToString();
+                if (string.IsNullOrEmpty(itemId)) return ResultCode.Fail("物品ID为空");
+                return ResultCode.Ok(inv.CountOf(itemId));
             }
             catch (Exception ex) { return ResultCode.Fail(ex.Message); }
         }

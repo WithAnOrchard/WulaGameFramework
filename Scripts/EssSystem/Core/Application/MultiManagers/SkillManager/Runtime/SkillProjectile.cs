@@ -1,24 +1,20 @@
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
 {
     /// <summary>
-    /// 投射物运行时 —— 由 <see cref="Dao.Effects.ProjectileEffect"/> 创建：
-    /// 沿初始 <see cref="Velocity"/> 直线飞行，碰到带 <see cref="EntityHandle"/> 的目标即结算伤害然后销毁。
+    /// 投射物运行时 —— 沿初始 <see cref="Velocity"/> 飞行，命中可反查 entityId 的目标即结算伤害（3D 物理版）。
     /// <list type="bullet">
-    /// <item>纯 Update 推进 transform，避免依赖 Rigidbody2D；穿透墙体（业务可自行加 LayerMask）。</item>
-    /// <item><see cref="MaxLifetime"/> 秒后自动销毁，避免漏出场。</item>
-    /// <item>命中过滤：跳过 <see cref="Caster"/>，命中后只结算一次（<see cref="Pierce"/>=true 时穿透继续）。</item>
+    /// <item>纯 Update 推进 transform（不依赖 2D Rigidbody）。</item>
+    /// <item><see cref="MaxLifetime"/> 秒后自动销毁。</item>
+    /// <item>命中检测：<c>Physics.OverlapSphereNonAlloc</c> 3D 球内 collider。</item>
     /// </list>
     /// </summary>
     [DisallowMultipleComponent]
     public class SkillProjectile : MonoBehaviour
     {
-        public Entity Caster;
+        public string CasterId;
         public Vector3 Velocity;
         public float Damage;
         public string DamageType = "projectile";
@@ -27,7 +23,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
         public bool Pierce;
 
         private float _aliveTime;
-        private System.Collections.Generic.HashSet<Entity> _hit;
+        private System.Collections.Generic.HashSet<string> _hit;
+        private static readonly Collider[] _buffer = new Collider[16];
 
         private void Update()
         {
@@ -36,27 +33,22 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
             _aliveTime += Time.deltaTime;
             if (_aliveTime >= MaxLifetime) { Destroy(gameObject); return; }
 
-            // 命中检测：以本体位置为圆心
-            var hits = Physics2D.OverlapCircleAll(transform.position, Radius);
-            for (var i = 0; i < hits.Length; i++)
+            var count = Physics.OverlapSphereNonAlloc(transform.position, Radius, _buffer, ~0, QueryTriggerInteraction.Collide);
+            for (var i = 0; i < count; i++)
             {
-                var col = hits[i];
+                var col = _buffer[i];
                 if (col == null) continue;
-                var handle = col.GetComponentInParent<EntityHandle>();
-                if (handle == null || handle.Entity == null) continue;
-                if (handle.Entity == Caster) continue;
+                var targetId = SkillEntityProxy.IdFrom(col);
+                if (string.IsNullOrEmpty(targetId) || targetId == CasterId) continue;
 
                 if (Pierce)
                 {
-                    _hit ??= new System.Collections.Generic.HashSet<Entity>();
-                    if (!_hit.Add(handle.Entity)) continue;
+                    _hit ??= new System.Collections.Generic.HashSet<string>();
+                    if (!_hit.Add(targetId)) continue;
                 }
 
-                var dmg = handle.Entity.Get<IDamageable>();
-                if (dmg == null || dmg.IsDead) continue;
-                if (EntityService.HasInstance)
-                    EntityService.Instance.TryDamage(handle.Entity, Damage,
-                        source: Caster, damageType: DamageType, damageSourcePosition: transform.position);
+                if (SkillEntityProxy.IsDead(targetId)) continue;
+                SkillEntityProxy.Damage(targetId, Damage, CasterId, DamageType, transform.position);
 
                 if (!Pierce) { Destroy(gameObject); return; }
             }

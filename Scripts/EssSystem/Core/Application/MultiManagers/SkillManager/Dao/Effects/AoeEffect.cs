@@ -1,26 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 范围效果 —— 在指定位置检测半径内所有实体，对每个执行子效果链。
-    /// </summary>
     public class AoeEffect : ISkillEffect
     {
         public float Radius;
         public float RadiusPerLevel;
-
-        /// <summary>对范围内每个目标执行的子效果。</summary>
         public List<ISkillEffect> SubEffects = new();
-
-        /// <summary>是否包含施法者自身。</summary>
         public bool IncludeSelf;
 
-        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
-        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
+        private static readonly Collider[] _buffer = new Collider[64];
 
         public AoeEffect(float radius, float radiusPerLevel = 0f, bool includeSelf = false)
         {
@@ -31,23 +22,20 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
+            if (ctx == null) return;
             var r = Radius + RadiusPerLevel * (ctx.Level - 1);
-            var center = ctx.Position != Vector3.zero ? (Vector2)ctx.Position : (Vector2)ctx.Caster.WorldPosition;
-
-            var count = Physics2D.OverlapCircle(center, r, _noFilter, _buffer);
+            var center = ctx.Position != Vector3.zero ? ctx.Position : SkillEntityProxy.Position(ctx.CasterId);
+            var count = Physics.OverlapSphereNonAlloc(center, r, _buffer, ~0, QueryTriggerInteraction.Collide);
             for (var i = 0; i < count; i++)
             {
-                var col = _buffer[i];
-                if (col == null) continue;
-                var handle = col.GetComponentInParent<EntityHandle>();
-                if (handle == null || handle.Entity == null) continue;
-                if (!IncludeSelf && handle.Entity == ctx.Caster) continue;
+                var targetId = SkillEntityProxy.IdFrom(_buffer[i]);
+                if (string.IsNullOrEmpty(targetId)) continue;
+                if (!IncludeSelf && targetId == ctx.CasterId) continue;
 
-                // 为每个目标创建子上下文，执行子效果链
                 var subCtx = new SkillEffectContext
                 {
-                    Caster = ctx.Caster,
-                    Target = handle.Entity,
+                    CasterId = ctx.CasterId,
+                    TargetId = targetId,
                     Definition = ctx.Definition,
                     Instance = ctx.Instance,
                     Direction = ctx.Direction,

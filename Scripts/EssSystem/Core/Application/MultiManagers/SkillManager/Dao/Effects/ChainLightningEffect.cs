@@ -1,21 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 链式闪电 —— 从首个目标（<see cref="SkillEffectContext.Target"/> 或施法者周围最近敌人）出发，
-    /// 在 <see cref="JumpRadius"/> 半径内寻找下一个未被击中的目标，反复跳跃 <see cref="MaxJumps"/> 次。
-    /// <list type="bullet">
-    /// <item>每跳伤害衰减：<see cref="BaseDamage"/> × <see cref="FalloffPerJump"/>^n。</item>
-    /// <item>每个目标只命中一次，跳完即结束（即使中途断链）。</item>
-    /// <item>瞬时结算，无飞行物 / 无 Buff —— 适合"立刻看到效果"的法术爆发节奏。</item>
-    /// </list>
-    /// </summary>
     public class ChainLightningEffect : ISkillEffect
     {
         public float BaseDamage = 15f;
@@ -25,11 +13,9 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public float FalloffPerJump = 0.8f;
         public string DamageType = "lightning";
 
-        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
-        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
+        private static readonly Collider[] _buffer = new Collider[64];
 
         public ChainLightningEffect() { }
-
         public ChainLightningEffect(float baseDamage, int maxJumps = 4, float jumpRadius = 4f,
             float falloffPerJump = 0.8f, float damagePerLevel = 0f, string damageType = "lightning")
         {
@@ -43,69 +29,35 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
-            if (!EntityService.HasInstance || ctx?.Caster == null) return;
-
-            // 起跳目标：优先 ctx.Target；否则取施法者周围最近的非己 IDamageable
-            var first = ctx.Target ?? PickNearest(ctx.Caster);
-            if (first == null) return;
-
+            if (ctx == null || string.IsNullOrEmpty(ctx.CasterId)) return;
+            var first = !string.IsNullOrEmpty(ctx.TargetId) ? ctx.TargetId : PickNearest(ctx.CasterId, ctx.CasterId);
+            if (string.IsNullOrEmpty(first)) return;
             var baseDmg = BaseDamage + DamagePerLevel * (ctx.Level - 1);
-            var hit = new HashSet<Entity> { ctx.Caster };
+            var hit = new HashSet<string> { ctx.CasterId };
             var current = first;
-            for (var i = 0; i < MaxJumps && current != null; i++)
+            for (var i = 0; i < MaxJumps && !string.IsNullOrEmpty(current); i++)
             {
                 if (!hit.Add(current)) break;
-                var dmg = current.Get<IDamageable>();
-                if (dmg == null || dmg.IsDead) break;
-
+                if (SkillEntityProxy.IsDead(current)) break;
                 var damage = baseDmg * Mathf.Pow(Mathf.Clamp01(FalloffPerJump), i);
-                EntityService.Instance.TryDamage(current, damage,
-                    source: ctx.Caster, damageType: DamageType,
-                    damageSourcePosition: current.CharacterRoot != null
-                        ? (Vector3?)current.CharacterRoot.position : null);
-
-                current = PickNextJump(current, hit);
+                SkillEntityProxy.Damage(current, damage, ctx.CasterId, DamageType, SkillEntityProxy.Position(current));
+                current = PickNearest(current, null, hit);
             }
         }
 
-        private Entity PickNearest(Entity caster)
+        private string PickNearest(string fromId, string excludeId, HashSet<string> excluded = null)
         {
-            if (caster.CharacterRoot == null) return null;
-            var origin = (Vector2)caster.CharacterRoot.position;
-            var count = Physics2D.OverlapCircle(origin, JumpRadius, _noFilter, _buffer);
-            Entity best = null;
+            var origin = SkillEntityProxy.Position(fromId);
+            var count = Physics.OverlapSphereNonAlloc(origin, JumpRadius, _buffer, ~0, QueryTriggerInteraction.Collide);
+            string best = null;
             var bestDist = float.MaxValue;
             for (var i = 0; i < count; i++)
             {
-                var col = _buffer[i];
-                if (col == null) continue;
-                var handle = col.GetComponentInParent<EntityHandle>();
-                if (handle?.Entity == null || handle.Entity == caster) continue;
-                var d = handle.Entity.Get<IDamageable>();
-                if (d == null || d.IsDead) continue;
-                var dist = ((Vector2)handle.Entity.WorldPosition - origin).sqrMagnitude;
-                if (dist < bestDist) { bestDist = dist; best = handle.Entity; }
-            }
-            return best;
-        }
-
-        private Entity PickNextJump(Entity from, HashSet<Entity> hit)
-        {
-            if (from.CharacterRoot == null) return null;
-            var origin = (Vector2)from.CharacterRoot.position;
-            var count = Physics2D.OverlapCircle(origin, JumpRadius, _noFilter, _buffer);
-            Entity best = null;
-            var bestDist = float.MaxValue;
-            for (var i = 0; i < count; i++)
-            {
-                var col = _buffer[i];
-                if (col == null) continue;
-                var handle = col.GetComponentInParent<EntityHandle>();
-                if (handle?.Entity == null || hit.Contains(handle.Entity)) continue;
-                var d = handle.Entity.Get<IDamageable>();
-                if (d == null || d.IsDead) continue;
-                var dist = ((Vector2)handle.Entity.WorldPosition - origin).sqrMagnitude;
-                if (dist < bestDist) { bestDist = dist; best = handle.Entity; }
+                var id = SkillEntityProxy.IdFrom(_buffer[i]);
+                if (string.IsNullOrEmpty(id) || id == excludeId || (excluded != null && excluded.Contains(id))) continue;
+                if (SkillEntityProxy.IsDead(id)) continue;
+                var dist = (SkillEntityProxy.Position(id) - origin).sqrMagnitude;
+                if (dist < bestDist) { bestDist = dist; best = id; }
             }
             return best;
         }

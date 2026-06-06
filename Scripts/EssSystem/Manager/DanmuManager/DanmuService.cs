@@ -74,8 +74,6 @@ namespace BiliBiliDanmu
 
         private static readonly List<object> _tempList1 = new List<object>(1);
         private static readonly List<object> _tempList3 = new List<object>(3);
-        private static readonly List<object> _emptyData = new List<object>(0);
-
         #endregion
 
         // ─── 共享 HTTP ────────────────────────────────────────

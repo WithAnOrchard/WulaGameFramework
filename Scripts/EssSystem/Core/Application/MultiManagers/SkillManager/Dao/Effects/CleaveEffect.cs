@@ -1,36 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 锥形挥砍 / 喷吐 —— 以施法者为圆心，<see cref="Range"/> 为半径，<see cref="HalfAngleDeg"/> 为半锥角，
-    /// 对面朝方向 / <see cref="SkillEffectContext.Direction"/> 内的所有敌人执行 <see cref="SubEffects"/>。
-    /// <list type="bullet">
-    /// <item>角度判定：dot(direction, casterToTarget) ≥ cos(HalfAngleDeg)。</item>
-    /// <item>未指定 <see cref="SkillEffectContext.Direction"/> 时取 CharacterRoot.localScale.x 的朝向。</item>
-    /// <item>典型用法：剑士的"横扫千军"、龙的"火焰吐息"、宝可梦的"叶刃"等。</item>
-    /// </list>
-    /// </summary>
     public class CleaveEffect : ISkillEffect
     {
         public float Range = 3f;
         public float HalfAngleDeg = 45f;
-
-        /// <summary>对锥内每个目标执行的子效果（与 AoeEffect 同理）。</summary>
         public List<ISkillEffect> SubEffects = new();
-
         public bool IncludeSelf;
 
-        private static readonly List<Collider2D> _buffer = new List<Collider2D>();
-        private static readonly ContactFilter2D _noFilter = new ContactFilter2D { useTriggers = true };
+        private static readonly Collider[] _buffer = new Collider[64];
 
         public CleaveEffect() { }
-
         public CleaveEffect(float range, float halfAngleDeg = 45f, bool includeSelf = false)
         {
             Range = range;
@@ -40,39 +23,28 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
-            if (ctx?.Caster?.CharacterRoot == null) return;
-            var root = ctx.Caster.CharacterRoot;
-            var origin = (Vector2)root.position;
-
-            // 朝向：ctx.Direction 优先，其次面朝
-            Vector2 dir;
-            if (ctx.Direction.sqrMagnitude > 0.001f)
-            {
-                dir = ((Vector2)ctx.Direction).normalized;
-            }
-            else
-            {
-                dir = root.localScale.x >= 0f ? Vector2.right : Vector2.left;
-            }
-
+            var root = SkillEntityProxy.Root(ctx?.CasterId);
+            if (root == null) return;
+            var origin = root.position;
+            var dir = ctx.Direction.sqrMagnitude > 0.001f
+                ? ctx.Direction.normalized
+                : (root.localScale.x >= 0f ? Vector3.right : Vector3.left);
             var cosThreshold = Mathf.Cos(HalfAngleDeg * Mathf.Deg2Rad);
-            var count = Physics2D.OverlapCircle(origin, Range, _noFilter, _buffer);
+            var count = Physics.OverlapSphereNonAlloc(origin, Range, _buffer, ~0, QueryTriggerInteraction.Collide);
             for (var i = 0; i < count; i++)
             {
-                var col = _buffer[i];
-                if (col == null) continue;
-                var handle = col.GetComponentInParent<EntityHandle>();
-                if (handle?.Entity == null) continue;
-                if (!IncludeSelf && handle.Entity == ctx.Caster) continue;
+                var targetId = SkillEntityProxy.IdFrom(_buffer[i]);
+                if (string.IsNullOrEmpty(targetId)) continue;
+                if (!IncludeSelf && targetId == ctx.CasterId) continue;
 
-                var toTarget = ((Vector2)handle.Entity.WorldPosition - origin);
+                var toTarget = SkillEntityProxy.Position(targetId) - origin;
                 if (toTarget.sqrMagnitude < 0.0001f) continue;
-                if (Vector2.Dot(dir, toTarget.normalized) < cosThreshold) continue;
+                if (Vector3.Dot(dir, toTarget.normalized) < cosThreshold) continue;
 
                 var subCtx = new SkillEffectContext
                 {
-                    Caster = ctx.Caster,
-                    Target = handle.Entity,
+                    CasterId = ctx.CasterId,
+                    TargetId = targetId,
                     Definition = ctx.Definition,
                     Instance = ctx.Instance,
                     Direction = ctx.Direction,

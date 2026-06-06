@@ -123,17 +123,13 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             if (!Service.StartDialogue(dialogueId, configId))
                 return ResultCode.Fail($"启动对话失败: {dialogueId}");
 
-            var config = Service.GetConfig(Service.ActiveConfigId)
-                         ?? Service.GetConfig(DefaultConfigId)
-                         ?? new DialogueConfig(DefaultConfigId, "默认");
+            var config = !string.IsNullOrEmpty(configId)
+                ? Service.GetConfig(Service.ActiveConfigId)
+                : new DialogueConfig(DefaultConfigId, "默认");
+            config ??= new DialogueConfig(DefaultConfigId, "默认");
 
-            // 已有缓存 UI → 仅刷新 + 显示
-            if (_rootPanel != null && _refs != null && QueryUIGameObject(DialogueUiId) != null)
-            {
-                _rootPanel.Visible = true;
-                RefreshCurrentLine();
-                return ResultCode.Ok(dialogueId);
-            }
+            // 对话 UI 的布局迭代频繁，打开时按当前配置重建，避免旧尺寸/旧位置残留。
+            RebuildUiRoot();
 
             // 重建
             var (panel, refs) = DialogueUIBuilder.BuildPanelTree(DialogueUiId, config);
@@ -227,6 +223,17 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
         private void HideUi()
         {
             if (_rootPanel != null) _rootPanel.Visible = false;
+        }
+
+        private void RebuildUiRoot()
+        {
+            if (!EventProcessor.HasInstance) return;
+            if (_rootPanel == null && QueryUIGameObject(DialogueUiId) == null) return;
+
+            EventProcessor.Instance.TriggerEventMethod(
+                "UnregisterUIEntity", new List<object> { DialogueUiId });
+            _rootPanel = null;
+            _refs = null;
         }
 
         #endregion

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
 {
@@ -54,12 +53,12 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
         }
 
         /// <summary>SkillService 钩点：每次成功 Cast 后调用，用于扫描连招匹配。</summary>
-        public static void OnSkillCast(Entity caster, string skillId)
+        public static void OnSkillCast(string casterId, string skillId)
         {
-            if (caster == null || string.IsNullOrEmpty(caster.InstanceId) || string.IsNullOrEmpty(skillId)) return;
+            if (string.IsNullOrEmpty(casterId) || string.IsNullOrEmpty(skillId)) return;
             if (_combos.Count == 0) return;
 
-            var key = caster.InstanceId;
+            var key = casterId;
             if (!_history.TryGetValue(key, out var hist))
             {
                 hist = new List<(string, float)>();
@@ -98,7 +97,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
                 if (combo.ComboCooldown > 0f) perEntityCd[comboKey] = now + combo.ComboCooldown;
 
                 if (SkillService.HasInstance)
-                    SkillService.Instance.CastSkill(caster, combo.FinisherSkillId);
+                    SkillService.Instance.CastSkill(casterId, combo.FinisherSkillId);
                 return; // 一次只触发一个连招
             }
         }

@@ -1,23 +1,15 @@
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs;
-using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 持续伤害效果（DoT，Damage over Time）—— 在目标身上挂 Buff，每 <see cref="TickInterval"/> 秒造成 <see cref="DamagePerTick"/> 伤害。
-    /// 典型用法：燃烧 / 中毒 / 流血 / 腐蚀。
-    /// </summary>
     public class DotEffect : ISkillEffect
     {
         public string BuffId = "dot";
-
-        public float Duration = 5f;
+        public float Duration = 3f;
         public float TickInterval = 1f;
-
-        public float DamagePerTick = 3f;
+        public float DamagePerTick = 5f;
         public float DamagePerLevelPerTick;
-
         public string DamageType = "dot";
 
         public DotEffect() { }
@@ -35,28 +27,19 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
-            if (ctx?.Target == null || !SkillService.HasInstance) return;
-            var dmg = ctx.Target.Get<IDamageable>();
-            if (dmg == null || dmg.IsDead) return;
-
+            if (ctx == null || string.IsNullOrEmpty(ctx.TargetId) || !SkillService.HasInstance) return;
+            if (SkillEntityProxy.IsDead(ctx.TargetId)) return;
             var perTick = DamagePerTick + DamagePerLevelPerTick * (ctx.Level - 1);
-            var caster = ctx.Caster;
-            var target = ctx.Target;
-            var dmgType = DamageType;
-
-            SkillService.Instance.ApplyBuff(target, new BuffInstance
+            var sourceId = ctx.CasterId;
+            var targetId = ctx.TargetId;
+            var type = DamageType;
+            SkillService.Instance.ApplyBuff(targetId, new BuffInstance
             {
                 BuffId = BuffId,
-                Source = caster,
-                Target = target,
+                SourceId = sourceId,
                 Duration = Duration,
                 TickInterval = UnityEngine.Mathf.Max(0.05f, TickInterval),
-                OnTick = (b, _) =>
-                {
-                    if (b?.Target == null || !EntityService.HasInstance) return;
-                    EntityService.Instance.TryDamage(b.Target, perTick,
-                        source: b.Source, damageType: dmgType);
-                },
+                OnTick = (b, _) => SkillEntityProxy.Damage(b.TargetId, perTick, b.SourceId, type),
             });
         }
     }

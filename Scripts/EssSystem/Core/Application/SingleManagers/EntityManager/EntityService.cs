@@ -201,11 +201,20 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             // Dynamic 实体的 Tick 同步会反向覆盖 WorldPosition，所以必须走 rb.velocity。
             if (definition.CanMove)
             {
-                var hostRb = host.GetComponent<Rigidbody2D>();
-                if (hostRb != null && hostRb.bodyType == RigidbodyType2D.Dynamic)
-                    entity.Add<IMovable>(new Rigidbody2DMoverComponent(hostRb, definition.MoveSpeed, sideScroller: true));
-                else
+                // 3D 优先：检测到 Rigidbody（3D）就跳过 2D MoverComponent —— 业务代码自己驱动 Rigidbody.linearVelocity
+                // （Cubic 实体走 CubicEntity.Move，不依赖框架的 IMovable）
+                if (host.GetComponent<Rigidbody>() != null)
+                {
                     entity.CanMove(definition.MoveSpeed);
+                }
+                else
+                {
+                    var hostRb = host.GetComponent<Rigidbody2D>();
+                    if (hostRb != null && hostRb.bodyType == RigidbodyType2D.Dynamic)
+                        entity.Add<IMovable>(new Rigidbody2DMoverComponent(hostRb, definition.MoveSpeed, sideScroller: true));
+                    else
+                        entity.CanMove(definition.MoveSpeed);
+                }
             }
             if (definition.CanBeAttacked)
             {
@@ -218,8 +227,12 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 entity.CanFlash(host.transform, definition.FlashDuration, definition.FlashColor);
             if (definition.EnableKnockbackEffect)
             {
-                var rb = host.GetComponent<Rigidbody2D>();
-                if (rb != null) entity.CanKnockback(rb, definition.KnockbackForce, definition.KnockbackDuration);
+                // 3D Rigidbody 不走框架 Rigidbody2D-based 击退 —— 业务方自定义（如 Cubic KnockbackEffect 3D 化版本）
+                if (host.GetComponent<Rigidbody>() == null)
+                {
+                    var rb = host.GetComponent<Rigidbody2D>();
+                    if (rb != null) entity.CanKnockback(rb, definition.KnockbackForce, definition.KnockbackDuration);
+                }
             }
 
             if (definition.SuppressHitSFX) _silentDamageEntities.Add(instanceId);
@@ -274,8 +287,13 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             var ls = host.transform.lossyScale;
             var sx = Mathf.Approximately(ls.x, 0f) ? 1f : 1f / ls.x;
             var sy = Mathf.Approximately(ls.y, 0f) ? 1f : 1f / ls.y;
-            var localSize   = new Vector2(cfg.Size.x   * sx, cfg.Size.y   * sy);
-            var localOffset = new Vector2(cfg.Offset.x * sx, cfg.Offset.y * sy);
+            var sz = Mathf.Approximately(ls.z, 0f) ? 1f : 1f / ls.z;
+            // 2D 用 size.xy + offset.xy（cfg.Size / Offset 是 Vector2 语义）
+            var localSize2D   = new Vector2(cfg.Size.x * sx, cfg.Size.y * sy);
+            var localOffset2D = new Vector2(cfg.Offset.x * sx, cfg.Offset.y * sy);
+            // 3D 沿用 2D 的 x/y 表达"宽高"，Z 退化成同 X（Square 截面默认）
+            var localSize3D   = new Vector3(cfg.Size.x * sx, cfg.Size.y * sy, Mathf.Max(cfg.Size.x, cfg.Size.y) * sz);
+            var localOffset3D = new Vector3(cfg.Offset.x * sx, cfg.Offset.y * sy, 0f);
 
             switch (cfg.Shape)
             {
@@ -283,8 +301,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 {
                     var box = host.GetComponent<BoxCollider2D>();
                     if (box == null) box = host.AddComponent<BoxCollider2D>();
-                    box.size = localSize;
-                    box.offset = localOffset;
+                    box.size = localSize2D;
+                    box.offset = localOffset2D;
                     box.isTrigger = cfg.IsTrigger;
                     break;
                 }
@@ -294,8 +312,38 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                     if (circle == null) circle = host.AddComponent<CircleCollider2D>();
                     // Circle radius 用 X 方向缩放补偿（CircleCollider2D 没有椭圆形，沿用 X 比例最稳）
                     circle.radius = Mathf.Max(0.01f, cfg.Size.x * sx);
-                    circle.offset = localOffset;
+                    circle.offset = localOffset2D;
                     circle.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                // ── 3D 系列（项目从 2D 切 3D 后新增）────────────────
+                case EntityColliderShape.Box3D:
+                {
+                    var box = host.GetComponent<BoxCollider>();
+                    if (box == null) box = host.AddComponent<BoxCollider>();
+                    box.size = localSize3D;
+                    box.center = localOffset3D;
+                    box.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Sphere3D:
+                {
+                    var sphere = host.GetComponent<SphereCollider>();
+                    if (sphere == null) sphere = host.AddComponent<SphereCollider>();
+                    sphere.radius = Mathf.Max(0.01f, cfg.Size.x * sx);
+                    sphere.center = localOffset3D;
+                    sphere.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Capsule3D:
+                {
+                    var capsule = host.GetComponent<CapsuleCollider>();
+                    if (capsule == null) capsule = host.AddComponent<CapsuleCollider>();
+                    capsule.radius = Mathf.Max(0.01f, cfg.Size.x * sx);
+                    capsule.height = Mathf.Max(0.01f, cfg.Size.y * sy);
+                    capsule.center = localOffset3D;
+                    capsule.direction = 1; // 1 = Y 轴（站立胶囊）
+                    capsule.isTrigger = cfg.IsTrigger;
                     break;
                 }
             }
@@ -328,6 +376,36 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                     circle.radius = Mathf.Max(0.01f, cfg.Size.x);
                     circle.offset = cfg.Offset;
                     circle.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                // ── 3D 系列（项目从 2D 切 3D 后新增）────────────────
+                case EntityColliderShape.Box3D:
+                {
+                    var box = host.GetComponent<BoxCollider>();
+                    if (box == null) box = host.AddComponent<BoxCollider>();
+                    box.size = new Vector3(cfg.Size.x, cfg.Size.y, Mathf.Max(cfg.Size.x, cfg.Size.y));
+                    box.center = new Vector3(cfg.Offset.x, cfg.Offset.y, 0f);
+                    box.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Sphere3D:
+                {
+                    var sphere = host.GetComponent<SphereCollider>();
+                    if (sphere == null) sphere = host.AddComponent<SphereCollider>();
+                    sphere.radius = Mathf.Max(0.01f, cfg.Size.x);
+                    sphere.center = new Vector3(cfg.Offset.x, cfg.Offset.y, 0f);
+                    sphere.isTrigger = cfg.IsTrigger;
+                    break;
+                }
+                case EntityColliderShape.Capsule3D:
+                {
+                    var capsule = host.GetComponent<CapsuleCollider>();
+                    if (capsule == null) capsule = host.AddComponent<CapsuleCollider>();
+                    capsule.radius = Mathf.Max(0.01f, cfg.Size.x);
+                    capsule.height = Mathf.Max(0.01f, cfg.Size.y);
+                    capsule.center = new Vector3(cfg.Offset.x, cfg.Offset.y, 0f);
+                    capsule.direction = 1; // Y 轴
+                    capsule.isTrigger = cfg.IsTrigger;
                     break;
                 }
             }

@@ -92,7 +92,7 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager
 
             var building = Service.PlaceBuilding(configId, instanceId, pos, startCompleted);
             if (building == null) return ResultCode.Fail($"放置建筑失败: {instanceId}");
-            return ResultCode.Ok(building.Entity != null ? building.Entity.CharacterRoot : null);
+            return ResultCode.Ok(building.CharacterRoot);
         }
 
         [Event(EVT_SUPPLY_BUILDING)]

@@ -1,5 +1,4 @@
 using System;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs
 {
@@ -13,10 +12,10 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs
         public string BuffId;
 
         /// <summary>Buff 来源实体。</summary>
-        public Entity Source;
+        public string SourceId;
 
         /// <summary>Buff 附着的目标实体。</summary>
-        public Entity Target;
+        public string TargetId;
 
         /// <summary>总持续时间（秒）。</summary>
         public float Duration;

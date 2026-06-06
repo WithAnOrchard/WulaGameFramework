@@ -1,6 +1,4 @@
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
 {
     /// <summary>
@@ -24,7 +22,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         /// <returns>true = 成功启动，false = 条件不满足。</returns>
         public bool Begin(SkillEffectContext ctx)
         {
-            if (ctx?.Definition == null || ctx.Caster == null) return false;
+            if (ctx?.Definition == null || string.IsNullOrEmpty(ctx.CasterId)) return false;
             if (ctx.Instance != null && !ctx.Instance.IsReady) return false;
 
             _ctx = ctx;

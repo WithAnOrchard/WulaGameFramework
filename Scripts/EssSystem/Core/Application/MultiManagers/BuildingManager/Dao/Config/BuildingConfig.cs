@@ -1,13 +1,40 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 
 namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
 {
+    public enum BuildingColliderShape
+    {
+        None = 0,
+        Box = 1,
+        Circle = 2,
+        Box3D = 3,
+        Sphere3D = 4,
+        Capsule3D = 5,
+    }
+
+    [Serializable]
+    public class BuildingColliderConfig
+    {
+        public BuildingColliderShape Shape = BuildingColliderShape.None;
+        public Vector2 Size = Vector2.one;
+        public Vector2 Offset = Vector2.zero;
+        public bool IsTrigger = false;
+
+        public BuildingColliderConfig() { }
+
+        public BuildingColliderConfig(BuildingColliderShape shape, Vector2 size, Vector2 offset = default, bool isTrigger = false)
+        {
+            Shape = shape;
+            Size = size;
+            Offset = offset;
+            IsTrigger = isTrigger;
+        }
+    }
+
     /// <summary>
-    /// 建筑模板配置。建筑本质是一个 <see cref="EntityKind.Static"/> 的 <see cref="Entity"/>，
+    /// 建筑模板配置。建筑运行时通过 EntityManager 事件创建为静态实体，
     /// 增加了：材料清单（建造期）+ HP（可被破坏）+ 一段在"建造完成"瞬间施加的链式能力工厂。
     ///
     /// <para>由于 <see cref="ApplyCapabilities"/> 是 <see cref="Action{T}"/>（不可序列化），
@@ -28,7 +55,7 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
         public string PendingCharacterConfigId;
 
         /// <summary>碰撞体配置 —— 阻挡型建筑（墙）填 <c>IsTrigger = false</c>，光环 / 接触伤害用 trigger。</summary>
-        public EntityColliderConfig Collider = new EntityColliderConfig();
+        public BuildingColliderConfig Collider = new BuildingColliderConfig();
 
         /// <summary>世界空间偏移（与 <c>EntityConfig.SpawnOffset</c> 同义）。</summary>
         public Vector3 SpawnOffset = Vector3.zero;
@@ -40,10 +67,9 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
         public List<BuildingCost> Costs = new List<BuildingCost>();
 
         /// <summary>
-        /// 完成时（材料齐 / 直接完成态）对 <see cref="Entity"/> 施加能力的工厂回调。
-        /// 推荐写成链式：<c>e => e.CanDamageOnContact(...).EmitAura(...)</c>。
+        /// 完成时对底层实体 ID 施加能力的回调。跨模块能力注入应走 EntityManager 事件。
         /// </summary>
-        public Action<Entity> ApplyCapabilities;
+        public Action<string> ApplyCapabilities;
 
         public BuildingConfig() { }
 
@@ -63,9 +89,9 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
             return this;
         }
 
-        public BuildingConfig WithCollider(EntityColliderConfig collider)
+        public BuildingConfig WithCollider(BuildingColliderConfig collider)
         {
-            Collider = collider ?? new EntityColliderConfig();
+            Collider = collider ?? new BuildingColliderConfig();
             return this;
         }
 
@@ -80,10 +106,9 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
         }
 
         /// <summary>
-        /// 设置完成时施加的能力链。链式 lambda 内部用 <see cref="Entity"/> fluent API：
-        /// <code>cfg.OnComplete(e =&gt; e.CanDamageOnContact(5f, 1.5f, 1f));</code>
+        /// 设置完成时施加的能力链。lambda 参数为底层 entityId。
         /// </summary>
-        public BuildingConfig OnComplete(Action<Entity> applyCapabilities)
+        public BuildingConfig OnComplete(Action<string> applyCapabilities)
         {
             ApplyCapabilities = applyCapabilities;
             return this;

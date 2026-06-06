@@ -6,6 +6,7 @@ using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
+using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
 // 本文件不 <c>using</c> CharacterManager——跨模块调用一律走 EventProcessor。
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager
@@ -32,9 +33,28 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         public const string EVT_DESTROY_ENTITY = "DestroyEntity";
         public const string EVT_REGISTER_SCENE_ENTITY = "RegisterSceneEntity";
         public const string EVT_DAMAGE_ENTITY = "DamageEntity";
+        public const string EVT_HEAL_ENTITY = "HealEntity";
+        public const string EVT_GET_ENTITY_POSITION = "GetEntityPosition";
+        public const string EVT_SET_ENTITY_POSITION = "SetEntityPosition";
+        public const string EVT_GET_CHARACTER_ROOT = "GetCharacterRoot";
+        public const string EVT_GET_ENTITY_ID_FROM_OBJECT = "GetEntityIdFromObject";
+        public const string EVT_IS_ENTITY_DEAD = "IsEntityDead";
+        public const string EVT_GET_ENTITY_HP = "GetEntityHp";
+        public const string EVT_GET_CONTROL_STATE = "GetControlState";
+        public const string EVT_PUSH_CONTROL_STATE = "PushControlState";
+        public const string EVT_POP_CONTROL_STATE = "PopControlState";
+        public const string EVT_GET_SPEED_MULTIPLIER = "GetSpeedMultiplier";
+        public const string EVT_SET_SPEED_MULTIPLIER = "SetSpeedMultiplier";
+        public const string EVT_GET_DAMAGE_REDUCTION = "GetDamageReduction";
+        public const string EVT_SET_DAMAGE_REDUCTION = "SetDamageReduction";
+        public const string EVT_REGISTER_DAMAGED_CALLBACK = "RegisterDamagedCallback";
+        public const string EVT_REGISTER_DEATH_CALLBACK = "RegisterDeathCallback";
+        public const string EVT_SET_ENTITY_MAX_HP = "SetEntityMaxHp";
+        public const string EVT_ADD_ENTITY_CAPABILITY = "AddEntityCapability";
 
         /// <summary>注册 Entity 配置（模板）。data: [EntityConfig config]. → Ok(configId)/Fail.</summary>
         public const string EVT_REGISTER_ENTITY_CONFIG = "RegisterEntityConfig";
+        public const string EVT_REGISTER_SIMPLE_ENTITY_CONFIG = "RegisterSimpleEntityConfig";
         /// <summary>查询 Entity 实例。data: [string instanceId]. → Ok(Entity)/Fail.</summary>
         public const string EVT_GET_ENTITY = "GetEntity";
         /// <summary>给 GameObject 应用 Collider。data: [GameObject host, EntityColliderConfig cfg]. → Ok(host)/Fail.</summary>
@@ -171,9 +191,288 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
             var damage = System.Convert.ToSingle(data[1]);
             var damageType = data.Count > 2 ? data[2] as string : null;
-            var sourcePos = data.Count > 3 && data[3] is Vector3 sp ? sp : (Vector3?)null;
-            var dealt = Service.TryDamage(target, damage, null, damageType, sourcePos);
+            var source = data.Count > 3 && data[3] is string sourceId ? Service.GetEntity(sourceId) : null;
+            var sourcePos = data.Count > 4 && data[4] is Vector3 sp
+                ? sp
+                : data.Count > 3 && data[3] is Vector3 legacySp
+                    ? (Vector3?)legacySp
+                    : null;
+            var dealt = Service.TryDamage(target, damage, source, damageType, sourcePos);
             return ResultCode.Ok(dealt);
+        }
+
+        [Event(EVT_HEAL_ENTITY)]
+        public List<object> HealEntity(List<object> data)
+        {
+            var target = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (target == null || data == null || data.Count < 2) return ResultCode.Fail("HealEntity invalid args");
+            var dmg = target.Get<IDamageable>();
+            if (dmg == null) return ResultCode.Fail("Entity has no IDamageable");
+            var amount = System.Convert.ToSingle(data[1]);
+            var source = data.Count > 2 && data[2] is string sourceId ? Service.GetEntity(sourceId) : null;
+            return ResultCode.Ok(dmg.Heal(amount, source));
+        }
+
+        [Event(EVT_GET_ENTITY_POSITION)]
+        public List<object> GetEntityPosition(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null) return ResultCode.Fail("Entity not found");
+            return ResultCode.Ok(e.CharacterRoot != null ? e.CharacterRoot.position : e.WorldPosition);
+        }
+
+        [Event(EVT_SET_ENTITY_POSITION)]
+        public List<object> SetEntityPosition(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null || data == null || data.Count < 2 || !(data[1] is Vector3 pos))
+                return ResultCode.Fail("SetEntityPosition invalid args");
+            e.WorldPosition = pos;
+            if (e.CharacterRoot != null)
+            {
+                e.CharacterRoot.position = pos;
+                var rb = e.CharacterRoot.GetComponent<Rigidbody>();
+                if (rb != null) rb.linearVelocity = Vector3.zero;
+            }
+            return ResultCode.Ok(pos);
+        }
+
+        [Event(EVT_GET_CHARACTER_ROOT)]
+        public List<object> GetCharacterRoot(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            return e != null ? ResultCode.Ok(e.CharacterRoot) : ResultCode.Fail("Entity not found");
+        }
+
+        [Event(EVT_GET_ENTITY_ID_FROM_OBJECT)]
+        public List<object> GetEntityIdFromObject(List<object> data)
+        {
+            if (data == null || data.Count < 1) return ResultCode.Fail("GetEntityIdFromObject invalid args");
+            EntityHandle handle = null;
+            if (data[0] is Collider col) handle = col.GetComponentInParent<EntityHandle>();
+            else if (data[0] is Collider2D col2) handle = col2.GetComponentInParent<EntityHandle>();
+            else if (data[0] is GameObject go) handle = go.GetComponentInParent<EntityHandle>();
+            else if (data[0] is Transform tr) handle = tr.GetComponentInParent<EntityHandle>();
+            return handle != null && !string.IsNullOrEmpty(handle.InstanceId)
+                ? ResultCode.Ok(handle.InstanceId)
+                : ResultCode.Fail("EntityHandle not found");
+        }
+
+        [Event(EVT_IS_ENTITY_DEAD)]
+        public List<object> IsEntityDead(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null) return ResultCode.Fail("Entity not found");
+            var dmg = e.Get<IDamageable>();
+            return ResultCode.Ok(dmg == null || dmg.IsDead);
+        }
+
+        [Event(EVT_GET_ENTITY_HP)]
+        public List<object> GetEntityHp(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var dmg = e?.Get<IDamageable>();
+            return dmg != null
+                ? new List<object> { ResultCode.OK, dmg.CurrentHp, dmg.MaxHp, dmg.IsDead }
+                : ResultCode.Fail("Entity has no IDamageable");
+        }
+
+        [Event(EVT_GET_CONTROL_STATE)]
+        public List<object> GetControlState(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var ctrl = e?.Get<IControllable>();
+            return ctrl != null
+                ? new List<object> { ResultCode.OK, ctrl.Stunned, ctrl.Silenced }
+                : new List<object> { ResultCode.OK, false, false };
+        }
+
+        [Event(EVT_PUSH_CONTROL_STATE)]
+        public List<object> PushControlState(List<object> data) => ChangeControlState(data, true);
+
+        [Event(EVT_POP_CONTROL_STATE)]
+        public List<object> PopControlState(List<object> data) => ChangeControlState(data, false);
+
+        private List<object> ChangeControlState(List<object> data, bool push)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var ctrl = e?.Get<IControllable>();
+            var state = data != null && data.Count > 1 ? data[1] as string : null;
+            if (ctrl == null || string.IsNullOrEmpty(state)) return ResultCode.Fail("Control state not found");
+            if (state == "Stun")
+            {
+                if (push) ctrl.PushStun(); else ctrl.PopStun();
+            }
+            else if (state == "Silence")
+            {
+                if (push) ctrl.PushSilence(); else ctrl.PopSilence();
+            }
+            else return ResultCode.Fail("Invalid control state");
+            return ResultCode.Ok(state);
+        }
+
+        [Event(EVT_GET_SPEED_MULTIPLIER)]
+        public List<object> GetSpeedMultiplier(List<object> data)
+        {
+            return TryGetSpeedAccess(data, out var value, out _)
+                ? ResultCode.Ok(value)
+                : ResultCode.Fail("SpeedMultiplier not found");
+        }
+
+        [Event(EVT_SET_SPEED_MULTIPLIER)]
+        public List<object> SetSpeedMultiplier(List<object> data)
+        {
+            if (data == null || data.Count < 2) return ResultCode.Fail("SetSpeedMultiplier invalid args");
+            if (!TryGetSpeedAccess(data, out _, out var setter)) return ResultCode.Fail("SpeedMultiplier not found");
+            var value = Mathf.Max(0f, System.Convert.ToSingle(data[1]));
+            setter(value);
+            return ResultCode.Ok(value);
+        }
+
+        private bool TryGetSpeedAccess(List<object> data, out float value, out System.Action<float> setter)
+        {
+            value = 1f;
+            setter = null;
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null) return false;
+            var speed = e.Get<ISpeedAffected>();
+            if (speed != null)
+            {
+                value = speed.SpeedMultiplier;
+                setter = v => speed.SpeedMultiplier = v;
+                return true;
+            }
+            var mover = e.Get<IMovable>();
+            if (mover is MovableComponent m1)
+            {
+                value = m1.SpeedMultiplier;
+                setter = v => m1.SpeedMultiplier = v;
+                return true;
+            }
+            if (mover is Rigidbody2DMoverComponent m2)
+            {
+                value = m2.SpeedMultiplier;
+                setter = v => m2.SpeedMultiplier = v;
+                return true;
+            }
+            return false;
+        }
+
+        [Event(EVT_GET_DAMAGE_REDUCTION)]
+        public List<object> GetDamageReduction(List<object> data)
+        {
+            var dc = GetDamageableComponent(data);
+            return dc != null ? ResultCode.Ok(dc.DamageReduction) : ResultCode.Fail("DamageReduction not found");
+        }
+
+        [Event(EVT_SET_DAMAGE_REDUCTION)]
+        public List<object> SetDamageReduction(List<object> data)
+        {
+            var dc = GetDamageableComponent(data);
+            if (dc == null || data == null || data.Count < 2) return ResultCode.Fail("DamageReduction not found");
+            dc.DamageReduction = Mathf.Clamp01(System.Convert.ToSingle(data[1]));
+            return ResultCode.Ok(dc.DamageReduction);
+        }
+
+        private DamageableComponent GetDamageableComponent(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            return e?.Get<IDamageable>() as DamageableComponent;
+        }
+
+        [Event(EVT_REGISTER_DAMAGED_CALLBACK)]
+        public List<object> RegisterDamagedCallback(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var callback = data != null && data.Count > 1
+                ? data[1] as System.Action<string, string, float, string>
+                : null;
+            var dmg = e?.Get<IDamageable>();
+            if (dmg == null || callback == null) return ResultCode.Fail("DamagedCallback invalid args");
+            System.Action<Entity, Entity, float, string> handler = (self, src, dealt, damageType) =>
+                callback(self?.InstanceId, src?.InstanceId, dealt, damageType);
+            dmg.Damaged += handler;
+            System.Action unsubscribe = () => dmg.Damaged -= handler;
+            return ResultCode.Ok(unsubscribe);
+        }
+
+        [Event(EVT_REGISTER_DEATH_CALLBACK)]
+        public List<object> RegisterDeathCallback(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var callback = data != null && data.Count > 1
+                ? data[1] as System.Action<string, string>
+                : null;
+            var dmg = e?.Get<IDamageable>();
+            if (dmg == null || callback == null) return ResultCode.Fail("DeathCallback invalid args");
+            System.Action<Entity, Entity> handler = (self, killer) =>
+                callback(self?.InstanceId, killer?.InstanceId);
+            dmg.Died += handler;
+            System.Action unsubscribe = () => dmg.Died -= handler;
+            return ResultCode.Ok(unsubscribe);
+        }
+
+        [Event(EVT_SET_ENTITY_MAX_HP)]
+        public List<object> SetEntityMaxHp(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null || data == null || data.Count < 2) return ResultCode.Fail("SetEntityMaxHp invalid args");
+            var maxHp = Mathf.Max(1f, System.Convert.ToSingle(data[1]));
+            var refill = data.Count > 2 && data[2] is bool b && b;
+            var dmg = e.Get<IDamageable>();
+            if (dmg is DamageableComponent dc)
+            {
+                dc.SetMaxHp(maxHp, refill);
+            }
+            else
+            {
+                e.CanBeAttacked(maxHp);
+            }
+            return ResultCode.Ok(maxHp);
+        }
+
+        [Event(EVT_ADD_ENTITY_CAPABILITY)]
+        public List<object> AddEntityCapability(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var capability = data != null && data.Count > 1 ? data[1] as string : null;
+            if (e == null || string.IsNullOrEmpty(capability)) return ResultCode.Fail("AddEntityCapability invalid args");
+
+            switch (capability)
+            {
+                case "ContactDamage":
+                {
+                    var damage = data.Count > 2 ? System.Convert.ToSingle(data[2]) : 0f;
+                    var radius = data.Count > 3 ? System.Convert.ToSingle(data[3]) : 1f;
+                    var interval = data.Count > 4 ? System.Convert.ToSingle(data[4]) : 1f;
+                    var damageType = data.Count > 5 ? data[5] as string : "ContactDamage";
+                    e.CanDamageOnContact(damage, radius, interval, damageType);
+                    break;
+                }
+                case "Aura":
+                {
+                    var heal = data.Count > 2 ? System.Convert.ToSingle(data[2]) : 0f;
+                    var radius = data.Count > 3 ? System.Convert.ToSingle(data[3]) : 1f;
+                    var interval = data.Count > 4 ? System.Convert.ToSingle(data[4]) : 1f;
+                    var includeSelf = data.Count > 5 && data[5] is bool b && b;
+                    e.EmitAura(heal, radius, interval, default, includeSelf);
+                    break;
+                }
+                case "Harvest":
+                {
+                    var itemId = data.Count > 2 ? data[2] as string : null;
+                    var amount = data.Count > 3 ? System.Convert.ToInt32(data[3]) : 1;
+                    var interval = data.Count > 4 ? System.Convert.ToSingle(data[4]) : 1f;
+                    var inventoryId = data.Count > 5 ? data[5] as string : "player";
+                    if (string.IsNullOrEmpty(itemId)) return ResultCode.Fail("Harvest itemId invalid");
+                    e.Harvest(itemId, amount, interval, inventoryId);
+                    break;
+                }
+                default:
+                    return ResultCode.Fail($"Unsupported capability: {capability}");
+            }
+
+            return ResultCode.Ok(capability);
         }
 
         [Event(EVT_REGISTER_ENTITY_CONFIG)]
@@ -184,6 +483,61 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 return ResultCode.Fail("参数无效：需要 [EntityConfig]");
             Service.RegisterConfig(cfg);
             return ResultCode.Ok(cfg.ConfigId);
+        }
+
+        [Event(EVT_REGISTER_SIMPLE_ENTITY_CONFIG)]
+        public List<object> RegisterSimpleEntityConfig(List<object> data)
+        {
+            if (Service == null) return ResultCode.Fail("EntityService not initialized");
+            if (data == null || data.Count < 5) return ResultCode.Fail("RegisterSimpleEntityConfig invalid args");
+
+            var configId = data[0] as string;
+            if (string.IsNullOrEmpty(configId)) return ResultCode.Fail("configId invalid");
+
+            var cfg = new EntityConfig
+            {
+                ConfigId = configId,
+                DisplayName = data[1] as string,
+                CharacterConfigId = data[2] as string,
+                Collider = ToEntityColliderConfig(data[3]),
+                SpawnOffset = data[4] is Vector3 offset ? offset : Vector3.zero,
+                Kind = EntityKind.Static,
+            };
+            if (data.Count > 5 && data[5] is string kind && kind == "Dynamic")
+                cfg.Kind = EntityKind.Dynamic;
+
+            Service.RegisterConfig(cfg);
+            return ResultCode.Ok(cfg.ConfigId);
+        }
+
+        private static EntityColliderConfig ToEntityColliderConfig(object source)
+        {
+            if (source == null) return null;
+            if (source is EntityColliderConfig cfg) return cfg;
+
+            var shape = EntityColliderShape.None;
+            var shapeValue = ReadPublicValue(source, "Shape");
+            if (shapeValue != null)
+                System.Enum.TryParse(shapeValue.ToString(), out shape);
+
+            var sizeValue = ReadPublicValue(source, "Size");
+            var offsetValue = ReadPublicValue(source, "Offset");
+            var triggerValue = ReadPublicValue(source, "IsTrigger");
+
+            return new EntityColliderConfig(
+                shape,
+                sizeValue is Vector2 size ? size : Vector2.one,
+                offsetValue is Vector2 offset ? offset : Vector2.zero,
+                triggerValue is bool isTrigger && isTrigger);
+        }
+
+        private static object ReadPublicValue(object source, string name)
+        {
+            var type = source.GetType();
+            var field = type.GetField(name);
+            if (field != null) return field.GetValue(source);
+            var property = type.GetProperty(name);
+            return property != null ? property.GetValue(source) : null;
         }
 
         [Event(EVT_GET_ENTITY)]

@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
+using EssSystem.Core.Base.Event;
+using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs;
 
@@ -152,14 +153,13 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         /// 释放技能 —— 检查冷却/消耗，创建 SkillExecutor 执行。
         /// </summary>
         /// <returns>true = 成功开始释放。</returns>
-        public bool CastSkill(Entity caster, string skillId, Entity target = null,
+        public bool CastSkill(string casterId, string skillId, string targetId = null,
             UnityEngine.Vector3 direction = default, UnityEngine.Vector3 position = default)
         {
-            if (caster == null || string.IsNullOrEmpty(caster.InstanceId)) return false;
+            if (string.IsNullOrEmpty(casterId)) return false;
             // Silence 短路：被沉默 / 眩晕的实体无法施法（眩晕也禁止主动技能）
-            var ctrl = caster.Get<EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities.IControllable>();
-            if (ctrl != null && (ctrl.Silenced || ctrl.Stunned)) return false;
-            var inst = GetSkillInstance(caster.InstanceId, skillId);
+            if (SkillEntityProxy.IsBlockedForCast(casterId)) return false;
+            var inst = GetSkillInstance(casterId, skillId);
             if (inst == null || !inst.IsReady) return false;
 
             var def = inst.Definition;
@@ -169,8 +169,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
             var ctx = new SkillEffectContext
             {
-                Caster = caster,
-                Target = target,
+                CasterId = casterId,
+                TargetId = targetId,
                 Definition = def,
                 Instance = inst,
                 Direction = direction,
@@ -184,7 +184,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
                 _activeExecutors.Add(executor);
 
             // 连招追踪：成功 Cast 后压入实体历史
-            Runtime.ComboTracker.OnSkillCast(caster, skillId);
+            Runtime.ComboTracker.OnSkillCast(casterId, skillId);
 
             return true;
         }
@@ -194,17 +194,17 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         // ═══════════════════════════════════════════════════════════
 
         /// <summary>给实体施加 Buff。</summary>
-        public void ApplyBuff(Entity target, BuffInstance buff)
+        public void ApplyBuff(string targetId, BuffInstance buff)
         {
-            if (target == null || buff == null || string.IsNullOrEmpty(target.InstanceId)) return;
-            buff.Target = target;
+            if (string.IsNullOrEmpty(targetId) || buff == null) return;
+            buff.TargetId = targetId;
             buff.Remaining = buff.Duration;
             buff.TickTimer = 0f;
 
-            if (!_entityBuffs.TryGetValue(target.InstanceId, out var buffs))
+            if (!_entityBuffs.TryGetValue(targetId, out var buffs))
             {
                 buffs = new List<BuffInstance>();
-                _entityBuffs[target.InstanceId] = buffs;
+                _entityBuffs[targetId] = buffs;
             }
             buffs.Add(buff);
         }
@@ -271,6 +271,124 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
                     }
                 }
             }
+        }
+    }
+
+    internal static class SkillEntityProxy
+    {
+        public static bool CanUseEvents => EventProcessor.HasInstance;
+
+        public static float Damage(string targetId, float amount, string sourceId = null,
+            string damageType = null, Vector3? sourcePosition = null)
+        {
+            if (string.IsNullOrEmpty(targetId) || amount <= 0f || !CanUseEvents) return 0f;
+            var args = new List<object> { targetId, amount, damageType, sourceId };
+            if (sourcePosition.HasValue) args.Add(sourcePosition.Value);
+            return ReadFloat(EventProcessor.Instance.TriggerEventMethod("DamageEntity", args), 0f);
+        }
+
+        public static float Heal(string targetId, float amount, string sourceId = null)
+        {
+            if (string.IsNullOrEmpty(targetId) || amount <= 0f || !CanUseEvents) return 0f;
+            return ReadFloat(EventProcessor.Instance.TriggerEventMethod(
+                "HealEntity", new List<object> { targetId, amount, sourceId }), 0f);
+        }
+
+        public static Vector3 Position(string entityId, Vector3 fallback = default)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return fallback;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetEntityPosition", new List<object> { entityId });
+            return ResultCode.IsOk(result) && result.Count > 1 && result[1] is Vector3 v ? v : fallback;
+        }
+
+        public static void SetPosition(string entityId, Vector3 position)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return;
+            EventProcessor.Instance.TriggerEventMethod("SetEntityPosition", new List<object> { entityId, position });
+        }
+
+        public static Transform Root(string entityId)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return null;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetCharacterRoot", new List<object> { entityId });
+            return ResultCode.IsOk(result) && result.Count > 1 ? result[1] as Transform : null;
+        }
+
+        public static string IdFrom(UnityEngine.Object obj)
+        {
+            if (obj == null || !CanUseEvents) return null;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetEntityIdFromObject", new List<object> { obj });
+            return ResultCode.IsOk(result) && result.Count > 1 ? result[1] as string : null;
+        }
+
+        public static bool IsDead(string entityId, bool missingMeansDead = true)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return missingMeansDead;
+            var result = EventProcessor.Instance.TriggerEventMethod("IsEntityDead", new List<object> { entityId });
+            return ResultCode.IsOk(result) && result.Count > 1 && result[1] is bool b ? b : missingMeansDead;
+        }
+
+        public static bool IsBlockedForCast(string entityId)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return false;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetControlState", new List<object> { entityId });
+            if (!ResultCode.IsOk(result) || result.Count < 3) return false;
+            return (result[1] is bool stunned && stunned) || (result[2] is bool silenced && silenced);
+        }
+
+        public static bool PushControl(string entityId, string state) => ChangeControl("PushControlState", entityId, state);
+        public static bool PopControl(string entityId, string state) => ChangeControl("PopControlState", entityId, state);
+
+        private static bool ChangeControl(string eventName, string entityId, string state)
+        {
+            if (string.IsNullOrEmpty(entityId) || string.IsNullOrEmpty(state) || !CanUseEvents) return false;
+            return ResultCode.IsOk(EventProcessor.Instance.TriggerEventMethod(eventName, new List<object> { entityId, state }));
+        }
+
+        public static bool TryGetSpeedMultiplier(string entityId, out float value)
+        {
+            value = 1f;
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return false;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetSpeedMultiplier", new List<object> { entityId });
+            if (!ResultCode.IsOk(result) || result.Count < 2) return false;
+            value = System.Convert.ToSingle(result[1]);
+            return true;
+        }
+
+        public static bool SetSpeedMultiplier(string entityId, float value)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return false;
+            return ResultCode.IsOk(EventProcessor.Instance.TriggerEventMethod(
+                "SetSpeedMultiplier", new List<object> { entityId, Mathf.Max(0f, value) }));
+        }
+
+        public static bool TryGetDamageReduction(string entityId, out float value)
+        {
+            value = 0f;
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return false;
+            var result = EventProcessor.Instance.TriggerEventMethod("GetDamageReduction", new List<object> { entityId });
+            if (!ResultCode.IsOk(result) || result.Count < 2) return false;
+            value = System.Convert.ToSingle(result[1]);
+            return true;
+        }
+
+        public static bool SetDamageReduction(string entityId, float value)
+        {
+            if (string.IsNullOrEmpty(entityId) || !CanUseEvents) return false;
+            return ResultCode.IsOk(EventProcessor.Instance.TriggerEventMethod(
+                "SetDamageReduction", new List<object> { entityId, Mathf.Clamp01(value) }));
+        }
+
+        public static System.Action RegisterDamagedCallback(string entityId, System.Action<string, string, float, string> callback)
+        {
+            if (string.IsNullOrEmpty(entityId) || callback == null || !CanUseEvents) return null;
+            var result = EventProcessor.Instance.TriggerEventMethod("RegisterDamagedCallback", new List<object> { entityId, callback });
+            return ResultCode.IsOk(result) && result.Count > 1 ? result[1] as System.Action : null;
+        }
+
+        private static float ReadFloat(List<object> result, float fallback)
+        {
+            return ResultCode.IsOk(result) && result.Count > 1 ? System.Convert.ToSingle(result[1]) : fallback;
         }
     }
 }

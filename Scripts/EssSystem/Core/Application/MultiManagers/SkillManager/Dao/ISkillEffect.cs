@@ -1,5 +1,3 @@
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
-
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
 {
     /// <summary>
@@ -21,10 +19,10 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
     public class SkillEffectContext
     {
         /// <summary>施法者实体。</summary>
-        public Entity Caster;
+        public string CasterId;
 
         /// <summary>目标实体（可为 null，如 AOE / 自身技能）。</summary>
-        public Entity Target;
+        public string TargetId;
 
         /// <summary>技能定义。</summary>
         public SkillDefinition Definition;

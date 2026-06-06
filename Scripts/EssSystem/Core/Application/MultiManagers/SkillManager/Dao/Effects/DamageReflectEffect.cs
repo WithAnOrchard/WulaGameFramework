@@ -1,21 +1,8 @@
-using System;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Buffs;
-using EssSystem.Core.Application.SingleManagers.EntityManager;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 反伤护盾 —— Buff 期间，每当目标受到伤害（<see cref="IDamageable.Damaged"/> 触发）即把
-    /// "实际伤害 × <see cref="ReflectRatio"/>" 返还给攻击者。
-    /// <list type="bullet">
-    /// <item>原伤害不抵消（不是减伤）；只在事件链 **之后** 追加一次反向 TryDamage。</item>
-    /// <item>过滤：source==null / source==self 时跳过，防止 DoT 自伤或环境伤害触发死循环。</item>
-    /// <item>OnExpire 精准解绑事件，不会泄漏。</item>
-    /// </list>
-    /// 典型用法：荆棘护甲、镜面披风、复仇祝福。
-    /// </summary>
     public class DamageReflectEffect : ISkillEffect
     {
         public string BuffId = "damage_reflect";
@@ -25,7 +12,6 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public string ReflectDamageType = "reflect";
 
         public DamageReflectEffect() { }
-
         public DamageReflectEffect(float reflectRatio, float duration, bool applyToSelf = true,
             string buffId = "damage_reflect", string reflectDamageType = "reflect")
         {
@@ -38,30 +24,23 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
-            var target = ApplyToSelf ? ctx.Caster : ctx.Target;
-            if (target == null || !SkillService.HasInstance) return;
-            var dmg = target.Get<IDamageable>();
-            if (dmg == null) return;
-
+            var targetId = ApplyToSelf ? ctx?.CasterId : ctx?.TargetId;
+            if (string.IsNullOrEmpty(targetId) || !SkillService.HasInstance) return;
             var ratio = ReflectRatio;
             var type = ReflectDamageType;
-
-            Action<Entity, Entity, float, string> handler = (self, src, dealt, _) =>
+            var unsubscribe = SkillEntityProxy.RegisterDamagedCallback(targetId, (selfId, sourceId, dealt, _) =>
             {
-                if (src == null || src == self || dealt <= 0f) return;
-                if (!EntityService.HasInstance) return;
-                EntityService.Instance.TryDamage(src, dealt * ratio,
-                    source: self, damageType: type);
-            };
-            dmg.Damaged += handler;
+                if (string.IsNullOrEmpty(sourceId) || sourceId == selfId || dealt <= 0f) return;
+                SkillEntityProxy.Damage(sourceId, dealt * ratio, selfId, type);
+            });
+            if (unsubscribe == null) return;
 
-            SkillService.Instance.ApplyBuff(target, new BuffInstance
+            SkillService.Instance.ApplyBuff(targetId, new BuffInstance
             {
                 BuffId = BuffId,
-                Source = ctx.Caster,
-                Target = target,
+                SourceId = ctx.CasterId,
                 Duration = Duration,
-                OnExpire = _ => dmg.Damaged -= handler,
+                OnExpire = _ => unsubscribe(),
             });
         }
     }

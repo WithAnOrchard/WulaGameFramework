@@ -1,16 +1,11 @@
-using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
+using EssSystem.Core.Application.MultiManagers.SkillManager;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 {
-    /// <summary>
-    /// 治疗效果 —— 恢复施法者或目标的 HP。
-    /// </summary>
     public class HealEffect : ISkillEffect
     {
         public float BaseHeal;
         public float HealPerLevel;
-
-        /// <summary>true = 治疗施法者自身，false = 治疗目标。</summary>
         public bool HealSelf;
 
         public HealEffect(float baseHeal, float healPerLevel = 0f, bool healSelf = false)
@@ -22,13 +17,10 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
 
         public void Apply(SkillEffectContext ctx)
         {
-            var target = HealSelf ? ctx.Caster : ctx.Target;
-            if (target == null) return;
-            var dmg = target.Get<IDamageable>();
-            if (dmg == null || dmg.IsDead) return;
-
-            var amount = BaseHeal + HealPerLevel * (ctx.Level - 1);
-            dmg.Heal(amount, ctx.Caster);
+            if (ctx == null) return;
+            var targetId = HealSelf ? ctx.CasterId : ctx.TargetId;
+            if (string.IsNullOrEmpty(targetId) || SkillEntityProxy.IsDead(targetId)) return;
+            SkillEntityProxy.Heal(targetId, BaseHeal + HealPerLevel * (ctx.Level - 1), ctx.CasterId);
         }
     }
 }

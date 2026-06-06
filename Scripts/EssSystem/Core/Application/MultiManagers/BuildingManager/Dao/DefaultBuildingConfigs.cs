@@ -1,6 +1,7 @@
 using UnityEngine;
+using System.Collections.Generic;
+using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 
 namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao
 {
@@ -25,34 +26,42 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao
         public const string ID_HARVESTER     = "Harvester";
 
         public static BuildingConfig BuildBarbedWire() => new BuildingConfig(ID_BARBED_WIRE, "铁丝网", characterConfigId: null)
-            .WithCollider(new EntityColliderConfig(EntityColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
+            .WithCollider(new BuildingColliderConfig(BuildingColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
             .WithMaxHp(30f)
             .WithCost("wood",  2, "木材")
             .WithCost("iron",  1, "铁块")
             // 完成后每秒对 1.0 半径内造成 5 伤
-            .OnComplete(e => e.CanDamageOnContact(damagePerTick: 5f, radius: 1.0f, tickInterval: 1f, damageType: "BarbedWire"));
+            .OnComplete(entityId => AddCapability(entityId, "ContactDamage", 5f, 1.0f, 1f, "BarbedWire"));
 
         public static BuildingConfig BuildHealingTower() => new BuildingConfig(ID_HEALING_TOWER, "治疗塔", characterConfigId: null)
-            .WithCollider(new EntityColliderConfig(EntityColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
+            .WithCollider(new BuildingColliderConfig(BuildingColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
             .WithMaxHp(120f)
             .WithCost("wood",   5, "木材")
             .WithCost("iron",   3, "铁块")
             .WithCost("crystal", 1, "水晶")
             // 完成后每秒治疗 3.5 半径内所有 IDamageable 5 点（除自身）
-            .OnComplete(e => e.EmitAura(healPerTick: 5f, radius: 3.5f, tickInterval: 1f, includeSelf: false));
+            .OnComplete(entityId => AddCapability(entityId, "Aura", 5f, 3.5f, 1f, false));
 
         public static BuildingConfig BuildWall() => new BuildingConfig(ID_WALL, "石墙", characterConfigId: null)
-            .WithCollider(new EntityColliderConfig(EntityColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: false))
+            .WithCollider(new BuildingColliderConfig(BuildingColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: false))
             .WithMaxHp(200f)
             .WithCost("stone", 3, "石材");
             // OnComplete 不挂能力 —— 墙的"功能"就是不可穿透的碰撞体本身
 
         public static BuildingConfig BuildHarvester() => new BuildingConfig(ID_HARVESTER, "采集器", characterConfigId: null)
-            .WithCollider(new EntityColliderConfig(EntityColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
+            .WithCollider(new BuildingColliderConfig(BuildingColliderShape.Box, Vector2.one, Vector2.zero, isTrigger: true))
             .WithMaxHp(50f)
             .WithCost("wood", 4, "木材")
             .WithCost("iron", 2, "铁块")
             // 完成后每 5 秒往 player 容器丢 1 个 wood
-            .OnComplete(e => e.Harvest(itemId: "wood", amount: 1, interval: 5f, targetInventoryId: "player"));
+            .OnComplete(entityId => AddCapability(entityId, "Harvest", "wood", 1, 5f, "player"));
+
+        private static void AddCapability(string entityId, string capability, params object[] args)
+        {
+            if (string.IsNullOrEmpty(entityId) || !EventProcessor.HasInstance) return;
+            var data = new List<object> { entityId, capability };
+            if (args != null) data.AddRange(args);
+            EventProcessor.Instance.TriggerEventMethod("AddEntityCapability", data);
+        }
     }
 }

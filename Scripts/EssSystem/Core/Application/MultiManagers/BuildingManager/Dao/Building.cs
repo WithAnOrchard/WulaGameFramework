@@ -1,12 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config;
-using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao
 {
     /// <summary>
-    /// 建筑运行时实例 —— 持有底层 <see cref="Entity"/> 引用 + 建造阶段的材料账本 + HUD 索引。
+    /// 建筑运行时实例 —— 持有底层实体 ID + 建造阶段的材料账本 + HUD 索引。
     /// <para>非持久化（含 Unity Transform 引用 + Action 回调）。</para>
     /// </summary>
     public class Building
@@ -20,8 +19,11 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao
         /// <summary>原始配置引用。</summary>
         public BuildingConfig Config;
 
-        /// <summary>底层 Entity（已挂 IDamageable 等）。</summary>
-        public Entity Entity;
+        /// <summary>底层实体 ID。</summary>
+        public string EntityInstanceId;
+
+        /// <summary>底层实体当前外观根节点，可能随换皮更新。</summary>
+        public Transform CharacterRoot;
 
         /// <summary>当前状态。</summary>
         public BuildingState State = BuildingState.Constructing;

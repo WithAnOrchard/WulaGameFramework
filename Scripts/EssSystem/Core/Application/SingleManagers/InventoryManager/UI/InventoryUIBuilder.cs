@@ -28,6 +28,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         /// </summary>
         private const float TextSupersample = 6f;
         private static DescUIRefs _sharedDescRefs;
+        private const string HotbarInventoryId = "hotbar";
+        private const string HotbarSlotFrame = "Tribe/Common/Items/UI/slot_frame_gold";
 
         #region Public API
 
@@ -46,6 +48,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .SetBackgroundColor(SpriteAwareTint(pc.BackgroundSpriteId, pc.BackgroundColor))
                 .SetVisible(true);
 
+            if (inventoryId == HotbarInventoryId)
+                ApplyHotbarChrome(panel, pc);
+            else
+                ApplyInventoryChrome(panel, pc, inventoryId);
+
             // 0) 标题（容器名称）
             if (config.ShowTitle && config.TitleConfig != null && config.TitleConfig.Visible)
                 BuildTitle(inventoryId, panel, config, pc);
@@ -62,6 +69,118 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             BuildCloseButton(inventoryId, panel, config.CloseButtonConfig);
 
             return (panel, slotRefs, descRefs);
+        }
+
+        private static void ApplyHotbarChrome(UIPanelComponent panel, UIPanelSpec pc)
+        {
+            var w = pc.Size.x;
+            var h = pc.Size.y;
+            var cx = w * 0.5f;
+            var cy = h * 0.5f;
+            var trayW = Mathf.Min(w - 72f, 706f);
+            var trayH = Mathf.Min(h - 10f, 84f);
+            var gold = new Color(0.88f, 0.69f, 0.35f, 0.82f);
+            var trayBg = new Color(0.024f, 0.019f, 0.016f, 0.94f);
+            var innerBg = new Color(0.010f, 0.012f, 0.014f, 0.62f);
+            var slotRailBg = new Color(0.040f, 0.026f, 0.022f, 0.30f);
+            var shadow = new Color(0f, 0f, 0f, 0.58f);
+
+            panel.SetBackgroundSpriteId(string.Empty)
+                .SetBackgroundColor(new Color(0f, 0f, 0f, 0f));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_HotbarShadow", "HotbarShadow")
+                .SetPosition(cx, cy - 4f)
+                .SetSize(trayW + 10f, trayH + 8f)
+                .SetBackgroundColor(new Color(0f, 0f, 0f, 0.28f)));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_HotbarPlate", "HotbarPlate")
+                .SetPosition(cx, cy)
+                .SetSize(trayW, trayH)
+                .SetBackgroundColor(trayBg));
+
+            AddHotbarBorder(panel, $"{panel.Id}_HotbarOuter", cx, cy, trayW, trayH, 2f, gold);
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_HotbarInner", "HotbarInner")
+                .SetPosition(cx, cy - 1f)
+                .SetSize(trayW - 14f, trayH - 14f)
+                .SetBackgroundColor(innerBg));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_HotbarSlotRail", "HotbarSlotRail")
+                .SetPosition(cx, cy - 1f)
+                .SetSize(trayW - 18f, trayH - 28f)
+                .SetBackgroundColor(slotRailBg));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_HotbarBottomShade", "HotbarBottomShade")
+                .SetPosition(cx, cy - trayH * 0.5f + 13f)
+                .SetSize(trayW - 22f, 4f)
+                .SetBackgroundColor(shadow));
+        }
+
+        private static void ApplyInventoryChrome(UIPanelComponent panel, UIPanelSpec pc, string inventoryId)
+        {
+            var w = pc.Size.x;
+            var h = pc.Size.y;
+            var cx = w * 0.5f;
+            var cy = h * 0.5f;
+            var gold = new Color(0.88f, 0.69f, 0.35f, 0.78f);
+            var goldSoft = new Color(0.88f, 0.69f, 0.35f, 0.32f);
+            var rootBg = new Color(0.050f, 0.038f, 0.040f, 0.94f);
+            var headerBg = new Color(0.012f, 0.014f, 0.018f, 0.82f);
+            var innerBg = new Color(0.018f, 0.020f, 0.024f, 0.30f);
+
+            panel.SetBackgroundSpriteId(string.Empty)
+                .SetBackgroundColor(rootBg);
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_WindowInner", "WindowInner")
+                .SetPosition(cx, cy - 18f)
+                .SetSize(w - 22f, h - 92f)
+                .SetBackgroundColor(innerBg));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_WindowHeader", "WindowHeader")
+                .SetPosition(cx, h - 24f)
+                .SetSize(w - 2f, 48f)
+                .SetBackgroundColor(headerBg));
+
+            AddHotbarBorder(panel, $"{panel.Id}_WindowOuter", cx, cy, w, h, 2f, gold);
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_WindowHeaderLine", "WindowHeaderLine")
+                .SetPosition(cx, h - 49f)
+                .SetSize(w - 24f, 1f)
+                .SetBackgroundColor(goldSoft));
+
+            var isEquipment = inventoryId == "equipment";
+            var slotAreaWidth = isEquipment ? w - 24f : 560f;
+            var slotAreaHeight = isEquipment ? 460f : 460f;
+            var slotAreaX = cx;
+            var slotAreaY = isEquipment ? 232f : 256f;
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_SlotArea", "SlotArea")
+                .SetPosition(slotAreaX, slotAreaY)
+                .SetSize(slotAreaWidth, slotAreaHeight)
+                .SetBackgroundColor(new Color(0.010f, 0.012f, 0.014f, 0.16f)));
+
+            AddHotbarBorder(panel, $"{panel.Id}_SlotAreaBorder", slotAreaX, slotAreaY,
+                slotAreaWidth, slotAreaHeight, 1f, new Color(gold.r, gold.g, gold.b, 0.18f));
+        }
+
+        private static void AddHotbarBorder(UIPanelComponent parent, string id, float centerX, float centerY,
+            float width, float height, float thickness, Color color)
+        {
+            parent.AddChild(new UIPanelComponent($"{id}_Top", "Top")
+                .SetPosition(centerX, centerY + height * 0.5f - thickness * 0.5f)
+                .SetSize(width, thickness)
+                .SetBackgroundColor(color));
+            parent.AddChild(new UIPanelComponent($"{id}_Bottom", "Bottom")
+                .SetPosition(centerX, centerY - height * 0.5f + thickness * 0.5f)
+                .SetSize(width, thickness)
+                .SetBackgroundColor(color));
+            parent.AddChild(new UIPanelComponent($"{id}_Left", "Left")
+                .SetPosition(centerX - width * 0.5f + thickness * 0.5f, centerY)
+                .SetSize(thickness, height)
+                .SetBackgroundColor(color));
+            parent.AddChild(new UIPanelComponent($"{id}_Right", "Right")
+                .SetPosition(centerX + width * 0.5f - thickness * 0.5f, centerY)
+                .SetSize(thickness, height)
+                .SetBackgroundColor(color));
         }
 
         /// <summary>走 EVT_GET_UI_GAMEOBJECT 事件拿 UI GameObject，不引用 UIEntity 类。</summary>
@@ -193,11 +312,20 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 var x = sc.StartOffsetX + col * (sc.SlotWidth + sc.SlotSpacingX);
                 var y = sc.StartOffsetY - row * (sc.SlotHeight + sc.SlotSpacingY);
 
+                if (inventoryId == HotbarInventoryId)
+                {
+                    panel.AddChild(new UIPanelComponent($"{inventoryId}_SlotBack_{i}", $"SlotBack_{i}")
+                        .SetPosition(x, y)
+                        .SetSize(sc.SlotWidth + 4f, sc.SlotHeight + 4f)
+                        .SetBackgroundColor(new Color(0.010f, 0.008f, 0.010f, 0.34f)));
+                }
+
                 var slotBtn = new UIButtonComponent($"{inventoryId}_Slot_{i}", $"Slot_{i}")
                     .SetPosition(x, y)
                     .SetSize(sc.SlotWidth, sc.SlotHeight)
                     .SetVisible(true)
-                    .SetButtonSpriteId(sc.SlotBackgroundSpriteId)
+                    .SetButtonSpriteId(inventoryId == HotbarInventoryId ? HotbarSlotFrame : sc.SlotBackgroundSpriteId)
+                    .SetButtonColor(inventoryId == HotbarInventoryId ? new Color(1f, 0.95f, 0.82f, 0.96f) : Color.white)
                     .SetInteractable(true);
 
                 // 图标（slot 居中）
@@ -260,6 +388,21 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         private static void BuildCloseButton(string inventoryId, UIPanelComponent panel, UIButtonSpec cb)
         {
             var closeBtn = cb.CreateComponent($"{inventoryId}_CloseButton", "CloseButton");
+            if (inventoryId != HotbarInventoryId && closeBtn.Visible)
+            {
+                closeBtn.SetButtonSpriteId(string.Empty)
+                    .SetButtonColor(new Color(0.015f, 0.012f, 0.016f, 0.72f))
+                    .SetFontSize(22);
+
+                var closeText = new UITextComponent($"{inventoryId}_CloseButton_Text", "CloseButtonText")
+                    .SetPosition(cb.Size.x * 0.5f, cb.Size.y * 0.5f)
+                    .SetColor(new Color(1f, 0.96f, 0.88f, 1f))
+                    .SetAlignment(TextAnchor.MiddleCenter)
+                    .SetText("×")
+                    .SetVisible(true);
+                ApplySupersample(closeText, cb.Size.x, cb.Size.y, 18);
+                closeBtn.AddChild(closeText);
+            }
 
             closeBtn.OnClick += _ => EventProcessor.Instance.TriggerEventMethod(
                 InventoryManager.EVT_CLOSE_UI, new List<object> { inventoryId });
@@ -286,8 +429,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .SetBackgroundColor(SpriteAwareTint(dc.BackgroundSpriteId, dc.BackgroundColor))
                 .SetVisible(true);
 
+            ApplyDescriptionChrome(descPanel, dc.Width, dc.Height);
+
             // 图标
             var ic = dc.IconConfig ?? new UIIconSpec();
+            AddDescriptionItemFrame(descPanel, ic);
             var iconPanel = ic.CreateComponent($"{inventoryId}_DescIcon", $"{inventoryId}_DescriptionIcon");
             descPanel.AddChild(iconPanel);
 
@@ -314,6 +460,40 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             };
             _sharedDescRefs = refs;
             return refs;
+        }
+
+        private static void ApplyDescriptionChrome(UIPanelComponent panel, float width, float height)
+        {
+            var cx = width * 0.5f;
+            var cy = height * 0.5f;
+            var gold = new Color(0.88f, 0.69f, 0.35f, 0.62f);
+
+            panel.SetBackgroundSpriteId(string.Empty)
+                .SetBackgroundColor(new Color(0.035f, 0.030f, 0.032f, 0.92f));
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_DescInner", "DescInner")
+                .SetPosition(cx, cy)
+                .SetSize(width - 16f, height - 16f)
+                .SetBackgroundColor(new Color(0.010f, 0.012f, 0.014f, 0.28f)));
+
+            AddHotbarBorder(panel, $"{panel.Id}_DescOuter", cx, cy, width, height, 2f, gold);
+        }
+
+        private static void AddDescriptionItemFrame(UIPanelComponent panel, UIIconSpec icon)
+        {
+            if (panel == null || icon == null) return;
+
+            var frameW = icon.Size.x + 28f;
+            var frameH = icon.Size.y + 28f;
+            var gold = new Color(0.88f, 0.69f, 0.35f, 0.62f);
+
+            panel.AddChild(new UIPanelComponent($"{panel.Id}_ItemFrameBg", "ItemFrameBg")
+                .SetPosition(icon.Position.x, icon.Position.y)
+                .SetSize(frameW, frameH)
+                .SetBackgroundColor(new Color(0.010f, 0.012f, 0.014f, 0.52f)));
+
+            AddHotbarBorder(panel, $"{panel.Id}_ItemFrame", icon.Position.x, icon.Position.y,
+                frameW, frameH, 2f, gold);
         }
 
         /// <summary>

@@ -38,6 +38,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         private const string CFG_PLAYER     = "PlayerBackPack";
         private const string CFG_HOTBAR     = "Hotbar";
         private const string CFG_EQUIPMENT  = "PlayerEquipment";
+        private const string SPR_SLOT_FRAME = "Tribe/Common/Items/UI/slot_frame_blue";
+        private const string SPR_HOTBAR_SLOT_FRAME = "Tribe/Common/Items/UI/slot_frame_gold";
+        private const string SPR_PANEL_BG   = "Tribe/Common/Items/UI/slot_background_dark";
+        private const string SPR_SWORD      = "Tribe/Common/Items/Weapons/sword_iron";
+        private const string SPR_APPLE      = "Tribe/Common/Items/Consumables/apple_red";
 
         #region Inspector
 
@@ -91,7 +96,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         {
             if (!AutoOpenHotbar) return;
             // 启动后自动打开 Hotbar——快捷栏一直可见
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             var result = OpenInventoryUI(new List<object> { ID_HOTBAR, CFG_HOTBAR });
+            LogStartupTiming("InventoryManager.Start.AutoOpenHotbar", sample);
             if (!ResultCode.IsOk(result))
                 Log($"自动打开 Hotbar 失败: {(result != null && result.Count > 1 ? result[1] : "(unknown)")}", Color.red);
         }
@@ -125,6 +132,16 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             if (Service != null) Service.EnableLogging = _serviceEnableLogging;
         }
 
+        private static void LogStartupTiming(string label, System.Diagnostics.Stopwatch stopwatch, int warnMs = 16)
+        {
+            if (stopwatch == null) return;
+            stopwatch.Stop();
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var message = $"[StartupTiming] {label}: {elapsed} ms";
+            if (elapsed >= warnMs) Debug.LogWarning(message);
+            else Debug.Log(message);
+        }
+
         #endregion
 
         #region Defaults Registration
@@ -134,11 +151,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         {
             RegisterTemplateIfMissing(new InventoryItem("Sword", "铁剑")
                 .WithType(InventoryItemType.Equipment).WithMaxStack(1).WithCurrentStack(1)
-                .WithIcon("Sword").WithValue(50));
+                .WithIcon(SPR_SWORD).WithValue(50));
 
             RegisterTemplateIfMissing(new InventoryItem("Apple", "苹果")
                 .WithType(InventoryItemType.Consumable).WithMaxStack(99).WithCurrentStack(1)
-                .WithIcon("Apple").WithValue(10));
+                .WithIcon(SPR_APPLE).WithValue(10));
 
             Log("注册默认物品模板完成（仅创建缺失项）", Color.cyan);
         }
@@ -178,52 +195,52 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .WithSlotsPerPage(30)
                 .WithSlotConfig(new SlotConfig(80f, 80f, 6)
                     .WithSlotSpacing(12f, 12f)
-                    .WithStartOffset(110f, 465f)
-                    .WithSlotBackgroundId("Slot_1"))
+                    .WithStartOffset(110f, 440f)
+                    .WithSlotBackgroundId(SPR_SLOT_FRAME))
                 .WithPanelConfig(new UIPanelSpec(680f, 560f)
                     // 主面板向右偏移 150：补偿左侧伸出的 300 宽描述子面板，
                     // 让 (主面板 + 描述子面板) 组合 bounding-box 在 1920×1080 参考分辨率下水平居中
                     .WithPosition(1110f, 540f)
                     .WithScale(1f, 1f)
-                    .WithBackgroundId("背包背景")
+                    .WithBackgroundId(SPR_PANEL_BG)
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new UIButtonSpec(640f, 520f, 80f, 80f)
-                    .WithScale(1f, 1f).WithText("×")
-                    .WithSpriteId("Btn_Close")
-                    .WithColor(new Color(1f, 0.3f, 0.3f, 1f))
+                .WithCloseButtonConfig(new UIButtonSpec(650f, 532f, 28f, 28f)
+                    .WithScale(1f, 1f).WithText(string.Empty)
+                    .WithSpriteId(string.Empty)
+                    .WithColor(Color.white)
                     .WithVisible(true).WithInteractable(true))
                 .WithShowDescription(true)
-                .WithDescriptionPanelConfig(new DescriptionPanelConfig(300f, 465f)
-                    .WithOffset(-150f, 275f)
-                    .WithBackgroundId("背包背景")
+                .WithDescriptionPanelConfig(new DescriptionPanelConfig(340f, 560f)
+                    .WithOffset(-194f, 280f)
+                    .WithBackgroundId(SPR_PANEL_BG)
                     .WithTextPadding(40f, 40f)
                     .WithFontSize(20)
                     .WithTextColor(new Color(0.95f, 0.95f, 0.95f, 1f))
                     .WithEmptyPlaceholder("（点击物品查看描述）")
                     // 内部图标 / 文本整体在 300 宽面板内右移 ~25px（避免贴左边缘），同步收窄宽度避免溢出
                     .WithIconConfig(new UIIconSpec()
-                        .WithPosition(150f, 370f)
+                        .WithPosition(170f, 420f)
                         .WithSize(112f, 112f))
                     .WithNameConfig(new UITextSpec
                     {
-                        Position  = new Vector2(150f, 300f),
-                        Size      = new Vector2(260f, 48f),
+                        Position  = new Vector2(170f, 316f),
+                        Size      = new Vector2(300f, 48f),
                         FontSize  = 26,
                         TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
                         Alignment = TextAnchor.MiddleCenter,
                     })
                     .WithStackConfig(new UITextSpec
                     {
-                        Position  = new Vector2(150f, 260f),
-                        Size      = new Vector2(260f, 36f),
+                        Position  = new Vector2(170f, 274f),
+                        Size      = new Vector2(300f, 36f),
                         FontSize  = 20,
                         TextColor = new Color(1f, 0.85f, 0.4f, 1f),
                         Alignment = TextAnchor.MiddleCenter,
                     })
                     .WithDescTextConfig(new UITextSpec
                     {
-                        Position  = new Vector2(150f, 125f),
-                        Size      = new Vector2(250f, 190f),
+                        Position  = new Vector2(170f, 145f),
+                        Size      = new Vector2(300f, 240f),
                         FontSize  = 20,
                         TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
                         Alignment = TextAnchor.MiddleCenter,
@@ -243,12 +260,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .WithSlotConfig(new SlotConfig(70f, 70f, 9)
                     .WithSlotSpacing(8f, 8f)
                     .WithStartOffset(78f, 50f)             // 780 宽：左右各 43 padding + 半槽 35 = 78；垂直居中 100/2
-                    .WithSlotBackgroundId("Slot_1"))
+                    .WithSlotBackgroundId(SPR_HOTBAR_SLOT_FRAME))
                 .WithPanelConfig(new UIPanelSpec(780f, 100f)
                     .WithPosition(960f, 80f)          // 1920×1080 底部居中（上沿距屏底 30）
                     .WithScale(1f, 1f)
-                    .WithBackgroundId("背包背景")
-                    .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.85f)))
+                    .WithBackgroundColor(new Color(0.025f, 0.032f, 0.047f, 0.74f)))
                 .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
                 .WithShowTitle(false)
                 .WithShowDescription(false);
@@ -260,17 +276,17 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 .WithSlotsPerPage(5)
                 .WithSlotConfig(new SlotConfig(80f, 80f, 1)
                     .WithSlotSpacing(0f, 12f)
-                    .WithStartOffset(60f, 465f)            // 120 宽 → 居中 60；标题下方开始，5 格完整落在面板内
-                    .WithSlotBackgroundId("Slot_1"))
+                    .WithStartOffset(60f, 416f)            // 120 宽 → 居中 60；标题下方留足呼吸空间
+                    .WithSlotBackgroundId(SPR_SLOT_FRAME))
                 .WithPanelConfig(new UIPanelSpec(120f, 550f)
-                    .WithPosition(1520f, 540f)        // PlayerBackPack 右边沿 1450 + 10 间隔 + 60 半宽 = 1520，留 10
+                    .WithPosition(1536f, 540f)        // PlayerBackPack 右边沿 1450，留 26 间距
                     .WithScale(1f, 1f)
-                    .WithBackgroundId("背包背景")
+                    .WithBackgroundId(SPR_PANEL_BG)
                     .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
                 .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
                 .WithShowTitle(true)
                 .WithTitleConfig(new UITextSpec(110f, 30f)
-                    .WithPosition(60f, 545f)               // 120 宽中心 60，500 高顶部 -15
+                    .WithPosition(60f, 520f)               // 120 宽中心 60，标题栏内居中
                     .WithFontSize(16)
                     .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
                     .WithAlignment(TextAnchor.MiddleCenter))
@@ -325,12 +341,16 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var config = Service.GetConfig(configId);
             if (config == null) return ResultCode.Fail($"Inventory配置不存在: {configId}");
 
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             var (panel, slotRefs, descRefs) = InventoryUIBuilder.BuildPanelTree(inventoryId, config);
+            LogStartupTiming($"InventoryManager.OpenInventoryUI.BuildPanelTree.{inventoryId}", sample);
 
             // §4.1 跨模块 bare-string 调用 UIManager.EVT_REGISTER_ENTITY
+            sample = System.Diagnostics.Stopwatch.StartNew();
             var result = EventProcessor.Instance.TriggerEventMethod(
                 "RegisterUIEntity",
                 new List<object> { inventoryId, panel });
+            LogStartupTiming($"InventoryManager.OpenInventoryUI.RegisterUIEntity.{inventoryId}", sample);
 
             if (!ResultCode.IsOk(result))
             {
@@ -343,7 +363,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             _rootPanels[inventoryId] = panel;
 
             // UI 注册后挂上拖拽处理器（依赖 GameObject 已创建）
+            sample = System.Diagnostics.Stopwatch.StartNew();
             InventoryUIBuilder.AttachSlotDragHandlers(inventoryId, config.SlotsPerPage);
+            LogStartupTiming($"InventoryManager.OpenInventoryUI.AttachSlotDragHandlers.{inventoryId}", sample);
 
             LinkPlayerEquipmentVisibility(inventoryId, true);
 

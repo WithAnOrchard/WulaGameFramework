@@ -4,7 +4,6 @@ using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.MultiManagers.ShopManager.Dao;
-using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
 
 namespace EssSystem.Core.Application.MultiManagers.ShopManager
 {
@@ -25,8 +24,6 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
 
         private static readonly List<object> _tempList1 = new List<object>(2);
         private static readonly List<object> _tempList2 = new List<object>(3);
-        private static readonly List<object> _tempList3 = new List<object>(1);
-
         #endregion
 
         #region 事件名称
@@ -128,10 +125,10 @@ namespace EssSystem.Core.Application.MultiManagers.ShopManager
             if (!EventProcessor.HasInstance) return 0;
             _tempList1.Clear();
             _tempList1.Add(WalletId(playerId));
-            var res = EventProcessor.Instance.TriggerEventMethod("InventoryQuery", _tempList1);
+            _tempList1.Add(currencyId);
+            var res = EventProcessor.Instance.TriggerEventMethod("InventoryCountItem", _tempList1);
             if (!ResultCode.IsOk(res) || res.Count < 2) return 0;
-            var inv = res[1] as Inventory;
-            return inv?.CountOf(currencyId) ?? 0;
+            return System.Convert.ToInt32(res[1]);
         }
 
         // ── 购买 ──────────────────────────────────────────────────
