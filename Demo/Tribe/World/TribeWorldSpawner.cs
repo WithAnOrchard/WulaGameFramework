@@ -308,10 +308,7 @@ namespace Demo.Tribe
         private static Sprite LoadObjectSprite(string spriteResourcePath)
         {
             if (string.IsNullOrEmpty(spriteResourcePath)) return null;
-            var sprites = Resources.LoadAll<Sprite>(spriteResourcePath);
-            if (sprites != null && sprites.Length >= 3) return sprites[2];
-            if (sprites != null && sprites.Length > 0) return sprites[0];
-            return Resources.Load<Sprite>(spriteResourcePath);
+            return TribeResourceProvider.LoadSpriteVariant(spriteResourcePath, 2);
         }
     }
 }

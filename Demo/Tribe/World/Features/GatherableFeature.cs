@@ -12,7 +12,7 @@ namespace Demo.Tribe.World.Features
         /// <summary>Inspector 显示名（场景中 GameObject 的名字）。</summary>
         public string DisplayName;
 
-        /// <summary>Sprite 资源路径（走 Resources.LoadAll&lt;Sprite&gt;）。</summary>
+        /// <summary>Sprite 资源路径（FrameworkResources/Tribe 地址）。</summary>
         public string SpriteResourcePath;
 
         /// <summary>掉落 PickableItem Id（已注册到 InventoryManager）。</summary>
@@ -60,10 +60,7 @@ namespace Demo.Tribe.World.Features
         private static Sprite LoadObjectSprite(string path)
         {
             if (string.IsNullOrEmpty(path)) return null;
-            var sprites = Resources.LoadAll<Sprite>(path);
-            if (sprites != null && sprites.Length >= 3) return sprites[2];
-            if (sprites != null && sprites.Length > 0) return sprites[0];
-            return Resources.Load<Sprite>(path);
+            return TribeResourceProvider.LoadSpriteVariant(path, 2);
         }
     }
 }

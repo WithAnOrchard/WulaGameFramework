@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.IO;
 using EssSystem.Core.Base;
+using EssSystem.Core.Base.FileLogger;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
@@ -17,6 +19,7 @@ using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Template
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom.Config;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom.Generator;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Runtime;
+using EssSystem.Core.Foundation.ResourceManager;
 using UnityEngine.Tilemaps;
 using Demo.Tribe.Player;
 using Demo.Tribe.Background;
@@ -38,6 +41,20 @@ namespace Demo.Tribe
     /// </summary>
     public class TribeGameManager : AbstractGameManager
     {
+        private const int StartupWarnMs = 16;
+
+        private static System.Diagnostics.Stopwatch BeginStartupSample() =>
+            System.Diagnostics.Stopwatch.StartNew();
+
+        private static void LogStartupSample(string label, System.Diagnostics.Stopwatch stopwatch, int warnMs = StartupWarnMs)
+        {
+            if (stopwatch == null) return;
+            stopwatch.Stop();
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var message = $"[TribeStartup] {label}: {elapsed} ms";
+            if (elapsed >= warnMs) Debug.LogWarning(message);
+            else Debug.Log(message);
+        }
         // ─────────────── Inspector ───────────────
         [Header("Map (横版 2D)")]
         [Tooltip("是否生成随机地形（SideScroller Tilemap）。关闭后场景仅依靠背景图 + Fallback Ground。")]
@@ -60,7 +77,7 @@ namespace Demo.Tribe
         [SerializeField] private float _cameraLockY = 0f;
 
         [Header("Background (视差 + 循环)")]
-        [Tooltip("背景图资源根目录（Resources/ 下的相对路径）。里面的所有 Sprite 会按名称顺序作为层加载。")]
+        [Tooltip("背景图资源根目录（FrameworkResources/ 下的相对路径；构建时同名 Addressable 地址）。里面的所有 Sprite 会按名称顺序作为层加载。")]
         [SerializeField] private string _backgroundResourceFolder = "Tribe/Forest";
 
         [Tooltip("前景起始索引：i 〈 _foregroundStartIndex 的层 → 玩家后面；≥的层 → 玩家前面。\n" +
@@ -106,24 +123,53 @@ namespace Demo.Tribe
 
         protected override void Awake()
         {
+            var totalWatch = BeginStartupSample();
+
+            if (GetComponent<TribeLogger>() == null)
+                gameObject.AddComponent<TribeLogger>();
+
             // 顺序关键：必须在 base.Awake() 之前挂载 Demo 依赖的业务 Manager，
             // AbstractGameManager.Awake 才能在发现-排序-初始化阶段把它们接管。
+            var sample = BeginStartupSample();
             EnsureDemoManagers();
+            LogStartupSample("Awake.EnsureDemoManagers", sample);
             // 仅在需要生成地形时才挂 MapManager
-            if (_generateTerrain) EnsureMapManagerWithTemplate(SideScrollerRandomTemplate.Id);
+            if (_generateTerrain)
+            {
+                sample = BeginStartupSample();
+                EnsureMapManagerWithTemplate(SideScrollerRandomTemplate.Id);
+                LogStartupSample("Awake.EnsureMapManagerWithTemplate", sample);
+            }
+            sample = BeginStartupSample();
             base.Awake();
+            LogStartupSample("Awake.AbstractGameManager", sample);
+            ResourceService.Instance.SetBulkLoadPaths(System.Array.Empty<string>());
+            Debug.Log("[TribeGameManager] Resource bulk load scope configured: skip Resources preload; use FrameworkResources/Tribe on demand.");
             Debug.Log(_generateTerrain
                 ? "[TribeGameManager] Manager 初始化完成（template=side_scroller_random）"
                 : "[TribeGameManager] Manager 初始化完成（未生成地形）");
+            LogStartupSample("Awake.Total", totalWatch);
         }
 
         protected virtual void Start()
         {
             // 不能在 Awake 里调 CreateMap：此时 ResourceService.EVT_DATA_LOADED 可能还未发出，
             // 且其它 Manager.Initialize 均需在 base.Awake 完成 → Start 阶段才安全使用 Service。
+            var totalWatch = BeginStartupSample();
+
+            var sample = BeginStartupSample();
             RegisterTribeInventoryContent();
+            LogStartupSample("Start.RegisterTribeInventoryContent", sample);
+
+            sample = BeginStartupSample();
             SpawnStartupMap();
+            LogStartupSample("Start.SpawnStartupMap", sample);
+
+            sample = BeginStartupSample();
             SpawnTribeBiomes();
+            LogStartupSample("Start.SpawnTribeBiomes", sample);
+
+            LogStartupSample("Start.Total", totalWatch);
         }
 
         /// <summary>
@@ -133,6 +179,7 @@ namespace Demo.Tribe
         /// </summary>
         private void SpawnTribeBiomes()
         {
+            var totalWatch = BeginStartupSample();
             var layer = GameObject.Find("Layer_3_4_BACK")?.transform;
             var ctx = new TribeBiomeContext
             {
@@ -142,7 +189,14 @@ namespace Demo.Tribe
                 GroundY         = _fallbackGroundY + 0.55f,
                 BaseSortingOrder = GetLayerSortingOrder(layer),
             };
-            TribeBiomeRegistry.Build(TribeDefaultBiomes.Build(), ctx);
+            var sample = BeginStartupSample();
+            var biomes = TribeDefaultBiomes.Build();
+            LogStartupSample("SpawnTribeBiomes.DefaultBiomesBuild", sample);
+
+            sample = BeginStartupSample();
+            TribeBiomeRegistry.Build(biomes, ctx);
+            LogStartupSample("SpawnTribeBiomes.RegistryBuild", sample);
+            LogStartupSample("SpawnTribeBiomes.Total", totalWatch);
         }
 
         private void RegisterTribeInventoryContent()
@@ -244,26 +298,42 @@ namespace Demo.Tribe
         /// </summary>
         private void SpawnStartupMap()
         {
+            var totalWatch = BeginStartupSample();
             // 先校准相机 size，再生成背景（背景 viewHeight/viewWidth 依赖此值）。
+            var sample = BeginStartupSample();
             ApplyCameraSize(Camera.main);
+            LogStartupSample("SpawnStartupMap.ApplyCameraSize", sample);
             // 背景：与地形无关，总是生成
+            sample = BeginStartupSample();
             SpawnBackground(Camera.main);
+            LogStartupSample("SpawnStartupMap.SpawnBackground", sample);
 
             if (_generateTerrain)
             {
+                sample = BeginStartupSample();
                 SpawnTerrainAndPlayer();
+                LogStartupSample("SpawnStartupMap.SpawnTerrainAndPlayer", sample);
             }
             else
             {
                 // 无地形分支：可选 Fallback Ground + 直接生成玩家
-                if (_spawnFallbackGround) EnsureFallbackGround();
+                if (_spawnFallbackGround)
+                {
+                    sample = BeginStartupSample();
+                    EnsureFallbackGround();
+                    LogStartupSample("SpawnStartupMap.EnsureFallbackGround", sample);
+                }
                 TribePlayer player = null;
                 if (_autoSpawnPlayer)
                 {
+                    sample = BeginStartupSample();
                     var spawnY = _fallbackGroundY + _playerSpawnHeightAboveSurface;
                     player = EnsurePlayer(new Vector3(_playerSpawnX, spawnY, 0f));
+                    LogStartupSample("SpawnStartupMap.EnsurePlayer", sample);
                 }
+                sample = BeginStartupSample();
                 ApplyCameraLock(player);
+                LogStartupSample("SpawnStartupMap.ApplyCameraLock", sample);
                 Debug.Log("[TribeGameManager] 启动完成（背景模式，无地形）");
             }
         }
@@ -359,10 +429,10 @@ namespace Demo.Tribe
             var existing = GameObject.Find(rootName);
             if (existing != null) return;
 
-            var sprites = Resources.LoadAll<Sprite>(_backgroundResourceFolder);
+            var sprites = TribeResourceProvider.LoadAllSprites(_backgroundResourceFolder);
             if (sprites == null || sprites.Length == 0)
             {
-                Debug.LogWarning($"[TribeGameManager] 背景资源 Resources/{_backgroundResourceFolder} 下未找到图片");
+                Debug.LogWarning($"[TribeGameManager] Background sprites not found: {_backgroundResourceFolder}");
                 return;
             }
             System.Array.Sort(sprites, (a, b) => string.Compare(a.name, b.name, System.StringComparison.OrdinalIgnoreCase));
@@ -551,6 +621,94 @@ namespace Demo.Tribe
             holder.transform.SetParent(transform);
             holder.AddComponent<T>();
             Debug.Log($"[TribeGameManager] 场景未挂 {typeof(T).Name} —— 自动创建子节点挂载。");
+        }
+    }
+
+    /// <summary>
+    /// Tribe file logger. Writes to %AppData%/Tribe/log.txt through the shared FileLogger.
+    /// </summary>
+    public class TribeLogger : FileLogger
+    {
+        private StreamWriter _projectWriter;
+
+        private void Awake()
+        {
+            _appName = "Tribe";
+        }
+
+        private void Reset()
+        {
+            _appName = "Tribe";
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            OpenProjectLog();
+            UnityEngine.Application.logMessageReceived += HandleProjectLog;
+        }
+
+        protected override void OnDisable()
+        {
+            UnityEngine.Application.logMessageReceived -= HandleProjectLog;
+            try { _projectWriter?.Close(); } catch { }
+            _projectWriter = null;
+            base.OnDisable();
+        }
+
+        private void OpenProjectLog()
+        {
+            try
+            {
+                var logDir = Path.Combine(ResolveProjectRootForLog(), "Logs", "Tribe");
+                Directory.CreateDirectory(logDir);
+                var logPath = Path.Combine(logDir, "log.txt");
+                _projectWriter = new StreamWriter(logPath, append: true, encoding: System.Text.Encoding.UTF8)
+                {
+                    AutoFlush = true
+                };
+                _projectWriter.WriteLine($"--- Tribe project log opened {System.DateTime.Now:yyyy-MM-dd HH:mm:ss} ({logPath}) ---");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[TribeLogger] Failed to open project log: {ex.Message}");
+            }
+        }
+
+        private void HandleProjectLog(string condition, string stackTrace, LogType type)
+        {
+            if (_projectWriter == null) return;
+
+            var prefix = type switch
+            {
+                LogType.Error => "[ERR]",
+                LogType.Assert => "[AST]",
+                LogType.Warning => "[WRN]",
+                LogType.Exception => "[EXC]",
+                _ => "[LOG]",
+            };
+
+            _projectWriter.WriteLine($"{System.DateTime.Now:HH:mm:ss} {prefix} {condition}");
+            if (type == LogType.Error || type == LogType.Exception)
+                _projectWriter.WriteLine(stackTrace);
+        }
+
+        private static string ResolveProjectRootForLog()
+        {
+#if UNITY_EDITOR
+            return Directory.GetParent(UnityEngine.Application.dataPath)?.FullName
+                ?? UnityEngine.Application.dataPath;
+#else
+            var current = new DirectoryInfo(UnityEngine.Application.dataPath);
+            for (var i = 0; i < 6 && current != null; i++, current = current.Parent)
+            {
+                if (Directory.Exists(Path.Combine(current.FullName, "Assets")))
+                    return current.FullName;
+            }
+
+            return Directory.GetParent(UnityEngine.Application.dataPath)?.FullName
+                ?? UnityEngine.Application.dataPath;
+#endif
         }
     }
 }

@@ -27,7 +27,6 @@ namespace Demo.Tribe.World.Presets
         private static readonly Color RUINS_TINT  = new Color(0.41f, 0.34f, 0.47f);   // 暗紫
 
         // 占位色块
-        private static readonly Color WATER_C   = new Color(0.40f, 0.65f, 0.95f);
         private static readonly Color STONE_C   = new Color(0.55f, 0.55f, 0.58f);
         private static readonly Color HOUSE_C   = new Color(0.78f, 0.55f, 0.32f);
         private static readonly Color PORTAL_C  = new Color(0.45f, 0.30f, 0.85f);
@@ -78,8 +77,7 @@ namespace Demo.Tribe.World.Presets
             b.Add(new GatherableFeature(x0 + 30f, "浆果丛", "Tribe/Common/Objects/Crops (berries)",   "tribe_berries_pickable",   2f, 3));
             b.Add(new GatherableFeature(x0 + 40f, "胡萝卜", "Tribe/Common/Objects/Crops (carrot)",    "tribe_carrot_pickable"));
             b.Add(new GatherableFeature(x0 + 50f, "向日葵2","Tribe/Common/Objects/Crops (sunflower)", "tribe_sunflower_pickable"));
-            // 占位：浅水洼 + 传送门入口（通往 #3 静谧采集林）—— 暂时隐藏，待素材到位后恢复
-            // b.Add(new PlaceholderFeature(x0 + 20f, "水洼",   WATER_C,  new Vector2(2f, 0.4f),  yOffset: -0.2f));
+            // 占位：传送门入口（通往 #3 静谧采集林）—— 暂时隐藏，待素材到位后恢复
             // b.Add(new PlaceholderFeature(x0 + 70f, "🌀传送门\n静谧采集林", PORTAL_C, new Vector2(1.5f, 3f), yOffset: 0.5f));
             // 暂时取消其他生物生成 —— 仅保留采集物 + 营地。沼泽生物在 BuildSwamp。
             return b;
@@ -124,13 +122,7 @@ namespace Demo.Tribe.World.Presets
         {
             var b = new TribeBiomeConfig("swamp", "沼泽湿地", x0, x1, SWAMP_TINT);
 
-            // 环境占位：芦苇 + 水洼 + 泥潭（紧凑版 40 单位）
-            var reedColor = new Color(0.55f, 0.7f, 0.3f);
-            var mudColor  = new Color(0.40f, 0.30f, 0.18f);
-            b.Add(new PlaceholderFeature(x0 + 5f,  "🌾芦苇",  reedColor, new Vector2(0.6f, 2f), yOffset: 0.5f));
-            b.Add(new PlaceholderFeature(x0 + 15f, "🌊水洼",  WATER_C,   new Vector2(6f, 0.5f), yOffset: -0.25f));
-            b.Add(new PlaceholderFeature(x0 + 25f, "💩泥潭",  mudColor,  new Vector2(3f, 0.3f), yOffset: -0.2f));
-            b.Add(new PlaceholderFeature(x0 + 33f, "🌾芦苇",  reedColor, new Vector2(0.6f, 2f), yOffset: 0.5f));
+            // Swamp environment placeholders are cleared for the upcoming rewrite.
 
             // 史莱姆群 —— 4 只，间隔 ~10 单位，匹配 ActivityRadius=6 不会互相重叠太多
             b.Add(new CreatureFeature(x0 + 8f,  "史莱姆_α", Slime.Preset()));
@@ -161,7 +153,6 @@ namespace Demo.Tribe.World.Presets
         {
             var b = new TribeBiomeConfig("snow", "雪原", x0, x1, SNOW_TINT);
             // 雪松 + 冻结水洼 + 冰柱
-            b.Add(new PlaceholderFeature(x0 + 15f, "🌲雪松", new Color(0.3f, 0.5f, 0.4f),  new Vector2(2f, 5f), yOffset: 0.5f));
             b.Add(new PlaceholderFeature(x0 + 40f, "🌲雪松", new Color(0.3f, 0.5f, 0.4f),  new Vector2(2f, 5f), yOffset: 0.5f));
             b.Add(new PlaceholderFeature(x0 + 60f, "❄️冰湖", ICE_C,                       new Vector2(8f, 0.4f), yOffset: -0.2f));
             b.Add(new PlaceholderFeature(x0 + 80f, "❄️冰柱", ICE_C,                       new Vector2(0.5f, 3f), yOffset: 0.5f));
@@ -177,7 +168,6 @@ namespace Demo.Tribe.World.Presets
         {
             var b = new TribeBiomeConfig("ruins", "遗迹边境", x0, x1, RUINS_TINT);
             // 残柱 + 骨堆 + 宝箱
-            b.Add(new PlaceholderFeature(x0 + 15f, "🏛️残柱",   RUIN_C,                     new Vector2(1f, 5f), yOffset: 0.5f));
             b.Add(new PlaceholderFeature(x0 + 40f, "🏛️残柱",   RUIN_C,                     new Vector2(1f, 4f), yOffset: 0.5f));
             b.Add(new PlaceholderFeature(x0 + 60f, "💀骨堆",   new Color(0.85f, 0.82f, 0.75f), new Vector2(1.5f, 1f), yOffset: 0.5f));
             b.Add(new PlaceholderFeature(x0 + 80f, "📦宝箱",   new Color(0.6f,  0.45f, 0.2f),  new Vector2(1.2f, 1.2f), yOffset: 0.5f));

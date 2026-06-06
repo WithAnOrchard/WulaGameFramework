@@ -5,6 +5,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using Demo.Tribe;
+using Demo.Tribe.Resource;
 
 namespace Demo.Tribe.World.Features
 {
@@ -27,7 +28,7 @@ namespace Demo.Tribe.World.Features
         /// <see cref="TribeCampfireCharacterConfig"/>。素材 spritesheet
         /// <c>Resources/Tribe/Objects/campfire.png</c> 切片名 campfire_0~7。</summary>
         /// <summary>营火音效路径（走 AudioManager bare-string EVT_PLAY_POSITIONAL_LOOP_SFX）。</summary>
-        public string CampfireAudioPath = "Sound/feuer";
+        public string CampfireAudioPath = "Tribe/Common/Sound/feuer";
 
         /// <summary>营火世界缩放（campfire.png 单帧 16x32 @ PPU=100 → 0.16x0.32 单位；
         /// 缩放 8 → 1.28x2.56 单位，比原先 (2,2) 大 4 倍线性尺寸）。</summary>
@@ -152,7 +153,7 @@ namespace Demo.Tribe.World.Features
             else
             {
                 Debug.LogWarning("[CampFeature] 创建营火 Character 失败 —— 请确认已运行 " +
-                    "Tools/Character/Build Sprite Animator Base Controller 生成 base controller。");
+                    "Tools/WulaSystem/Presentation/Character/2D/Build Sprite Animator Base Controller 生成 base controller。");
             }
 
             // 音频生命周期挂在容器 GO 上：GO 销毁时 OnDestroy 调 StopPositionalSFX
@@ -379,7 +380,7 @@ namespace Demo.Tribe.World.Features
                 if (ResultCode.IsOk(r) && r.Count >= 2 && r[1] is Sprite s) return s;
             }
             // 兜底：直接 Resources.Load
-            return Resources.Load<Sprite>(path);
+            return TribeResourceProvider.LoadSprite(path);
         }
 
     }

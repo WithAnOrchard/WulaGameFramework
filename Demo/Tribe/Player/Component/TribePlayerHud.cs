@@ -49,22 +49,22 @@ namespace Demo.Tribe.Player
             _characterRoot = characterRoot;
 
             var hud = new UIPanelComponent(_hudId, "TribePlayerHud")
-                .SetPosition(16f, -16f).SetSize(560f, 132f)
+                .SetPosition(16f, -16f).SetSize(430f, 132f)
                 .SetBackgroundColor(new Color(0f, 0f, 0f, 0f)).SetVisible(true);
 
             var headFrame = new UIPanelComponent($"{_hudId}_head", "Head")
-                .SetPosition(66f, -62f).SetSize(112f, 112f)
+                .SetPosition(64f, 66f).SetSize(112f, 112f)
                 .SetBackgroundSpriteId("Head").SetBackgroundColor(Color.white).SetVisible(true);
             _headSprite = new UIPanelComponent($"{_hudId}_head_sprite", "HeadSprite")
-                .SetPosition(56f, 56f).SetSize(140f, 140f)
+                .SetPosition(56f, 56f).SetSize(86f, 86f)
                 .SetBackgroundColor(Color.white).SetVisible(true);
 
-            _hpBar  = MakeBar("hp",  264f, -18f, 280f, 28f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
-            _mpBar  = MakeBar("mp",  239f, -44f, 230f, 24f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
-            _expBar = MakeBar("exp", 239f, -68f, 230f, 24f, "Bar_2", "BrownBar", new Color(0.55f, 0.32f, 0.15f));
+            _hpBar  = MakeBar("hp",  252f, 102f, 260f, 24f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
+            _mpBar  = MakeBar("mp",  239f,  76f, 234f, 20f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
+            _expBar = MakeBar("exp", 239f,  52f, 234f, 20f, "Bar_2", "Brown_Bar", new Color(0.55f, 0.32f, 0.15f));
 
             var coinContainer = new UIPanelComponent($"{_hudId}_coins_bg", "CoinContainer")
-                .SetPosition(174f, -92.5f).SetSize(100f, 25f)
+                .SetPosition(166f, 24f).SetSize(100f, 25f)
                 .SetBackgroundSpriteId("CoinContainer").SetBackgroundColor(Color.white).SetVisible(true);
 
             _hpText    = MakeValueText("hp_value",  280f, 28f);
@@ -181,7 +181,7 @@ namespace Demo.Tribe.Player
         {
             const float s = 4f;
             return new UITextComponent($"{_hudId}_{suffix}", suffix)
-                .SetPosition(0f, 0f).SetSize(w * s, h * s).SetScale(1f / s, 1f / s)
+                .SetPosition(w * 0.5f, h * 0.5f).SetSize(w * s, h * s).SetScale(1f / s, 1f / s)
                 .SetFontSize(Mathf.RoundToInt(18f * s)).SetColor(Color.white)
                 .SetAlignment(TextAnchor.MiddleCenter).SetText(string.Empty).SetVisible(true);
         }

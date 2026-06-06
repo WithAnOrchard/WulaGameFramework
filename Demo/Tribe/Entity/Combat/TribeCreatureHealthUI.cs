@@ -25,7 +25,7 @@ namespace Demo.Tribe.Entities
         [SerializeField] private Vector3 _worldOffset = new Vector3(0f, 1.2f, 0f);
 
         [Tooltip("血条在屏幕空间的额外偏移（像素，参考分辨率 1920×1080）。X 正值往右，Y 正值往上。")]
-        [SerializeField] private Vector2 _screenOffset = new Vector2(70f, 0f);
+        [SerializeField] private Vector2 _screenOffset = Vector2.zero;
 
         [Tooltip("血条尺寸（参考分辨率单位，1920×1080）。照玩家比例缩小：玩家 280×28 → 这里 140×18。")]
         [SerializeField] private Vector2 _barSize = new Vector2(140f, 18f);
@@ -68,7 +68,7 @@ namespace Demo.Tribe.Entities
 
             // 血条 —— 照抄玩家 hpBar：sprite + padding (10,6) + Range(0,1)
             _bar = new UIBarComponent($"{_rootId}_bar", "hp")
-                .SetPosition(0f, 0f).SetSize(_barSize.x, _barSize.y)
+                .SetPosition(_barSize.x * 0.5f, _barSize.y * 0.5f).SetSize(_barSize.x, _barSize.y)
                 .SetRange(0f, 1f).SetValue(1f)
                 .SetBackgroundSpriteId(_backgroundSpriteId).SetFillSpriteId(_fillSpriteId)
                 .SetFillPadding(10f, 6f)
@@ -78,7 +78,7 @@ namespace Demo.Tribe.Entities
             // 数值文本 —— 照抄玩家 MakeValueText：4x 超采样 + 缩 1/4 抗走样
             const float s = 4f;
             _valueText = new UITextComponent($"{_rootId}_value", "value")
-                .SetPosition(0f, 0f).SetSize(_barSize.x * s, _barSize.y * s).SetScale(1f / s, 1f / s)
+                .SetPosition(_barSize.x * 0.5f, _barSize.y * 0.5f).SetSize(_barSize.x * s, _barSize.y * s).SetScale(1f / s, 1f / s)
                 .SetFontSize(Mathf.RoundToInt(_fontSize * s)).SetColor(_textColor)
                 .SetAlignment(TextAnchor.MiddleCenter).SetText("0/0").SetVisible(true);
 

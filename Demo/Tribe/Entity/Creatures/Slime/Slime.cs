@@ -146,7 +146,7 @@ namespace Demo.Tribe.Entities
         private static BuffInstance BuildGiantBuff(SkillEffectContext ctx, float duration,
             float scale, float hp, float dmgRed, float hop)
         {
-            var go = ctx?.Caster?.CharacterRoot?.gameObject;
+            var go = SkillEntityProxy.Root(ctx?.CasterId)?.gameObject;
             if (go == null) return null;
 
             // 同一实体重复 cast：复用现有 GiantSlimeState（Apply 已幂等），仅当 state 不存在时挂新组件
@@ -164,8 +164,8 @@ namespace Demo.Tribe.Entities
             return new BuffInstance
             {
                 BuffId = BUFF_GIANT,
-                Source = ctx.Caster,
-                Target = ctx.Caster,
+                SourceId = ctx.CasterId,
+                TargetId = ctx.CasterId,
                 Duration = duration,
                 OnExpire = _ =>
                 {
