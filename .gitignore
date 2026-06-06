@@ -1,5 +1,8 @@
 # Standalone compile check output
 .build/
+.compile_check/
+static_findings.json
+static_findings.json.meta
 
 # Unity (if/when someone opens this as a full project)
 [Ll]ibrary/

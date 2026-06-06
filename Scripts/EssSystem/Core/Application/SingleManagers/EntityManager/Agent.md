@@ -1,15 +1,10 @@
-# EntityManager
-
+﻿# EntityManager
 ## 概述
-
 `EntityManager`（`[Manager(13)]`，薄门面）+ `EntityService`（业务核心 + 配置持久化）提供通用的 **游戏实体** 系统：
-
 - 每个 Entity 是一个"**逻辑实体**"：位置 / 血量 / AI 等（持有权威状态）。
 - 通过 `EntityConfig.CharacterConfigId` 指向一份 `CharacterConfig` —— 由 `CharacterService` 负责生成可视的 `Character`（多部件 + 动画）。
 - Entity 层不直接管显示，只持有 Character 引用；销毁 Entity 会级联清理 Character GameObject。
-
 ## 目录
-
 ```
 EntityManager/
 ├── EntityManager.cs              ← 门面（[Manager(13)]）：Inspector + 生命周期 + Tick 调度
@@ -67,7 +62,6 @@ EntityManager/
         ├── EntityColliderShape.cs         ← Box / Circle / None
         └── EntityRuntimeDefinition.cs     ← 场景 Entity 即时注册描述
 ```
-
 > **物理目录 = 命名空间**（重组后已对齐）：
 > - `Capabilities/**/*.cs` → `...EntityManager.Capabilities`（子目录不引入命名空间层级）
 > - `Brain/*.cs` → `...EntityManager.Brain`；`Brain/Actions/*.cs` → `...EntityManager.Brain.Actions`
@@ -77,133 +71,63 @@ EntityManager/
 > - **Capability（组件）**：能做什么。提供数据（攻击力、移动速度）+ 原子操作（`Attack(target)` / `Velocity = ...`）。任意调用方（玩家输入、AI、剧情）共用。
 > - **Brain（思维）**：决定做什么。Sensor 感知 → Consideration 打分 → Action 执行。Action 内部**只调用 Capability**，不重复实现能力。
 > - 接口 `IBrain` 放 Capabilities/（它对 Entity 而言就是一个能力槽 `entity.Has<IBrain>()`），实现 `BrainComponent` 放 Brain/（控制器实现属于思维层）。
-
 ## 两个核心维度
-
 ### 1. EntityKind（静态 vs 动态）
-
 | Kind | 适用 | Tick 行为 |
 |---|---|---|
 | `Static` | 树 / 矿石 / 建筑 / 场景道具 | 不做位置同步；业务也别挂移动 / AI |
 | `Dynamic` | 动物 / 怪物 / NPC / 玩家 | 每帧把 `WorldPosition` 同步到 `Character.View.transform` |
-
 在 `EntityConfig.Kind` 写死，创建时拷贝到 `Entity.Kind`（运行时可改，主要读源是这一份）。
-
 ### 2. Capability（能力 = 可插拔接口）
-
 主键是**接口类型**，同一接口只能挂一个实例。
-
 **推荐用法 —— 链式 Fluent API**（参 `Dao/Entity.cs` 末尾的 "Fluent API" 段）：
-
-```csharp
-entity
-    .CanMove(moveSpeed: 3f)
-    .CanAttack(attackPower: 15, attackRange: 2f, attackCooldown: 0.6f)
-    .CanBeAttacked(maxHp: 100)
-        .OnDied((self, killer) => Debug.Log($"{self.InstanceId} 死了"))
-        .OnDamaged((self, src, dmg, type) => Debug.Log($"扣 {dmg}"))
-    .CanFlash(entity.CharacterRoot)
-    .CanKnockback(rb, force: 5f);
-
-entity.CannotBeAttacked("ScriptedCutscene");   // 限时无敌
-entity.Without<IInvulnerable>();                // 解除无敌
-```
-
 每个 `CanXxx` 方法等价于挂"默认实现"组件并返回 `this`。要替换为自定义实现，仍走通用 API：
-
-```csharp
-entity
-    .With<IDamageable>(new MyArmoredDamageable(maxHp: 200, armor: 10))  // 自定义组件
-    .With<IStorage>(new StorageComponent("chest_001", capacity: 20))
-    .CanAttack(20f);   // 后续仍可继续链
-```
-
 **底层 API**（仍保留，向后兼容）：
-
-```csharp
-entity.Add<IDamageable>(new DamageableComponent(100));   // 返回组件实例
-var dmg = entity.Get<IDamageable>();                     // null if not present
-if (entity.Has<IDamageable>()) { /* 有血 */ }
-entity.Remove<IInvulnerable>();
-```
-
 **"不可被攻击"通过 `IInvulnerable` 表达，而不是移除 `IDamageable`** —— 这样能保留 HP 状态，只是暂时豁免伤害。
-
 ## 框架级伤害结算
-
 统一走 `EntityService.TryDamage`（内部 API，只在 Manager / 能力组件内部使用），它会：
 1. `IInvulnerable.Active == true` → 短路返回 0
 2. 无 `IDamageable` → 返回 0
 3. 否则调 `IDamageable.TakeDamage` 并返回实际伤害
-
 `AttackerComponent.Attack` 已内置这套检查。业务自定义攻击逻辑也建议复用同一路径。
-
 > **注意**：`EntityService` 是 Manager 内部实现，**外部模块禁止直接 `EntityService.Instance.*`**。一律通过下方 Event API 调用。
-
 ## 加载顺序
-
 `EntityManager(13)` 依赖：
 - `CharacterManager(11)` —— 创建显示用 Character
 - `MapManager(12)` —— （可选）若 Entity 绑定地图坐标 / 区块事件
-
 ## Event API
 
-| Event 常量 | data 参数 | 返回（`ResultCode`） |
-|---|---|---|
-| `EntityManager.EVT_CREATE_ENTITY` | `[configId, instanceId, parent:Transform?, worldPosition:Vector3?]` | `Ok(Transform CharacterRoot)` / `Fail(msg)` |
-| `EntityManager.EVT_DESTROY_ENTITY` | `[instanceId]` | `Ok(instanceId)` / `Fail(msg)` |
-| `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `[instanceId, GameObject host, EntityRuntimeDefinition definition]` | `Ok(instanceId)` / `Fail(msg)` |
-| `EntityManager.EVT_DAMAGE_ENTITY` | `[instanceId, damage:float, damageType?:string]` | `Ok(actualDamage)` / `Fail(msg)` |
-| `EntityManager.EVT_REGISTER_ENTITY_CONFIG` | `[EntityConfig config]` | `Ok(configId)` / `Fail(msg)` |
-| `EntityManager.EVT_GET_ENTITY` | `[instanceId]` | `Ok(Entity)` / `Fail(msg)` |
-| `EntityManager.EVT_APPLY_COLLIDER` | `[GameObject host, EntityColliderConfig cfg]` | `Ok(host)` / `Fail(msg)` |
-| `EntityManager.EVT_ATTACH_ENTITY_HANDLE` | `[GameObject host, Entity entity]` | `Ok(host)` / `Fail(msg)` |
+> Full Event definitions (params / return / side effects / usage) live in root Events.md -> section: **EntityManager Event**.
 
-> **§2 协议解耦**：`EVT_CREATE_ENTITY` 返回 Unity 原生 `Transform`（CharacterRoot），不暴露模块私有 `Entity` 类型。需要 `Entity` 逻辑实例（挂能力/查询 HP）走 `EVT_GET_ENTITY` 或 `EntityService.Instance.GetEntity(instanceId)`。
->
-> **§4.1 跨模块 bare-string**：调用方不 `using EntityManager` ，直接传字符串 `"CreateEntity"` / `"DestroyEntity"`。
-
-### 调用示例
-
-```csharp
-// 创建一个史莱姆 §4.1 跨模块 bare-string
-var result = EventProcessor.Instance.TriggerEventMethod(
-    "CreateEntity",
-    new List<object> {
-        "Slime",                           // configId
-        "slime_001",                       // instanceId
-        null,                              // parent (Transform?)
-        new Vector3(5, 5, 0),              // worldPosition (Vector3?)
-    });
-
-if (ResultCode.IsOk(result))
-{
-    var charRoot = result[1] as Transform;   // E2：返 Unity 原生 Transform。静态 entity 可能为 null。
-    // 需要拿 Entity 运行时状态 走 EntityService。
-    var slime = EntityService.Instance.GetEntity("slime_001");
-    if (slime != null) slime.WorldPosition += new Vector3(1, 0, 0);
-}
-
-// 销毁
-EventProcessor.Instance.TriggerEventMethod(
-    "DestroyEntity",
-    new List<object> { "slime_001" });
-```
-
-### 能力交互（Entity 本身就是纯数据 / 行为聚合）
-
-拿到返回的 `Entity` 后，能力的挂 / 取 / 移除仍走 `Entity` 自身 API（`Add<T>` / `Get<T>` / `Has<T>`）。这属于"业务在 Entity 上写数据"，不涉及跨 Manager 调用，因此无需走 Event。
-
-```csharp
-slime.Add<IDamageable>(new DamageableComponent(maxHp: 100));
-if (slime.Has<IDamageable>() && !slime.Has<IInvulnerable>())
-{
-    slime.Get<IDamageable>().TakeDamage(10, source: attacker);
-}
-```
+- `EntityManager.EVT_APPLY_COLLIDER`
+- `EntityManager.EVT_ATTACH_ENTITY_HANDLE`
+- `EntityManager.EVT_CREATE_ENTITY`
+- `EntityManager.EVT_DAMAGE_ENTITY`
+- `EntityManager.EVT_HEAL_ENTITY`
+- `EntityManager.EVT_GET_ENTITY_POSITION`
+- `EntityManager.EVT_SET_ENTITY_POSITION`
+- `EntityManager.EVT_GET_CHARACTER_ROOT`
+- `EntityManager.EVT_GET_ENTITY_ID_FROM_OBJECT`
+- `EntityManager.EVT_IS_ENTITY_DEAD`
+- `EntityManager.EVT_GET_ENTITY_HP`
+- `EntityManager.EVT_GET_CONTROL_STATE`
+- `EntityManager.EVT_PUSH_CONTROL_STATE`
+- `EntityManager.EVT_POP_CONTROL_STATE`
+- `EntityManager.EVT_GET_SPEED_MULTIPLIER`
+- `EntityManager.EVT_SET_SPEED_MULTIPLIER`
+- `EntityManager.EVT_GET_DAMAGE_REDUCTION`
+- `EntityManager.EVT_SET_DAMAGE_REDUCTION`
+- `EntityManager.EVT_REGISTER_DAMAGED_CALLBACK`
+- `EntityManager.EVT_REGISTER_DEATH_CALLBACK`
+- `EntityManager.EVT_SET_ENTITY_MAX_HP`
+- `EntityManager.EVT_ADD_ENTITY_CAPABILITY`
+- `EntityManager.EVT_REGISTER_SIMPLE_ENTITY_CONFIG`
+- `EntityManager.EVT_DESTROY_ENTITY`
+- `EntityManager.EVT_GET_ENTITY`
+- `EntityManager.EVT_REGISTER_ENTITY_CONFIG`
+- `EntityManager.EVT_REGISTER_SCENE_ENTITY`
 
 ## 全量 Capability 速查表
-
 | 接口 | 默认实现 | 链式方法 | 用途 |
 |---|---|---|---|
 | `IMovable` | `MovableComponent` | `entity.CanMove(speed)` | 移动 |
@@ -222,29 +146,23 @@ if (slime.Has<IDamageable>() && !slime.Has<IInvulnerable>())
 | **`IContactDamage`** | **`ContactDamageComponent`** | **`entity.CanDamageOnContact(dmg, radius, interval, type, mask)`** | 接触伤害（铁丝网） |
 | **`IAura`** | **`AuraComponent`** | **`entity.EmitAura(heal, radius, interval, mask, self)`** | 范围治疗/毒气 |
 | **`IHarvester`** | **`HarvesterComponent`** | **`entity.Harvest(itemId, amount, interval, invId)`** | 周期采集 |
-
 > 加粗 = 本次新增。详细构造参数见各接口 xmldoc。
-
 ### 新增 Capability 详情
-
 #### IContactDamage — 接触伤害
 - **文件**: `Dao/Capabilities/IContactDamage.cs` + `Default/ContactDamageComponent.cs`
 - **机制**: `ITickableCapability`；每 `TickInterval` 秒用 `Physics2D.OverlapCircle(CharacterRoot.position, Radius, LayerMask)` 扫描，对非自身且有 `IDamageable` 的 Entity 调 `EntityService.TryDamage`
 - **链式**: `entity.CanDamageOnContact(5f, 1f, 1f, "BarbedWire")`
 - **用例**: 铁丝网、火焰陷阱、荆棘地
-
 #### IAura — 光环
 - **文件**: `Dao/Capabilities/IAura.cs` + `Default/AuraComponent.cs`
 - **机制**: 同上 OverlapCircle，`HealPerTick >= 0` → 调 `Heal`，`< 0` → 调 `TryDamage`
 - **链式**: `entity.EmitAura(healPerTick: 5f, radius: 3.5f)`
 - **用例**: 治疗塔、buff 图腾、毒气云
-
 #### IHarvester — 周期采集
 - **文件**: `Dao/Capabilities/IHarvester.cs` + `Default/HarvesterComponent.cs`
 - **机制**: `ITickableCapability`；每 `Interval` 秒通过 bare-string `"InventoryAdd"`（= `InventoryService.EVT_ADD`）往 `TargetInventoryId` 丢 `Amount` 个 `ItemId`
 - **链式**: `entity.Harvest("wood", 1, 5f, "player")`
 - **用例**: 自动农场、矿石钻头
-
 #### IStats — RPG 属性面板（骨架）
 - **文件**: `Capabilities/Stats/IStats.cs` + `StatsComponent.cs`（默认实现）
 - **数据**: `AttributeSet` 持有 6 Primary 基值（STR/DEX/CON/INT/WIS/CHA）+ Modifier 列表
@@ -256,9 +174,7 @@ if (slime.Has<IDamageable>() && !slime.Has<IInvulnerable>())
   - ShopManager 读 CHA 算价格折扣
   - CraftingManager 读 INT 算品质 roll
 - **状态**: 🚧 骨架阶段，事件广播 / 持续时间 Tick / 持久化在 ToDo #2.M1 实施
-
 ## 扩展点（后续补充）
-
 - `EntityConfig`：加字段（MoveSpeed、MaxHp、AiProfileId、LootTableIds…）。
 - `Entity`：加运行时状态字段（CurrentHp、Velocity、AiState…）。
 - `EntityService.Tick`：加 AI 驱动 / 物理 / 状态机推进 / 事件触发。

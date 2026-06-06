@@ -1,9 +1,6 @@
-# InventoryManager 指南
-
+﻿# InventoryManager 指南
 ## 概述
-
 `InventoryManager`（`[Manager(10)]`，薄门面）+ `InventoryService`（业务逻辑 + 持久化）提供完整的背包系统：
-
 - 多容器（玩家背包、箱子等）
 - 物品模板 + 链式 API（`InventoryItem`）
 - 堆叠 / 权重上限 / 槽位锁定 / 移动/拆堆
@@ -14,9 +11,7 @@
   - `hotbar` (configId `Hotbar`) — 9 格快捷栏，**启动后自动打开常驻底部**
   - `equipment` (configId `PlayerEquipment`) — 5 格装备栏（头盔/盔甲/护腿/鞋子/背包），**与 `player` 联动开关**，挂在玩家背包右侧
 - **快捷栏键盘**：监听 `KeyCode.Alpha1 ~ Alpha9`，按下时广播 `EVT_HOTBAR_USE` 携带 `[invId, slotIndex, item]`，业务层（如 EquipmentManager）订阅处理
-
 ## 文件结构
-
 ```
 InventoryManager/
 ├── InventoryManager.cs            薄门面：生命周期、默认注册、EVT_OPEN_UI / EVT_CLOSE_UI、UI 缓存、可拾取定义注册/生成
@@ -40,235 +35,72 @@ InventoryManager/
         ├── SlotConfig.cs              槽位网格布局（背包独有）
         └── DescriptionPanelConfig.cs  描述子面板（背包独有复合，内含 UIPanelSpec / UIIconSpec / 3×UITextSpec）
 ```
-
 > 通用 UI 配置（面板/按钮/文本/图标）已上提到 `Core/Presentation/UIManager/Dao/Specs/`，供所有业务模块复用：
 > `UIPanelSpec` / `UIButtonSpec` / `UITextSpec` / `UIIconSpec`，每个都自带 `CreateComponent(id, name)` 工厂方法直接生成对应 `UI*Component`。
-
 ## 数据分类（持久化）
-
 | 常量 | 用途 |
 |---|---|
 | `InventoryService.CAT_INVENTORIES` = `"Inventories"` | 所有容器实例 |
 | `InventoryService.CAT_TEMPLATES`   = `"Items"` | 物品模板（`InventoryItem`） |
 | `InventoryService.CAT_CONFIGS`     = `"Configs"` | UI 配置 |
-
 ## Event API
 
-> 共 9 个：Manager 侧以 UI / 可拾取物 / 模板注册 / Hotbar 广播为主；Service 侧以 CRUD / 查询 / 内容变化广播为主。
+> Full Event definitions (params / return / side effects / usage) live in root Events.md -> section: **InventoryManager Event**.
 
-### 命令类（调用方主动触发，期望返回结果）
-
-#### `InventoryManager.EVT_OPEN_UI` — 打开背包 UI
-- **常量**: `InventoryManager.EVT_OPEN_UI` = `"OpenInventoryUI"`
-- **参数**: `[string inventoryId, string configId?]`（configId 缺省时用 inventoryId）
-- **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
-- **副作用**: 调 `UIManager.EVT_REGISTER_ENTITY`（bare-string `"RegisterUIEntity"`）创建 UI 实体；`inventoryId == "player"` 时额外联动打开装备栏
-- **示例**:
-  ```csharp
-  EventProcessor.Instance.TriggerEventMethod(
-      InventoryManager.EVT_OPEN_UI,
-      new List<object> { "player", "PlayerBackPack" });
-  ```
-
-#### `InventoryManager.EVT_CLOSE_UI` — 关闭背包 UI
-- **常量**: `InventoryManager.EVT_CLOSE_UI` = `"CloseInventoryUI"`
-- **参数**: `[string inventoryId]`
-- **返回**: `ResultCode.Ok(inventoryId)` / `ResultCode.Fail(msg)`
-- **副作用**: 仅 `Visible = false`（保留缓存 GameObject，下次 Open 复用）；`inventoryId == "player"` 时额外隐藏装备栏
-
-#### `InventoryService.EVT_CREATE` — 创建容器
-- **常量**: `InventoryService.EVT_CREATE` = `"InventoryCreate"`
-- **参数**: `[string id, string name, int maxSlots]`
-- **返回**: `ResultCode.Ok(Inventory)` / `ResultCode.Fail(msg)`
-- **副作用**: 写入 `CAT_INVENTORIES` 持久化分类
-- **示例**:
-  ```csharp
-  EventProcessor.Instance.TriggerEventMethod(
-      InventoryService.EVT_CREATE,
-      new List<object> { "chest", "箱子", 20 });
-  ```
-
-#### `InventoryService.EVT_DELETE` — 删除容器
-- **常量**: `InventoryService.EVT_DELETE` = `"InventoryDelete"`
-- **参数**: `[string id]`
-- **返回**: `ResultCode.Ok()` / `ResultCode.Fail(msg)`
-
-#### `InventoryService.EVT_ADD` — 添加物品
-- **常量**: `InventoryService.EVT_ADD` = `"InventoryAdd"`
-- **参数**: `[string inventoryId, object itemIdOrItem, int amount]`
-  - `itemIdOrItem` 可以是 `string`（模板 id）或 `InventoryItem` 实例
-- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`（`InventoryResult` 含 `Success/Amount/Remaining`）
-- **副作用**: 修改 `CAT_INVENTORIES`；广播 `EVT_CHANGED`
-- **示例**:
-  ```csharp
-  EventProcessor.Instance.TriggerEventMethod(
-      InventoryService.EVT_ADD,
-      new List<object> { "player", "potion_heal", 5 });
-  ```
-
-#### `InventoryService.EVT_REMOVE` — 移除物品
-- **常量**: `InventoryService.EVT_REMOVE` = `"InventoryRemove"`
-- **参数**: `[string inventoryId, string itemId, int amount]`
-- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
-- **副作用**: 修改 `CAT_INVENTORIES`；广播 `EVT_CHANGED`
-
-#### `InventoryService.EVT_MOVE` — 移动物品
-- **常量**: `InventoryService.EVT_MOVE` = `"InventoryMove"`
-- **参数**: `[string inventoryId, int fromSlot, int toSlot, int amount]`（同容器）
-- **返回**: `ResultCode.Ok(InventoryResult)` / `ResultCode.Fail(msg)`
-- **副作用**: 修改槽位状态；广播 `EVT_CHANGED`
-- **跨容器**: 直接调 `InventoryService.MoveItem(fromInv, fromIdx, toInv, toIdx, amount)` —— 拖拽 handler 已默认走此重载，背包 ↔ 快捷栏 ↔ 装备栏可互拖
-
-#### `InventoryService.EVT_QUERY` — 查询容器
-- **常量**: `InventoryService.EVT_QUERY` = `"InventoryQuery"`
-- **参数**: `[string inventoryId]`
-- **返回**: `ResultCode.Ok(Inventory)` / `ResultCode.Fail(msg)`
-- **副作用**: 无（纯查询）
-
-#### `InventoryManager.EVT_HOTBAR_USE` — 快捷栏使用（广播）
-- **常量**: `InventoryManager.EVT_HOTBAR_USE` = `"InventoryHotbarUse"`
-- **触发条件**: 玩家按下 `KeyCode.Alpha1 ~ Alpha9`（在 `InventoryManager.Update` 内监听）
-- **参数**: `[string inventoryId, int slotIndex, InventoryItem item]`
-  - `inventoryId` 固定为 `"hotbar"`，`slotIndex` 为 0~8（对应 1~9 键）
-  - `item` 为该槽当前物品；空槽时为 `null`
-- **典型订阅**: 业务层（EquipmentManager / 战斗模块 / 物品使用系统）订阅，按 item 类型自行装备或使用
-- **示例**:
-  ```csharp
-  [EventListener(InventoryManager.EVT_HOTBAR_USE)]
-  public List<object> OnHotbarUse(string evt, List<object> args)
-  {
-      var item = args[2] as InventoryItem;
-      if (item == null || item.IsEmpty) return null;
-      // 自行处理装备 / 使用 / 释放技能...
-      return null;
-  }
-  ```
-
-#### `InventoryManager.EVT_REGISTER_ITEM` — 注册物品模板
-- **常量**: `InventoryManager.EVT_REGISTER_ITEM` = `"InventoryRegisterItem"`
-- **参数**: `[InventoryItem item]`
-- **返回**: `ResultCode.Ok(item.Id)` / `ResultCode.Fail(msg)`
-
-#### `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` — 注册可拾取物定义
-- **常量**: `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` = `"InventoryRegisterPickableItem"`
-- **参数**: `[PickableItemDefinition definition]`
-- **返回**: `ResultCode.Ok(definition.PickableId)` / `ResultCode.Fail(msg)`
-
-#### `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` — 生成场景可拾取物
-- **常量**: `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` = `"InventorySpawnPickableItem"`
-- **参数**: `[string pickableId, Vector3 worldPosition, string targetInventoryId?, int amount?]`
-- **返回**: `ResultCode.Ok(GameObject)` / `ResultCode.Fail(msg)`
-
-### 广播类（用 `[EventListener]` 订阅，无返回值期望）
-
-#### `InventoryService.EVT_CHANGED` — 背包内容变化
-- **常量**: `InventoryService.EVT_CHANGED` = `"InventoryChanged"`
-- **触发条件**: 任何 ADD/REMOVE/MOVE 操作成功后
-- **参数**: `[string inventoryId, string op, string itemId, int amount]`
-  - `op` ∈ `{"add", "remove", "move"}`
-- **典型订阅**: UI 刷新槽位显示
-- **示例**:
-  ```csharp
-  [EventListener(InventoryService.EVT_CHANGED)]
-  public List<object> OnInventoryChanged(string evt, List<object> args)
-  {
-      var inventoryId = args[0] as string;
-      var op = args[1] as string;
-      // 刷新 UI...
-      return null;
-  }
-  ```
-
+- `InventoryManager.EVT_CLOSE_UI`
+- `InventoryManager.EVT_HOTBAR_USE`
+- `InventoryManager.EVT_OPEN_UI`
+- `InventoryManager.EVT_REGISTER_ITEM`
+- `InventoryManager.EVT_REGISTER_PICKABLE_ITEM`
+- `InventoryManager.EVT_SPAWN_PICKABLE_ITEM`
+- `InventoryService.EVT_ADD`
+- `InventoryService.EVT_CHANGED`
+- `InventoryService.EVT_CREATE`
+- `InventoryService.EVT_DELETE`
+- `InventoryService.EVT_MOVE`
+- `InventoryService.EVT_QUERY`
+- `InventoryService.EVT_COUNT_ITEM`
+- `InventoryService.EVT_REMOVE`
+- `UIManager.EVT_REGISTER_ENTITY`
 
 ## 批量操作（BeginBatch）
-
 `AddItem` / `RemoveItem` / `MoveItem` 每次内部都会 `SetData(CAT_INVENTORIES, ...)` 触发同步写盘。**连续多次操作时**强烈建议用 `Service<T>.BeginBatch()` 包起来，把 N 次 fsync 合并成 1 次：
-
-```csharp
-using (InventoryService.Instance.BeginBatch())
-{
-    InventoryService.Instance.AddItem("player", apple, 5);
-    InventoryService.Instance.AddItem("player", sword, 1);
-    InventoryService.Instance.AddItem("player", potion, 3);
-    InventoryService.Instance.MoveItem("player", 0, 5);
-}   // Dispose 时一次性 flush 所有 dirty categories
-```
-
 典型场景：
 - NPC 一次性给一袋物品（n 个 AddItem）
 - 战斗结算掉落（batch add）
 - 存档迁移 / 测试 fixture（程序化构造大背包）
-
 `BeginBatch` 支持嵌套；`Application.quitting` 时 DataService 兜底 flush。详见 `EssManagers/Manager/Agent.md` 的「批量写盘」章节。
-
 ## Slot 信息显示
-
 `BuildPanelTree` 为每个 slot 生成三层 UI：
-
 | 子节点 ID 后缀 | 内容 | 位置 |
 |---|---|---|
 | `_Slot_{i}` | 背景按钮（点击可触发描述更新） | 整槽 |
 | `_Slot_{i}_NameText` | 物品 `Name`（空槽留空） | 上半居中 |
 | `_Slot_{i}_StackText` | `当前/最大`（仅 `MaxStack > 1` 显示） | 下半居中 |
-
 打开 UI 时会读取 `InventoryService.GetInventory(id)` 当前状态填充。
-
 **自动刷新**：`InventoryManager.OnInventoryChanged` 监听 `InventoryService.EVT_CHANGED`，
 对**当前已打开 UI** 的容器原地更新所有 slot 的 NameText / StackText（不重建 GameObject，
 不影响描述面板已选中状态）。`OpenInventoryUI` 把每个 slot 的两个 `UITextComponent` 引用
 缓存进 `_slotTextRefs[inventoryId]`，`CloseInventoryUI` 时清除。其他容器的 `EVT_CHANGED`
 事件不会触发额外开销。
-
 ## 描述子面板
-
 通过 `InventoryConfig` 开启：
-
-```csharp
-new InventoryConfig("PlayerBackPack", "玩家背包")
-    .WithShowDescription(true)
-    .WithDescriptionPanelConfig(new DescriptionPanelConfig(240f, 220f)
-        .WithOffset(710f, 150f)             // 相对主面板左下角
-        .WithBackgroundColor(new Color(0.05f, 0.05f, 0.08f, 0.92f))
-        .WithTextPadding(14f, 14f)
-        .WithFontSize(14)
-        .WithTextColor(Color.white)
-        .WithEmptyPlaceholder("（点击物品查看描述）"));
-```
-
 行为：
 - 描述面板作为主 panel 的子节点，`Offset` 是相对主面板左下角的位置（与所有子组件一致）
 - 点击任意 slot：若有物品 → 显示 `Name\n\nDescription`；空槽 → 恢复 `EmptyPlaceholder`
 - 关闭即销毁，重新打开重建
-
 `ShowDescription = false`（默认 / Chest 配置）时不创建描述面板，slot 点击不产生额外副作用。
-
 ## 物品模板注册示例
-
-```csharp
-InventoryService.Instance.RegisterTemplate(
-    new InventoryItem("potion_heal")
-        .WithName("治疗药水")
-        .WithType(InventoryItemType.Consumable)
-        .WithIcon("Sprites/Items/PotionHeal")   // 通过 ResourceManager 解析的 sprite id
-        .WithValue(25)
-        .WithMaxStack(99));
-```
-
 ## 与 UIManager 的解耦关系
-
 InventoryManager 通过 Event 调 UIManager，**不直接 `using`** 业务方法：
-
 ```
 InventoryManager.OpenInventoryUI()
   → EventProcessor.TriggerEventMethod(UIManager.EVT_REGISTER_ENTITY, ...)
        → UIManager.RegisterUIEntity()
             → UIService.RegisterUIEntity()
 ```
-
 UIManager 的常量名引用是允许的（编译期依赖换 IDE 跳转，可接受）。如要完全解耦，未来可把 UI 相关常量移到 `Core/Event/CoreEvents.cs`。
-
 ## 注意事项
-
 - 物品模板 (`InventoryItem`) 必须 `[Serializable]` 才能持久化
 - `InventoryResult` 是 `readonly struct`（值类型），跨 Event 传输时已被装箱到 `List<object>`
 - `EVT_CHANGED` 内**不要**调可能再次修改背包的代码（避免无限循环）

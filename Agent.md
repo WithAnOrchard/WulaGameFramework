@@ -288,23 +288,20 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 
 ### `EVT_REGISTER_ENTITY` — 注册 UI 实体
 - **常量**: `UIManager.EVT_REGISTER_ENTITY` = `"RegisterUIEntity"`
+- **作用**: 注册一个 UI 实体到 UIManager，UIManager 创建 GameObject 并挂到 UI Canvas
 - **参数**: `[string daoId, UIComponent component]`
 - **返回**: `ResultCode.Ok(UIEntity)` / `ResultCode.Fail(msg)`
 - **副作用**: 创建 GameObject 挂到 UI Canvas
-- **示例**:
-  ```csharp
-  EventProcessor.Instance.TriggerEventMethod(
-      UIManager.EVT_REGISTER_ENTITY,
-      new List<object> { "panel_id", panelComponent });
-  ```
 ```
 
 **字段说明**：
 - **常量**：完整引用路径，包含字符串值（让 AI 知道两边等价）
+- **作用**：一句话讲清这个 Event 干什么、什么时候用——**schema 必填项**，消费方靠这一行判断要不要调
 - **参数**：按顺序列每个位置参数的类型和含义；可选参数标 `(可选)`
 - **返回**：成功/失败两种情况都要写
 - **副作用**：是否创建 GameObject、修改持久化数据、触发其他事件等
-- **示例**：可直接复制粘贴运行的代码片段
+
+> ⚠️ **禁止示例代码块**。模块 `Agent.md` 不写"如何调用"的代码片段——详细调用代码统一进 `Events.md` 维护（每个 Event 条目配 ≤ 8 行精简示例），避免 Agent.md 重复且膨胀。详见 §项目特定规则 → 规则 5。
 
 ### 全局 Event 索引
 
@@ -321,222 +318,6 @@ EventProcessor.Instance.TriggerEventMethod("GetUIEntity", data);
 4. 运行 `agent_lint.ps1 -Strict` 检查一致性
 
 ---
-
-## ❌ 已弃用的 Event 索引（仅作参考，请查 Events.md）
-
-| 常量 | 字符串值 | 定义模块 | 用途 |
-|---|---|---|---|
-| `Service<T>.EVT_INITIALIZED` | `OnServiceInitialized` | Core/Manager | Service 初始化完成（DataService 监听用于自动注册） |
-| `UIManager.EVT_REGISTER_ENTITY` | `RegisterUIEntity` | Core/UIManager | 注册 UI 实体（命令） |
-| `UIManager.EVT_GET_ENTITY` | `GetUIEntity` | Core/UIManager | 获取已注册的 UI 实体（查询） |
-| `UIManager.EVT_UNREGISTER_ENTITY` | `UnregisterUIEntity` | Core/UIManager | 注销并销毁 UI 实体（命令） |
-| `UIManager.EVT_HOT_RELOAD` | `HotReloadUIConfigs` | Core/UIManager | 热重载 UI 配置（命令） |
-| `InventoryManager.EVT_OPEN_UI` | `OpenInventoryUI` | InventoryManager | 打开背包 UI（命令） |
-| `InventoryManager.EVT_CLOSE_UI` | `CloseInventoryUI` | InventoryManager | 关闭背包 UI（命令） |
-| `InventoryManager.EVT_HOTBAR_USE` | `InventoryHotbarUse` | InventoryManager | 玩家按 1~9 使用快捷栏槽位**广播**（args: `[invId, slotIndex, item]`） |
-| `InventoryManager.EVT_REGISTER_ITEM` | `InventoryRegisterItem` | InventoryManager | 注册物品模板 |
-| `InventoryManager.EVT_REGISTER_PICKABLE_ITEM` | `InventoryRegisterPickableItem` | InventoryManager | 注册可拾取物定义 |
-| `InventoryManager.EVT_SPAWN_PICKABLE_ITEM` | `InventorySpawnPickableItem` | InventoryManager | 在场景中生成可拾取物 |
-| `InventoryService.EVT_CREATE` | `InventoryCreate` | InventoryManager | 创建容器 |
-| `InventoryService.EVT_DELETE` | `InventoryDelete` | InventoryManager | 删除容器 |
-| `InventoryService.EVT_ADD` | `InventoryAdd` | InventoryManager | 添加物品 |
-| `InventoryService.EVT_REMOVE` | `InventoryRemove` | InventoryManager | 移除物品 |
-| `InventoryService.EVT_MOVE` | `InventoryMove` | InventoryManager | 槽位移动 |
-| `InventoryService.EVT_QUERY` | `InventoryQuery` | InventoryManager | 查询容器 |
-| `InventoryService.EVT_CHANGED` | `InventoryChanged` | InventoryManager | 背包变化**广播**（用 `[EventListener]` 订阅） |
-| `ResourceManager.EVT_GET_PREFAB` | `GetPrefab` | Core/ResourceManager | 同步取 Prefab（仅缓存） |
-| `ResourceManager.EVT_GET_SPRITE` | `GetSprite` | Core/ResourceManager | 同步取 Sprite |
-| `ResourceManager.EVT_GET_AUDIO_CLIP` | `GetAudioClip` | Core/ResourceManager | 同步取 AudioClip |
-| `ResourceManager.EVT_GET_TEXTURE` | `GetTexture` | Core/ResourceManager | 同步取 Texture |
-| `ResourceManager.EVT_GET_MATERIAL` | `GetMaterial` | Core/ResourceManager | 同步取 Material（LightManager 用于加载天空盒） |
-| `ResourceManager.EVT_GET_RULE_TILE` | `GetRuleTile` | Core/ResourceManager | 同步取 RuleTile |
-| `ResourceManager.EVT_GET_EXTERNAL_SPRITE` | `GetExternalSprite` | Core/ResourceManager | 同步取外部图片缓存 |
-| `ResourceManager.EVT_LOAD_PREFAB_ASYNC` | `LoadPrefabAsync` | Core/ResourceManager | 异步加载 Prefab |
-| `ResourceManager.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/ResourceManager | 异步加载 Sprite |
-| `ResourceManager.EVT_LOAD_RULE_TILE_ASYNC` | `LoadRuleTileAsync` | Core/ResourceManager | 异步加载 RuleTile |
-| `ResourceManager.EVT_LOAD_EXTERNAL_SPRITE_ASYNC` | `LoadExternalSpriteAsync` | Core/ResourceManager | 异步加载外部图片 |
-| `ResourceManager.EVT_ADD_PRELOAD_CONFIG` | `AddPreloadConfig` | Core/ResourceManager | 添加预加载项（持久化） |
-| `ResourceManager.EVT_UNLOAD_RESOURCE` | `UnloadResource` | Core/ResourceManager | 卸载单个（与 Service 同名） |
-| `ResourceManager.EVT_UNLOAD_ALL_RESOURCES` | `UnloadAllResources` | Core/ResourceManager | 全量卸载（与 Service 同名） |
-| `ResourceService.EVT_DATA_LOADED` | `OnResourceDataLoaded` | Core/ResourceManager | 启动后跳预加载（内部） |
-| `ResourceService.EVT_GET_RESOURCE` | `GetResource` | Core/ResourceManager | 同步获取底层（内部） |
-| `ResourceService.EVT_LOAD_RESOURCE_ASYNC` | `LoadResourceAsync` | Core/ResourceManager | 异步加载底层（内部） |
-| `ResourceService.EVT_LOAD_EXTERNAL_IMAGE_ASYNC` | `LoadExternalImageAsync` | Core/ResourceManager | 外部图片加载底层（内部） |
-| `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | Core/ResourceManager | 写预加载配置（内部） |
-| `ResourceService.EVT_EXTERNAL_IMAGE_LOADED` | `OnExternalImageLoaded` | Core/ResourceManager | 外部图片加载成功**广播** |
-| `ResourceService.EVT_EXTERNAL_IMAGE_LOAD_FAILED` | `OnExternalImageLoadFailed` | Core/ResourceManager | 外部图片加载失败**广播** |
-| `ResourceManager.EVT_GET_ANIMATION_CLIP` | `GetAnimationClip` | Core/ResourceManager | 同步取 AnimationClip（按 clip 名，含 FBX 子资产） |
-| `ResourceManager.EVT_GET_MODEL_CLIPS` | `GetModelClips` | Core/ResourceManager | 取 FBX/Model 内全部 AnimationClip（别名 → `ResourceService.EVT_GET_MODEL_CLIPS`） |
-| `ResourceService.EVT_GET_ALL_MODEL_PATHS` | `GetAllModelPaths` | Core/ResourceManager | 枚举已索引的所有 FBX/Model 路径 |
-| `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/ResourceManager | 资源全部预加载/索引完成后**广播** |
-| `ResourceService.EVT_REGISTER_SPRITE_SHEET` | `RegisterSpriteSheet` | Core/ResourceManager | 批量注册多精灵图集子图入缓存（命令），参数 `[string sheetResourcePath]` → `Ok(addedCount)` |
-| `ResourceService.EVT_GET_REFCOUNT_STATS` | `GetRefCountStats` | Core/ResourceManager | 获取资源引用计数统计（Phase 1 优化），参数 `[]` → `Ok(Dictionary)` |
-| `ResourceService.EVT_CLEANUP_UNUSED_ASSETS` | `CleanupUnusedAssets` | Core/ResourceManager | 清理超时未使用的资源（Phase 1 优化），参数 `[]` → `Ok()` |
-| `CharacterService.EVT_FRAME_EVENT` | `OnCharacterFrameEvent` | Core/CharacterManager | 角色动画某帧触发的**广播**，参数 `[GameObject owner, string eventName, string actionName, int frameIndex]`；详见 `CharacterManager/Agent.md` |
-| `CharacterManager.EVT_CREATE_CHARACTER` | `CreateCharacter` | Core/CharacterManager | 创建 Character；data: `[configId, instanceId, parent?(Transform), worldPosition?(Vector3)]` → `Ok(Transform root)` |
-| `CharacterManager.EVT_DESTROY_CHARACTER` | `DestroyCharacter` | Core/CharacterManager | 销毁 Character；data: `[instanceId]` |
-| `CharacterManager.EVT_PLAY_ACTION` | `PlayCharacterAction` | Core/CharacterManager | 播放动作；data: `[instanceId, actionName, partId?]` |
-| `CharacterManager.EVT_STOP_ACTION` | `StopCharacterAction` | Core/CharacterManager | 停止动作；data: `[instanceId, partId?]` |
-| `CharacterManager.EVT_SET_CHARACTER_SCALE` | `SetCharacterScale` | Core/CharacterManager | 设置根节点 localScale；data: `[instanceId, Vector3]` |
-| `CharacterManager.EVT_SET_CHARACTER_POSITION` | `SetCharacterPosition` | Core/CharacterManager | 设置世界坐标；data: `[instanceId, Vector3]` |
-| `CharacterManager.EVT_MOVE_CHARACTER` | `MoveCharacter` | Core/CharacterManager | 在当前位置上平移；data: `[instanceId, Vector3 delta]` |
-| `CharacterManager.EVT_PLAY_LOCOMOTION` | `PlayCharacterLocomotion` | Core/CharacterManager | 分发运动状态（idle/walk/airborne）；data: `[instanceId, moving(bool), grounded(bool, 可选)]` |
-| `CharacterManager.EVT_TRIGGER_ATTACK` | `TriggerCharacterAttack` | Core/CharacterManager | 触发攻击锁定动画；data: `[instanceId, duration(float)]` |
-| `CharacterManager.EVT_SET_FACING` | `SetCharacterFacing` | Core/CharacterManager | 设置面朝方向（翻转 localScale.x）；data: `[instanceId, facingRight(bool)]` |
-| `EntityManager.EVT_CREATE_ENTITY` | `CreateEntity` | Core/EntityManager | 创建 Entity；data: `[configId, instanceId, parent?, worldPosition?]` → `Ok(Transform CharacterRoot)`（E2 后协议解耦不返 Entity） |
-| `EntityManager.EVT_DESTROY_ENTITY` | `DestroyEntity` | Core/EntityManager | 销毁 Entity；data: `[instanceId]` |
-| `EntityManager.EVT_REGISTER_SCENE_ENTITY` | `RegisterSceneEntity` | Core/EntityManager | 注册已有场景 GameObject 为 Entity；data: `[instanceId, GameObject host, EntityRuntimeDefinition definition]` |
-| `EntityManager.EVT_DAMAGE_ENTITY` | `DamageEntity` | Core/EntityManager | 对运行时 Entity 造成伤害；data: `[instanceId, damage, damageType?]` |
-| `EntityManager.EVT_REGISTER_ENTITY_CONFIG` | `RegisterEntityConfig` | Core/EntityManager | 注册 Entity 配置（模板）；data: `[EntityConfig]` → `Ok(configId)` |
-| `EntityManager.EVT_GET_ENTITY` | `GetEntity` | Core/EntityManager | 查询 Entity 实例；data: `[instanceId]` → `Ok(Entity)` |
-| `EntityManager.EVT_APPLY_COLLIDER` | `ApplyCollider` | Core/EntityManager | 应用 Collider 到 GameObject；data: `[GameObject, EntityColliderConfig]` |
-| `EntityManager.EVT_ATTACH_ENTITY_HANDLE` | `AttachEntityHandle` | Core/EntityManager | 挂载 EntityHandle 桥接；data: `[GameObject, Entity]` |
-| `SkillManager.EVT_REGISTER_SKILL` | `RegisterSkill` | Core/SkillManager | 注册技能定义；data: `[SkillDefinition]` |
-| `SkillManager.EVT_LEARN_SKILL` | `LearnSkill` | Core/SkillManager | 实体学习技能；data: `[entityId, skillId]` |
-| `SkillManager.EVT_CAST_SKILL` | `CastSkill` | Core/SkillManager | 释放技能；data: `[Entity caster, skillId, target?, Vector3 dir?, Vector3 pos?]` → `Ok`/`Fail` |
-| `BuildingManager.EVT_REGISTER_BUILDING_CONFIG` | `RegisterBuildingConfig` | Core/BuildingManager | 注册建筑模板（命令），参数 `[BuildingConfig]` → `Ok(configId)` |
-| `BuildingManager.EVT_PLACE_BUILDING` | `PlaceBuilding` | Core/BuildingManager | 放置建筑（命令），参数 `[configId, instanceId, Vector3 position, bool startCompleted?]` → `Ok(Transform)` |
-| `BuildingManager.EVT_SUPPLY_BUILDING` | `SupplyBuilding` | Core/BuildingManager | 送材料（命令），参数 `[instanceId, itemId, int amount]` → `Ok(int remaining)` |
-| `BuildingManager.EVT_DESTROY_BUILDING` | `DestroyBuilding` | Core/BuildingManager | 销毁建筑（命令），参数 `[instanceId]` → `Ok(instanceId)` |
-| `BuildingService.EVT_COMPLETED` | `OnBuildingCompleted` | Core/BuildingManager | 建造完成**广播**，参数 `[instanceId, configId]` |
-| `BuildingService.EVT_DESTROYED` | `OnBuildingDestroyed` | Core/BuildingManager | 建筑销毁**广播**，参数 `[instanceId]` |
-| `BuildingService.EVT_SUPPLY_PROGRESS` | `OnBuildingSupplyProgress` | Core/BuildingManager | 补给进度**广播**，参数 `[instanceId, itemId, remaining]` |
-| `UIManager.EVT_GET_CANVAS_TRANSFORM` | `GetUICanvasTransform` | Core/UIManager | 获取 Canvas 根 Transform（避免 `using UIManager`） |
-| `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/UIManager | 按 daoId 查 UI GameObject（不暴露 UIEntity 类型） |
-| `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/UIManager | UIComponent 属性变更广播（`[daoId, propName, value]`，UIService 内转发给 UIEntity） |
-| `UIManager.EVT_ADD_WINDOW_BEHAVIOR` | `AddUIWindowBehavior` | Core/UIManager | 向已注册面板附加窗口行为（拖拽/缩放/滚轮/双击复位）；data: `[daoId]` → `Ok(UIWindowBehavior)` |
-| `DanmuService.EVT_CONNECTED` | `OnDanmuConnected` | DanmuManager | B 站长连接握手成功**广播**，参数 `[long roomId]` |
-| `DanmuService.EVT_DISCONNECTED` | `OnDanmuDisconnected` | DanmuManager | B 站长连接断开**广播**，参数 `[Exception errorOrNull]` |
-| `DanmuService.EVT_DANMAKU` | `OnDanmuComment` | DanmuManager | 普通弹幕评论**广播**，参数 `[string userName, string commentText, long userId]` |
-| `DanmuService.EVT_GIFT` | `OnDanmuGift` | DanmuManager | 礼物**广播**，参数 `[string userName, string giftName, int giftCount, long userId]` |
-| `DanmuService.EVT_SC` | `OnDanmuSuperChat` | DanmuManager | 超级留言 SuperChat **广播**，参数 `[string userName, string text, int priceYuan, long userId]` |
-| `DanmuService.EVT_RAW` | `OnDanmuRaw` | DanmuManager | 全类型原始 `DanmakuModel`**广播**（含 SuperChat / 上船 / 进场等高级类型） |
-| `AudioManager.EVT_PLAY_BGM` | `PlayBGM` | Core/AudioManager | 播放背景音乐（命令），参数 `[string path, bool fade?]` |
-| `AudioManager.EVT_STOP_BGM` | `StopBGM` | Core/AudioManager | 停止背景音乐（命令），参数 `[bool fade?]` |
-| `AudioManager.EVT_PAUSE_BGM` | `PauseBGM` | Core/AudioManager | 暂停背景音乐（命令） |
-| `AudioManager.EVT_RESUME_BGM` | `ResumeBGM` | Core/AudioManager | 继续背景音乐（命令） |
-| `AudioManager.EVT_PLAY_SFX` | `PlaySFX` | Core/AudioManager | 播放自定义音效（命令），参数 `[string path, float volumeScale?]` |
-| `AudioManager.EVT_SET_MASTER_VOLUME` | `SetMasterVolume` | Core/AudioManager | 设置主音量（命令），参数 `[float volume]` |
-| `AudioManager.EVT_SET_BGM_VOLUME` | `SetBGMVolume` | Core/AudioManager | 设置 BGM 音量（命令），参数 `[float volume]` |
-| `AudioManager.EVT_SET_SFX_VOLUME` | `SetSFXVolume` | Core/AudioManager | 设置 SFX 音量（命令），参数 `[float volume]` |
-| `AudioManager.EVT_PLAY_DAMAGE_SFX` | `PlayDamageSFX` | Core/AudioManager | 播放受伤音效（便捷命令） |
-| `AudioManager.EVT_PLAY_ATTACK_SFX` | `PlayAttackSFX` | Core/AudioManager | 播放攻击音效（便捷命令） |
-| `AudioManager.EVT_PLAY_UI_SFX` | `PlayUISFX` | Core/AudioManager | 播放 UI 操作音效（便捷命令） |
-| `AudioManager.EVT_PLAY_ITEM_USE_SFX` | `PlayItemUseSFX` | Core/AudioManager | 播放物品使用音效（便捷命令） |
-| `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX` | `PlayPositionalLoopSFX` | Core/AudioManager | 在指定 Transform 挂 3D 循环音源（命令），参数 `[clipPath, Transform anchor, float minDist?=1.5, float maxDist?=12, float volumeScale?=1]` → `Ok(string handleId)`；位置感知音 + Linear rolloff + 自动同步 SFXVolume |
-| `AudioManager.EVT_STOP_POSITIONAL_SFX` | `StopPositionalSFX` | Core/AudioManager | 停止并销毁由 `EVT_PLAY_POSITIONAL_LOOP_SFX` 创建的音源（命令），参数 `[string handleId]` |
-| `CameraManager.EVT_GET_MAIN_CAMERA` | `GetMainCamera` | Core/CameraManager | 取主相机引用（查询），返回 `Ok(Camera)` |
-| `CameraManager.EVT_FOLLOW_TARGET` | `FollowCameraTarget` | Core/CameraManager | 设置跟随目标（命令），参数 `[Transform target, Vector3 offset?]` |
-| `CameraManager.EVT_STOP_FOLLOW` | `StopCameraFollow` | Core/CameraManager | 停止跟随（命令） |
-| `CameraManager.EVT_SHAKE` | `ShakeCamera` | Core/CameraManager | 触发震屏（命令），参数 `[float amplitude, float duration, int frequency?]` |
-| `CameraManager.EVT_SET_ZOOM` | `SetCameraZoom` | Core/CameraManager | 设置缩放（命令），参数 `[float value, float duration?]` |
-| `CameraManager.EVT_WORLD_TO_SCREEN` | `WorldToScreenPoint` | Core/CameraManager | 世界→屏幕坐标（查询），参数 `[Vector3]`，返回 `Ok(Vector2)` |
-| `CameraManager.EVT_SCREEN_TO_WORLD` | `ScreenToWorldPoint` | Core/CameraManager | 屏幕→世界坐标（查询），参数 `[Vector2 screenPos, float zDistance?]`，返回 `Ok(Vector3)` |
-| `CameraManager.EVT_SET_POSITION` | `SetCameraPosition` | Core/CameraManager | 瞬间设置相机位置（命令），参数 `[Vector3 worldPos]` |
-| `CameraManager.EVT_LOOK_AT` | `LookCameraAt` | Core/CameraManager | 瞬间相机朝向某点（命令），参数 `[Vector3 worldPoint]` |
-| `InputManager.EVT_BIND_ACTION` | `BindInputAction` | Core/InputManager | 覆盖 Action 绑定（命令），参数 `[string actionName, params KeyCode[] keys]` |
-| `InputManager.EVT_UNBIND_ACTION` | `UnbindInputAction` | Core/InputManager | 解绑 Action（命令），参数 `[string actionName]` |
-| `InputManager.EVT_IS_PRESSED` | `IsInputPressed` | Core/InputManager | Action 是否按住（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
-| `InputManager.EVT_IS_DOWN` | `IsInputDown` | Core/InputManager | Action 本帧是否按下（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
-| `InputManager.EVT_IS_UP` | `IsInputUp` | Core/InputManager | Action 本帧是否抬起（查询），参数 `[string actionName]`，返回 `Ok(bool)` |
-| `InputManager.EVT_GET_AXIS` | `GetInputAxis` | Core/InputManager | 取轴向值（查询），参数 `[axisName]` 或 `[negativeAction, positiveAction]`，返回 `Ok(float)` |
-| `InputManager.EVT_GET_MOVE_AXIS` | `GetInputMoveAxis` | Core/InputManager | 取 2D 移动向量（查询），参数 `[]`，返回 `Ok(Vector2)` |
-| `InputManager.EVT_GET_MOUSE_POS` | `GetMouseScreenPosition` | Core/InputManager | 鼠标屏幕坐标（查询），参数 `[]`，返回 `Ok(Vector2)` |
-| `InputManager.EVT_GET_MOUSE_SCROLL` | `GetMouseScroll` | Core/InputManager | 鼠标滚轮 delta（查询），参数 `[]`，返回 `Ok(float)` |
-| `SpriteService.EVT_GET_SPRITE_ASYNC` | `GetSpriteAsync` | Core/ResourceManager | 异步获取 Sprite（查询），参数 `[string path]`，返回 `Ok(Sprite)` / `Fail("加载中")` |
-| `SpriteService.EVT_LOAD_SPRITE_ASYNC` | `LoadSpriteAsync` | Core/ResourceManager | 异步加载 Sprite（命令），参数 `[string path]`，返回 `Ok(Sprite)` / `Fail("加载中")` |
-| `SpriteService.EVT_REGISTER_SPRITE_TO_CACHE` | `RegisterSpriteToCache` | Core/ResourceManager | 注册 Sprite 到缓存（命令），参数 `[string spriteId, Sprite sprite]`，返回 `Ok()` / `Fail(msg)` |
-| `LightManager.EVT_APPLY_PRESET` | `ApplyLightPreset` | Core/LightManager | 应用灯光预设（命令），参数 `[string presetId, float blendDuration?]` |
-| `LightManager.EVT_CAPTURE_PRESET` | `CaptureLightPreset` | Core/LightManager | 捕获当前灯光为预设（命令），参数 `[string presetId]` |
-| `LightManager.EVT_SET_SUN_INTENSITY` | `SetSunIntensity` | Core/LightManager | 设置太阳强度（命令），参数 `[float intensity]` |
-| `LightManager.EVT_SET_AMBIENT_LIGHT` | `SetAmbientLight` | Core/LightManager | 设置环境光（命令），参数 `[Color color]` |
-| `LightManager.EVT_SET_FOG` | `SetFog` | Core/LightManager | 设置雾（命令），参数 `[bool enabled, Color color?, float density?]` |
-| `EffectsManager.EVT_REGISTER_VFX` | `RegisterVFX` | Core/EffectsManager | 注册特效定义（命令），参数 `[string vfxId, string prefabPath]` |
-| `EffectsManager.EVT_PLAY_VFX` | `PlayVFX` | Core/EffectsManager | 播放特效（命令），参数 `[string vfxId, Vector3 position, Transform parent?, float duration?]` → `Ok(string instanceId)` |
-| `EffectsManager.EVT_STOP_VFX` | `StopVFX` | Core/EffectsManager | 停止特效（命令），参数 `[string instanceId]` |
-| `EffectsManager.EVT_CLEAR_ALL_VFX` | `ClearAllVFX` | Core/EffectsManager | 清理所有特效（命令），参数 `[]` |
-| `EffectsManager.EVT_SCREEN_FLASH` | `ScreenFlash` | Core/EffectsManager | 屏幕闪光（命令），参数 `[Color color, float duration]` |
-| `CharacterManager.EVT_SET_DIRECTION` | `SetCharacterDirection` | Core/CharacterManager | 设置朝向（sheet 模式选行）；data: `[instanceId, int direction]`（-1/0/+1） |
-| `CharacterManager.EVT_GET_PART_SPRITE_ID` | `GetCharacterPartSpriteId` | Core/CharacterManager | 查询部件当前帧的 spriteId；data: `[instanceId, partId, actionName?, frameIndex?]` → `Ok(string spriteId)` |
-| `InputManager.EVT_INPUT_DOWN` | `OnInputDown` | Core/InputManager | Action 本帧按下**广播**，参数 `[string actionName]` |
-| `InputManager.EVT_INPUT_UP` | `OnInputUp` | Core/InputManager | Action 本帧抬起**广播**，参数 `[string actionName]` |
-| `EffectsManager.EVT_UNREGISTER_VFX` | `UnregisterVFX` | Core/EffectsManager | 移除 VFX 注册（命令），参数 `[string vfxId]` |
-| `EffectsManager.EVT_STOP_ALL_VFX` | `StopAllVFX` | Core/EffectsManager | 停止所有 VFX（命令） |
-| `LightManager.EVT_SET_SUN_COLOR` | `SetSunColor` | Core/LightManager | 设置主光颜色（命令），参数 `[Color]` |
-| `LightManager.EVT_SET_SUN_ROTATION` | `SetSunRotation` | Core/LightManager | 设置主光朝向（命令），参数 `[Vector3 euler]` |
-| `LightManager.EVT_SET_SKYBOX` | `SetSkybox` | Core/LightManager | 切换天空盒（命令），参数 `[string resourcesPath]`（走 ResourceManager `GetMaterial`） |
-| `LightManager.EVT_SET_BLOOM` | `SetBloom` | Core/LightManager | 设置 URP Bloom（命令），参数 `[float intensity, float? threshold]` |
-| `LightManager.EVT_SET_VIGNETTE` | `SetVignette` | Core/LightManager | 设置 URP Vignette（命令），参数 `[float intensity, Color? color]` |
-| `LightManager.EVT_SET_CHROMATIC_ABERRATION` | `SetChromaticAberration` | Core/LightManager | 设置 URP 色差（命令），参数 `[float strength]` |
-| `LightManager.EVT_SET_COLOR_ADJUSTMENTS` | `SetColorAdjustments` | Core/LightManager | 设置 URP 调色（命令），参数 `[float postExposure, float? saturation, float? contrast]` |
-| `LightManager.EVT_REGISTER_PRESET` | `RegisterLightPreset` | Core/LightManager | 注册灯光预设（命令），参数 `[LightPreset]` |
-| `LightManager.EVT_REGISTER_LIGHT` | `RegisterLight` | Core/LightManager | 注册 3D 动态光（命令），参数 `[string lightId, Light]` |
-| `LightManager.EVT_SET_LIGHT_INTENSITY` | `SetLightIntensity` | Core/LightManager | 设置 3D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
-| `LightManager.EVT_REGISTER_LIGHT_2D` | `RegisterLight2D` | Core/LightManager | 注册 URP 2D Light2D（命令），参数 `[string lightId, Light2D]` |
-| `LightManager.EVT_SET_LIGHT_2D_INTENSITY` | `SetLight2DIntensity` | Core/LightManager | 设置 2D 光强度（命令），参数 `[string lightId, float intensity, float? duration]` |
-| `LightManager.EVT_SET_LIGHT_2D_COLOR` | `SetLight2DColor` | Core/LightManager | 设置 2D 光颜色（命令），参数 `[string lightId, Color]` |
-| `DialogueManager.EVT_OPEN_UI` | `OpenDialogueUI` | Core/DialogueManager | 打开对话 UI 并启动会话（命令），参数 `[string dialogueId, string configId?]` |
-| `DialogueManager.EVT_CLOSE_UI` | `CloseDialogueUI` | Core/DialogueManager | 结束对话并隐藏 UI（命令），无参 |
-| `DialogueService.EVT_REGISTER_DIALOGUE` | `RegisterDialogue` | Core/DialogueManager | 注册 `Dialogue`（命令），参数 `[Dialogue]` |
-| `DialogueService.EVT_REGISTER_CONFIG` | `RegisterDialogueConfig` | Core/DialogueManager | 注册 `DialogueConfig`（命令），参数 `[DialogueConfig]` |
-| `DialogueService.EVT_ADVANCE` | `AdvanceDialogue` | Core/DialogueManager | 推进到下一行（命令），无参 |
-| `DialogueService.EVT_SELECT_OPTION` | `SelectDialogueOption` | Core/DialogueManager | 选择当前行第 N 个选项（命令），参数 `[int index]` |
-| `DialogueService.EVT_END` | `EndDialogue` | Core/DialogueManager | 强制结束当前会话（命令），无参 |
-| `DialogueService.EVT_QUERY_CURRENT` | `QueryDialogueCurrent` | Core/DialogueManager | 查询当前会话（查询），返回 `[OK, dialogueId, lineId, configId]` |
-| `DialogueService.EVT_STARTED` | `OnDialogueStarted` | Core/DialogueManager | 对话启动**广播**，参数 `[string dialogueId, string configId]` |
-| `DialogueService.EVT_LINE_CHANGED` | `OnDialogueLineChanged` | Core/DialogueManager | 当前行切换**广播**，参数 `[string dialogueId, string lineId]` |
-| `DialogueService.EVT_ENDED` | `OnDialogueEnded` | Core/DialogueManager | 对话结束**广播**，参数 `[string dialogueId]` |
-| `DialogueManager.EVT_SET_PORTRAIT_SPRITE` | `SetDialoguePortraitSprite` | Core/DialogueManager | 直接贴 Sprite 头像层（命令），参数 `[Sprite single]` 或 `[List<Sprite> layers]` |
-| `CharacterManager.EVT_SET_DIRECTION` | `SetCharacterDirection` | Core/CharacterManager | 设置朝向 sheet 选行（命令），参数 `[string instanceId, int direction]` |
-| `CharacterManager.EVT_GET_PART_SPRITE_ID` | `GetCharacterPartSpriteId` | Core/CharacterManager | 查询某个 Part 当前帧的 spriteId（查询），参数 `[string instanceId, string partId, string actionName?, int frameIndex?]` |
-| `FarmManager.EVT_REGISTER_FARM_CONFIG` | `RegisterFarmConfig` | Core/FarmManager | 注册农场模板（命令），参数 `[FarmConfig]` |
-| `FarmManager.EVT_REGISTER_CROP_CONFIG` | `RegisterCropConfig` | Core/FarmManager | 注册作物模板（命令），参数 `[CropConfig]` |
-| `FarmManager.EVT_SPAWN_FARM` | `SpawnFarm` | Core/FarmManager | 实例化一座农场（命令），参数 `[string configId, Vector3 worldPosition, string instanceId?]` |
-| `FarmManager.EVT_PLANT_CROP` | `PlantCrop` | Core/FarmManager | 种植作物（命令），参数 `[instanceId, row, col, cropConfigId, inventoryId?]` |
-| `FarmManager.EVT_WATER_CROP` | `WaterCrop` | Core/FarmManager | 浇水（命令），参数 `[instanceId, row, col]` |
-| `FarmManager.EVT_FERTILIZE` | `FertilizeCrop` | Core/FarmManager | 施肥（命令），参数 `[instanceId, row, col, boostSeconds?]` |
-| `FarmManager.EVT_REMOVE_PEST` | `RemovePest` | Core/FarmManager | 除虫（命令），参数 `[instanceId, row, col]` |
-| `FarmManager.EVT_HARVEST_CROP` | `HarvestCrop` | Core/FarmManager | 收割（命令），参数 `[instanceId, row, col, inventoryId?]` |
-| `FarmManager.EVT_QUERY_SLOT` | `QueryFarmSlot` | Core/FarmManager | 查询槽位（查询），参数 `[instanceId, row, col]` |
-| `FarmManager.EVT_CLEAR_SLOT` | `ClearFarmSlot` | Core/FarmManager | 清除槽位无产出（命令），参数 `[instanceId, row, col]` |
-| `FarmService.EVT_ON_FARM_SPAWNED` | `OnFarmSpawned` | Core/FarmManager | 农场实例化成功**广播**，参数 `[string instanceId, FarmInstance instance]` |
-| `FarmService.EVT_ON_CROP_PLANTED` | `OnCropPlanted` | Core/FarmManager | 种植完成**广播**，参数 `[instanceId, FarmSlot]` |
-| `FarmService.EVT_ON_CROP_WATERED` | `OnCropWatered` | Core/FarmManager | 浇水完成**广播**，参数 `[instanceId, FarmSlot]` |
-| `FarmService.EVT_ON_CROP_FERTILIZED` | `OnCropFertilized` | Core/FarmManager | 施肥完成**广播**，参数 `[instanceId, FarmSlot]` |
-| `FarmService.EVT_ON_PEST_SPAWNED` | `OnPestSpawned` | Core/FarmManager | 害虫出现**广播**，参数 `[instanceId, FarmSlot]` |
-| `FarmService.EVT_ON_PEST_REMOVED` | `OnPestRemoved` | Core/FarmManager | 害虫清除**广播**，参数 `[instanceId, FarmSlot]` |
-| `FarmService.EVT_ON_CROP_STAGE_CHANGED` | `OnCropStageChanged` | Core/FarmManager | 生长阶段变化**广播**，参数 `[instanceId, FarmSlot, oldStage, newStage]` |
-| `FarmService.EVT_ON_CROP_HARVESTED` | `OnCropHarvested` | Core/FarmManager | 收割完成**广播**，参数 `[instanceId, FarmSlot, cropConfigId, amount]` |
-| `FarmService.EVT_ON_CROP_WILTED` | `OnCropWilted` | Core/FarmManager | 作物枯萎**广播**，参数 `[instanceId, FarmSlot]` |
-| `ShopManager.EVT_REGISTER_SHOP` | `ShopRegister` | Core/ShopManager | 注册商店配置（命令），参数 `[ShopConfig]` |
-| `ShopManager.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/ShopManager | 注册货币（命令），参数 `[CurrencyEntry]` |
-| `ShopManager.EVT_BUY_ITEM` | `ShopBuy` | Core/ShopManager | 购买物品（命令），参数 `[shopId, itemId, amount?, playerId?]` |
-| `ShopManager.EVT_INIT_WALLET` | `ShopInitWallet` | Core/ShopManager | 初始化钱包（命令），参数 `[playerId, currencyId, amount]` |
-| `ShopManager.EVT_GET_WALLET` | `ShopGetWallet` | Core/ShopManager | 查询余额（查询），参数 `[playerId, currencyId]` → `Ok(amount)` |
-| `ShopService.EVT_REGISTER_SHOP` | `ShopRegister` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `ShopService.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `ShopService.EVT_BUY_ITEM` | `ShopBuy` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `ShopService.EVT_INIT_WALLET` | `ShopInitWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `ShopService.EVT_GET_WALLET` | `ShopGetWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `ShopManager.EVT_ADD_WALLET` | `ShopAddWallet` | Core/ShopManager | 充値钱包（命令），参数 `[playerId, currencyId, amount]` |
-| `ShopService.EVT_ADD_WALLET` | `ShopAddWallet` | Core/ShopManager | ↑ ShopManager 别名（同字符串） |
-| `NetworkManager.EVT_HOST_START` | `NetHostStart` | Manager/NetworkManager | 启动主机 Server+本地 Client（命令），参数 `[ushort? port]` |
-| `NetworkManager.EVT_SERVER_START` | `NetServerStart` | Manager/NetworkManager | 启动纯专用服务器（命令），参数 `[ushort? port]` |
-| `NetworkManager.EVT_CLIENT_CONNECT` | `NetClientConnect` | Manager/NetworkManager | 连接到指定服务器（命令），参数 `[string address, ushort? port]` |
-| `NetworkManager.EVT_DISCONNECT` | `NetDisconnect` | Manager/NetworkManager | 停止当前角色（命令），无参 |
-| `NetworkManager.EVT_SEND_TO_SERVER` | `NetSendToServer` | Manager/NetworkManager | Client→Server 发消息（命令），参数 `[string topic, object payload]` |
-| `NetworkManager.EVT_SEND_TO_ALL` | `NetSendToAll` | Manager/NetworkManager | Server→所有 Client 广播（命令），参数 `[string topic, object payload]` |
-| `NetworkManager.EVT_SEND_TO_PEER` | `NetSendToPeer` | Manager/NetworkManager | Server→指定 Client 单播（命令），参数 `[int connectionId, string topic, object payload]` |
-| `NetworkManager.EVT_BROADCAST` | `NetBroadcast` | Manager/NetworkManager | 对等广播：任意节点调用全员收到（命令），参数 `[string topic, object payload]` |
-| `NetworkService.EVT_NET_STATUS_CHANGED` | `OnNetworkStatusChanged` | Manager/NetworkManager | 网络状态变化**广播**，参数 `[NetworkRole role, bool connected]` |
-| `NetworkService.EVT_PEER_JOINED` | `OnNetworkPeerJoined` | Manager/NetworkManager | 远端连入**广播**（仅 Server），参数 `[int connectionId]` |
-| `NetworkService.EVT_PEER_LEFT` | `OnNetworkPeerLeft` | Manager/NetworkManager | 远端离开**广播**（仅 Server），参数 `[int connectionId]` |
-| `NetworkService.EVT_NET_MESSAGE` | `OnNetworkMessage` | Manager/NetworkManager | 收到网络消息**广播**，参数 `[int senderConnectionId, string topic, string payloadJson]` |
-| `NetworkService.EVT_NET_ERROR` | `OnNetworkError` | Manager/NetworkManager | 网络错误**广播**，参数 `[string source, string message]` |
-| `LiveStatusService.EVT_LIVE_STARTED` | `OnLiveStarted` | Manager/LiveStatusManager | 直播开播**广播**（边沿），参数 `[long roomId, string title, LiveRoomInfo info]` |
-| `LiveStatusService.EVT_LIVE_ENDED` | `OnLiveEnded` | Manager/LiveStatusManager | 直播下播**广播**（边沿），参数 `[long roomId, string title, LiveRoomInfo info]` |
-| `LiveStatusService.EVT_STATUS_POLLED` | `OnLiveStatusPolled` | Manager/LiveStatusManager | 每次轮询都触发**广播**，参数 `[long roomId, int liveStatus, string title, LiveRoomInfo info]` |
-
 > ℹ️ **几乎无 Event 的模块**：`MapManager` 当前以纯 C# API 为主（`MapService.Instance.XXX`），目前不暴露 `EVT_*`。`CharacterManager` 已有完整 Event API（10 个 `EVT_*` 常量），跨模块调用统一经 `CharacterViewBridge` 收口。若将来新增跨模块 Event，必须同步更新本表并运行 `agent_lint.ps1 -Strict`。
 
 > ⚠️ **façade vs Service 同名**：`ResourceManager.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` 与 `ResourceService.EVT_UNLOAD_RESOURCE` / `EVT_UNLOAD_ALL_RESOURCES` **字符串相同**，仅后者实际生效（字典覆盖）。调用方只需用 façade 常量。
@@ -597,7 +378,51 @@ mgr.SetSomeField(...);
 
 业务代码不需要 try/catch；遇到此警告说明业务侧有 Manager / Service 没在场景中挂载，按需 AddComponent 即可。
 
-### 4. 占位（后续追加）
+### 4. 代码改动后必须跑编译工具并消除所有 Error
+
+**强制规则**：任何代码（`.cs`）改动完成后，**必须**运行 `tools/` 下的编译校验工具确认无 error，**未消除所有 error 之前不算完成**。
+
+```powershell
+# Roslyn 命令行编译校验（首选，无需开 Unity）
+.\tools\compile_check.ps1
+
+# 或：聚焦检查编译 error
+.\tools\check_compile_errors.ps1
+```
+
+**要求**：
+1. 改动后立刻跑一次（即使只改了一行）。
+2. 脚本输出的 **每一条 error** 都必须修掉——不允许"残留 error、稍后再看"。
+3. 警告（warning）按 §4.1 等其他既定规则的要求处理（lint 警告不能留、`agent_lint.ps1 -Strict` 必须通过）。
+4. 若报错来自未保存的文件、IDE 缓存或脚本本身 bug，需在提交前用 IDE 编译再确认一次。
+5. 工具脚本新增 / 重命名时同步更新本节。
+
+**为什么**：
+- 业务模块强耦合（见 §2 通信路由），一个未声明的 `EVT_XXX` 或缺 using 会导致下游大面积编译失败，且 Editor 内实时编译有延迟、容易漏。
+- `compile_check.ps1` / `check_compile_errors.ps1` 走 Roslyn 离线校验，能在不开 Unity 的情况下秒级发现 error，是 CI / pre-commit 兜底前的最快一道闸。
+
+### 5. 模块 Agent.md 不得详述代码用法，由 Events.md 统一承载
+
+**架构前提**：本框架跨模块调用统一走 Event（§2 通信路由）。消费方拿到的就是"事件名 + 参数 + 作用"，**不需要**知道发布方内部实现细节。
+
+**强制规则**：
+1. **模块 `Agent.md` 不写"如何调用"的代码示例**——`## Event API` 章节只保留五项：**常量、作用、参数、返回、副作用**。
+2. **"怎么用"统一进 `Events.md`**：每个 Event 在 `Events.md` 的分组条目里给出**精简**调用片段（≤ 8 行）和完整副作用说明；这是跨模块查询的唯一入口。
+3. **模块 `Agent.md` 严禁出现**：
+   - `EventProcessor.Instance.TriggerEventMethod(...)` 之类调用代码
+   - `UIPanelComponent` / `UIButtonComponent` 等 DAO 链式 `.SetPosition` 示例
+   - 业务方对接流程图 / 状态机 / 序列图
+   - 重复 `Events.md` 已写过的参数表
+4. **允许保留**：模块职责一句话、Manager 优先级、依赖关系、与其他模块的协作关系（指向 `Events.md` 的具体事件名即可）、运行时序注意事项。
+
+**为什么**：
+- 模块 `Agent.md` 数量多（20+），每个 1KB 示例 × 20 = 20KB 上下文，AI 读完整框架时被无用代码淹没，**严重挤占有效决策空间**。
+- 详细代码示例的"高保真"诱惑很强，但调用方式在重命名/重构时极易过时；`Events.md` 单一来源更易维护。
+- 消费方只需知道："要干 X → 调 `EVT_XXX` → 传 `[a, b]` → 拿到 `ResultCode`"，多余代码是噪音。
+
+**校验**：`agent_lint.ps1` 新增规则扫描模块 `Agent.md` 的 `## Event API` 章节，若出现 ```csharp ... ``` 代码块 → 报错。`tools/new-module.ps1` 模板同步更新为新 schema，新模块不会忘记。
+
+### 6. 占位（后续追加）
 
 - 命名规范（变量前缀、私有字段下划线等）
 - 团队约定（PR 流程、commit message 风格）

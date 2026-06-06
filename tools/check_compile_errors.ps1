@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # WulaGameFramework Unity Compile Checker
 #
 # Uses dotnet build on Unity's .csproj files for real compilation errors.
@@ -18,16 +18,18 @@
 
 [CmdletBinding()]
 param(
-    [switch]$MainOnly,         # 只查 Assembly-CSharp（runtime）
-    [switch]$EditorOnly,       # 只查 Assembly-CSharp-Editor
-    [switch]$Silent,           # Suppress warning output
-    [switch]$Strict,           # Treat any warning as failure
-    [int]   $TopN = 3          # Show first N lines per warning code
+    [switch]$MainOnly,
+    [switch]$EditorOnly,
+    [switch]$Silent,
+    [switch]$Strict,
+    [switch]$IncludeCs0649,
+    [int]   $TopN = 3
 )
 
 $ErrorActionPreference = 'Continue'
 # $PSScriptRoot is tools/ directory under Assets, go up to Assets then to project root
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$CompileCheckRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'WulaGameFrameworkCompileCheck'
 
 # --- Helpers -----------------------------------------------------------
 function Format-Line {
@@ -39,8 +41,8 @@ function Format-Line {
 function Summarize-Build {
     param($output)
 
-    $errors   = @($output | Select-String -Pattern 'error CS\d+'   | ForEach-Object { Format-Line $_.Line })
-    $warnings = @($output | Select-String -Pattern 'warning CS\d+' | ForEach-Object { Format-Line $_.Line })
+    $errors   = @($output | Select-String -Pattern '\berror (?:(CS|MSB)\d+\b|:)'   | ForEach-Object { Format-Line $_.Line })
+    $warnings = @($output | Select-String -Pattern '\bwarning (CS|MSB)\d+\b' | ForEach-Object { Format-Line $_.Line })
 
     $errCount  = $errors.Count
     $warnCount = $warnings.Count
@@ -48,7 +50,7 @@ function Summarize-Build {
     # Group warnings by CS code
     $warnByCode = @{}
     foreach ($w in $warnings) {
-        if ($w -match 'warning (CS\d+):') {
+        if ($w -match 'warning ((?:CS|MSB)\d+):') {
             $code = $matches[1]
             if (-not $warnByCode.ContainsKey($code)) { $warnByCode[$code] = @() }
             $warnByCode[$code] += $w
@@ -73,8 +75,12 @@ function Print-Summary {
         Write-Host "  (none)" -ForegroundColor Gray
     }
     else {
-        foreach ($e in $summary.Errors) {
-            Write-Host "  $e" -ForegroundColor Red
+        $shown = [Math]::Min($TopN, $summary.Errors.Count)
+        for ($i = 0; $i -lt $shown; $i++) {
+            Write-Host "  $($summary.Errors[$i])" -ForegroundColor Red
+        }
+        if ($summary.Errors.Count -gt $shown) {
+            Write-Host "  ... (+$($summary.Errors.Count - $shown) more, see all with -TopN 999)" -ForegroundColor DarkGray
         }
     }
 
@@ -117,7 +123,18 @@ function Test-Compile($csprojPath, $name) {
     }
 
     Push-Location $ProjectRoot
-    $output = dotnet build $csprojPath 2>&1
+    $workRoot = $CompileCheckRoot
+    $objRoot = Join-Path $workRoot 'obj'
+    $binRoot = Join-Path $workRoot 'bin'
+    New-Item -ItemType Directory -Force -Path $objRoot, $binRoot | Out-Null
+    $safeName = $name -replace '[^\w.-]', '_'
+    $objPath = ((Join-Path $objRoot $safeName) -replace '\\', '/') + '/'
+    $binPath = ((Join-Path $binRoot $safeName) -replace '\\', '/') + '/'
+
+    $output = dotnet build $csprojPath `
+        "/p:BaseIntermediateOutputPath=$objPath" `
+        "/p:BaseOutputPath=$binPath" `
+        "/p:OutputPath=$binPath" 2>&1
     $exitCode = $LASTEXITCODE
     Pop-Location
 
@@ -166,9 +183,9 @@ function Invoke-StaticAnalysis {
         # Build a "cleaned" whole-file string for global search (strip line comments
         # and string literals to avoid false matches on _x in comments / strings).
         $cleaned = ($lines -join "`n")
+        $cleaned = [regex]::Replace($cleaned, '"(?:\\.|[^"\\])*"', '""')
         $cleaned = [regex]::Replace($cleaned, '/\*[\s\S]*?\*/', '')
         $cleaned = [regex]::Replace($cleaned, '//[^\n]*', '')
-        $cleaned = [regex]::Replace($cleaned, '"(?:\\.|[^"\\])*"', '""')
 
         # --- CS0414 / CS0649: per-line private field scan ---
         # Pattern matches a single LINE that ends with a private/internal field decl.
@@ -195,12 +212,13 @@ function Invoke-StaticAnalysis {
             $hasInit = ($init -ne '')
 
             # Count usages of $name in the WHOLE file (excluding the declaration line)
-            $refPat = '\b' + [regex]::Escape($name) + '\b'
+            $refPat = '(?<![A-Za-z0-9_])' + [regex]::Escape($name) + '(?![A-Za-z0-9_])'
             $allRefs = @([regex]::Matches($cleaned, $refPat))
             $useCount = $allRefs.Count - 1   # -1 for the declaration
 
             if ($useCount -le 0) {
                 $code = if ($hasInit) { 'CS0414' } else { 'CS0649' }
+                if ($code -eq 'CS0649' -and -not $IncludeCs0649) { continue }
                 $msg  = if ($hasInit) {
                     "The field '$name' is assigned but its value is never used"
                 } else {
@@ -224,7 +242,7 @@ function Invoke-StaticAnalysis {
             if (-not $mm.Success) { continue }
             $name = $mm.Groups[1].Value
             $rest = ($lines[0..($li-1)] + $lines[($li+1)..($lines.Count-1)]) -join "`n"
-            if (-not [regex]::IsMatch($rest, '\b' + [regex]::Escape($name) + '\b')) {
+            if (-not [regex]::IsMatch($rest, '(?<![A-Za-z0-9_])' + [regex]::Escape($name) + '(?![A-Za-z0-9_])')) {
                 $findings += [pscustomobject]@{
                     File    = $f.FullName
                     Line    = $li + 1
@@ -303,7 +321,7 @@ Print-StaticFindings $staticFindings
 
 # Dump findings to JSON for downstream processing
 if ($staticFindings.Count -gt 0) {
-    $jsonPath = Join-Path $ProjectRoot 'static_findings.json'
+    $jsonPath = Join-Path $CompileCheckRoot 'static_findings.json'
     $staticFindings | ConvertTo-Json -Depth 5 | Set-Content -Path $jsonPath -Encoding UTF8
     Write-Host ""
     Write-Host "  [INFO] findings dumped to: $jsonPath" -ForegroundColor DarkCyan

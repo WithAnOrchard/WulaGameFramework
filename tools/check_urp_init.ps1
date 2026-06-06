@@ -96,7 +96,7 @@ if ($allOK) {
     if ($status6 -ne "OK") { Write-Host "  • [6] QualitySettings 未绑定 RP Asset" -ForegroundColor Red }
     Write-Host ""
     Write-Host "修复方式：" -ForegroundColor Cyan
-    Write-Host "  1. 菜单 Tools/EssSystem/LightManager/Install URP Package（自动检测+安装）" -ForegroundColor White
+    Write-Host "  1. 菜单 Tools/WulaSystem/Presentation/LightManager/Install URP Package（自动检测+安装）" -ForegroundColor White
     Write-Host "  2. 装完后自动 Bootstrap URP Project；或手动菜单：Bootstrap URP Project (3D/Forward)/(2D)" -ForegroundColor White
 }
 Write-Host ""

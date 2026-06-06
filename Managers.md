@@ -9,6 +9,7 @@
 | 优先级 | Manager | 分组 | 路径 | 职责 | 文档 |
 |---|---:|---|---|---|---|
 | **-30** | `EventProcessor` | Core/Event | `Scripts/EssSystem/Core/Event/` | 事件分派中心 | `Scripts/EssSystem/Core/Event/Agent.md` |
+| **-25** | `AutoUpdateManager` | Core/Application | `Scripts/EssSystem/Core/Application/SingleManagers/AutoUpdateManager/` | 自动更新（启动后跳预加载 / 下载 / 安装） | `Scripts/EssSystem/Core/Application/SingleManagers/AutoUpdateManager/Agent.md` |
 | **-20** | `DataManager` | Core/Foundation | `Scripts/EssSystem/Core/Foundation/DataManager/` | 数据持久化 + Service 自动注册 | `Scripts/EssSystem/Core/Foundation/DataManager/Agent.md` |
 | **0** | `ResourceManager` | Core/Foundation | `Scripts/EssSystem/Core/Foundation/ResourceManager/` | 资源加载/缓存/预加载 | `Scripts/EssSystem/Core/Foundation/ResourceManager/Agent.md` |
 | **2** | `NetworkManager` | Core/Foundation | `Scripts/EssSystem/Core/Foundation/NetworkManager/` | 多人联机网络通讯（Mirror） | `Scripts/EssSystem/Core/Foundation/NetworkManager/Agent.md` |
@@ -53,10 +54,10 @@
 |---|---|---|
 | InputManager | 2 | 输入抽象（Action + Axis + 鼠标） |
 | AudioManager | 3 | 音频管理（BGM / SFX） |
+| CameraManager | 4 | 相机控制（跟随/缩放/震动） |
 | UIManager | 5 | UI 实体管理中心 |
-| CameraManager | 6 | 相机控制（跟随/缩放/震动） |
+| EffectsManager | 6 | 特效播放（粒子系统） |
 | LightManager | 7 | 灯光管理（天空盒/动态光） |
-| EffectsManager | 8 | 特效播放（粒子系统） |
 | CharacterManager | 11 | 角色外观工厂（2D Sprite / 3D Prefab） |
 
 ### Core/Application — 业务逻辑
@@ -71,6 +72,7 @@
 | SceneInstanceManager | 16 | 子场景/副本管理（骨架） | - |
 | NpcManager | 17 | NPC 配置/互动（骨架） | - |
 | CraftingManager | 18 | 装备制作（骨架） | - |
+| FarmManager | 18 | 农场系统 | - |
 | ShopManager | 19 | 商店交易（骨架） | - |
 
 ### Manager/扩展 — 第三方模块

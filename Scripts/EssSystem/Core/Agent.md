@@ -1,11 +1,7 @@
-# EssSystem 框架总览
-
+﻿# EssSystem 框架总览
 ## 概述
-
 `EssSystem` 是一套 Unity C# 游戏框架，核心在 `EssSystem.Core`，提供单例、事件总线、Manager/Service 分层架构与数据持久化。业务模块以 Manager 为单位组织，按优先级自动初始化。
-
 ## 顶层结构
-
 ```
 Scripts/EssSystem/
 ├── Core/                            ← 框架核心
@@ -21,15 +17,12 @@ Scripts/EssSystem/
 │       └── Application/                    游戏业务（优先级 10+）
 └── Manager/                         ← 扩展 Manager（非核心，可选）
     └── DanmuManager/                    弹幕系统（50）
-
 Demo/                                ← 演示项目（不属于框架核心）
 ├── Tribe/                           ← 横版部落生存 Demo
 ├── DayNight/                        ← 2D 昼夜循环 Demo
 └── DayNight3D/                      ← 3D 昼夜循环 Demo
 ```
-
 ## Manager 完整清单（按初始化优先级排序）
-
 | 优先级 | Manager | 分组 | 职责 |
 |---:|---|---|---|
 | **-30** | `EventProcessor` | Core/Event | 事件总线 + `[Event]`/`[EventListener]` 自动注册 |
@@ -47,9 +40,7 @@ Demo/                                ← 演示项目（不属于框架核心）
 | **15** | `DialogueManager` | Application | 对话系统：对话树/选项/UI |
 | **15** | `SkillManager` | Application | 技能系统：技能定义/释放/Buff/冷却 |
 | **50** | `DanmuManager` | Manager(扩展) | 弹幕消息系统 |
-
 ## 目录详细结构
-
 ```
 Core/EssManagers/
 ├── Manager/                         ← 基类
@@ -169,11 +160,8 @@ Core/EssManagers/
         ├── SkillManager.cs               Manager 薄壳
         └── SkillService.cs               业务核心
 ```
-
 ## 初始化流程
-
 ### 同步初始化（默认）
-
 ```
 AbstractGameManager.Awake()
   1. EnsureBaseManagers() → 确保 EventProcessor / DataManager / ResourceManager / UIManager / AudioManager 存在
@@ -181,11 +169,8 @@ AbstractGameManager.Awake()
   3. 按 [Manager(N)] 优先级排序（N 越小越先）
   4. 依次调用 Initialize()
 ```
-
 ### 异步初始化（Phase 2.2 优化）
-
 启用 `AbstractGameManager._enableAsyncInitialization = true` 后：
-
 ```
 AbstractGameManager.Awake()
   1. EnsureBaseManagers() → 同步确保基础 Manager 存在
@@ -194,27 +179,21 @@ AbstractGameManager.Awake()
      - 按优先级排序后逐帧初始化
      - 避免单帧卡顿
 ```
-
 **优势**：
 - ✅ 减少单帧初始化时间
 - ✅ 提高游戏启动流畅度
 - ✅ 适合 Manager 数量多的项目
-
 **配置**：
 - `_enableAsyncInitialization`：启用异步初始化
 - `_maxFramesPerInitialization`：每帧最多处理的 Manager 数量（默认 1）
-
 ## 通信模式
-
 | 场景 | 推荐方式 |
 |---|---|
 | Manager → 自己的 Service | 直接调用 `MyService.Instance.XXX()` |
 | 跨模块解耦调用 | `EventProcessor.Instance.TriggerEvent("EventName", data)` |
 | 调用 `[Event]` 标注方法 | `EventProcessor.Instance.TriggerEventMethod("EventName", data)` |
 | 监听广播事件 | 方法上加 `[EventListener("EventName")]` |
-
 ## Service 自动注册 + 持久化
-
 ```
 Service 构造 → SingletonNormal.Instance
     ↓
@@ -224,102 +203,79 @@ DataService 监听 → 自动注册到 _serviceInstances
     ↓
 Application.quitting → DataService.SaveAllCategories() → 所有 IServicePersistence 存盘
 ```
-
 ## ResultCode
-
 `EssSystem.Core.ResultCode`（`Util/ResultCode.cs`）：
 - `ResultCode.OK` / `ResultCode.ERROR`
 - `ResultCode.Ok(data?)` / `ResultCode.Fail(msg)`
 - `ResultCode.IsOk(result)`
-
 ## Manager 注册表（Phase 3 架构优化）
-
 `ManagerRegistry` 实现 Manager 的集中管理和职责分离：
-
 ```csharp
 // 获取注册表
 var registry = gameManager.GetManagerRegistry();
-
 // 查询 Manager
 var stats = registry.GetStats();
 Debug.Log($"总 Manager 数: {stats["TotalCount"]}");
 Debug.Log($"已初始化: {stats["InitializedCount"]}");
-
 // 获取详细信息
 var details = registry.GetDetailedInfo();
 foreach (var detail in details)
 {
     Debug.Log($"{detail["Name"]}: {detail["Priority"]} ({detail["Category"]})");
 }
-
 // 按优先级范围查询
 var baseManagers = registry.GetBaseManagers();      // 优先级 < 0
 var businessManagers = registry.GetBusinessManagers(); // 优先级 >= 0
 ```
-
 **职责分离**：
 - `AbstractGameManager`：生命周期管理（Awake/OnDestroy）
 - `ManagerRegistry`：Manager 的发现、注册、查询、统计
-
 **功能**：
 - ✅ 集中管理所有 Manager 的元数据
 - ✅ 支持按优先级查询
 - ✅ 支持按类型查询
 - ✅ 提供详细的统计信息
 - ✅ 支持基础/业务 Manager 分类
-
 ## 核心设计原则
-
 - **Manager 是薄壳**：只做事件路由 + 驱动 Service.Tick，不含业务逻辑
 - **Service 是业务核心**：纯 C# 单例，可持久化，所有状态和算法在此
 - **Capability 组合模式**：Entity 的能力通过 `IEntityCapability` 接口组合，不用继承
 - **数据驱动**：Config/Definition 是纯数据，运行时实例持有引用
 - **bare-string 事件**：跨模块调用走字符串事件，模块内直接调用 Service API
 - **职责分离**：AbstractGameManager 处理生命周期，ManagerRegistry 处理管理（Phase 3）
-
 ## 性能监控（Phase 4 可维护性优化）
-
 `PerformanceMonitor` 提供性能追踪和调试功能：
-
 ```csharp
 // 测量操作执行时间
 PerformanceMonitor.StartTimer("MyOperation");
 // ... 执行操作 ...
 PerformanceMonitor.StopTimer("MyOperation");
-
 // 或使用 Measure 方法
 PerformanceMonitor.Measure("MyOperation", () =>
 {
     // ... 执行操作 ...
 });
-
 // 获取统计信息
 var avgTime = PerformanceMonitor.GetAverageTime("MyOperation");
 var maxTime = PerformanceMonitor.GetMaxTime("MyOperation");
-
 // 打印性能报告
 PerformanceMonitor.PrintReport();
-
 // 获取内存使用情况
 var memStats = PerformanceMonitor.GetMemoryStats();
 Debug.Log($"已分配内存: {memStats["AllocatedMemoryMB"]}MB");
 ```
-
 **功能**：
 - ✅ 追踪关键操作的执行时间
 - ✅ 自动检测超过阈值的操作（默认 16ms）
 - ✅ 提供平均/最小/最大执行时间统计
 - ✅ 记录内存使用情况
 - ✅ 仅在编辑器模式启用（`[Conditional("UNITY_EDITOR")]`）
-
 **使用场景**：
 - 性能瓶颈分析
 - Manager 初始化时间监控
 - 事件分派性能测试
 - 内存泄漏检测
-
 ## 子模块文档
-
 - [Base/Singleton 指南](Base/Singleton/Agent.md)
 - [Base/Event 指南](Base/Event/Agent.md)
 - [EssManagers 指南](EssManagers/Agent.md)

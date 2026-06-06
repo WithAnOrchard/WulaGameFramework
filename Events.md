@@ -2,6 +2,37 @@
 
 > **必读**：所有框架 Event 的完整定义。跨模块调用时查本表确认 Event 名称和参数。
 
+## 2026-06-06 Entity / Skill 解耦事件补充
+
+### EntityManager Event
+| 常量 | 字符串 | 参数 | 返回 |
+|---|---|---|---|
+| `EVT_DAMAGE_ENTITY` | `DamageEntity` | `[targetId, damage, damageType?, sourceId?, sourcePosition?]` | `Ok(float dealt)` |
+| `EVT_HEAL_ENTITY` | `HealEntity` | `[targetId, amount, sourceId?]` | `Ok(float healed)` |
+| `EVT_GET_ENTITY_POSITION` | `GetEntityPosition` | `[entityId]` | `Ok(Vector3)` |
+| `EVT_SET_ENTITY_POSITION` | `SetEntityPosition` | `[entityId, Vector3]` | `Ok(Vector3)` |
+| `EVT_GET_CHARACTER_ROOT` | `GetCharacterRoot` | `[entityId]` | `Ok(Transform)` |
+| `EVT_GET_ENTITY_ID_FROM_OBJECT` | `GetEntityIdFromObject` | `[Collider/Collider2D/GameObject/Transform]` | `Ok(string entityId)` |
+| `EVT_IS_ENTITY_DEAD` | `IsEntityDead` | `[entityId]` | `Ok(bool)` |
+| `EVT_GET_ENTITY_HP` | `GetEntityHp` | `[entityId]` | `[OK, currentHp, maxHp, isDead]` |
+| `EVT_GET_CONTROL_STATE` | `GetControlState` | `[entityId]` | `[OK, stunned, silenced]` |
+| `EVT_PUSH_CONTROL_STATE` | `PushControlState` | `[entityId, "Stun"/"Silence"]` | `Ok(state)` |
+| `EVT_POP_CONTROL_STATE` | `PopControlState` | `[entityId, "Stun"/"Silence"]` | `Ok(state)` |
+| `EVT_GET_SPEED_MULTIPLIER` | `GetSpeedMultiplier` | `[entityId]` | `Ok(float)` |
+| `EVT_SET_SPEED_MULTIPLIER` | `SetSpeedMultiplier` | `[entityId, float]` | `Ok(float)` |
+| `EVT_GET_DAMAGE_REDUCTION` | `GetDamageReduction` | `[entityId]` | `Ok(float)` |
+| `EVT_SET_DAMAGE_REDUCTION` | `SetDamageReduction` | `[entityId, float]` | `Ok(float)` |
+| `EVT_REGISTER_DAMAGED_CALLBACK` | `RegisterDamagedCallback` | `[entityId, Action<string selfId, string sourceId, float dealt, string damageType>]` | `Ok(Action unsubscribe)` |
+| `EVT_REGISTER_DEATH_CALLBACK` | `RegisterDeathCallback` | `[entityId, Action<string selfId, string killerId>]` | `Ok(Action unsubscribe)` |
+| `EVT_SET_ENTITY_MAX_HP` | `SetEntityMaxHp` | `[entityId, maxHp, refill?]` | `Ok(float maxHp)` |
+| `EVT_ADD_ENTITY_CAPABILITY` | `AddEntityCapability` | `[entityId, capabilityKey, ...args]` | `Ok(capabilityKey)` |
+| `EVT_REGISTER_SIMPLE_ENTITY_CONFIG` | `RegisterSimpleEntityConfig` | `[configId, displayName, characterConfigId, collider, spawnOffset, kind?]` | `Ok(configId)` |
+
+### SkillManager Event
+| 常量 | 字符串 | 参数 | 返回 |
+|---|---|---|---|
+| `EVT_CAST_SKILL` | `CastSkill` | `[casterId, skillId, targetId?, Vector3 direction?, Vector3 position?]` | `OK` / `Fail` |
+
 ## 索引说明
 
 | 列 | 含义 |
@@ -154,6 +185,8 @@
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
 | `ResourceService.EVT_DATA_LOADED` | `OnResourceDataLoaded` | Core/Foundation/ResourceManager | 启动后跳预加载（内部） |
+| `ResourceService.EVT_SET_BULK_LOAD_PATHS` | `SetResourceBulkLoadPaths` | Core/Foundation/ResourceManager | 设置启动期 Resources 批量索引路径，参数 `[IEnumerable<string> paths]` → `Ok()` |
+| `ResourceService.EVT_ADD_BULK_LOAD_PATH` | `AddResourceBulkLoadPath` | Core/Foundation/ResourceManager | 追加一个启动期 Resources 批量索引路径，参数 `[string path]` → `Ok()` |
 | `ResourceService.EVT_ADD_RESOURCE_CONFIG` | `AddResourceConfig` | Core/Foundation/ResourceManager | 写预加载配置（内部） |
 | `ResourceService.EVT_RESOURCES_LOADED` | `OnResourcesLoaded` | Core/Foundation/ResourceManager | 资源全部预加载/索引完成后**广播** |
 | `ResourceService.EVT_GET_REFCOUNT_STATS` | `GetRefCountStats` | Core/Foundation/ResourceManager | 获取资源引用计数统计，参数 `[]` → `Ok(Dictionary)` |
@@ -192,7 +225,7 @@
 
 ---
 
-## AudioManager Event（12 个）
+## AudioManager Event（14 个）
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
@@ -276,7 +309,7 @@
 
 ---
 
-## EffectsManager Event（7 个）
+## EffectsManager Event（6 个）
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
@@ -289,7 +322,7 @@
 
 ---
 
-## InventoryManager Event（13 个）
+## InventoryManager Event（14 个）
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
@@ -304,7 +337,8 @@
 | `InventoryService.EVT_ADD` | `InventoryAdd` | Core/Application/InventoryManager | 添加物品（命令），参数 `[string invId, string itemId, int amount]` |
 | `InventoryService.EVT_REMOVE` | `InventoryRemove` | Core/Application/InventoryManager | 移除物品（命令），参数 `[string invId, string itemId, int amount]` |
 | `InventoryService.EVT_MOVE` | `InventoryMove` | Core/Application/InventoryManager | 移动物品（命令），参数 `[string invId, int fromSlot, int toSlot]` |
-| `InventoryService.EVT_QUERY` | `InventoryQuery` | Core/Application/InventoryManager | 查询物品（查询），参数 `[string invId, string itemId]` → `Ok(int amount)` |
+| `InventoryService.EVT_QUERY` | `InventoryQuery` | Core/Application/InventoryManager | 查询容器（查询），参数 `[string invId]` -> `Ok(Inventory)` |
+| `InventoryService.EVT_COUNT_ITEM` | `InventoryCountItem` | Core/Application/InventoryManager | 查询容器内指定物品数量（查询），参数 `[string invId, string itemId]` -> `Ok(int amount)` |
 | `InventoryService.EVT_CHANGED` | `InventoryChanged` | Core/Application/InventoryManager | 背包变化**广播**，参数 `[string invId, InventoryChangeType changeType, ...]` |
 
 ---
@@ -321,6 +355,25 @@
 | `EntityManager.EVT_GET_ENTITY` | `GetEntity` | Core/Application/EntityManager | 查询 Entity 实例，参数 `[string instanceId]` → `Ok(Entity)` |
 | `EntityManager.EVT_APPLY_COLLIDER` | `ApplyCollider` | Core/Application/EntityManager | 应用 Collider 到 GameObject，参数 `[GameObject, EntityColliderConfig]` |
 | `EntityManager.EVT_ATTACH_ENTITY_HANDLE` | `AttachEntityHandle` | Core/Application/EntityManager | 挂载 EntityHandle 桥接，参数 `[GameObject, Entity]` |
+| `EntityManager.EVT_HEAL_ENTITY` | `HealEntity` | Core/Application/EntityManager | 治疗运行时 Entity，参数 `[string instanceId, float amount]` → `Ok(float hp)` |
+| `EntityManager.EVT_GET_ENTITY_POSITION` | `GetEntityPosition` | Core/Application/EntityManager | 获取 Entity 世界坐标，参数 `[string instanceId]` → `Ok(Vector3)` |
+| `EntityManager.EVT_SET_ENTITY_POSITION` | `SetEntityPosition` | Core/Application/EntityManager | 设置 Entity 世界坐标，参数 `[string instanceId, Vector3 position]` → `Ok()` |
+| `EntityManager.EVT_GET_CHARACTER_ROOT` | `GetCharacterRoot` | Core/Application/EntityManager | 获取 Entity 角色根节点，参数 `[string instanceId]` → `Ok(Transform)` |
+| `EntityManager.EVT_GET_ENTITY_ID_FROM_OBJECT` | `GetEntityIdFromObject` | Core/Application/EntityManager | 从场景对象反查 EntityId，参数 `[GameObject target]` → `Ok(string instanceId)` |
+| `EntityManager.EVT_IS_ENTITY_DEAD` | `IsEntityDead` | Core/Application/EntityManager | 查询 Entity 是否死亡，参数 `[string instanceId]` → `Ok(bool)` |
+| `EntityManager.EVT_GET_ENTITY_HP` | `GetEntityHp` | Core/Application/EntityManager | 查询 Entity 当前生命值，参数 `[string instanceId]` → `Ok(float hp)` |
+| `EntityManager.EVT_GET_CONTROL_STATE` | `GetControlState` | Core/Application/EntityManager | 查询 Entity 控制状态，参数 `[string instanceId]` → `Ok(EntityControlState)` |
+| `EntityManager.EVT_PUSH_CONTROL_STATE` | `PushControlState` | Core/Application/EntityManager | 压入 Entity 控制状态，参数 `[string instanceId, EntityControlState state]` → `Ok()` |
+| `EntityManager.EVT_POP_CONTROL_STATE` | `PopControlState` | Core/Application/EntityManager | 弹出 Entity 控制状态，参数 `[string instanceId]` → `Ok(EntityControlState)` |
+| `EntityManager.EVT_GET_SPEED_MULTIPLIER` | `GetSpeedMultiplier` | Core/Application/EntityManager | 查询 Entity 速度倍率，参数 `[string instanceId]` → `Ok(float)` |
+| `EntityManager.EVT_SET_SPEED_MULTIPLIER` | `SetSpeedMultiplier` | Core/Application/EntityManager | 设置 Entity 速度倍率，参数 `[string instanceId, float multiplier]` → `Ok()` |
+| `EntityManager.EVT_GET_DAMAGE_REDUCTION` | `GetDamageReduction` | Core/Application/EntityManager | 查询 Entity 伤害减免，参数 `[string instanceId]` → `Ok(float)` |
+| `EntityManager.EVT_SET_DAMAGE_REDUCTION` | `SetDamageReduction` | Core/Application/EntityManager | 设置 Entity 伤害减免，参数 `[string instanceId, float reduction]` → `Ok()` |
+| `EntityManager.EVT_REGISTER_DAMAGED_CALLBACK` | `RegisterDamagedCallback` | Core/Application/EntityManager | 注册受伤回调，参数 `[string instanceId, Action<EntityDamageContext> callback]` → `Ok()` |
+| `EntityManager.EVT_REGISTER_DEATH_CALLBACK` | `RegisterDeathCallback` | Core/Application/EntityManager | 注册死亡回调，参数 `[string instanceId, Action<EntityDeathContext> callback]` → `Ok()` |
+| `EntityManager.EVT_SET_ENTITY_MAX_HP` | `SetEntityMaxHp` | Core/Application/EntityManager | 设置 Entity 最大生命值，参数 `[string instanceId, float maxHp, bool refill]` → `Ok()` |
+| `EntityManager.EVT_ADD_ENTITY_CAPABILITY` | `AddEntityCapability` | Core/Application/EntityManager | 为 Entity 添加能力对象，参数 `[string instanceId, object capability]` → `Ok()` |
+| `EntityManager.EVT_REGISTER_SIMPLE_ENTITY_CONFIG` | `RegisterSimpleEntityConfig` | Core/Application/EntityManager | 快速注册简单 Entity 配置，参数 `[string configId, GameObject prefab]` → `Ok(string configId)` |
 
 ---
 
@@ -441,15 +494,12 @@
 
 | 常量 | 字符串值 | 定义模块 | 用途 |
 |---|---|---|---|
-| `ShopService.EVT_REGISTER_ITEM` | `RegisterShopItem` | Core/Application/MultiManagers/ShopManager | 注册商店物品，参数 `[ShopItem item]` |
 | `ShopService.EVT_REGISTER_SHOP` | `ShopRegister` | Core/Application/MultiManagers/ShopManager | 注册商店，参数 `[Shop shop]` |
 | `ShopService.EVT_REGISTER_CURRENCY` | `ShopRegisterCurrency` | Core/Application/MultiManagers/ShopManager | 注册货币类型，参数 `[string currencyId, string name]` |
-| `ShopService.EVT_BUY_ITEM` | `BuyShopItem` | Core/Application/MultiManagers/ShopManager | 购买物品，参数 `[string playerId, string itemId, int count]` |
-| `ShopService.EVT_SELL_ITEM` | `SellShopItem` | Core/Application/MultiManagers/ShopManager | 出售物品，参数 `[string playerId, string itemId, int count]` |
+| `ShopService.EVT_BUY_ITEM` | `ShopBuy` | Core/Application/MultiManagers/ShopManager | 购买物品，参数 `[string playerId, string itemId, int count]` |
 | `ShopService.EVT_INIT_WALLET` | `ShopInitWallet` | Core/Application/MultiManagers/ShopManager | 初始化钱包，参数 `[string playerId, string currencyId, int amount]` |
 | `ShopService.EVT_ADD_WALLET` | `ShopAddWallet` | Core/Application/MultiManagers/ShopManager | 添加货币，参数 `[string playerId, string currencyId, int amount]` |
 | `ShopService.EVT_GET_WALLET` | `ShopGetWallet` | Core/Application/MultiManagers/ShopManager | 获取钱包余额，参数 `[string playerId, string currencyId]` → `Ok(int amount)` |
-| `ShopService.EVT_QUERY_WALLET` | `QueryShopWallet` | Core/Application/MultiManagers/ShopManager | 查询钱包，参数 `[string playerId, string currencyId]` → `Ok(int amount)` |
 
 ---
 
