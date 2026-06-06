@@ -69,6 +69,8 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         public const string EVT_DATA_LOADED                = "OnResourceDataLoaded";
         public const string EVT_ADD_RESOURCE_CONFIG        = "AddResourceConfig";
+        public const string EVT_SET_BULK_LOAD_PATHS        = "SetResourceBulkLoadPaths";
+        public const string EVT_ADD_BULK_LOAD_PATH         = "AddResourceBulkLoadPath";
         public const string EVT_LOAD_EXTERNAL_IMAGE_ASYNC  = "LoadExternalImageAsync";
         public const string EVT_GET_MODEL_CLIPS            = "GetModelClips";
         public const string EVT_GET_ALL_MODEL_PATHS        = "GetAllModelPaths";
@@ -84,7 +86,6 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// <summary>清理超时未使用的资源。返回 Ok()。</summary>
         public const string EVT_CLEANUP_UNUSED_ASSETS = "CleanupUnusedAssets";
 
-        private const string FBXManifestResourcePath = "CharacterFBXManifest";
 
         // ============================================================
         // 批量索引类型（预加载 + Resources.LoadAll 都按此顺序遍历）
@@ -113,15 +114,15 @@ namespace EssSystem.Core.Foundation.ResourceManager
         private readonly Dictionary<ResourceKey, UnityEngine.Object> _loadedResources
             = new Dictionary<ResourceKey, UnityEngine.Object>();
 
+        private readonly List<string> _bulkLoadPaths = new List<string>();
+        private bool _useConfiguredBulkLoadPaths;
+
         // Phase 1 优化：Unload 方法的静态缓存列表，避免每次分配
         private static readonly List<ResourceKey> _toRemoveCache = new List<ResourceKey>();
 
         // Phase 1 优化：外部图片加载结果的静态字典缓存，避免每次分配
-        private static readonly Dictionary<string, object> _externalLoadResultDict = new Dictionary<string, object>(2);
 
         /// <summary>FBX/Model 路径（Resources 相对、不含扩展名）→ 内含 clip 名列表。</summary>
-        private readonly Dictionary<string, List<string>> _modelClipNames
-            = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>资源引用计数管理器（Phase 1 优化）。</summary>
         private ResourceRefCounter _refCounter;
@@ -153,6 +154,92 @@ namespace EssSystem.Core.Foundation.ResourceManager
 
         public Dictionary<ResourceKey, UnityEngine.Object> GetLoadedResources() => _loadedResources;
         public string GetResourceId(ResourceKey key) => key.FileName;
+        public bool TryGetResource(ResourceKey key, out UnityEngine.Object resource) =>
+            _loadedResources.TryGetValue(key, out resource);
+
+        public void CacheResource(ResourceKey key, UnityEngine.Object resource)
+        {
+            if (resource == null) return;
+            _loadedResources[key] = resource;
+            SyncToService(key.TypeTag, key, resource);
+        }
+
+        public void TrackResource(ResourceKey key, UnityEngine.Object resource)
+        {
+            if (resource == null) return;
+            _loadedResources[key] = resource;
+        }
+
+        public void SetBulkLoadPaths(IEnumerable<string> paths)
+        {
+            if (_dataLoaded)
+            {
+                Debug.LogWarning("[ResourceService] Bulk load paths changed after data load; current load will not be rebuilt.");
+            }
+
+            _bulkLoadPaths.Clear();
+            _useConfiguredBulkLoadPaths = true;
+            if (paths == null) return;
+
+            foreach (var path in paths)
+                AddBulkLoadPath(path);
+        }
+
+        public void AddBulkLoadPath(string path)
+        {
+            if (_dataLoaded)
+            {
+                Debug.LogWarning("[ResourceService] Bulk load path added after data load; current load will not be rebuilt.");
+            }
+
+            _useConfiguredBulkLoadPaths = true;
+            var normalized = NormalizeResourceLoadPath(path);
+            if (_bulkLoadPaths.Contains(normalized)) return;
+            _bulkLoadPaths.Add(normalized);
+        }
+
+        [Event(EVT_SET_BULK_LOAD_PATHS)]
+        public List<object> SetBulkLoadPathsEvent(List<object> data)
+        {
+            var paths = new List<string>();
+            if (data != null)
+            {
+                foreach (var item in data)
+                {
+                    if (item is string path)
+                    {
+                        paths.Add(path);
+                    }
+                    else if (item is IEnumerable<string> pathList)
+                    {
+                        paths.AddRange(pathList);
+                    }
+                }
+            }
+
+            SetBulkLoadPaths(paths);
+            return ResultCode.Ok(paths.Count);
+        }
+
+        [Event(EVT_ADD_BULK_LOAD_PATH)]
+        public List<object> AddBulkLoadPathEvent(List<object> data)
+        {
+            if (data == null || data.Count == 0 || !(data[0] is string path))
+                return ResultCode.Fail("Resource bulk load path is empty.");
+            AddBulkLoadPath(path);
+            return ResultCode.Ok(path);
+        }
+
+        private static string NormalizeResourceLoadPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return string.Empty;
+            var normalized = path.Replace('\\', '/').Trim('/');
+            const string resourcesPrefix = "Resources/";
+            var resourcesIndex = normalized.IndexOf(resourcesPrefix, StringComparison.OrdinalIgnoreCase);
+            if (resourcesIndex >= 0)
+                normalized = normalized.Substring(resourcesIndex + resourcesPrefix.Length);
+            return normalized;
+        }
 
         // ============================================================
         // 数据加载完成 → 预加载 + 全量索引 + 广播
@@ -161,10 +248,15 @@ namespace EssSystem.Core.Foundation.ResourceManager
         public List<object> OnDataLoaded(List<object> data)
         {
             if (_dataLoaded) return ResultCode.Ok(true);
+            var totalWatch = System.Diagnostics.Stopwatch.StartNew();
             _dataLoaded = true;
 
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             PreloadConfiguredResources();
+            LogStartupTiming("ResourceService.PreloadConfiguredResources", sample);
+            sample = System.Diagnostics.Stopwatch.StartNew();
             IndexAllResources();
+            LogStartupTiming("ResourceService.IndexAllResources", sample);
 
             try
             {
@@ -185,29 +277,48 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// <summary>资源索引逻辑。</summary>
         private void IndexAllResources()
         {
+            var loadPaths = GetBulkLoadPaths();
+            Debug.Log(_useConfiguredBulkLoadPaths
+                ? $"[StartupTiming] ResourceService.BulkLoadScope: configured paths={loadPaths.Count}"
+                : $"[StartupTiming] ResourceService.BulkLoadScope: legacy paths={loadPaths.Count}");
+            if (loadPaths.Count == 0)
+            {
+                Debug.Log("[StartupTiming] ResourceService.IndexAllResources skipped: no bulk load paths configured.");
+                return;
+            }
             // 加载 FBX Manifest
-            LoadFBXManifestIfPresent();
             
             // 批量预加载所有 Resources 下的资源
             foreach (var (tag, type) in _bulkTypes)
             {
-                ResourcesLoadAllInto(type, tag);
+                var sample = System.Diagnostics.Stopwatch.StartNew();
+                ResourcesLoadAllInto(type, tag, loadPaths);
+                LogStartupTiming($"ResourceService.IndexAllResources.{tag}", sample);
             }
         }
         
         /// <summary>
         /// 批量将 Resources/{subdir}/ 下的指定类型资产全部加载进缓存。
         /// </summary>
-        private void ResourcesLoadAllInto(Type type, string tag)
+        private IReadOnlyList<string> GetBulkLoadPaths() =>
+            _useConfiguredBulkLoadPaths ? _bulkLoadPaths : _subfolderHints;
+
+        private void ResourcesLoadAllInto(Type type, string tag, IReadOnlyList<string> loadPaths)
         {
             // 按子目录遍历
-            foreach (var hint in _subfolderHints)
+            foreach (var path in loadPaths)
             {
-                var path = string.IsNullOrEmpty(hint) ? "" : hint;
                 try
                 {
+                    var sample = System.Diagnostics.Stopwatch.StartNew();
                     var resources = Resources.LoadAll(path, type);
-                    if (resources == null || resources.Length == 0) continue;
+                    var loadMs = sample.ElapsedMilliseconds;
+                    if (resources == null || resources.Length == 0)
+                    {
+                        if (loadMs >= 10)
+                            Debug.LogWarning($"[StartupTiming] Resources.LoadAll<{tag}>(\"{path}\"): count=0, {loadMs} ms");
+                        continue;
+                    }
 
                     int added = 0;
                     foreach (var r in resources)
@@ -216,17 +327,16 @@ namespace EssSystem.Core.Foundation.ResourceManager
                         var key = new ResourceKey(r.name, false, tag);
                         if (!_loadedResources.ContainsKey(key))
                         {
-                            _loadedResources[key] = r;
+                            CacheResource(key, r);
                             added++;
-                            
-                            // 同步到对应的 Service 缓存
-                            SyncToService(tag, key, r);
                         }
                     }
                     if (added > 0)
                     {
                         Log($"批量加载 {tag} from {path}: +{added} 个（总计 {resources.Length}）", Color.green);
                     }
+                    if (loadMs >= 10 || added > 0)
+                        Debug.Log($"[StartupTiming] Resources.LoadAll<{tag}>(\"{path}\"): count={resources.Length}, added={added}, {loadMs} ms");
                 }
                 catch (Exception ex)
                 {
@@ -238,6 +348,16 @@ namespace EssSystem.Core.Foundation.ResourceManager
         /// <summary>
         /// 将资源同步到对应的 Service 缓存中。
         /// </summary>
+        private static void LogStartupTiming(string label, System.Diagnostics.Stopwatch stopwatch)
+        {
+            if (stopwatch == null) return;
+            stopwatch.Stop();
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var message = $"[StartupTiming] {label}: {elapsed} ms";
+            if (elapsed >= 16) Debug.LogWarning(message);
+            else Debug.Log(message);
+        }
+
         private void SyncToService(string tag, ResourceKey key, UnityEngine.Object resource)
         {
             try
@@ -273,6 +393,52 @@ namespace EssSystem.Core.Foundation.ResourceManager
             }
         }
 
+        private void ForgetFromService(ResourceKey key)
+        {
+            try
+            {
+                switch (key.TypeTag)
+                {
+                    case "Sprite":
+                        Services.Sprite.SpriteService.Instance?.ForgetResource(key);
+                        break;
+                    case "Prefab":
+                        Services.Prefab.PrefabService.Instance?.ForgetResource(key);
+                        break;
+                    case "AudioClip":
+                        Services.Audio.AudioClipService.Instance?.ForgetResource(key);
+                        break;
+                    case "Texture":
+                        Services.Texture.TextureService.Instance?.ForgetResource(key);
+                        break;
+                    case "Material":
+                        Services.Material.MaterialService.Instance?.ForgetResource(key);
+                        break;
+                    case "RuleTile":
+                        Services.RuleTile.RuleTileService.Instance?.ForgetResource(key);
+                        break;
+                    case "AnimationClip":
+                        Services.Animation.AnimationClipService.Instance?.ForgetResource(key);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"从类型 Service 移除资源失败: {key}: {ex.Message}", Color.yellow);
+            }
+        }
+
+        private void ClearServiceCaches()
+        {
+            Services.Sprite.SpriteService.Instance?.ClearCache();
+            Services.Prefab.PrefabService.Instance?.ClearCache();
+            Services.Audio.AudioClipService.Instance?.ClearCache();
+            Services.Texture.TextureService.Instance?.ClearCache();
+            Services.Material.MaterialService.Instance?.ClearCache();
+            Services.RuleTile.RuleTileService.Instance?.ClearCache();
+            Services.Animation.AnimationClipService.Instance?.ClearCache();
+        }
+
 
 
 
@@ -296,7 +462,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         // 外部图片加载（异步、走 MainThreadDispatcher）
         // ============================================================
-        [Event(EVT_LOAD_EXTERNAL_IMAGE_ASYNC)]
+#if false
         public List<object> LoadExternalImageAsync(List<object> data)
         {
             string filePath = data[0] as string;
@@ -324,7 +490,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
                     if (tex.LoadImage(bytes))
                     {
                         var sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
-                        _loadedResources[key] = sprite;
+                        CacheResource(key, sprite);
                         Log($"外部 Sprite 加载成功: {filePath}");
                         callback?.Invoke(sprite);
                         _externalLoadResultDict.Clear();
@@ -350,6 +516,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         // 卸载
         // ============================================================
+#endif
         [Event(ResourceManager.EVT_UNLOAD_RESOURCE)]
         public List<object> Unload(List<object> data)
         {
@@ -373,6 +540,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
             {
                 ReleaseOne(_loadedResources[k]);
                 _loadedResources.Remove(k);
+                ForgetFromService(k);
             }
             return ResultCode.Ok();
         }
@@ -383,6 +551,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
             foreach (var resource in _loadedResources.Values)
                 ReleaseOne(resource);
             _loadedResources.Clear();
+            ClearServiceCaches();
             return ResultCode.Ok();
         }
 
@@ -458,7 +627,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         // Model clips（FBX 容器内 AnimationClip 查询）
         // ============================================================
-        [Event(EVT_GET_MODEL_CLIPS)]
+#if false
         public List<object> GetModelClips(List<object> data)
         {
             string modelPath = data != null && data.Count > 0 ? data[0] as string : null;
@@ -484,7 +653,6 @@ namespace EssSystem.Core.Foundation.ResourceManager
             return ResultCode.Ok(result);
         }
 
-        [Event(EVT_GET_ALL_MODEL_PATHS)]
         public List<object> GetAllModelPaths(List<object> data)
         {
             var list = new List<string>(_modelClipNames.Count);
@@ -495,6 +663,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
         // Inspector
         // ============================================================
+#endif
         public override void UpdateInspectorInfo()
         {
 #if UNITY_EDITOR
@@ -527,6 +696,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
         // ============================================================
 
         /// <summary>读取 Resources/CharacterFBXManifest.json，把记录的 modelPath → clip 名列表写进 _modelClipNames。</summary>
+#if false
         private void LoadFBXManifestIfPresent()
         {
             var asset = Resources.Load<TextAsset>(FBXManifestResourcePath);
@@ -549,6 +719,7 @@ namespace EssSystem.Core.Foundation.ResourceManager
             catch (Exception ex) { Log($"FBX manifest 解析失败：{ex.Message}", Color.yellow); }
         }
 
+#endif
         private static string NormalizeTypeTag(string s)
         {
             if (string.IsNullOrEmpty(s)) return "";

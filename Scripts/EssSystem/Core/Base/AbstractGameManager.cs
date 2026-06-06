@@ -5,6 +5,10 @@ using System.Linq;
 using System.Reflection;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
+using EssSystem.Core.Foundation.DataManager;
+using EssSystem.Core.Foundation.ResourceManager;
+using EssSystem.Core.Presentation.AudioManager;
+using EssSystem.Core.Presentation.UIManager;
 using UnityEngine;
 
 namespace EssSystem.Core.Base
@@ -51,15 +55,50 @@ namespace EssSystem.Core.Base
         /// </summary>
         protected virtual void Awake()
         {
+            var totalWatch = System.Diagnostics.Stopwatch.StartNew();
+            ConfigureEventProcessorScanProfile();
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             EnsureBaseManagers();
+            LogStartupTiming("AbstractGameManager.EnsureBaseManagers", sample);
             if (_enableAsyncInitialization)
             {
                 StartCoroutine(DiscoverAndInitializeManagersAsync());
             }
             else
             {
+                sample = System.Diagnostics.Stopwatch.StartNew();
                 DiscoverAndInitializeManagers();
+                LogStartupTiming("AbstractGameManager.DiscoverAndInitializeManagers", sample);
             }
+            LogStartupTiming("AbstractGameManager.Awake.Total", totalWatch);
+        }
+
+        protected virtual IEnumerable<Type> GetEventScanRootTypes()
+        {
+            yield return typeof(EventProcessor);
+            yield return typeof(DataManager);
+            yield return typeof(ResourceManager);
+            yield return typeof(AudioManager);
+            yield return typeof(UIManager);
+
+            var components = GetComponentsInChildren<MonoBehaviour>(true);
+            foreach (var component in components)
+            {
+                if (component == null || component == this) continue;
+                yield return component.GetType();
+            }
+        }
+
+        protected virtual IEnumerable<string> GetExtraEventScanNamespacePrefixes()
+        {
+            return null;
+        }
+
+        private void ConfigureEventProcessorScanProfile()
+        {
+            EventProcessor.ConfigureScanProfile(
+                GetEventScanRootTypes(),
+                GetExtraEventScanNamespacePrefixes());
         }
 
         /// <summary>
@@ -68,18 +107,18 @@ namespace EssSystem.Core.Base
         private void EnsureBaseManagers()
         {
             // 按优先级顺序定义基础 Manager 类型
-            var baseManagerTypes = new[]
+            var baseManagerTypes = new (string managerName, int priority, Type managerType)[]
             {
-                ("EventProcessor", -30),
-                ("DataManager", -20),
-                ("ResourceManager", 0),
-                ("AudioManager", 3),
-                ("UIManager", 5)
+                ("EventProcessor", -30, typeof(EventProcessor)),
+                ("DataManager", -20, typeof(DataManager)),
+                ("ResourceManager", 0, typeof(ResourceManager)),
+                ("AudioManager", 3, typeof(AudioManager)),
+                ("UIManager", 5, typeof(UIManager))
             };
 
-            foreach (var (managerName, priority) in baseManagerTypes)
+            foreach (var (managerName, priority, managerType) in baseManagerTypes)
             {
-                var managerType = FindManagerType(managerName);
+                var sample = System.Diagnostics.Stopwatch.StartNew();
                 if (managerType != null && GetComponentInChildren(managerType) == null)
                 {
                     var managerObj = new GameObject(managerName);
@@ -87,6 +126,7 @@ namespace EssSystem.Core.Base
                     managerObj.AddComponent(managerType);
                     Debug.Log($"[AbstractGameManager] 自动添加基础 Manager: {managerName} (优先级: {priority})");
                 }
+                LogStartupTiming($"AbstractGameManager.EnsureBaseManager.{managerName}", sample, 5);
             }
         }
 
@@ -122,9 +162,12 @@ namespace EssSystem.Core.Base
             if (_initialized) return;
 
             // 获取当前 GameObject 及所有子 GameObject 上的所有 MonoBehaviour 组件
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             var allComponents = GetComponentsInChildren<MonoBehaviour>();
+            LogStartupTiming($"AbstractGameManager.GetComponentsInChildren(count={allComponents.Length})", sample, 5);
 
             // 筛选出 Manager<T> 类型的组件并注册到 ManagerRegistry
+            sample = System.Diagnostics.Stopwatch.StartNew();
             foreach (var component in allComponents)
             {
                 if (component == null || component == this) continue;
@@ -139,7 +182,11 @@ namespace EssSystem.Core.Base
             }
 
             // 按优先级获取所有 Manager
+            LogStartupTiming("AbstractGameManager.RegisterManagers", sample, 5);
+            sample = System.Diagnostics.Stopwatch.StartNew();
             var sortedManagers = _managerRegistry.GetAllManagers();
+            var sortedManagerCount = sortedManagers.Count();
+            LogStartupTiming($"AbstractGameManager.SortManagers(count={sortedManagerCount})", sample, 5);
 
             // 初始化所有 Manager
             foreach (var metadata in sortedManagers)
@@ -205,6 +252,16 @@ namespace EssSystem.Core.Base
         /// <summary>
         /// 判断类型是否为 Manager&lt;T&gt;
         /// </summary>
+        private static void LogStartupTiming(string label, System.Diagnostics.Stopwatch stopwatch, int warnMs = 16)
+        {
+            if (stopwatch == null) return;
+            stopwatch.Stop();
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var message = $"[StartupTiming] {label}: {elapsed} ms";
+            if (elapsed >= warnMs) Debug.LogWarning(message);
+            else Debug.Log(message);
+        }
+
         private bool IsManagerType(Type type)
         {
             if (type == null || type == typeof(AbstractGameManager)) return false;

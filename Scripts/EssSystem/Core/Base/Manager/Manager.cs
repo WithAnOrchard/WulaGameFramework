@@ -45,6 +45,8 @@ namespace EssSystem.Core.Base.Manager
         protected override void Awake()
         {
             base.Awake();
+            if (!ReferenceEquals(TryGetInstance(), this)) return;
+
             Initialize();
             // 初始化时同步日志设置一次（仅在启动时，不在运行时实时同步）
             SyncServiceLoggingSettings();
@@ -70,6 +72,7 @@ namespace EssSystem.Core.Base.Manager
         protected override void OnDestroy()
         {
             OnManagerDestroy();
+            base.OnDestroy();
         }
 
         /// <summary>

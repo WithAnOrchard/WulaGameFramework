@@ -95,7 +95,7 @@ namespace EssSystem.Core.Foundation.NetworkManager
             _ = Bridge; // 触发桥接物体创建（懒加载）
             if (_autoStart) AutoStart();
 #else
-            Log("Mirror 未安装：NetworkManager 处于占位模式。点击菜单 Tools/WulaFramework/Network/Install Mirror Now。", Color.yellow);
+            Log("Mirror 未安装：NetworkManager 处于占位模式。点击菜单 Tools/WulaSystem/Foundation/Network/Mirror/Install Mirror Now。", Color.yellow);
 #endif
             Log($"NetworkManager 初始化完成 (port={_port}, autoStart={_autoStart}, mode={_autoMode})", Color.green);
         }
@@ -276,6 +276,6 @@ namespace EssSystem.Core.Foundation.NetworkManager
         #endregion
 
         private static List<object> MirrorNotInstalled()
-            => ResultCode.Fail("Mirror 未安装：菜单 Tools/WulaFramework/Network/Install Mirror Now");
+            => ResultCode.Fail("Mirror 未安装：菜单 Tools/WulaSystem/Foundation/Network/Mirror/Install Mirror Now");
     }
 }

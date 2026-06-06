@@ -16,10 +16,11 @@ namespace EssSystem.Core.Foundation.ResourceManager.Editor
     ///
     /// 有两种触发方式：
     ///   1. 自动：每次 BuildPipeline.BuildPlayer 时由 EssSystemBuildPreprocessor 自动调用
-    ///   2. 手动：菜单 Tools > EssSystem > Generate Resource Manifest
+    ///   2. 手动：菜单 Tools / WulaSystem / Resource > Generate Resource Manifest
     /// </summary>
     public static class ResourceManifestGenerator
     {
+        private const string MENU_PATH = "Tools/WulaSystem/Foundation/Resource/Manifest/Generate Resource Manifest";
         private const string ResourcesRoot = "Assets/Resources";
         private const string OutputPath    = "Assets/Resources/ResourceManifest.json";
 
@@ -27,7 +28,7 @@ namespace EssSystem.Core.Foundation.ResourceManager.Editor
         // 公开 API（由 EssSystemBuildPreprocessor 和菜单项调用）
         // ============================================================
 
-        [MenuItem("Tools/EssSystem/Generate Resource Manifest")]
+        [MenuItem(MENU_PATH)]
         public static void GenerateFromMenu()
         {
             Generate();
@@ -43,6 +44,12 @@ namespace EssSystem.Core.Foundation.ResourceManager.Editor
         /// </summary>
         public static void Generate()
         {
+            if (!AssetDatabase.IsValidFolder(ResourcesRoot))
+            {
+                Debug.Log($"[ResourceManifestGenerator] Skip: {ResourcesRoot} does not exist.");
+                return;
+            }
+
             var entries = new List<ResourceManifestEntry>();
             var guids   = AssetDatabase.FindAssets("", new[] { ResourcesRoot });
 

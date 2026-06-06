@@ -1,8 +1,15 @@
 using System.Collections.Generic;
+using System.IO;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
+using EssSystem.Core.Foundation.ResourceManager.Services.Sprite;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
+using UnityEngine.Tilemaps;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace EssSystem.Core.Foundation.ResourceManager
 {
@@ -115,7 +122,13 @@ namespace EssSystem.Core.Foundation.ResourceManager
         private void Start()
         {
             // 通过 Event 触发数据加载
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             EventProcessor.Instance.TriggerEventMethod(ResourceService.EVT_DATA_LOADED, new List<object>());
+            sample.Stop();
+            var elapsed = sample.ElapsedMilliseconds;
+            var message = $"[StartupTiming] ResourceManager.Start.TriggerDataLoaded: {elapsed} ms";
+            if (elapsed >= 16) Debug.LogWarning(message);
+            else Debug.Log(message);
         }
 
         protected override void OnManagerDestroy()
@@ -154,26 +167,109 @@ namespace EssSystem.Core.Foundation.ResourceManager
         }
 
 
-        // ===== Sync getters (for AudioManager and other legacy code) =====
-        [Event(EVT_GET_AUDIO_CLIP)]
-        public List<object> GetAudioClip(List<object> data)
+        private List<object> GetSync<T>(List<object> data, string typeTag) where T : UnityEngine.Object
         {
+            if (data == null || data.Count < 1) return ResultCode.Fail("参数不足");
             string path = data[0] as string;
             if (string.IsNullOrEmpty(path)) return ResultCode.Fail("路径为空");
-            
-            var clip = Resources.Load<AudioClip>(path);
-            if (clip != null) return ResultCode.Ok(clip);
-            return ResultCode.Fail($"音频加载失败: {path}");
+
+            var key = new ResourceKey(path, false, typeTag);
+            if (_resourceService != null && _resourceService.TryGetResource(key, out var cached))
+                return ResultCode.Ok(cached);
+
+            var asset = Resources.Load<T>(path);
+#if UNITY_EDITOR
+            if (asset == null)
+                asset = LoadFrameworkResourceSync<T>(path);
+#endif
+            if (asset == null)
+                asset = LoadAddressableSync<T>(path, typeTag);
+            if (asset == null) return ResultCode.Fail($"{typeTag} 加载失败: {path}");
+            _resourceService?.CacheResource(key, asset);
+            return ResultCode.Ok(asset);
+        }
+
+        private static T LoadAddressableSync<T>(string path, string typeTag) where T : UnityEngine.Object
+        {
+#if UNITY_EDITOR
+            return null;
+#else
+            try
+            {
+                var handle = Addressables.LoadAssetAsync<T>(path);
+                return handle.WaitForCompletion();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[ResourceManager] Addressable {typeTag} load failed: {path}, {ex.Message}");
+                return null;
+            }
+#endif
+        }
+
+#if UNITY_EDITOR
+        private static T LoadFrameworkResourceSync<T>(string path) where T : UnityEngine.Object
+        {
+            if (string.IsNullOrEmpty(path)) return null;
+
+            var normalized = path.Replace('\\', '/').Trim('/');
+            const string frameworkPrefix = "Assets/FrameworkResources/";
+            if (normalized.StartsWith(frameworkPrefix, System.StringComparison.OrdinalIgnoreCase))
+                normalized = normalized.Substring(frameworkPrefix.Length);
+
+            var assetPath = "Assets/FrameworkResources/" + normalized;
+            var resolvedPath = ResolveFrameworkAssetPath(assetPath);
+            return string.IsNullOrEmpty(resolvedPath)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<T>(resolvedPath);
+        }
+
+        private static string ResolveFrameworkAssetPath(string pathWithoutExtension)
+        {
+            if (File.Exists(pathWithoutExtension)) return pathWithoutExtension;
+
+            string[] extensions =
+            {
+                ".prefab", ".asset", ".png", ".jpg", ".jpeg", ".wav", ".mp3", ".ogg", ".mat", ".controller"
+            };
+            foreach (var ext in extensions)
+            {
+                var candidate = pathWithoutExtension + ext;
+                if (File.Exists(candidate)) return candidate;
+            }
+
+            return null;
+        }
+#endif
+
+        // ===== Sync getters =====
+        [Event(EVT_GET_PREFAB)]         public List<object> GetPrefab(List<object> d)        => GetSync<GameObject>(d, "Prefab");
+        [Event(EVT_GET_AUDIO_CLIP)]     public List<object> GetAudioClip(List<object> d)     => GetSync<AudioClip>(d, "AudioClip");
+        [Event(EVT_GET_TEXTURE)]        public List<object> GetTexture(List<object> d)       => GetSync<Texture2D>(d, "Texture");
+        [Event(EVT_GET_MATERIAL)]       public List<object> GetMaterial(List<object> d)      => GetSync<Material>(d, "Material");
+        [Event(EVT_GET_RULE_TILE)]      public List<object> GetRuleTile(List<object> d)      => GetSync<RuleTile>(d, "RuleTile");
+        [Event(EVT_GET_ANIMATION_CLIP)] public List<object> GetAnimationClip(List<object> d) => GetSync<AnimationClip>(d, "AnimationClip");
+
+        [Event(EVT_GET_EXTERNAL_SPRITE)]
+        public List<object> GetExternalSprite(List<object> data)
+        {
+            if (data == null || data.Count < 1) return ResultCode.Fail("参数不足");
+            string filePath = data[0] as string;
+            if (string.IsNullOrEmpty(filePath)) return ResultCode.Fail("路径为空");
+            var key = new ResourceKey(filePath, true, "Sprite");
+            return SpriteService.Instance.TryGetResource(key, out var cached)
+                ? ResultCode.Ok(cached)
+                : ResultCode.Fail("外部 Sprite 未加载");
         }
 
         // ===== Async getters =====
-        [Event(EVT_GET_PREFAB_ASYNC)]         public List<object> GetPrefabAsync(List<object> d)        => GetAsyncFwd(d, "Prefab");
-        [Event(EVT_GET_SPRITE_ASYNC)]         public List<object> GetSpriteAsync(List<object> d)        => GetAsyncFwd(d, "Sprite");
-        [Event(EVT_GET_AUDIO_CLIP_ASYNC)]     public List<object> GetAudioClipAsync(List<object> d)     => GetAsyncFwd(d, "AudioClip");
-        [Event(EVT_GET_TEXTURE_ASYNC)]        public List<object> GetTextureAsync(List<object> d)       => GetAsyncFwd(d, "Texture");
-        [Event(EVT_GET_MATERIAL_ASYNC)]       public List<object> GetMaterialAsync(List<object> d)      => GetAsyncFwd(d, "Material");
-        [Event(EVT_GET_RULE_TILE_ASYNC)]      public List<object> GetRuleTileAsync(List<object> d)      => GetAsyncFwd(d, "RuleTile");
-        [Event(EVT_GET_ANIMATION_CLIP_ASYNC)] public List<object> GetAnimationClipAsync(List<object> d) => GetAsyncFwd(d, "AnimationClip");
+        public List<object> GetPrefabAsync(List<object> d)        => GetAsyncFwd(d, "Prefab");
+        public List<object> GetSpriteAsync(List<object> d)        => GetAsyncFwd(d, "Sprite");
+        public List<object> GetAudioClipAsync(List<object> d)     => GetAsyncFwd(d, "AudioClip");
+        public List<object> GetTextureAsync(List<object> d)       => GetAsyncFwd(d, "Texture");
+        public List<object> GetMaterialAsync(List<object> d)      => GetAsyncFwd(d, "Material");
+        public List<object> GetRuleTileAsync(List<object> d)      => GetAsyncFwd(d, "RuleTile");
+        public List<object> GetAnimationClipAsync(List<object> d) => GetAsyncFwd(d, "AnimationClip");
 
         /// <summary>外部 Sprite 异步获取走 ExternalImageService。</summary>
         [Event(EVT_GET_EXTERNAL_SPRITE_ASYNC)]
@@ -188,9 +284,9 @@ namespace EssSystem.Core.Foundation.ResourceManager
         }
 
         // ===== Async loaders =====
-        [Event(EVT_LOAD_PREFAB_ASYNC)]    public List<object> LoadPrefabAsync(List<object> d)    => LoadAsyncFwd(d, "Prefab");
-        [Event(EVT_LOAD_SPRITE_ASYNC)]    public List<object> LoadSpriteAsync(List<object> d)    => LoadAsyncFwd(d, "Sprite");
-        [Event(EVT_LOAD_RULE_TILE_ASYNC)] public List<object> LoadRuleTileAsync(List<object> d)  => LoadAsyncFwd(d, "RuleTile");
+        public List<object> LoadPrefabAsync(List<object> d)    => LoadAsyncFwd(d, "Prefab");
+        public List<object> LoadSpriteAsync(List<object> d)    => LoadAsyncFwd(d, "Sprite");
+        public List<object> LoadRuleTileAsync(List<object> d)  => LoadAsyncFwd(d, "RuleTile");
 
         /// <summary>外部图片异步加载走 EVT_LOAD_EXTERNAL_IMAGE_ASYNC。</summary>
         [Event(EVT_LOAD_EXTERNAL_SPRITE_ASYNC)]

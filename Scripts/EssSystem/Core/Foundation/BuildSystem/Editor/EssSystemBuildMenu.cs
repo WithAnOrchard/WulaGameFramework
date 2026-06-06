@@ -11,7 +11,7 @@ namespace EssSystem.Core.Foundation.BuildSystem.Editor
     /// </summary>
     public static class EssSystemBuildMenu
     {
-        [MenuItem("Build/EssSystem/Build Player %&b", priority = 1)]
+        [MenuItem("Build/WulaSystem/Foundation/Build Player %&b", priority = 1)]
         public static void BuildPlayer()
         {
             EditorApplication.ExecuteMenuItem("File/Build Settings...");

@@ -78,7 +78,7 @@ namespace EssSystem.Core.Foundation.NetworkManager
             base.Initialize();
             Log($"NetworkService 初始化完成 (MirrorReady={IsMirrorReady})", IsMirrorReady ? Color.green : Color.yellow);
             if (!IsMirrorReady)
-                LogWarning("Mirror 尚未安装：所有网络命令将被静默丢弃。请通过菜单 Tools/WulaFramework/Network/Install Mirror Now 安装。");
+                LogWarning("Mirror 尚未安装：所有网络命令将被静默丢弃。请通过菜单 Tools/WulaSystem/Foundation/Network/Mirror/Install Mirror Now 安装。");
 
             // 高频事件加入静默集，避免每秒数十条 "触发事件 / 没监听器" 日志刷屏
             if (EventProcessor.HasInstance)

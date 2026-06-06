@@ -29,6 +29,7 @@ namespace EssSystem.Core.Foundation.ResourceManager.Services.Base
             if (resource != null)
             {
                 LoadedResources[key] = resource;
+                ResourceService.Instance?.TrackResource(key, resource);
             }
         }
 
@@ -49,6 +50,16 @@ namespace EssSystem.Core.Foundation.ResourceManager.Services.Base
         public Dictionary<ResourceKey, UnityEngine.Object> GetLoadedResources() => LoadedResources;
 
         public int GetLoadedResourceCount() => LoadedResources.Count;
+
+        public void ForgetResource(ResourceKey key)
+        {
+            LoadedResources.Remove(key);
+        }
+
+        public void ClearCache()
+        {
+            LoadedResources.Clear();
+        }
 
         // ============================================================
         // 异步加载通用逻辑

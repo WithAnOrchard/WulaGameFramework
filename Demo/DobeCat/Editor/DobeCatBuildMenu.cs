@@ -23,6 +23,7 @@ namespace Demo.DobeCat.Editor
     public class DobeCatBuildMenu : IPostprocessBuildWithReport
     {
         // ─── 常量 ─────────────────────────────────────────────────
+        private const string MENU_PREFIX            = "Build/WulaSystem/Demo/DobeCat/";
         private const string ScenePath              = "Assets/Demo/DobeCat/Scenes/DobeCat.unity";
         private const string FrameworkAddressableGroup = "Framework-Resources";
 
@@ -42,10 +43,10 @@ namespace Demo.DobeCat.Editor
         }
 
         // ─── 菜单入口 ─────────────────────────────────────────────
-        [MenuItem("Build/DobeCat/Build Windows x64 %&b", priority = 1)]
+        [MenuItem(MENU_PREFIX + "Build Windows x64", priority = 1)]
         public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64);
 
-        [MenuItem("Build/DobeCat/Show Output Folder", priority = 20)]
+        [MenuItem(MENU_PREFIX + "Show Output Folder", priority = 20)]
         public static void ShowOutputFolder()
         {
             var dir = Path.GetDirectoryName(AutoOutputPath)!;

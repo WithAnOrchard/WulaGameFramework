@@ -318,14 +318,17 @@ namespace EssSystem.Core.Base.Manager
         protected virtual object DeserializeValue(string typeName, object value)
         {
             if (string.IsNullOrEmpty(typeName) || typeName == "null" || value == null) return null;
+            var type = LegacyTypeResolver.Resolve(typeName);
+            if (type == null)
+            {
+                LogWarning($"未找到类型: {typeName} —— 如曾搬迁/重命名，请在新类上加 [FormerName(\"{typeName.Split(',')[0].Trim()}\")]");
+                return null;
+            }
+            // string / 简单类型 / decimal 直接返回 —— 与 SerializeValue 对称：原样存 → 原样读
+            // （走 JsonUtility 会因 plain string 不带引号报 "Invalid value"；非 string 的简单类型原本会被 switch 默认分支吞成 null）
+            if (type == typeof(string) || type.IsPrimitive || type == typeof(decimal)) return value;
             try
             {
-                var type = LegacyTypeResolver.Resolve(typeName);
-                if (type == null)
-                {
-                    LogWarning($"未找到类型: {typeName} —— 如曾搬迁/重命名，请在新类上加 [FormerName(\"{typeName.Split(',')[0].Trim()}\")]");
-                    return null;
-                }
                 return value switch
                 {
                     string str => JsonUtility.FromJson(str, type),

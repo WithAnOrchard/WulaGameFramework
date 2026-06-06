@@ -4,9 +4,9 @@
 //       Client.Add(com.mirror-networking.mirror) → 安装成功后设置 MIRROR_INSTALLED 宏。
 //
 // 用户可通过菜单：
-//   Tools/WulaFramework/Network/Install Mirror Now
-//   Tools/WulaFramework/Network/Uninstall Mirror
-//   Tools/WulaFramework/Network/Toggle Auto-Install
+//   Tools/WulaSystem/Foundation/Network/Mirror/Install Mirror Now
+//   Tools/WulaSystem/Foundation/Network/Mirror/Uninstall Mirror
+//   Tools/WulaSystem/Foundation/Network/Mirror/Toggle Auto-Install
 //
 // 配置常量集中在文件顶部，OpenUPM 包名/作用域有变时改这里即可。
 
@@ -30,6 +30,7 @@ namespace EssSystem.Core.Foundation.NetworkManager.EditorTools
     [InitializeOnLoad]
     public static class MirrorInstaller
     {
+        private const string MENU_PREFIX = "Tools/WulaSystem/Foundation/Network/Mirror/";
         // ─── 配置 ───────────────────────────────────────────────
         public const string MirrorPackageId = "com.mirrornetworking.mirror";
         public const string OpenUpmRegistryName = "OpenUPM";
@@ -98,12 +99,12 @@ namespace EssSystem.Core.Foundation.NetworkManager.EditorTools
             else
             {
                 EnsureScriptingDefine(false);
-                Debug.LogWarning("[MirrorInstaller] 已跳过 Mirror 安装。可通过菜单 Tools/WulaFramework/Network/Install Mirror Now 重新触发。");
+                Debug.LogWarning("[MirrorInstaller] 已跳过 Mirror 安装。可通过菜单 Tools/WulaSystem/Foundation/Network/Mirror/Install Mirror Now 重新触发。");
             }
         }
 
         // ─── 菜单 ───────────────────────────────────────────────
-        [MenuItem("Tools/WulaFramework/Network/Install Mirror Now", priority = 100)]
+        [MenuItem(MENU_PREFIX + "Install Mirror Now", priority = 100)]
         public static void InstallMirror()
         {
             EnsureOpenUpmRegistry();
@@ -113,7 +114,7 @@ namespace EssSystem.Core.Foundation.NetworkManager.EditorTools
             EditorApplication.update += OnAddProgress;
         }
 
-        [MenuItem("Tools/WulaFramework/Network/Uninstall Mirror", priority = 101)]
+        [MenuItem(MENU_PREFIX + "Uninstall Mirror", priority = 101)]
         public static void UninstallMirror()
         {
             if (!IsMirrorInstalled())
@@ -125,14 +126,14 @@ namespace EssSystem.Core.Foundation.NetworkManager.EditorTools
             EditorApplication.update += OnRemoveProgress;
         }
 
-        [MenuItem("Tools/WulaFramework/Network/Toggle Auto-Install", priority = 200)]
+        [MenuItem(MENU_PREFIX + "Toggle Auto-Install", priority = 200)]
         public static void ToggleAutoInstall()
         {
             AutoInstall = !AutoInstall;
             Debug.Log($"[MirrorInstaller] AutoInstall = {AutoInstall}");
         }
 
-        [MenuItem("Tools/WulaFramework/Network/Repair OpenUPM Scopes", priority = 150)]
+        [MenuItem(MENU_PREFIX + "Repair OpenUPM Scopes", priority = 150)]
         public static void RepairOpenUpmScopes()
         {
             var manifestPath = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath, "..", "Packages", "manifest.json"));
@@ -163,7 +164,7 @@ namespace EssSystem.Core.Foundation.NetworkManager.EditorTools
             Client.Resolve();
         }
 
-        [MenuItem("Tools/WulaFramework/Network/Check Mirror Status", priority = 201)]
+        [MenuItem(MENU_PREFIX + "Check Mirror Status", priority = 201)]
         public static void CheckStatus()
         {
             var installed = IsMirrorInstalled();

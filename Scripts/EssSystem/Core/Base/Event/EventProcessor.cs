@@ -59,6 +59,10 @@ namespace EssSystem.Core.Base.Event
     [Manager(-30)]
     public class EventProcessor : Manager<EventProcessor>
     {
+        private static readonly HashSet<string> _scanAssemblyNames = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly List<string> _scanNamespacePrefixes = new List<string>();
+        private static bool _hasScanProfile;
+
         /// <summary>
         ///     存储所有Event方法信息
         /// </summary>
@@ -86,6 +90,39 @@ namespace EssSystem.Core.Base.Event
         private const float CLEANUP_INTERVAL = 60f;  // 每 60 秒清理一次
 
         /// <summary>把指定事件加入静默集；之后该事件不再产生 "触发事件 / 没监听器" 日志（仍正常分派）。</summary>
+        public static void ConfigureScanProfile(IEnumerable<Type> rootTypes, IEnumerable<string> extraNamespacePrefixes = null)
+        {
+            _scanAssemblyNames.Clear();
+            _scanNamespacePrefixes.Clear();
+            _hasScanProfile = true;
+
+            if (rootTypes != null)
+            {
+                foreach (var type in rootTypes)
+                {
+                    if (type == null) continue;
+                    var assemblyName = type.Assembly.GetName().Name;
+                    if (!string.IsNullOrEmpty(assemblyName))
+                        _scanAssemblyNames.Add(assemblyName);
+                    AddScanNamespacePrefix(type.Namespace);
+                }
+            }
+
+            if (extraNamespacePrefixes != null)
+            {
+                foreach (var prefix in extraNamespacePrefixes)
+                    AddScanNamespacePrefix(prefix);
+            }
+        }
+
+        private static void AddScanNamespacePrefix(string prefix)
+        {
+            if (string.IsNullOrWhiteSpace(prefix)) return;
+            prefix = prefix.Trim();
+            if (_scanNamespacePrefixes.Contains(prefix)) return;
+            _scanNamespacePrefixes.Add(prefix);
+        }
+
         public void SilenceEvent(string eventName)
         {
             if (!string.IsNullOrEmpty(eventName)) _silentEvents.Add(eventName);
@@ -99,6 +136,7 @@ namespace EssSystem.Core.Base.Event
 
         protected override void Initialize()
         {
+            var totalWatch = System.Diagnostics.Stopwatch.StartNew();
             base.Initialize();
 
             // 事件总线必须最先初始化（扫描阶段可能触发 Service 创建 → AddListener/TriggerEvent）
@@ -108,7 +146,10 @@ namespace EssSystem.Core.Base.Event
             _listenerMethods = new Dictionary<string, List<ListenerMethodInfo>>();
 
             // 扫描所有标注
+            var sample = System.Diagnostics.Stopwatch.StartNew();
             ScanEventAttributes();
+            LogStartupTiming("EventProcessor.ScanEventAttributes", sample);
+            LogStartupTiming("EventProcessor.Initialize.Total", totalWatch);
         }
 
         protected override void Update()
@@ -243,7 +284,7 @@ namespace EssSystem.Core.Base.Event
             var skipped = 0;
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (AssemblyUtils.IsSystemAssembly(assembly))
+                if (!ShouldScanEventAssembly(assembly))
                 {
                     skipped++;
                     continue;
@@ -251,7 +292,9 @@ namespace EssSystem.Core.Base.Event
 
                 try
                 {
+                    var sample = System.Diagnostics.Stopwatch.StartNew();
                     ScanAssembly(assembly);
+                    LogStartupTiming($"EventProcessor.ScanAssembly.{assembly.GetName().Name}", sample, 20);
                 }
                 catch (Exception ex)
                 {
@@ -277,16 +320,98 @@ namespace EssSystem.Core.Base.Event
             foreach (var type in types)
             {
                 // 扫描Event方法
-                ScanEventMethods(type);
+                if (!ShouldScanEventType(type)) continue;
+                ScanEventAndListenerMethods(type);
 
                 // 扫描EventListener方法
-                ScanEventListenerMethods(type);
             }
         }
 
         /// <summary>
         ///     扫描Event方法
         /// </summary>
+        private static bool ShouldScanEventAssembly(Assembly assembly)
+        {
+            if (assembly == null || AssemblyUtils.IsSystemAssembly(assembly)) return false;
+            if (!_hasScanProfile) return true;
+
+            var name = assembly.GetName().Name;
+            return !string.IsNullOrEmpty(name) && _scanAssemblyNames.Contains(name);
+        }
+
+        private static bool ShouldScanEventType(Type type)
+        {
+            if (type == null || type.IsGenericTypeDefinition) return false;
+            if (!_hasScanProfile) return true;
+
+            var ns = type.Namespace;
+            if (string.IsNullOrEmpty(ns)) return false;
+
+            foreach (var prefix in _scanNamespacePrefixes)
+            {
+                if (ns == prefix || ns.StartsWith(prefix + ".", StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private void ScanEventAndListenerMethods(Type type)
+        {
+            var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                                          BindingFlags.Static);
+
+            foreach (var method in methods)
+            {
+                var eventAttributes = (EventAttribute[])method.GetCustomAttributes(typeof(EventAttribute), false);
+                if (eventAttributes.Length > 0)
+                {
+                    var attr = eventAttributes[0];
+                    var eventName = string.IsNullOrEmpty(attr.EventName) ? method.Name : attr.EventName;
+
+                    _eventMethods[eventName] = new EventMethodInfo
+                    {
+                        MethodInfo = method,
+                        Attribute = attr,
+                        Target = method.IsStatic ? null : GetOrCreateInstance(type),
+                        Delegate = CreateDelegate(method),
+                        Parameters = method.GetParameters()
+                    };
+
+                    Log($"鍙戠幇Event鏂规硶: {type.Name}.{method.Name} -> {eventName}", Color.yellow);
+                }
+
+                var listenerAttributes =
+                    (EventListenerAttribute[])method.GetCustomAttributes(typeof(EventListenerAttribute), false);
+                foreach (var attr in listenerAttributes)
+                {
+                    if (!_listenerMethods.ContainsKey(attr.EventName))
+                        _listenerMethods[attr.EventName] = new List<ListenerMethodInfo>();
+
+                    _listenerMethods[attr.EventName].Add(new ListenerMethodInfo
+                    {
+                        MethodInfo = method,
+                        Attribute = attr,
+                        Target = method.IsStatic ? null : GetOrCreateInstance(type),
+                        Delegate = CreateDelegate(method),
+                        Parameters = method.GetParameters()
+                    });
+
+                    Log($"鍙戠幇EventListener鏂规硶: {type.Name}.{method.Name} -> {attr.EventName}", Color.yellow);
+                }
+            }
+        }
+
+        private static void LogStartupTiming(string label, System.Diagnostics.Stopwatch stopwatch, int warnMs = 16)
+        {
+            if (stopwatch == null) return;
+            stopwatch.Stop();
+            var elapsed = stopwatch.ElapsedMilliseconds;
+            var message = $"[StartupTiming] {label}: {elapsed} ms";
+            if (elapsed >= warnMs) Debug.LogWarning(message);
+            else Debug.Log(message);
+        }
+
         private void ScanEventMethods(Type type)
         {
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |

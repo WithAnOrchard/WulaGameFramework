@@ -13,12 +13,13 @@ namespace EssSystem.Core.Foundation.ResourceManager.Editor
     /// </summary>
     public static class AddressablesMigrationTool
     {
+        private const string MENU_PREFIX = "Tools/WulaSystem/Foundation/Resource/Addressables/";
         private const string FrameworkGroup    = "Framework-Resources";
         private const string DobeCatGroup      = "DobeCat-Resources";
         private const string FrameworkRootPath = "Assets/FrameworkResources";
         private const string DobeCatRootPath   = "Assets/Demo/DobeCat/Resources";
 
-        [MenuItem("Tools/Addressables/Migrate Framework Resources", priority = 1)]
+        [MenuItem(MENU_PREFIX + "Migrate Framework Resources", priority = 1)]
         public static void MigrateFrameworkResources()
         {
             if (!AssetDatabase.IsValidFolder(FrameworkRootPath))
@@ -34,7 +35,7 @@ namespace EssSystem.Core.Foundation.ResourceManager.Editor
             EditorUtility.DisplayDialog("迁移完成", $"已将 {FrameworkRootPath} 下所有资源注册到 Addressable 组 [{FrameworkGroup}]。\n\n后续 DobeCat 构建会自动跳过此组。", "OK");
         }
 
-        [MenuItem("Tools/Addressables/Register DobeCat Resources", priority = 2)]
+        [MenuItem(MENU_PREFIX + "Register DobeCat Resources", priority = 2)]
         public static void RegisterDobeCatResources()
         {
             if (!AssetDatabase.IsValidFolder(DobeCatRootPath))
