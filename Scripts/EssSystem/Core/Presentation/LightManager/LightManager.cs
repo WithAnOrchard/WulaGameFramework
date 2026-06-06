@@ -134,7 +134,7 @@ namespace EssSystem.Core.Presentation.LightManager
             if (_sunLight != null) return;
             // 找场景中第一盏 Directional Light
 #if UNITY_2023_1_OR_NEWER
-            var lights = Object.FindObjectsByType<Light>(FindObjectsSortMode.None);
+            var lights = Object.FindObjectsByType<Light>(FindObjectsInactive.Exclude);
 #else
             var lights = Object.FindObjectsOfType<Light>();
 #endif
@@ -676,7 +676,7 @@ namespace EssSystem.Core.Presentation.LightManager
 {
     /// <summary>
     /// LightManager **stub**（URP 未安装时的占位实现）。
-    /// <para>启动时打印警告，引导通过菜单 <c>Tools/EssSystem/LightManager/Install URP Package</c> 安装 URP；
+    /// <para>启动时打印警告，引导通过菜单 <c>Tools/WulaSystem/Presentation/LightManager/URP/Install URP Package</c> 安装 URP；
     /// 安装完成后 <see cref="EssSystem.Core.Presentation.LightManager.Editor.LightManagerInstaller"/> 自动写入 <c>URP_INSTALLED</c> 编译符号，重编译后切到完整实现。</para>
     /// <para>本 stub 不声明 EVT_* 常量（§4.1 禁止跨模块直接引用 EVT_ 常量；调用方一律 bare-string）。
     /// 完整实现的常量列表见同文件 <c>#if URP_INSTALLED</c> 分支。</para>
@@ -689,7 +689,7 @@ namespace EssSystem.Core.Presentation.LightManager
             base.Initialize();
             LogWarning(
                 "[LightManager] URP 未安装，本 Manager 已停用（stub 模式）。\n" +
-                "→ 通过菜单 [Tools/EssSystem/LightManager/Install URP Package] 自动安装 URP；\n" +
+                "→ 通过菜单 [Tools/WulaSystem/Presentation/LightManager/URP/Install URP Package] 自动安装 URP；\n" +
                 "→ 安装完成后 Unity 会自动重编译并启用完整实现。");
         }
     }

@@ -7,7 +7,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
     /// <para>每个部件均为 <see cref="CharacterPartType.Dynamic"/>，含 8 个动作：
     /// Walk / Idle / Jump / Attack / Defend / Damage / Death / Special。</para>
     /// <para>SpriteIds 引用的是 <see cref="EssSystem.Core.Presentation.CharacterManager"/> 的
-    /// <c>Tools/Character/Slice Sprite Sheets (8x6)</c> 工具切出的子 Sprite，
+    /// <c>Tools/WulaSystem/Presentation/Character/2D/Slice Selected Sprite Sheets (8x6)</c> 工具切出的子 Sprite，
     /// 命名规则 <c>{sheetPrefix}_{Action}_{frameIndex}</c>。
     /// 业务侧使用前**必须先跑过一次切片菜单**，否则 Sprite 加载失败。</para>
     /// </summary>

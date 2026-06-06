@@ -8,7 +8,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
 {
     /// <summary>
     /// Editor 工具：**一次性**生成 `Sprite2DAnimator` 模式所需的 base AnimatorController 资产。
-    /// <para><b>菜单</b>：Tools/Character/Build Sprite Animator Base Controller</para>
+    /// <para><b>菜单</b>：Tools/WulaSystem/Presentation/Character/2D/Build Sprite Animator Base Controller</para>
     /// <para><b>产物</b>：<c>Assets/Resources/Generated/CharacterAnimBase.controller</c>，
     /// 包含 8 个标准 state（Walk/Idle/Jump/Attack/Defend/Damage/Death/Special），
     /// 每个 state 一个占位 AnimationClip（作为运行时
@@ -19,6 +19,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
     public static class CharacterAnimatorBaseControllerBuilder
     {
         public const string OutputAssetPath = "Assets/Resources/Generated/CharacterAnimBase.controller";
+        private const string MENU_PREFIX = "Tools/WulaSystem/Presentation/Character/2D/";
 
         /// <summary>Runtime 用 <c>Resources.Load&lt;RuntimeAnimatorController&gt;(BaseControllerResourcePath)</c> 取它。</summary>
         public const string BaseControllerResourcePath = "Generated/CharacterAnimBase";
@@ -26,7 +27,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
         public static readonly string[] StandardStates =
             { "Walk", "Idle", "Jump", "Attack", "Defend", "Damage", "Death", "Special" };
 
-        [MenuItem("Tools/Character/Build Sprite Animator Base Controller")]
+        [MenuItem(MENU_PREFIX + "Animator/Build Sprite Animator Base Controller")]
         public static void Build()
         {
             EnsureFolder("Assets/Resources");

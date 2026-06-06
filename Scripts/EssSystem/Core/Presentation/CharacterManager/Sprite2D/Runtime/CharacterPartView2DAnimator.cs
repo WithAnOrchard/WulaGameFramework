@@ -17,7 +17,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
     /// 计算帧索引 → 直接写 <see cref="SpriteRenderer.sprite"/>。</para>
     /// <para><b>Loop=false</b>：clip wrapMode = <c>ClampForever</c> + 监听 normalizedTime ≥ 1
     /// 手动触发 <see cref="CharacterPartView.OnActionComplete"/>。</para>
-    /// <para><b>前提</b>：在 Editor 跑过一次 <c>Tools/Character/Build Sprite Animator Base Controller</c>
+    /// <para><b>前提</b>：在 Editor 跑过一次 <c>Tools/WulaSystem/Presentation/Character/2D/Build Sprite Animator Base Controller</c>
     /// 生成 <c>Resources/Generated/CharacterAnimBase.controller</c>。</para>
     /// </summary>
     [DisallowMultipleComponent]
@@ -72,7 +72,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             {
                 Debug.LogWarning($"[CharacterPartView2DAnimator] 未找到 base AnimatorController: " +
                                  $"Resources/{BaseControllerResourcePath}.controller —— " +
-                                 $"请先跑 Tools/Character/Build Sprite Animator Base Controller");
+                                 $"请先跑 Tools/WulaSystem/Presentation/Character/2D/Build Sprite Animator Base Controller");
                 return;
             }
             _override = new AnimatorOverrideController(baseCtrl);

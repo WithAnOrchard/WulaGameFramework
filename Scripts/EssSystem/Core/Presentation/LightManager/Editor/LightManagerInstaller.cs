@@ -21,9 +21,10 @@ namespace EssSystem.Core.Presentation.LightManager.Editor
         private const string URP_PACKAGE_ID    = "com.unity.render-pipelines.universal";
         private const string URP_DEFINE_SYMBOL = "URP_INSTALLED";
         private const string PROMPT_PREF_KEY   = "EssSystem.LightManager.URPPromptShown";
+        private const string MENU_PREFIX = "Tools/WulaSystem/Presentation/LightManager/URP/";
 
-        private const string MENU_INSTALL = "Tools/EssSystem/LightManager/Install URP Package";
-        private const string MENU_CHECK   = "Tools/EssSystem/LightManager/Recheck URP Status";
+        private const string MENU_INSTALL = MENU_PREFIX + "Install URP Package";
+        private const string MENU_CHECK = MENU_PREFIX + "Recheck URP Status";
 
         private static AddRequest _addRequest;
 
@@ -86,7 +87,7 @@ namespace EssSystem.Core.Presentation.LightManager.Editor
                 "Presentation/LightManager 依赖 URP（Universal Render Pipeline）包。\n\n" +
                 "当前项目未安装 URP，LightManager 已自动降级为 stub（事件全部返回 Fail）。\n\n" +
                 "是否现在通过 Package Manager 自动安装最新版 URP？\n\n" +
-                "（也可以稍后通过菜单：Tools/EssSystem/LightManager/Install URP Package）";
+                "（也可以稍后通过菜单：Tools/WulaSystem/Presentation/LightManager/URP/Install URP Package）";
             if (EditorUtility.DisplayDialog(title, msg, "立即安装", "稍后再说"))
                 InstallUrp();
         }
@@ -121,7 +122,7 @@ namespace EssSystem.Core.Presentation.LightManager.Editor
                     "Unity 即将重新编译，编译完成后会自动：\n" +
                     "  1. 创建 URP Asset / Renderer Data 到 Assets/Settings/URP/\n" +
                     "  2. 指派到 Project Settings → Graphics / Quality\n\n" +
-                    "（也可以手动触发：Tools/EssSystem/LightManager/Bootstrap URP Project (3D/Forward) 或 (2D)）",
+                    "（也可以手动触发：Tools/WulaSystem/Presentation/LightManager/URP/Bootstrap URP Project (3D/Forward) 或 (2D)）",
                     "OK");
             }
             else

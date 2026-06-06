@@ -1,45 +1,45 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.CharacterManager.Dao;
-// §4.1 跨模块走 bare-string 协议，不 using ResourceManager
+// 搂4.1 璺ㄦā鍧楄蛋 bare-string 鍗忚锛屼笉 using ResourceManager
 
 namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 {
     /// <summary>
-    /// 3D 单部件 View —— 通过 ResourceManager 加载 <see cref="CharacterPartConfig.PrefabPath"/>
-    /// 指定的 Prefab 并实例化为子节点，使用 <see cref="UnityEngine.Animator"/> 切换动作状态。
-    /// <para>每个动作 = 一个 Animator State：用 <see cref="CharacterActionConfig.ResolveAnimatorState"/> 解析名字，
-    /// 通过 <see cref="UnityEngine.Animator.CrossFadeInFixedTime(int, float, int)"/> 切换。</para>
-    /// <para>非循环动作完成检测：<c>StateInfo.normalizedTime ≥ 1 &amp;&amp; !inTransition</c> 时触发
-    /// <see cref="CharacterPartView.OnActionComplete"/>。帧事件通过
-    /// <see cref="CharacterActionConfig.NormalizedTimeEvents"/> 在 normalizedTime 跨越阈值时广播。</para>
+    /// 3D 鍗曢儴浠?View 鈥斺€?閫氳繃 ResourceManager 鍔犺浇 <see cref="CharacterPartConfig.PrefabPath"/>
+    /// 鎸囧畾鐨?Prefab 骞跺疄渚嬪寲涓哄瓙鑺傜偣锛屼娇鐢?<see cref="UnityEngine.Animator"/> 鍒囨崲鍔ㄤ綔鐘舵€併€?
+    /// <para>姣忎釜鍔ㄤ綔 = 涓€涓?Animator State锛氱敤 <see cref="CharacterActionConfig.ResolveAnimatorState"/> 瑙ｆ瀽鍚嶅瓧锛?
+    /// 閫氳繃 <see cref="UnityEngine.Animator.CrossFadeInFixedTime(int, float, int)"/> 鍒囨崲銆?/para>
+    /// <para>闈炲惊鐜姩浣滃畬鎴愭娴嬶細<c>StateInfo.normalizedTime 鈮?1 &amp;&amp; !inTransition</c> 鏃惰Е鍙?
+    /// <see cref="CharacterPartView.OnActionComplete"/>銆傚抚浜嬩欢閫氳繃
+    /// <see cref="CharacterActionConfig.NormalizedTimeEvents"/> 鍦?normalizedTime 璺ㄨ秺闃堝€兼椂骞挎挱銆?/para>
     /// </summary>
     [DisallowMultipleComponent]
     public class CharacterPartView3D : CharacterPartView
     {
-        /// <summary>实例化出来的 Prefab 根 Transform（部件本体）。</summary>
+        /// <summary>瀹炰緥鍖栧嚭鏉ョ殑 Prefab 鏍?Transform锛堥儴浠舵湰浣擄級銆?/summary>
         public Transform PrefabInstance { get; private set; }
 
-        /// <summary>Prefab 上的 Animator（如果有）。</summary>
+        /// <summary>Prefab 涓婄殑 Animator锛堝鏋滄湁锛夈€?/summary>
         public Animator Animator { get; private set; }
 
-        // 当前动作运行态
+        // 褰撳墠鍔ㄤ綔杩愯鎬?
         private CharacterActionConfig _currentAction;
         private bool  _playing;
         private bool  _completeFired;
         private float _lastNormalizedTime;
 
-        // Rig 根骨骼锁定 —— 解决无 Avatar 时 clip 内 root/Hip Y 关键帧让模型下沉的问题
-        // 基线值在 Animator 第一次采样之后捕获（取 idle pose 的 Y），不是 prefab 的 raw 默认
+        // Rig 鏍归楠奸攣瀹?鈥斺€?瑙ｅ喅鏃?Avatar 鏃?clip 鍐?root/Hip Y 鍏抽敭甯ц妯″瀷涓嬫矇鐨勯棶棰?
+        // 鍩虹嚎鍊煎湪 Animator 绗竴娆￠噰鏍蜂箣鍚庢崟鑾凤紙鍙?idle pose 鐨?Y锛夛紝涓嶆槸 prefab 鐨?raw 榛樿
         private Transform _rigRootBone;
         private Vector3   _rigRootInitialLocalPos;
-        private Transform _prefabRootTransform;     // go.transform —— 也要锁（path="" 曲线会写这里）
+        private Transform _prefabRootTransform;     // go.transform 鈥斺€?涔熻閿侊紙path="" 鏇茬嚎浼氬啓杩欓噷锛?
         private Vector3   _prefabRootInitialLocalPos;
         private bool      _baselineCaptured;
 
-        // 3D 部件天然有 Animator —— 始终可作 pivot
+        // 3D 閮ㄤ欢澶╃劧鏈?Animator 鈥斺€?濮嬬粓鍙綔 pivot
         public override bool CanPivotComplete => true;
 
         #region Setup / Public API
@@ -68,8 +68,8 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             {
                 var available = ListControllerStates();
                 Debug.LogWarning(
-                    $"[CharacterPartView3D] {Config.PartId}：Animator 不含 state '{stateName}' (layer {layer})。\n" +
-                    $"  Controller='{Animator.runtimeAnimatorController?.name}'，可用 state：[{available}]");
+                    $"[CharacterPartView3D] {Config.PartId}锛欰nimator 涓嶅惈 state '{stateName}' (layer {layer})銆俓n" +
+                    $"  Controller='{Animator.runtimeAnimatorController?.name}'锛屽彲鐢?state锛歔{available}]");
                 return false;
             }
 
@@ -92,7 +92,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             _playing = false;
         }
 
-        /// <summary>诊断辅助：列出当前 controller 内所有 state 名（逗号分隔）。</summary>
+        /// <summary>璇婃柇杈呭姪锛氬垪鍑哄綋鍓?controller 鍐呮墍鏈?state 鍚嶏紙閫楀彿鍒嗛殧锛夈€?/summary>
         private string ListControllerStates()
         {
             if (Animator == null || Animator.runtimeAnimatorController == null) return "<no controller>";
@@ -105,7 +105,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
                 return string.Join(", ", names);
             }
 #endif
-            // 运行时退化：列 clip 名（Builder 生成的 controller state 名 = clip 名）
+            // 杩愯鏃堕€€鍖栵細鍒?clip 鍚嶏紙Builder 鐢熸垚鐨?controller state 鍚?= clip 鍚嶏級
             var clipNames = new List<string>();
             foreach (var c in Animator.runtimeAnimatorController.animationClips)
                 if (c != null) clipNames.Add(c.name);
@@ -118,7 +118,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 
         private void BuildPrefabInstance()
         {
-            // 清理旧实例（重复 Setup 容错）
+            // 娓呯悊鏃у疄渚嬶紙閲嶅 Setup 瀹归敊锛?
             if (PrefabInstance != null)
             {
                 if (UnityEngine.Application.isPlaying) Destroy(PrefabInstance.gameObject);
@@ -132,13 +132,13 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             var prefab = LoadPrefab(Config.PrefabPath);
             if (prefab == null)
             {
-                Debug.LogWarning($"[CharacterPartView3D] {Config.PartId}：加载 Prefab 失败 → {Config.PrefabPath}");
+                Debug.LogWarning($"[CharacterPartView3D] {Config.PartId}锛氬姞杞?Prefab 澶辫触 鈫?{Config.PrefabPath}");
                 return;
             }
 
             var go = Instantiate(prefab, transform);
             go.name = Config.PartId;
-            // Prefab 自身的本地变换由 Setup 应用在父节点（this），子节点保持单位
+            // Prefab 鑷韩鐨勬湰鍦板彉鎹㈢敱 Setup 搴旂敤鍦ㄧ埗鑺傜偣锛坱his锛夛紝瀛愯妭鐐逛繚鎸佸崟浣?
             go.transform.localPosition = Vector3.zero;
             go.transform.localRotation = Quaternion.identity;
             go.transform.localScale    = Vector3.one;
@@ -146,21 +146,21 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             PrefabInstance = go.transform;
             Animator       = go.GetComponentInChildren<Animator>();
 
-            // FBX Animation Type=None 或导入设置不带 Animator 时，自动补一个挂在根节点上。
-            // Generic 动画通过骨骼 transform 路径作用，不强依赖 Avatar；clip 内 curve 会按 path 应用到子节点。
+            // FBX Animation Type=None 鎴栧鍏ヨ缃笉甯?Animator 鏃讹紝鑷姩琛ヤ竴涓寕鍦ㄦ牴鑺傜偣涓娿€?
+            // Generic 鍔ㄧ敾閫氳繃楠ㄩ transform 璺緞浣滅敤锛屼笉寮轰緷璧?Avatar锛沜lip 鍐?curve 浼氭寜 path 搴旂敤鍒板瓙鑺傜偣銆?
             if (Animator == null)
             {
                 Animator = go.AddComponent<Animator>();
-                Debug.Log($"[CharacterPartView3D] {Config.PartId}：FBX 上无 Animator，已自动添加到根节点");
+                Debug.Log($"[CharacterPartView3D] {Config.PartId}锛欶BX 涓婃棤 Animator锛屽凡鑷姩娣诲姞鍒版牴鑺傜偣");
             }
 
             {
-                // 自动按 fbxPath 加载同名 .controller（CharacterConfigFactory 在 Editor 下会确保它存在）
+                // 鑷姩鎸?fbxPath 鍔犺浇鍚屽悕 .controller锛圕haracterConfigFactory 鍦?Editor 涓嬩細纭繚瀹冨瓨鍦級
                 if (Animator.runtimeAnimatorController == null)
                 {
                     var ctrl = Resources.Load<RuntimeAnimatorController>(Config.PrefabPath);
 #if UNITY_EDITOR
-                    // Editor fallback：刚生成的 .controller 可能未进 Resources 索引，直接用 AssetDatabase 找
+                    // Editor fallback锛氬垰鐢熸垚鐨?.controller 鍙兘鏈繘 Resources 绱㈠紩锛岀洿鎺ョ敤 AssetDatabase 鎵?
                     if (ctrl == null)
                     {
                         var fileName = System.IO.Path.GetFileName(Config.PrefabPath);
@@ -183,34 +183,34 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
                     if (ctrl != null)
                     {
                         Animator.runtimeAnimatorController = ctrl;
-                        Debug.Log($"[CharacterPartView3D] {Config.PartId}：已绑定 Controller '{ctrl.name}'");
+                        Debug.Log($"[CharacterPartView3D] {Config.PartId}锛氬凡缁戝畾 Controller '{ctrl.name}'");
                     }
                     else
                     {
                         Debug.LogWarning(
-                            $"[CharacterPartView3D] {Config.PartId}：Resources/{Config.PrefabPath} 同名未找到 AnimatorController —— 动画不会播放。" +
-                            $"运行 Tools/Character/Build AnimatorController From Selected FBX 后再试。");
+                            $"[CharacterPartView3D] {Config.PartId} can not find AnimatorController for Resources/{Config.PrefabPath}. " +
+                            $"Please run menu item 'Tools/WulaSystem/Presentation/Character/3D/FBX/Build AnimatorController From Selected FBX' to generate it.");
                     }
                 }
-                // 关键：关 root motion —— 让 Animator 提取 clip 内 root translation/rotation curve，不写到骨骼。
-                // 这样 walk 类动画的 Hip Y 关键帧就不会让模型陷地。
+                // 鍏抽敭锛氬叧 root motion 鈥斺€?璁?Animator 鎻愬彇 clip 鍐?root translation/rotation curve锛屼笉鍐欏埌楠ㄩ銆?
+                // 杩欐牱 walk 绫诲姩鐢荤殑 Hip Y 鍏抽敭甯у氨涓嶄細璁╂ā鍨嬮櫡鍦般€?
                 Animator.applyRootMotion = false;
             }
 
-            // 只找好引用；基线值（_rigRootInitialLocalPos / _prefabRootInitialLocalPos）
-            // 推迟到第一次 LateUpdate 捕获 —— 那时 Animator 已经采样完默认 state（idle）
-            // 直接拿 prefab 的 raw localPosition 是错的：idle clip 会把 body_1 抬到正确视觉高度，
-            // raw 默认通常更低（rig 原点在腰部 → 静止显示需要靠 clip 抬）。
+            // 鍙壘濂藉紩鐢紱鍩虹嚎鍊硷紙_rigRootInitialLocalPos / _prefabRootInitialLocalPos锛?
+            // 鎺ㄨ繜鍒扮涓€娆?LateUpdate 鎹曡幏 鈥斺€?閭ｆ椂 Animator 宸茬粡閲囨牱瀹岄粯璁?state锛坕dle锛?
+            // 鐩存帴鎷?prefab 鐨?raw localPosition 鏄敊鐨勶細idle clip 浼氭妸 body_1 鎶埌姝ｇ‘瑙嗚楂樺害锛?
+            // raw 榛樿閫氬父鏇翠綆锛坮ig 鍘熺偣鍦ㄨ叞閮?鈫?闈欐鏄剧ず闇€瑕侀潬 clip 鎶級銆?
             _rigRootBone         = FindRigRootBone(go.transform);
             _prefabRootTransform = go.transform;
             _baselineCaptured    = false;
             if (_rigRootBone != null)
-                Debug.Log($"[CharacterPartView3D] {Config.PartId}：rig root bone='{_rigRootBone.name}'（基线将在首次 Animator 采样后捕获）");
+                Debug.Log($"[CharacterPartView3D] {Config.PartId}锛歳ig root bone='{_rigRootBone.name}'锛堝熀绾垮皢鍦ㄩ娆?Animator 閲囨牱鍚庢崟鑾凤級");
             else
-                Debug.LogWarning($"[CharacterPartView3D] {Config.PartId}：未找到 rig 根骨骼，walk 可能下沉");
+                Debug.LogWarning($"[CharacterPartView3D] {Config.PartId}锛氭湭鎵惧埌 rig 鏍归楠硷紝walk 鍙兘涓嬫矇");
 
 #if UNITY_EDITOR
-            // 诊断：列出 controller 内所有 clip 中带 localPosition 曲线的 transform path
+            // 璇婃柇锛氬垪鍑?controller 鍐呮墍鏈?clip 涓甫 localPosition 鏇茬嚎鐨?transform path
             DumpClipPositionCurves();
 #endif
         }
@@ -241,10 +241,10 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 #endif
 
         /// <summary>
-        /// 三段 fallback 找 rig 根：
-        /// (1) <see cref="SkinnedMeshRenderer.rootBone"/>（蒙皮模型最可靠）
-        /// (2) 常见名字递归搜索（Armature / Root / Hips / RootBone / rig 等，MC 风/Mixamo 等）
-        /// (3) prefab 根的第一个子节点（最后兜底）
+        /// 涓夋 fallback 鎵?rig 鏍癸細
+        /// (1) <see cref="SkinnedMeshRenderer.rootBone"/>锛堣挋鐨ā鍨嬫渶鍙潬锛?
+        /// (2) 甯歌鍚嶅瓧閫掑綊鎼滅储锛圓rmature / Root / Hips / RootBone / rig 绛夛紝MC 椋?Mixamo 绛夛級
+        /// (3) prefab 鏍圭殑绗竴涓瓙鑺傜偣锛堟渶鍚庡厹搴曪級
         /// </summary>
         private static Transform FindRigRootBone(Transform prefabRoot)
         {
@@ -276,22 +276,22 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             return null;
         }
 
-        // 在 Animator 采样后还原位置 —— Animator 在 Update 阶段 sample，LateUpdate 是覆盖时机
+        // 鍦?Animator 閲囨牱鍚庤繕鍘熶綅缃?鈥斺€?Animator 鍦?Update 闃舵 sample锛孡ateUpdate 鏄鐩栨椂鏈?
         private void LateUpdate()
         {
-            // 第一次：捕获 idle pose 下 rig 根 / prefab 根的 localPosition 作为基线
+            // 绗竴娆★細鎹曡幏 idle pose 涓?rig 鏍?/ prefab 鏍圭殑 localPosition 浣滀负鍩虹嚎
             if (!_baselineCaptured)
             {
                 if (_rigRootBone != null)         _rigRootInitialLocalPos    = _rigRootBone.localPosition;
                 if (_prefabRootTransform != null) _prefabRootInitialLocalPos = _prefabRootTransform.localPosition;
                 _baselineCaptured = true;
                 if (_rigRootBone != null)
-                    Debug.Log($"[CharacterPartView3D] {Config.PartId}：基线已捕获 rig='{_rigRootBone.name}' " +
+                    Debug.Log($"[CharacterPartView3D] {Config.PartId}锛氬熀绾垮凡鎹曡幏 rig='{_rigRootBone.name}' " +
                               $"localPos={_rigRootInitialLocalPos}");
                 return;
             }
 
-            // 后续帧：锁回 idle pose 基线，覆盖 walk 等 clip 的 root/Hip Y 曲线
+            // 鍚庣画甯э細閿佸洖 idle pose 鍩虹嚎锛岃鐩?walk 绛?clip 鐨?root/Hip Y 鏇茬嚎
             if (_rigRootBone != null)
                 _rigRootBone.localPosition = _rigRootInitialLocalPos;
             if (_prefabRootTransform != null)
@@ -302,7 +302,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
         {
             try
             {
-                // §4.1 跨模块 bare-string façade：ResourceManager.EVT_GET_PREFAB
+                // 搂4.1 璺ㄦā鍧?bare-string fa莽ade锛歊esourceManager.EVT_GET_PREFAB
                 var result = EventProcessor.Instance.TriggerEventMethod(
                     "GetPrefab",
                     new List<object> { prefabId });
@@ -311,7 +311,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[CharacterPartView3D] 加载 Prefab 失败: {prefabId} → {ex.Message}");
+                Debug.LogError($"[CharacterPartView3D] 鍔犺浇 Prefab 澶辫触: {prefabId} 鈫?{ex.Message}");
             }
             return null;
         }
@@ -325,16 +325,16 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             if (!_playing || _currentAction == null || Animator == null) return;
 
             var layer = Mathf.Clamp(_currentAction.AnimatorLayer, 0, Mathf.Max(0, Animator.layerCount - 1));
-            // Transition 期间的 next state info 也算当前；以 currentStateInfo 取归一化时间足够
+            // Transition 鏈熼棿鐨?next state info 涔熺畻褰撳墠锛涗互 currentStateInfo 鍙栧綊涓€鍖栨椂闂磋冻澶?
             var info = Animator.GetCurrentAnimatorStateInfo(layer);
             var nt   = info.normalizedTime;
 
-            // 帧事件（normalizedTime 跨越阈值）—— 仅按 0..1 周期内触发
+            // 甯т簨浠讹紙normalizedTime 璺ㄨ秺闃堝€硷級鈥斺€?浠呮寜 0..1 鍛ㄦ湡鍐呰Е鍙?
             if (_currentAction.NormalizedTimeEvents != null && _currentAction.NormalizedTimeEvents.Count > 0)
             {
                 var lastInCycle = _lastNormalizedTime % 1f;
                 var nowInCycle  = nt % 1f;
-                // 跨越 1.0 边界时，当作两个区间分别检查
+                // 璺ㄨ秺 1.0 杈圭晫鏃讹紝褰撲綔涓や釜鍖洪棿鍒嗗埆妫€鏌?
                 var wrapped = nowInCycle < lastInCycle;
                 foreach (var kv in _currentAction.NormalizedTimeEvents)
                 {
@@ -347,7 +347,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             }
             _lastNormalizedTime = nt;
 
-            // 完成检测：非循环 + normalizedTime ≥ 1 + 不在 transition
+            // 瀹屾垚妫€娴嬶細闈炲惊鐜?+ normalizedTime 鈮?1 + 涓嶅湪 transition
             if (!_currentAction.Loop && !_completeFired
                 && nt >= 1f && !Animator.IsInTransition(layer))
             {
@@ -355,8 +355,8 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
                 _playing       = false;
                 RaiseActionComplete(_currentAction.ActionName);
             }
-            // 循环动作末尾兜底重放：FBX 导入 loopTime=false 时 Animator 会卡在最后一帧，
-            // 这里强制 Play(0f) 重头开始，让 Walk / Run / Idle 等无视 FBX 导入设置正确循环。
+            // 寰幆鍔ㄤ綔鏈熬鍏滃簳閲嶆斁锛欶BX 瀵煎叆 loopTime=false 鏃?Animator 浼氬崱鍦ㄦ渶鍚庝竴甯э紝
+            // 杩欓噷寮哄埗 Play(0f) 閲嶅ご寮€濮嬶紝璁?Walk / Run / Idle 绛夋棤瑙?FBX 瀵煎叆璁剧疆姝ｇ‘寰幆銆?
             else if (_currentAction.Loop && nt >= 1f && !Animator.IsInTransition(layer))
             {
                 var stateName = _currentAction.ResolveAnimatorState();
@@ -375,3 +375,4 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
         #endregion
     }
 }
+

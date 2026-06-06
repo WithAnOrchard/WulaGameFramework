@@ -29,7 +29,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
         /// 运行时加载 base controller 包成 <c>AnimatorOverrideController</c>，用 <c>new AnimationClip()</c>
         /// 覆盖每个 state 的 placeholder clip（仅设 length / frameRate / wrapMode，无 sprite curve），
         /// sprite 切换由 <c>CharacterPartView2DAnimator.Update</c> 读 Animator 的 normalizedTime 手动 swap。
-        /// <para><b>前提</b>：需先跑一次 Editor 菜单 <c>Tools/Character/Build Sprite Animator Base Controller</c>
+        /// <para><b>前提</b>：需先跑一次 Editor 菜单 <c>Tools/WulaSystem/Presentation/Character/2D/Build Sprite Animator Base Controller</c>
         /// 生成 <c>Resources/Generated/CharacterAnimBase.controller</c>（只需生成一次，之后全运行时）。</para>
         /// </summary>
         Sprite2DAnimator = 3,

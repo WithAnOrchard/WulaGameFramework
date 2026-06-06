@@ -17,6 +17,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
     public static class CharacterSpriteSheetSlicer
     {
         private const string PixArtRoot = "Assets/Resources/Sprites/Characters/PixArt";
+        private const string MENU_PREFIX = "Tools/WulaSystem/Presentation/Character/2D/";
 
         // 动作行（从上到下，与用户列出的顺序一致）
         private static readonly (string Action, int FrameCount)[] ActionRows =
@@ -34,7 +35,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
         private const int GridCols = 6;
         private const int GridRows = 8;
 
-        [MenuItem("Tools/Character/Slice Selected Sprite Sheets (8x6)")]
+        [MenuItem(MENU_PREFIX + "Sprite/Slice Selected Sprite Sheets (8x6)")]
         public static void SliceSelected()
         {
             if (!Directory.Exists(PixArtRoot))
@@ -77,7 +78,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.EditorTools
             Debug.Log($"[Slicer] 完成 —— 成功 {ok} / 跳过 {skip} / 失败 {fail} （共 {pngs.Length} 个 PNG）");
         }
 
-        [MenuItem("Tools/Character/Print Slicer Layout")]
+        [MenuItem(MENU_PREFIX + "Sprite/Print Slicer Layout")]
         public static void PrintLayout()
         {
             var sb = new System.Text.StringBuilder();
