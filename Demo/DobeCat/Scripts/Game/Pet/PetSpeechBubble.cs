@@ -38,6 +38,7 @@ namespace Demo.DobeCat.Game.Pet
         private string            _pendingUrl;
         private float             _timer;
         private bool              _built;
+        private bool              _petVisible = true;
 
         /// <summary>
         /// 番茄钟专注/休息期间设为 <c>true</c>，屏蔽所有普通 <see cref="Show"/> 调用。
@@ -48,6 +49,20 @@ namespace Demo.DobeCat.Game.Pet
         // ─── 公共 API ────────────────────────────────────────────────────────
 
         public void SetPetTransform(Transform petTr) => _petTransform = petTr;
+
+        public void SetPetVisible(bool visible)
+        {
+            _petVisible = visible;
+            if (!visible) HideImmediate();
+        }
+
+        public void HideImmediate()
+        {
+            _pendingUrl = null;
+            _timer = 0f;
+            if (_bubbleBtn != null) _bubbleBtn.Interactable = false;
+            if (_bubbleGo != null) _bubbleGo.SetActive(false);
+        }
 
         /// <summary>展示气泡文字，<paramref name="duration"/> 秒后自动隐藏。番茄钟期间被屏蔽。</summary>
         public void Show(string message, float duration = 3f)
@@ -69,6 +84,7 @@ namespace Demo.DobeCat.Game.Pet
         /// </summary>
         public void ShowSilent(string message, float duration = 3f)
         {
+            if (!_petVisible) return;
             if (!_built) { if (EventProcessor.HasInstance) BuildUI(); else return; }
             if (_msgText != null) _msgText.Text = message;
             _pendingUrl = null;
@@ -109,6 +125,7 @@ namespace Demo.DobeCat.Game.Pet
 
         private void ShowInternal(string message, string url, float duration)
         {
+            if (!_petVisible) return;
             if (!_built) { if (EventProcessor.HasInstance) BuildUI(); else return; }
             if (_msgText != null) _msgText.Text = message;
             _pendingUrl = url;

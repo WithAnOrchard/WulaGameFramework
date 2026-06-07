@@ -489,6 +489,8 @@ namespace Demo.DobeCat
             tray.Ai = _pet != null ? _pet.GetComponent<PetAiController>() : null;
             tray.OnJoinRoomRequested -= HandleJoinRoom; // 防重复订阅
             tray.OnJoinRoomRequested += HandleJoinRoom;
+            tray.OnPetVisibilityChanged -= HandlePetVisibilityChanged;
+            tray.OnPetVisibilityChanged += HandlePetVisibilityChanged;
 
             // 桌宠右键 → 调起托盘菜单（与右下角图标一致）
             if (_pet != null)
@@ -498,6 +500,22 @@ namespace Demo.DobeCat
                 rc.View = _pet.GetComponent<PetView>();
                 rc.Tray = tray;
             }
+        }
+
+        private void HandlePetVisibilityChanged(bool visible)
+        {
+            if (visible)
+            {
+                _petHud?.SetPetVisible(true);
+                _petHud?.SetBackpackOpen(_backpackOpen);
+                return;
+            }
+
+            _petHud?.SetPetVisible(false);
+            if (!EventProcessor.HasInstance) return;
+
+            EventProcessor.Instance.TriggerEventMethod("CloseInventoryUI",
+                new List<object> { EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager.ID_HOTBAR });
         }
 
         /// <summary>

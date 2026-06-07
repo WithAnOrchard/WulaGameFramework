@@ -7,6 +7,8 @@ using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Platform.Windows;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using RaycastList = System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>;
 
 namespace Demo.DobeCat.Sys.Tray
 {
@@ -36,6 +38,7 @@ namespace Demo.DobeCat.Sys.Tray
         /// <para>注：仅 Standalone Windows 真实触发；Editor / 非 Windows 下保留声明以便订阅方编译通过。</para></summary>
 #pragma warning disable 67 // Editor / 非 Windows 路径不会 invoke 此事件
         public event Action<RoomDiscoveryClient.RoomInfo> OnJoinRoomRequested;
+        public event Action<bool> OnPetVisibilityChanged;
 #pragma warning restore 67
 
         /// <summary>外部（如桌宠右键）请求弹出托盘菜单。Editor / 非 Win 路径下空操作。</summary>
@@ -51,6 +54,8 @@ namespace Demo.DobeCat.Sys.Tray
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
         private SystemTray _tray;
         private bool _petVisible = true;
+        private PointerEventData _uiPointerData;
+        private readonly RaycastList _uiRaycastResults = new RaycastList();
 
         private void Start()
         {
@@ -218,6 +223,7 @@ namespace Demo.DobeCat.Sys.Tray
         private void Update()
         {
             _tray?.PumpMainThread();
+            if (!_petVisible) UpdateHiddenPetClickThrough();
         }
 
         private void OnApplicationQuit() => _tray?.Dispose();
@@ -227,12 +233,59 @@ namespace Demo.DobeCat.Sys.Tray
         private void TogglePetVisible()
         {
             if (PetRoot == null) return;
-            _petVisible = !_petVisible;
-            PetRoot.SetActive(_petVisible);
+            ApplyPetVisible(!_petVisible);
+            RebuildMenu();
 
             // 隐藏后 PetClickThroughDriver.Update 不会再运行；窗口可能停留在"不穿透"状态
             // 导致桌面点击全部被 Unity 窗口吞掉。这里强制把窗口切回穿透。
             // 重新显示时驱动器接管 → 命中检测会自然把穿透切回正确状态。
+        }
+
+        private void ApplyPetVisible(bool visible)
+        {
+            _petVisible = visible;
+
+            var hud = PetRoot != null ? PetRoot.GetComponent<Demo.DobeCat.Game.Pet.PetHUD>() : null;
+            var bubble = PetRoot != null ? PetRoot.GetComponent<Demo.DobeCat.Game.Pet.PetSpeechBubble>() : null;
+
+            if (!visible)
+            {
+                hud?.SetPetVisible(false);
+                bubble?.SetPetVisible(false);
+                PetRoot.SetActive(false);
+                UpdateHiddenPetClickThrough();
+            }
+            else
+            {
+                PetRoot.SetActive(true);
+                hud?.SetPetVisible(true);
+                bubble?.SetPetVisible(true);
+                DesktopOverlay.SetClickThrough(true);
+            }
+
+            OnPetVisibilityChanged?.Invoke(visible);
+        }
+
+        private void UpdateHiddenPetClickThrough()
+        {
+            if (DesktopOverlay.IsWindowCaptureMode)
+            {
+                DesktopOverlay.SetClickThrough(false);
+                return;
+            }
+
+            if (EventSystem.current == null)
+            {
+                DesktopOverlay.SetClickThrough(true);
+                return;
+            }
+
+            if (_uiPointerData == null)
+                _uiPointerData = new PointerEventData(EventSystem.current);
+            _uiPointerData.position = DesktopOverlay.GetGlobalCursorScreenPos();
+            _uiRaycastResults.Clear();
+            EventSystem.current.RaycastAll(_uiPointerData, _uiRaycastResults);
+            DesktopOverlay.SetClickThrough(_uiRaycastResults.Count == 0);
         }
 
         private void ResetPetPosition()

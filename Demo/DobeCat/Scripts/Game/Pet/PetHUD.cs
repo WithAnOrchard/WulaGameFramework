@@ -52,6 +52,7 @@ namespace Demo.DobeCat.Game.Pet
         private bool          _hotbarShown;   // 当前 Hotbar 是否可见（由本脚本控制）
         private bool          _backpackOpen;
         private bool          _prevAiEnabled; // 检测 AI 状态变化
+        private bool          _petVisible = true;
 
         private const float   HB_TRIGGER_DURATION = 2f; // 手动模式 hotbar 持续显示秒数
         private float         _hotbarTriggerTimer;      // > 0 时在手动模式下显示 Hotbar
@@ -104,11 +105,23 @@ namespace Demo.DobeCat.Game.Pet
         }
 
         /// <summary>GameManager 在 OpenInventoryUI("hotbar") 后调用；若 PetHUD 已持有 RT 则跳过。</summary>
-        public void OnHotbarOpened() => EnsureHotbarRt();
+        public void OnHotbarOpened()
+        {
+            if (!_petVisible) return;
+            EnsureHotbarRt();
+        }
 
         /// <summary>背包开关状态由外部同步过来。</summary>
         public void SetBackpackOpen(bool open)
         {
+            if (!_petVisible)
+            {
+                _backpackOpen = false;
+                CloseHotbar();
+                RefreshBagLabel();
+                return;
+            }
+
             _backpackOpen = open;
             if (open && !_hotbarShown) OpenHotbar();   // 立即打开，不等下一帧
             else if (!open && _hotbarShown && !IsManualMode && _hotbarTriggerTimer <= 0f)
@@ -117,8 +130,30 @@ namespace Demo.DobeCat.Game.Pet
             RefreshBagLabel();
         }
 
+        public void SetPetVisible(bool visible)
+        {
+            _petVisible = visible;
+            if (!visible) HideAll();
+        }
+
+        public void HideAll()
+        {
+            _showTimer = 0f;
+            _hotbarTriggerTimer = 0f;
+            _backpackOpen = false;
+            if (_qbRt != null) _qbRt.gameObject.SetActive(false);
+            CloseHotbar();
+            RefreshBagLabel();
+        }
+
         private void Update()
         {
+            if (!_petVisible)
+            {
+                HideAll();
+                return;
+            }
+
             // 手动模式：检查 1-9 / 滚轮触发计时器
             if (IsManualMode) TryTriggerHotbarTimer();
             else _hotbarTriggerTimer = 0f; // 切回 AI 模式时清空计时器
@@ -164,6 +199,7 @@ namespace Demo.DobeCat.Game.Pet
 
         private void OpenHotbar()
         {
+            if (!_petVisible) return;
             _hotbarShown = true;
             if (EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod("OpenInventoryUI",
@@ -174,6 +210,7 @@ namespace Demo.DobeCat.Game.Pet
 
         private void CloseHotbar()
         {
+            if (!_hotbarShown) return;
             _hotbarShown = false;
             if (EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod("CloseInventoryUI",
