@@ -91,6 +91,7 @@ namespace Demo.Tribe.Entities
             }
             RegisterEntityAndBrain();
             BuildCharacterView();
+            BindFlashEffectToCharacterView();
             if (_config.CanAttack) BuildHealthBar();
         }
 
@@ -159,6 +160,12 @@ namespace Demo.Tribe.Entities
                 CharacterViewBridge.PlayLocomotion(_entityInstanceId, moving: false, grounded: true);
                 CharacterViewBridge.SetDirection(_entityInstanceId, _lastDirection != 0 ? _lastDirection : 1);
             }
+        }
+
+        private void BindFlashEffectToCharacterView()
+        {
+            if (_entity == null || _characterRoot == null || _config == null || !_config.EnableFlash) return;
+            _entity.CanFlash(_characterRoot, _config.FlashDuration, _config.FlashColor);
         }
 
         private void BuildHealthBar()

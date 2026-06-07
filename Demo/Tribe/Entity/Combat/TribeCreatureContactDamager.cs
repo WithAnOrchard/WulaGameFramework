@@ -1,5 +1,6 @@
 using UnityEngine;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using Demo.Tribe.Resource;
 
 namespace Demo.Tribe.Entities
 {
@@ -34,6 +35,9 @@ namespace Demo.Tribe.Entities
         private void TryHit(Collider2D other)
         {
             if (!Enabled || other == null || Time.time < _nextDamageTime) return;
+
+            // 采集物只允许玩家主动攻击触发采集，怪物接触不能砍掉资源。
+            if (other.GetComponentInParent<PickableDropEntity>() != null) return;
 
             // 怪物之间不互相伤害：对方挂了 TribeCreatureContactDamager（即也是怪物）则跳过
             var otherDamager = other.GetComponentInParent<TribeCreatureContactDamager>();

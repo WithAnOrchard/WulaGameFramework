@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Event;
+using EssSystem.Core.Application.MultiManagers.SkillManager.UI;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
@@ -56,6 +57,8 @@ namespace Demo.Tribe.Player
         private TribePlayerInteraction _interaction;
         private TribePlayerCameraFollow _cameraFollow;
         private TribePlayerHud _hud;
+        private SkillBarUI _skillBar;
+        private TribePlayerSkills _skills;
         private TribePlayerDamageEffect _damageEffect;
 
         // ─── 生命周期 ───────────────────────────────────────────
@@ -65,10 +68,12 @@ namespace Demo.Tribe.Player
             _combat       = GetOrAdd<TribePlayerCombat>();
             _cameraFollow = GetOrAdd<TribePlayerCameraFollow>();
             _interaction  = GetOrAdd<TribePlayerInteraction>();
+            _skills       = GetOrAdd<TribePlayerSkills>();
             _damageEffect = GetOrAdd<TribePlayerDamageEffect>();
 
             _movement.Initialize(_instanceId);
             _combat.Initialize(_instanceId, _movement);
+            _skills.Initialize(_instanceId);
             _cameraFollow.Initialize();
         }
 
@@ -81,6 +86,11 @@ namespace Demo.Tribe.Player
                 _hud = GetOrAdd<TribePlayerHud>();
                 if (_hud.Build(_instanceId, _characterRoot)) PushHudStats(force: true);
             }
+
+            _skills.EnsureDefaultSkills(_instanceId);
+
+            _skillBar = GetOrAdd<SkillBarUI>();
+            _skillBar.Build(_instanceId, transform, GetSkillCastDirection);
         }
 
         private void OnEnable()
@@ -100,6 +110,7 @@ namespace Demo.Tribe.Player
         private void OnDestroy()
         {
             if (_hud != null) _hud.Dispose();
+            if (_skillBar != null) _skillBar.Dispose();
         }
 
         /// <summary>InventoryService.EVT_CHANGED 监听 —— args: [inventoryId, op, itemId, amount]。
@@ -121,6 +132,8 @@ namespace Demo.Tribe.Player
             _interaction.Tick();
             _movement.Tick();
             _combat.Tick();
+            _skills?.Tick();
+            _skillBar?.Tick();
 
             CharacterViewBridge.PlayLocomotion(_instanceId, _movement.Moving, _movement.Grounded);
 
@@ -133,6 +146,11 @@ namespace Demo.Tribe.Player
             if (_damageEffect != null && _damageEffect.IsKnockbacking) return;
             _movement.FixedTick();
             ApplyTribeWorldBoundary();
+        }
+
+        private Vector3 GetSkillCastDirection()
+        {
+            return _movement != null && !_movement.FacingRight ? Vector3.left : Vector3.right;
         }
 
         // 部落世界左边界钳制 —— 玩家不能越过 TribeWorldBoundary.LeftLimitX 往左走。

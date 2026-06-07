@@ -237,16 +237,23 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
             {
                 Id = SKILL_FIREBALL,
                 DisplayName = "火球术",
-                Description = "向目标方向发射火球，命中造成伤害并附加燃烧。",
+                Description = "向面朝方向发射火球，命中后造成火焰伤害。",
+                IconPath = "Tribe/Common/Items/Weapons/fireball",
                 Cooldown = cooldown,
-                CastTime = 0.3f,
-                RecoveryTime = 0.2f,
+                CastTime = 0.12f,
+                RecoveryTime = 0.12f,
                 TargetMode = SkillTargetMode.Directional,
                 Range = 12f,
                 Effects = new List<ISkillEffect>
                 {
                     new ProjectileEffect(speed: speed, damage: damage,
-                        damagePerLevel: damage * 0.3f, damageType: "fire", radius: 0.4f),
+                        damagePerLevel: damage * 0.3f, damageType: "fire", radius: 0.45f,
+                        maxLifetime: 1.4f,
+                        spriteId: "Tribe/Common/Items/Weapons/fireball",
+                        visualScale: 1.35f, sortingOrder: 260, forwardOffset: 0.7f, heightOffset: 0.35f,
+                        impactCharacterConfigId: "TribeFireballImpact",
+                        impactActionName: "Special", impactScale: 8f, impactLifetime: 0.38f,
+                        visualRotationOffsetDegrees: -45f, ignoreStaticTargets: true),
                     // 命中后触发的"持续燃烧" —— 注意 ProjectileEffect 是在飞行物命中时直接 TryDamage，不会自动叠 DoT；
                     // 这里把 DoT 单独在 Apply 阶段注册到 ctx.Target？ ctx.Target 在 Directional 下通常为 null。
                     // 折中：火球的 DoT 不在此处直接绑（ProjectileEffect 没有"命中回调"）。
