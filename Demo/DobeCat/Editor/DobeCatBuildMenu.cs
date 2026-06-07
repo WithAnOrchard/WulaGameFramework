@@ -27,6 +27,16 @@ namespace Demo.DobeCat.Editor
         private const string ScenePath              = "Assets/Demo/DobeCat/Scenes/DobeCat.unity";
         private const string FrameworkAddressableGroup = "Framework-Resources";
 
+        private sealed class PlayerSettingsSnapshot
+        {
+            public bool UseFlipModelSwapchain;
+            public bool PreserveFramebufferAlpha;
+            public bool RunInBackground;
+            public bool VisibleInBackground;
+            public bool ResizableWindow;
+            public FullScreenMode FullScreenMode;
+        }
+
         /// <summary>自动计算输出路径：{项目根}/Builds/DobeCat/DobeCat.exe</summary>
         private static string AutoOutputPath =>
             Path.Combine(
@@ -95,6 +105,7 @@ namespace Demo.DobeCat.Editor
                 addrSettings.BuildAddressablesWithPlayerBuild = AddressableAssetSettings.PlayerBuildOption.DoNotBuildWithPlayer;
 
             BuildReport report = null;
+            var playerSettings = ApplyTransparentOverlayPlayerSettings();
             try
             {
                 Debug.Log($"[DobeCatBuild] ▶ 开始构建 → {outputPath}");
@@ -111,9 +122,44 @@ namespace Demo.DobeCat.Editor
                 // 还原设置，避免影响其他构建目标
                 if (addrSettings != null)
                     addrSettings.BuildAddressablesWithPlayerBuild = prevBuildOption;
+                RestorePlayerSettings(playerSettings);
                 SetFrameworkGroupIncluded(true);
                 LogBuildResult(report, outputPath);
             }
+        }
+
+        private static PlayerSettingsSnapshot ApplyTransparentOverlayPlayerSettings()
+        {
+            var snapshot = new PlayerSettingsSnapshot
+            {
+                UseFlipModelSwapchain     = PlayerSettings.useFlipModelSwapchain,
+                PreserveFramebufferAlpha  = PlayerSettings.preserveFramebufferAlpha,
+                RunInBackground           = PlayerSettings.runInBackground,
+                VisibleInBackground       = PlayerSettings.visibleInBackground,
+                ResizableWindow           = PlayerSettings.resizableWindow,
+                FullScreenMode            = PlayerSettings.fullScreenMode
+            };
+
+            PlayerSettings.useFlipModelSwapchain    = false;
+            PlayerSettings.preserveFramebufferAlpha = true;
+            PlayerSettings.runInBackground          = true;
+            PlayerSettings.visibleInBackground      = true;
+            PlayerSettings.resizableWindow          = false;
+            PlayerSettings.fullScreenMode           = FullScreenMode.Windowed;
+
+            Debug.Log("[DobeCatBuild] 已应用透明桌面叠加 PlayerSettings：preserveFramebufferAlpha=true, useFlipModelSwapchain=false");
+            return snapshot;
+        }
+
+        private static void RestorePlayerSettings(PlayerSettingsSnapshot snapshot)
+        {
+            if (snapshot == null) return;
+            PlayerSettings.useFlipModelSwapchain    = snapshot.UseFlipModelSwapchain;
+            PlayerSettings.preserveFramebufferAlpha = snapshot.PreserveFramebufferAlpha;
+            PlayerSettings.runInBackground          = snapshot.RunInBackground;
+            PlayerSettings.visibleInBackground      = snapshot.VisibleInBackground;
+            PlayerSettings.resizableWindow          = snapshot.ResizableWindow;
+            PlayerSettings.fullScreenMode           = snapshot.FullScreenMode;
         }
 
         // ─── Addressables 组控制 ──────────────────────────────────
