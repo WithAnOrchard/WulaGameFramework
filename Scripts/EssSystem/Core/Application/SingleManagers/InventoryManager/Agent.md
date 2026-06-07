@@ -38,3 +38,6 @@
 - 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
 - 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
 - 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。
+- 默认物品模板、堆叠、图标、描述、快捷使用效果等数据优先写入 `Assets/FrameworkResources/Config/Framework/Inventory/*.json`，不要在业务代码里注册同类默认配置；构建后外部可通过同路径 `FrameworkResources/Config` 覆盖。
+- `InventoryUIBuilder` 只能实现通用 UI 构建能力，不能写入 Demo/项目专属实体 ID、装备部位、素材路径或固定业务语义；这类内容必须放入 Inventory JSON 配置或 Demo 自己的适配层。
+- 背包、装备栏、快捷栏等通用 UI 框、按钮、空槽提示和装饰图资源优先放在 `Assets/FrameworkResources/Common/UI/Inventory`；Demo 专属物品或场景素材才放入对应 Demo 资源目录。
