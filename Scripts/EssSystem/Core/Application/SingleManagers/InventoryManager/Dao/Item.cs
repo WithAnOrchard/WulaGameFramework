@@ -46,6 +46,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         public int MaxStack = 1;
         /// <summary>当前堆叠数量（模板里通常为 0）</summary>
         public int CurrentStack;
+        /// <summary>快捷使用效果类型。空 = 仅按默认消耗；HealEntity = 通过 EntityManager 治疗目标 Entity。</summary>
+        public string UseEffectType;
+        /// <summary>快捷使用效果目标 EntityId，留空时由具体效果决定默认值。</summary>
+        public string UseEffectTargetEntityId;
+        /// <summary>快捷使用效果数值，例如治疗量。</summary>
+        public float UseEffectAmount;
+        /// <summary>快捷使用效果附加参数，例如未来扩展的需求/属性名。</summary>
+        public string UseEffectParam;
 
         #endregion
 
@@ -163,7 +171,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
                 Value = Value,
                 IconSpriteId = IconSpriteId,
                 MaxStack = MaxStack,
-                CurrentStack = 0
+                CurrentStack = 0,
+                UseEffectType = UseEffectType,
+                UseEffectTargetEntityId = UseEffectTargetEntityId,
+                UseEffectAmount = UseEffectAmount,
+                UseEffectParam = UseEffectParam
             };
         }
 

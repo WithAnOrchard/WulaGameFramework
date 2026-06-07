@@ -38,6 +38,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         private const string CFG_HOTBAR     = "Hotbar";
         private const string CFG_EQUIPMENT  = "PlayerEquipment";
         private const string DEFAULT_CONFIG_PATH = "Framework/Inventory/default_inventory.json";
+        private const string ITEM_EFFECT_HEAL_ENTITY = "HealEntity";
 
         #region Inspector
 
@@ -462,9 +463,8 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         }
 
         /// <summary>
-        /// 默认快捷栏使用行为：消耗品按 1~9 即扣 1 份。
+        /// 默认快捷栏使用行为：消耗品按 1~9 先执行配置效果，再扣 1 份。
         /// <para>走 <see cref="InventoryService.EVT_REMOVE"/>，由 Service 在成功时触发 <c>PlayItemUseSFX</c>。</para>
-        /// 业务侧（治疗 / Buff / 投掷物等）仍可订阅 <see cref="EVT_HOTBAR_USE"/> 追加自定义效果。
         /// args: [string inventoryId, int slotIndex, InventoryItem item|null]
         /// </summary>
         [EventListener(EVT_HOTBAR_USE)]
@@ -476,9 +476,42 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             if (string.IsNullOrEmpty(inventoryId) || item == null) return null;
             if (item.Type != InventoryItemType.Consumable) return null;
 
+            ApplyConfiguredUseEffect(item);
+
             EventProcessor.Instance?.TriggerEvent(InventoryService.EVT_REMOVE,
                 new List<object> { inventoryId, item.Id, 1 });
             return null;
+        }
+
+        private void ApplyConfiguredUseEffect(InventoryItem item)
+        {
+            if (item == null || string.IsNullOrEmpty(item.UseEffectType)) return;
+
+            switch (item.UseEffectType)
+            {
+                case ITEM_EFFECT_HEAL_ENTITY:
+                    ApplyHealEntityEffect(item);
+                    break;
+                default:
+                    LogWarning($"未知物品使用效果: item={item.Id}, effect={item.UseEffectType}");
+                    break;
+            }
+        }
+
+        private void ApplyHealEntityEffect(InventoryItem item)
+        {
+            if (item.UseEffectAmount <= 0f) return;
+            if (string.IsNullOrEmpty(item.UseEffectTargetEntityId))
+            {
+                LogWarning($"物品治疗效果缺少目标 Entity: item={item.Id}");
+                return;
+            }
+
+            var result = EventProcessor.Instance?.TriggerEventMethod("HealEntity",
+                new List<object> { item.UseEffectTargetEntityId, item.UseEffectAmount });
+
+            if (!ResultCode.IsOk(result))
+                LogWarning($"物品治疗效果未生效: item={item.Id}, target={item.UseEffectTargetEntityId}");
         }
 
         /// <summary>

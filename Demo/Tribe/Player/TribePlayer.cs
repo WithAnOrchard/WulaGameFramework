@@ -211,6 +211,12 @@ namespace Demo.Tribe.Player
         private void PushHudStats(bool force = false)
         {
             if (_hud == null || !_hud.IsBuilt) return;
+            var dmg = _movement.Entity?.Get<IDamageable>();
+            if (dmg != null)
+            {
+                _hp = dmg.CurrentHp;
+                _maxHp = dmg.MaxHp;
+            }
             _hud.SetStats(_hp, _maxHp, _mp, _maxMp, _experience, _maxExperience, _coins, force);
         }
 

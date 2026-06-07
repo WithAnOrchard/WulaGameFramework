@@ -80,6 +80,17 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
         public InventorySlot GetSlot(int index) =>
             (index >= 0 && index < Slots.Count) ? Slots[index] : null;
 
+        /// <summary>只扩容不缩容，保留已有槽位和物品。</summary>
+        public void EnsureCapacity(int maxSlots)
+        {
+            maxSlots = Math.Max(1, maxSlots);
+            Slots ??= new List<InventorySlot>();
+            for (var i = Slots.Count; i < maxSlots; i++)
+                Slots.Add(new InventorySlot(i));
+            MaxSlots = Math.Max(MaxSlots, maxSlots);
+            Touch();
+        }
+
         public IEnumerable<InventorySlot> GetEmptySlots() =>
             Slots.Where(s => s.IsEmpty && !s.Locked);
 

@@ -110,7 +110,18 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         public Inventory CreateInventory(string id, string name = null, int maxSlots = 20)
         {
             var existing = GetInventory(id);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                var targetSlots = Math.Max(1, maxSlots);
+                if (existing.Slots == null || existing.Slots.Count < targetSlots || existing.MaxSlots < targetSlots)
+                {
+                    existing.EnsureCapacity(targetSlots);
+                    SetData(CAT_INVENTORIES, id, existing);
+                    Log($"扩展容器 {id} 到 {targetSlots} 槽", Color.cyan);
+                }
+                if (!string.IsNullOrEmpty(name)) existing.Name = name;
+                return existing;
+            }
 
             var inv = new Inventory(id, name, maxSlots);
             SetData(CAT_INVENTORIES, id, inv);
