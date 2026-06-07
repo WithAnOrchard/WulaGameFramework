@@ -22,7 +22,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
             public string PrefixFilter;
         }
 
-        private const string PA = "Sprites/Characters/PixArt/";
+        private const string PA = "Characters/PixArt/";
 
         // 内置 Model + 部件 → 变体目录映射
         private static readonly Dictionary<(string Model, string Part), Pool> _builtin =
@@ -123,7 +123,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
 
         /// <summary>
         /// 推导 sheet 前缀（与切片工具 <c>CharacterSpriteSheetSlicer.DerivePrefix</c> 一致的规则）。
-        /// 例：<c>(Sprites/Characters/PixArt/Headgear/Helmet/Close, "1") → Headgear_Helmet_Close_1</c>
+        /// 例：<c>(Characters/PixArt/Headgear/Helmet/Close, "1") → Headgear_Helmet_Close_1</c>
         /// </summary>
         public static string DerivePrefix(string resourcesRelativeDir, string textureName)
         {

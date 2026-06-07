@@ -286,36 +286,32 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
         
         private void TryLoadSpriteFromSheets(string spriteId, Action<Sprite> onLoaded)
         {
-            // 从 spriteId 推断 sheet 路径
-            // 格式：{dirPrefix}_{sheetName}_{actionName}_{frameIndex}
-            var parts = spriteId.Split('_');
-            if (parts.Length < 3) return;
-            
-            string dirPrefix = parts[0];
-            string sheetName;
-            string actionName = parts[parts.Length - 2];
-            
-            if (parts.Length >= 4 && int.TryParse(parts[2], out _))
+            var sheetPrefix = ExtractSheetPrefix(spriteId);
+            if (string.IsNullOrEmpty(sheetPrefix)) return;
+
+            Sprite[] sprites = null;
+            var sheetPath = string.Empty;
+            foreach (var candidate in BuildSheetPathCandidates(sheetPrefix))
             {
-                // 如 Skin_warrior_1_Walk_0
-                sheetName = $"{parts[1]}_{parts[2]}";
+                sprites = UnityEngine.Resources.LoadAll<Sprite>(candidate);
+                if (sprites != null && sprites.Length > 0)
+                {
+                    sheetPath = candidate;
+                    break;
+                }
             }
-            else
+
+            if (sprites == null || sprites.Length == 0)
             {
-                // 如 Eyes_blue_Walk_0
-                sheetName = parts[1];
+                Debug.LogWarning($"[CharacterPartView2DAnimator] Sheet 加载失败：{sheetPrefix} ({spriteId})");
+                return;
             }
-            
-            var sheetPath = $"Characters/PixArt/{dirPrefix}/{sheetName}";
-            var sprites = UnityEngine.Resources.LoadAll<Sprite>(sheetPath);
-            if (sprites == null || sprites.Length == 0) return;
             
             // 注册所有 sprites 到缓存
-            var keyPrefix = $"{dirPrefix}_{sheetName}";
             foreach (var sprite in sprites)
             {
                 if (sprite == null) continue;
-                var cacheKey = $"{keyPrefix}_{sprite.name}";
+                var cacheKey = sprite.name;
                 EventProcessor.Instance.TriggerEventMethod(
                     "RegisterSpriteToCache",
                     new List<object> { cacheKey, sprite });
@@ -326,14 +322,110 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
             foreach (var sprite in sprites)
             {
                 if (sprite == null) continue;
-                var cacheKey = $"{keyPrefix}_{sprite.name}";
-                if (cacheKey == targetKey)
+                if (sprite.name == targetKey)
                 {
                     _spriteCache[spriteId] = sprite;
                     onLoaded(sprite);
                     return;
                 }
             }
+
+            Debug.LogWarning($"[CharacterPartView2DAnimator] Sheet 已加载但未找到 Sprite：{spriteId} path={sheetPath}");
+        }
+
+        private static string ExtractSheetPrefix(string spriteId)
+        {
+            var parts = spriteId?.Split('_');
+            if (parts == null || parts.Length < 3) return null;
+            var actionIndex = -1;
+            for (var i = parts.Length - 2; i >= 1; i--)
+            {
+                if (StandardStates.Contains(parts[i]) && int.TryParse(parts[i + 1], out _))
+                {
+                    actionIndex = i;
+                    break;
+                }
+            }
+
+            if (actionIndex <= 0) return null;
+            return string.Join("_", parts, 0, actionIndex);
+        }
+
+        private static IEnumerable<string> BuildSheetPathCandidates(string sheetPrefix)
+        {
+            var p = sheetPrefix.Split('_');
+            if (p.Length < 2) yield break;
+
+            const string root = "Characters/PixArt/";
+            var category = p[0];
+
+            switch (category)
+            {
+                case "Skin":
+                case "Cloth":
+                case "Eyes":
+                case "Cape":
+                    yield return root + category + "/" + Join(p, 1);
+                    break;
+
+                case "Hair":
+                    if (p.Length >= 3)
+                        yield return root + "Hair/" + p[1] + "/" + Join(p, 2);
+                    break;
+
+                case "Weapon":
+                    if (p.Length >= 3)
+                        yield return root + "Weapon/" + p[1] + "/" + Join(p, 2);
+                    break;
+
+                case "Equipment":
+                    if (p.Length >= 3)
+                        yield return root + "Equipment/" + p[1] + "/" + Join(p, 2);
+                    break;
+
+                case "Headgear":
+                    foreach (var path in BuildHeadgearPathCandidates(root, p))
+                        yield return path;
+                    break;
+            }
+        }
+
+        private static IEnumerable<string> BuildHeadgearPathCandidates(string root, string[] p)
+        {
+            if (p.Length < 4) yield break;
+
+            if (p[1] == "Helmet")
+            {
+                if (p[2] == "Close" || p[2] == "Open")
+                {
+                    yield return root + $"Headgear/Helmet/{p[2]}/" + Join(p, 3);
+                    yield break;
+                }
+
+                if (p[2] == "Extra")
+                {
+                    yield return root + "Headgear/Helmet/Extra/" + Join(p, 3);
+                    if (p.Length >= 5)
+                        yield return root + $"Headgear/Helmet/Extra/{p[3]}/" + Join(p, 4);
+                    yield break;
+                }
+            }
+
+            if (p[1] == "Hood" && p.Length >= 4)
+            {
+                yield return root + $"Headgear/Hood/{p[2]}/" + Join(p, 3);
+                yield break;
+            }
+
+            if (p[1] == "WitchHat" && p.Length >= 4)
+            {
+                yield return root + $"Headgear/WitchHat/{p[2]}/" + Join(p, 3);
+            }
+        }
+
+        private static string Join(string[] parts, int startIndex)
+        {
+            return startIndex >= parts.Length ? string.Empty : string.Join("_", parts, startIndex, parts.Length - startIndex);
         }
 
         #endregion

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EssSystem.Core.Presentation.CharacterManager.Dao;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -71,11 +72,9 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Skin",
                 SortingOrder = 0,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "skin_warrior", SheetPrefix = "Skin_warrior_1", Weight = 1f },
-                    new PetPartVariant { VariantId = "skin_mage", SheetPrefix = "Skin_mage_1", Weight = 1f },
-                }
+                Variants = BuildVariants("Skin",
+                    CharacterVariantPools.GetVariants("Warrior", "Skin"),
+                    CharacterVariantPools.GetVariants("Mage", "Skin"))
             });
 
             // 衣服变体
@@ -84,11 +83,9 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Cloth",
                 SortingOrder = 1,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "cloth_red", SheetPrefix = "Cloth_warrior_red", Weight = 1f },
-                    new PetPartVariant { VariantId = "cloth_purple", SheetPrefix = "Cloth_mage_purple", Weight = 1f },
-                }
+                Variants = BuildVariants("Cloth",
+                    CharacterVariantPools.GetVariants("Warrior", "Cloth"),
+                    CharacterVariantPools.GetVariants("Mage", "Cloth"))
             });
 
             // 眼睛变体 - 关键部件，必须有有效的变体
@@ -97,12 +94,7 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Eyes",
                 SortingOrder = 2,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "eyes_blue", SheetPrefix = "Eyes_blue", Weight = 1f },
-                    new PetPartVariant { VariantId = "eyes_green", SheetPrefix = "Eyes_green", Weight = 0.8f },
-                    new PetPartVariant { VariantId = "eyes_brown", SheetPrefix = "Eyes_brown", Weight = 0.8f },
-                }
+                Variants = BuildVariants("Eyes", CharacterVariantPools.GetVariants("Warrior", "Eyes"))
             });
 
             // 头发变体
@@ -111,12 +103,7 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Hair",
                 SortingOrder = 3,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "hair_brown_1", SheetPrefix = "Hair_1_1_brown", Weight = 1f },
-                    new PetPartVariant { VariantId = "hair_black_1", SheetPrefix = "Hair_1_2_black", Weight = 0.8f },
-                    new PetPartVariant { VariantId = "hair_blonde_1", SheetPrefix = "Hair_1_3_blonde", Weight = 0.6f },
-                }
+                Variants = BuildVariants("Hair", CharacterVariantPools.GetVariants("Warrior", "Hair"))
             });
 
             // 头部装备变体 - 可选装饰，可以不显示
@@ -125,12 +112,9 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Head",
                 SortingOrder = 4,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "head_none", SheetPrefix = "Headgear_None", Weight = 1f },
-                    new PetPartVariant { VariantId = "head_helmet", SheetPrefix = "Headgear_Helmet_Close_1", Weight = 0.5f },
-                    new PetPartVariant { VariantId = "head_witch", SheetPrefix = "Headgear_WitchHat_1_purple", Weight = 0.5f },
-                }
+                Variants = BuildVariants("Head",
+                    CharacterVariantPools.GetVariants("Warrior", "Head"),
+                    CharacterVariantPools.GetVariants("Mage", "Head"))
             });
 
             // 武器变体 - 可选装饰，可以不显示
@@ -139,12 +123,9 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Weapon",
                 SortingOrder = 5,
                 EnableRandomization = true,
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "weapon_none", SheetPrefix = "Weapon_None", Weight = 1f },
-                    new PetPartVariant { VariantId = "weapon_sword", SheetPrefix = "Weapon_Sword_1", Weight = 0.8f },
-                    new PetPartVariant { VariantId = "weapon_rod", SheetPrefix = "Weapon_Rod_1", Weight = 0.6f },
-                }
+                Variants = BuildVariants("Weapon",
+                    CharacterVariantPools.GetVariants("Warrior", "Weapon"),
+                    CharacterVariantPools.GetVariants("Mage", "Weapon"))
             });
 
             // 盾牌变体
@@ -153,13 +134,37 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Shield",
                 SortingOrder = 6,
                 EnableRandomization = false, // 盾牌默认关闭随机化
-                Variants = new List<PetPartVariant>
-                {
-                    new PetPartVariant { VariantId = "shield_default", SheetPrefix = "Equipment_Shield_01", Weight = 1f },
-                }
+                Variants = BuildVariants("Shield", CharacterVariantPools.GetVariants("Warrior", "Shield"))
             });
 
             Debug.Log($"[DobeCatPetRandomizer] 已注册 {PartConfigs.Count} 个部件的随机化配置");
+        }
+
+        private static List<PetPartVariant> BuildVariants(string partId, params List<string>[] groups)
+        {
+            var variants = new List<PetPartVariant>();
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            if (groups != null)
+            {
+                foreach (var group in groups)
+                {
+                    if (group == null) continue;
+                    foreach (var prefix in group)
+                    {
+                        if (string.IsNullOrEmpty(prefix) || !seen.Add(prefix)) continue;
+                        variants.Add(new PetPartVariant
+                        {
+                            VariantId = $"{partId}_{prefix}",
+                            SheetPrefix = prefix,
+                            Weight = 1f
+                        });
+                    }
+                }
+            }
+
+            if (variants.Count == 0)
+                Debug.LogWarning($"[DobeCatPetRandomizer] 部件 {partId} 没有从 Resources 枚举到任何素材变体");
+            return variants;
         }
 
         /// <summary>
