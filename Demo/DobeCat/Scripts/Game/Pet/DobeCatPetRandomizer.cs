@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using EssSystem.Core.Presentation.CharacterManager.Dao;
 using UnityEngine;
 
 namespace Demo.DobeCat.Game.Pet
@@ -48,6 +47,14 @@ namespace Demo.DobeCat.Game.Pet
     /// </summary>
     public static class DobeCatPetRandomizer
     {
+        private const string PixArtRoot = "Characters/PixArt/";
+
+        private struct VariantPool
+        {
+            public string[] Dirs;
+            public string PrefixFilter;
+        }
+
         /// <summary>
         /// 随机化配置数据（可在 Inspector 配置或代码定义）。
         /// </summary>
@@ -73,8 +80,8 @@ namespace Demo.DobeCat.Game.Pet
                 SortingOrder = 0,
                 EnableRandomization = true,
                 Variants = BuildVariants("Skin",
-                    CharacterVariantPools.GetVariants("Warrior", "Skin"),
-                    CharacterVariantPools.GetVariants("Mage", "Skin"))
+                    Pool("warrior_", PixArtRoot + "Skin"),
+                    Pool("mage_", PixArtRoot + "Skin"))
             });
 
             // 衣服变体
@@ -84,8 +91,8 @@ namespace Demo.DobeCat.Game.Pet
                 SortingOrder = 1,
                 EnableRandomization = true,
                 Variants = BuildVariants("Cloth",
-                    CharacterVariantPools.GetVariants("Warrior", "Cloth"),
-                    CharacterVariantPools.GetVariants("Mage", "Cloth"))
+                    Pool("warrior_", PixArtRoot + "Cloth"),
+                    Pool("mage_", PixArtRoot + "Cloth"))
             });
 
             // 眼睛变体 - 关键部件，必须有有效的变体
@@ -94,7 +101,7 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Eyes",
                 SortingOrder = 2,
                 EnableRandomization = true,
-                Variants = BuildVariants("Eyes", CharacterVariantPools.GetVariants("Warrior", "Eyes"))
+                Variants = BuildVariants("Eyes", Pool(null, PixArtRoot + "Eyes"))
             });
 
             // 头发变体
@@ -103,7 +110,12 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Hair",
                 SortingOrder = 3,
                 EnableRandomization = true,
-                Variants = BuildVariants("Hair", CharacterVariantPools.GetVariants("Warrior", "Hair"))
+                Variants = BuildVariants("Hair",
+                    Pool(null,
+                        PixArtRoot + "Hair/1",
+                        PixArtRoot + "Hair/2",
+                        PixArtRoot + "Hair/3",
+                        PixArtRoot + "Hair/4"))
             });
 
             // 头部装备变体 - 可选装饰，可以不显示
@@ -113,8 +125,15 @@ namespace Demo.DobeCat.Game.Pet
                 SortingOrder = 4,
                 EnableRandomization = true,
                 Variants = BuildVariants("Head",
-                    CharacterVariantPools.GetVariants("Warrior", "Head"),
-                    CharacterVariantPools.GetVariants("Mage", "Head"))
+                    Pool(null,
+                        PixArtRoot + "Headgear/Helmet/Close",
+                        PixArtRoot + "Headgear/Helmet/Open",
+                        PixArtRoot + "Headgear/Helmet/Extra",
+                        PixArtRoot + "Headgear/Helmet/Extra/1",
+                        PixArtRoot + "Headgear/Hood/Closed",
+                        PixArtRoot + "Headgear/Hood/Open",
+                        PixArtRoot + "Headgear/WitchHat/1",
+                        PixArtRoot + "Headgear/WitchHat/2"))
             });
 
             // 武器变体 - 可选装饰，可以不显示
@@ -124,8 +143,9 @@ namespace Demo.DobeCat.Game.Pet
                 SortingOrder = 5,
                 EnableRandomization = true,
                 Variants = BuildVariants("Weapon",
-                    CharacterVariantPools.GetVariants("Warrior", "Weapon"),
-                    CharacterVariantPools.GetVariants("Mage", "Weapon"))
+                    Pool(null,
+                        PixArtRoot + "Weapon/Sword",
+                        PixArtRoot + "Weapon/Rod"))
             });
 
             // 盾牌变体
@@ -134,30 +154,51 @@ namespace Demo.DobeCat.Game.Pet
                 PartId = "Shield",
                 SortingOrder = 6,
                 EnableRandomization = false, // 盾牌默认关闭随机化
-                Variants = BuildVariants("Shield", CharacterVariantPools.GetVariants("Warrior", "Shield"))
+                Variants = BuildVariants("Shield", Pool(null, PixArtRoot + "Equipment/Shield"))
             });
 
             Debug.Log($"[DobeCatPetRandomizer] 已注册 {PartConfigs.Count} 个部件的随机化配置");
         }
 
-        private static List<PetPartVariant> BuildVariants(string partId, params List<string>[] groups)
+        private static VariantPool Pool(string prefixFilter, params string[] dirs)
+        {
+            return new VariantPool
+            {
+                PrefixFilter = prefixFilter,
+                Dirs = dirs
+            };
+        }
+
+        private static List<PetPartVariant> BuildVariants(string partId, params VariantPool[] pools)
         {
             var variants = new List<PetPartVariant>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            if (groups != null)
+            if (pools != null)
             {
-                foreach (var group in groups)
+                foreach (var pool in pools)
                 {
-                    if (group == null) continue;
-                    foreach (var prefix in group)
+                    if (pool.Dirs == null) continue;
+                    foreach (var dir in pool.Dirs)
                     {
-                        if (string.IsNullOrEmpty(prefix) || !seen.Add(prefix)) continue;
-                        variants.Add(new PetPartVariant
+                        if (string.IsNullOrEmpty(dir)) continue;
+                        var textures = Resources.LoadAll<Texture2D>(dir);
+                        if (textures == null) continue;
+                        foreach (var tex in textures)
                         {
-                            VariantId = $"{partId}_{prefix}",
-                            SheetPrefix = prefix,
-                            Weight = 1f
-                        });
+                            if (tex == null) continue;
+                            if (!string.IsNullOrEmpty(pool.PrefixFilter) &&
+                                !tex.name.StartsWith(pool.PrefixFilter, StringComparison.Ordinal))
+                                continue;
+
+                            var prefix = DeriveSheetPrefix(dir, tex.name);
+                            if (string.IsNullOrEmpty(prefix) || !seen.Add(prefix)) continue;
+                            variants.Add(new PetPartVariant
+                            {
+                                VariantId = $"{partId}_{prefix}",
+                                SheetPrefix = prefix,
+                                Weight = 1f
+                            });
+                        }
                     }
                 }
             }
@@ -165,6 +206,14 @@ namespace Demo.DobeCat.Game.Pet
             if (variants.Count == 0)
                 Debug.LogWarning($"[DobeCatPetRandomizer] 部件 {partId} 没有从 Resources 枚举到任何素材变体");
             return variants;
+        }
+
+        private static string DeriveSheetPrefix(string resourcesRelativeDir, string textureName)
+        {
+            var d = (resourcesRelativeDir ?? string.Empty).Replace('\\', '/');
+            if (d.StartsWith(PixArtRoot, StringComparison.Ordinal)) d = d.Substring(PixArtRoot.Length);
+            d = d.Replace('/', '_');
+            return string.IsNullOrEmpty(d) ? textureName : d + "_" + textureName;
         }
 
         /// <summary>
