@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Presentation.InputManager;
 // §4.1 跨模块 AudioManager 走 bare-string，不 using。
 
 namespace Demo.Tribe.Player
@@ -19,6 +20,7 @@ namespace Demo.Tribe.Player
     {
         [Header("Combat")]
         [SerializeField] private bool _enableMouseAttack = true;
+        [SerializeField] private string _attackAction = "Attack";
         [SerializeField, Min(0.05f)] private float _attackDuration = 0.4f;
         [SerializeField, Min(0.1f)] private float _attackRange = 2.2f;
         [SerializeField, Min(0.1f)] private float _attackHeight = 1.4f;
@@ -48,7 +50,8 @@ namespace Demo.Tribe.Player
         /// <summary>每帧调用：处理鼠标左键、推进命中、刷新提示框 transform。</summary>
         public void Tick()
         {
-            if (_enableMouseAttack && Input.GetMouseButtonDown(0) && !IsAttacking)
+            var input = InputManager.TryGetInstance();
+            if (_enableMouseAttack && input != null && input.IsDown(_attackAction) && !IsAttacking)
                 TriggerAttack();
             if (IsAttacking)
                 ApplyAttackHit();

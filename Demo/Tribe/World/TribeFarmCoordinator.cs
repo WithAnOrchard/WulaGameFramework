@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.MultiManagers.FarmManager.Dao;
+using EssSystem.Core.Presentation.InputManager;
 
 namespace Demo.Tribe.World
 {
@@ -31,7 +32,7 @@ namespace Demo.Tribe.World
 
         [Header("Debug")]
         [Tooltip("按下此键在当前左边界生成一座基础农场（验证 SpawnFarm 链路）。")]
-        [SerializeField] private KeyCode _debugSpawnKey = KeyCode.G;
+        [SerializeField] private string _debugSpawnAction = "DebugSpawn";
 
         [Tooltip("农场占位视觉颜色（土黄褐）。")]
         [SerializeField] private Color _farmBlockColor = new Color(0.55f, 0.40f, 0.20f, 1f);
@@ -75,7 +76,8 @@ namespace Demo.Tribe.World
 
         private void Update()
         {
-            if (Input.GetKeyDown(_debugSpawnKey)) DebugSpawnFarmAtLeftBoundary();
+            var input = InputManager.TryGetInstance();
+            if (input != null && input.IsDown(_debugSpawnAction)) DebugSpawnFarmAtLeftBoundary();
         }
 
         // ─── 单例获取 / 自动挂载 ─────────────────────────────

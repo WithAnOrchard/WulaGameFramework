@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
 {
@@ -17,7 +16,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         float Radius { get; set; }
 
         /// <summary>互动键（默认 F）。</summary>
-        KeyCode InteractKey { get; set; }
+        string InteractAction { get; set; }
 
         /// <summary>头顶提示文字（如 "[F] 对话" / "[F] 制作"）。</summary>
         string PromptLabel { get; set; }

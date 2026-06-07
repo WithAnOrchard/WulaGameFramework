@@ -297,9 +297,13 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var sc  = config.SlotConfig;
             var refs = new SlotUIRefs
             {
+                Buttons = new UIButtonComponent[config.SlotsPerPage],
                 Icons  = new UIPanelComponent[config.SlotsPerPage],
                 Names  = new UITextComponent [config.SlotsPerPage],
                 Stacks = new UITextComponent [config.SlotsPerPage],
+                SelectionRoots = inventoryId == HotbarInventoryId
+                    ? new UIPanelComponent[config.SlotsPerPage]
+                    : null,
             };
 
             var stackFont = Mathf.Max(16, Mathf.RoundToInt(sc.SlotHeight * 0.24f));
@@ -360,9 +364,18 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 stackText.SetVisible(true);
                 slotBtn.AddChild(stackText);
 
+                UIPanelComponent selectionRoot = null;
+                if (inventoryId == HotbarInventoryId)
+                {
+                    selectionRoot = BuildHotbarSelectionRoot(inventoryId, i, sc.SlotWidth, sc.SlotHeight);
+                    slotBtn.AddChild(selectionRoot);
+                }
+
+                refs.Buttons[i] = slotBtn;
                 refs.Icons[i]  = iconPanel;
                 refs.Names[i]  = nameText;
                 refs.Stacks[i] = stackText;
+                if (refs.SelectionRoots != null) refs.SelectionRoots[i] = selectionRoot;
 
                 ApplyItemToSlot(iconPanel, nameText, stackText, inv?.GetSlot(slotIdx)?.Item);
 
@@ -376,6 +389,14 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                         var clickedSlotIdx = ParseSlotIndex(clickedButton?.Id, slotIdx);
                         var clickedItem = InventoryService.Instance.GetInventory(inventoryId)?.GetSlot(clickedSlotIdx)?.Item;
                         ApplyItemToDesc(capturedRefs, clickedItem);
+                    };
+                }
+
+                if (inventoryId == HotbarInventoryId)
+                {
+                    slotBtn.OnClick += _ =>
+                    {
+                        InventoryManager.TryGetInstance()?.ToggleHotbarSelection(slotIdx);
                     };
                 }
 
@@ -460,6 +481,43 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             };
             _sharedDescRefs = refs;
             return refs;
+        }
+
+        private static UIPanelComponent BuildHotbarSelectionRoot(string inventoryId, int slotIndex, float slotWidth, float slotHeight)
+        {
+            var rootW = slotWidth + 12f;
+            var rootH = slotHeight + 12f;
+            var cx = rootW * 0.5f;
+            var cy = rootH * 0.5f;
+            var cyan = new Color(0.05f, 0.92f, 1f, 1f);
+            var white = new Color(0.92f, 1f, 1f, 1f);
+
+            var root = new UIPanelComponent($"{inventoryId}_Slot_{slotIndex}_Selected", $"Slot_{slotIndex}_Selected")
+                .SetPosition(slotWidth * 0.5f, slotHeight * 0.5f)
+                .SetSize(rootW, rootH)
+                .SetBackgroundColor(new Color(0.02f, 0.70f, 1f, 0.32f))
+                .SetVisible(false);
+
+            root.AddChild(new UIPanelComponent($"{root.Id}_InnerGlow", "InnerGlow")
+                .SetPosition(cx, cy)
+                .SetSize(slotWidth - 8f, slotHeight - 8f)
+                .SetBackgroundColor(new Color(0.30f, 1f, 1f, 0.26f)));
+
+            AddHotbarBorder(root, $"{root.Id}_OuterBorder", cx, cy, rootW, rootH, 7f, cyan);
+            AddHotbarBorder(root, $"{root.Id}_InnerBorder", cx, cy, slotWidth + 2f, slotHeight + 2f, 3f, white);
+
+            var markerW = 11f;
+            root.AddChild(new UIPanelComponent($"{root.Id}_MarkerLeft", "MarkerLeft")
+                .SetPosition(markerW * 0.5f, cy)
+                .SetSize(markerW, rootH - 10f)
+                .SetBackgroundColor(new Color(0.90f, 1f, 1f, 1f)));
+
+            root.AddChild(new UIPanelComponent($"{root.Id}_MarkerTop", "MarkerTop")
+                .SetPosition(cx, rootH - 5f)
+                .SetSize(rootW - 14f, 10f)
+                .SetBackgroundColor(new Color(0.05f, 0.92f, 1f, 1f)));
+
+            return root;
         }
 
         private static void ApplyDescriptionChrome(UIPanelComponent panel, float width, float height)

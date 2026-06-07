@@ -9,9 +9,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
     /// </summary>
     public class SlotUIRefs
     {
+        public UIButtonComponent[] Buttons;
         public UIPanelComponent[] Icons;
         public UITextComponent[]  Names;
         public UITextComponent[]  Stacks;
+        public UIPanelComponent[] SelectionRoots;
     }
 
     /// <summary>

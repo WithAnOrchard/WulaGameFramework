@@ -8,6 +8,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Foundation.DataManager;
 using EssSystem.Core.Foundation.ResourceManager;
 using EssSystem.Core.Presentation.AudioManager;
+using EssSystem.Core.Presentation.InputManager;
 using EssSystem.Core.Presentation.UIManager;
 using UnityEngine;
 
@@ -79,6 +80,7 @@ namespace EssSystem.Core.Base
             yield return typeof(DataManager);
             yield return typeof(ResourceManager);
             yield return typeof(AudioManager);
+            yield return typeof(InputManager);
             yield return typeof(UIManager);
 
             var components = GetComponentsInChildren<MonoBehaviour>(true);
@@ -112,6 +114,7 @@ namespace EssSystem.Core.Base
                 ("EventProcessor", -30, typeof(EventProcessor)),
                 ("DataManager", -20, typeof(DataManager)),
                 ("ResourceManager", 0, typeof(ResourceManager)),
+                ("InputManager", 2, typeof(InputManager)),
                 ("AudioManager", 3, typeof(AudioManager)),
                 ("UIManager", 5, typeof(UIManager))
             };

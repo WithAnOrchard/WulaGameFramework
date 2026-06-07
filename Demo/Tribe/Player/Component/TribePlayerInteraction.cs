@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
+using EssSystem.Core.Presentation.InputManager;
 // §4.1 跨模块 InventoryManager / AudioManager / DialogueManager 走 bare-string，不 using。
 
 namespace Demo.Tribe.Player
@@ -17,17 +18,20 @@ namespace Demo.Tribe.Player
         [SerializeField] private bool   _enableInventoryToggle = true;
         [SerializeField] private string _inventoryId           = "player";
         [SerializeField] private string _inventoryConfigId     = "PlayerBackPack";
-        [SerializeField] private KeyCode _inventoryToggleKey   = KeyCode.B;
+        [SerializeField] private string _inventoryToggleAction = "InventoryToggle";
 
         [Header("Dialogue (I 键)")]
         [SerializeField] private bool    _enableDialogueTest = true;
         [SerializeField] private string  _dialogueId         = "DebugDialogue";
-        [SerializeField] private KeyCode _dialogueToggleKey  = KeyCode.I;
+        [SerializeField] private string  _dialogueToggleAction = "DialogueToggle";
 
         public void Tick()
         {
-            if (_enableInventoryToggle && Input.GetKeyDown(_inventoryToggleKey)) ToggleInventory();
-            if (_enableDialogueTest && Input.GetKeyDown(_dialogueToggleKey)) ToggleDialogue();
+            var input = InputManager.TryGetInstance();
+            if (input == null) return;
+
+            if (_enableInventoryToggle && input.IsDown(_inventoryToggleAction)) ToggleInventory();
+            if (_enableDialogueTest && input.IsDown(_dialogueToggleAction)) ToggleDialogue();
         }
 
         private void ToggleInventory()

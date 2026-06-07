@@ -2,6 +2,7 @@ using UnityEngine;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
+using EssSystem.Core.Presentation.InputManager;
 
 namespace Demo.Tribe.Player
 {
@@ -31,8 +32,8 @@ namespace Demo.Tribe.Player
         [SerializeField, Min(0f)] private float _gravityScale = 5f;
         [SerializeField, Min(0f)] private float _jumpForce = 12f;
         [SerializeField, Min(0.05f)] private float _groundCheckDistance = 0.1f;
-        [SerializeField] private KeyCode _jumpKey = KeyCode.Space;
-        [SerializeField] private KeyCode _sprintKey = KeyCode.LeftShift;
+        [SerializeField] private string _jumpAction = "Jump";
+        [SerializeField] private string _sprintAction = "Sprint";
 
         [Header("Capabilities")]
         [Tooltip("装配地面检测能力（IGroundSensor）—— 关闭后无法判定落地，跳跃约束需自行处理。")]
@@ -121,8 +122,10 @@ namespace Demo.Tribe.Player
         /// <summary>读取输入，刷新地面状态、跳跃、面朝；速度施加放到 <see cref="FixedTick"/>。</summary>
         public void Tick()
         {
-            var h = Input.GetAxisRaw("Horizontal");
-            var v = _useSideScrollerPhysics ? 0f : Input.GetAxisRaw("Vertical");
+            var input = InputManager.TryGetInstance();
+            var moveAxis = input != null ? input.GetMoveAxis() : Vector2.zero;
+            var h = moveAxis.x;
+            var v = _useSideScrollerPhysics ? 0f : moveAxis.y;
             var dir = new Vector2(h, v);
             if (dir.sqrMagnitude > 1f) dir.Normalize();
             _pendingInput = dir;
@@ -130,7 +133,7 @@ namespace Demo.Tribe.Player
             _groundSensor?.Refresh();
 
             if (_useSideScrollerPhysics && _jumpable != null && Grounded &&
-                (Input.GetKeyDown(_jumpKey) || Input.GetKeyDown(KeyCode.Space)))
+                input != null && input.IsDown(_jumpAction))
             {
                 _jumpable.Jump();
             }
@@ -144,7 +147,8 @@ namespace Demo.Tribe.Player
         public void FixedTick()
         {
             if (_mover == null) return;
-            _mover.Sprinting = Input.GetKey(_sprintKey);
+            var input = InputManager.TryGetInstance();
+            _mover.Sprinting = input != null && input.IsPressed(_sprintAction);
             _mover.Move(_pendingInput, Time.fixedDeltaTime);
         }
     }

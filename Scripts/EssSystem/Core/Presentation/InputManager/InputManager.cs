@@ -3,6 +3,7 @@ using UnityEngine;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Util;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 
 namespace EssSystem.Core.Presentation.InputManager
 {
@@ -44,22 +45,16 @@ namespace EssSystem.Core.Presentation.InputManager
         /// <summary>Action 本帧抬起广播。data: [string actionName].</summary>
         public const string EVT_INPUT_UP   = "OnInputUp";
 
+        public const string ACTION_HOTBAR_USE_PREFIX = "HotbarUse";
+        public const string ACTION_ENTITY_INTERACT = "EntityInteract";
+
+        public static string GetHotbarUseActionName(int slotIndex) =>
+            $"{ACTION_HOTBAR_USE_PREFIX}{slotIndex + 1}";
+
         // ============================================================
         // 默认 Action 绑定
         // ============================================================
-        private static readonly Dictionary<string, KeyCode[]> _defaultBindings = new()
-        {
-            { "MoveLeft",  new[] { KeyCode.A, KeyCode.LeftArrow  } },
-            { "MoveRight", new[] { KeyCode.D, KeyCode.RightArrow } },
-            { "MoveUp",    new[] { KeyCode.W, KeyCode.UpArrow    } },
-            { "MoveDown",  new[] { KeyCode.S, KeyCode.DownArrow  } },
-            { "Jump",      new[] { KeyCode.Space         } },
-            { "Attack",    new[] { KeyCode.Mouse0        } },
-            { "AltAction", new[] { KeyCode.Mouse1        } },
-            { "Interact",  new[] { KeyCode.E             } },
-            { "Cancel",    new[] { KeyCode.Escape        } },
-            { "Pause",     new[] { KeyCode.P, KeyCode.Pause } },
-        };
+        private const string DEFAULT_BINDINGS_PATH = "Framework/Input/default_bindings.json";
 
         // ============================================================
         // Inspector
@@ -89,6 +84,8 @@ namespace EssSystem.Core.Presentation.InputManager
         {
             base.Initialize();
             LoadBindingsFromService();
+            EventProcessor.Instance?.SilenceEvent(EVT_INPUT_DOWN);
+            EventProcessor.Instance?.SilenceEvent(EVT_INPUT_UP);
             Log($"InputManager 初始化完成（{_bindings.Count} 个 Action）", Color.green);
         }
 
@@ -108,7 +105,7 @@ namespace EssSystem.Core.Presentation.InputManager
         {
             _bindings.Clear();
             // 1) 默认绑定
-            foreach (var kv in _defaultBindings) _bindings[kv.Key] = kv.Value;
+            LoadDefaultBindingsFromConfig();
             // 2) Service 中持久化的覆盖（玩家自定义键位）
             if (Service != null)
             {
@@ -121,6 +118,27 @@ namespace EssSystem.Core.Presentation.InputManager
         // ============================================================
         // 每帧轮询
         // ============================================================
+        private void LoadDefaultBindingsFromConfig()
+        {
+            if (!RuntimeConfigLoader.TryLoadJson<InputDefaultConfigFile>(
+                    DEFAULT_BINDINGS_PATH,
+                    out var config,
+                    msg => Log(msg, Color.gray)))
+            {
+                Log($"Input default binding config not found: {DEFAULT_BINDINGS_PATH}", Color.yellow);
+                return;
+            }
+
+            if (config?.Bindings == null) return;
+            foreach (var binding in config.Bindings)
+            {
+                if (binding == null || string.IsNullOrWhiteSpace(binding.Action)) continue;
+                var keys = binding.ToKeyCodes(msg => Log(msg, Color.yellow));
+                if (keys == null || keys.Length == 0) continue;
+                _bindings[binding.Action] = keys;
+            }
+        }
+
         protected override void Update()
         {
             base.Update();   // 让基类完成 Inspector 节流刷新
@@ -135,16 +153,26 @@ namespace EssSystem.Core.Presentation.InputManager
             }
 
             if (!_broadcastEvents || EventProcessor.Instance == null) return;
+            var ep = EventProcessor.Instance;
+            var hasInputDownListener = ep.HasListener(EVT_INPUT_DOWN);
+            var hasInputUpListener = ep.HasListener(EVT_INPUT_UP);
+            if (!hasInputDownListener && !hasInputUpListener) return;
 
             // Down: this 有 last 无
-            foreach (var a in _pressedThisFrame)
-                if (!_pressedLastFrame.Contains(a))
-                    EventProcessor.Instance.TriggerEventMethod(EVT_INPUT_DOWN, new List<object> { a });
+            if (hasInputDownListener)
+            {
+                foreach (var a in _pressedThisFrame)
+                    if (!_pressedLastFrame.Contains(a))
+                        ep.TriggerEvent(EVT_INPUT_DOWN, new List<object> { a });
+            }
 
             // Up: last 有 this 无
-            foreach (var a in _pressedLastFrame)
-                if (!_pressedThisFrame.Contains(a))
-                    EventProcessor.Instance.TriggerEventMethod(EVT_INPUT_UP, new List<object> { a });
+            if (hasInputUpListener)
+            {
+                foreach (var a in _pressedLastFrame)
+                    if (!_pressedThisFrame.Contains(a))
+                        ep.TriggerEvent(EVT_INPUT_UP, new List<object> { a });
+            }
         }
 
         private static bool IsAnyKeyHeld(KeyCode[] keys)

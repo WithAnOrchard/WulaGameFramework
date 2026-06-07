@@ -201,9 +201,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
         /// <summary>赋予可交互能力 —— 玩家靠近 <paramref name="radius"/> 内显头顶 <paramref name="promptLabel"/>，
         /// 按 <paramref name="interactKey"/> 触发 <paramref name="onInteract"/>。
         /// <para>典型用例：NPC 对话、工作台 / 篝火制作、宝箱、传送门。</para></summary>
-        public Entity CanInteract(float radius, string promptLabel, Action onInteract, KeyCode interactKey = KeyCode.F)
+        public Entity CanInteract(float radius, string promptLabel, Action onInteract, string interactAction = null)
         {
-            Add<IInteractable>(new InteractableComponent(radius, promptLabel, interactKey, onInteract));
+            Add<IInteractable>(new InteractableComponent(radius, promptLabel, interactAction, onInteract));
             return this;
         }
 

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using EssSystem.Core.Presentation.UIManager;
+using InputManagerRuntime = EssSystem.Core.Presentation.InputManager.InputManager;
 
 namespace EssSystem.Core.Presentation.UIManager.Entity
 {
@@ -232,8 +233,10 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
         {
             if (_rt == null || _canvas == null) return ResizeEdge.None;
             var cam = _canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : Camera.main;
+            var input = InputManagerRuntime.TryGetInstance();
+            if (input == null) return ResizeEdge.None;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    _rt, Input.mousePosition, cam, out var lp))
+                    _rt, input.GetMouseScreenPosition(), cam, out var lp))
                 return ResizeEdge.None;
 
             float t    = EdgeThreshold;

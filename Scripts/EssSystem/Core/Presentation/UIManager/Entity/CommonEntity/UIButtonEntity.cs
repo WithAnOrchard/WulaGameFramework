@@ -2,6 +2,7 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Base.Event;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
@@ -27,6 +28,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         {
             _button = gameObject.GetComponent<Button>() ?? gameObject.AddComponent<Button>();
             _image = gameObject.GetComponent<Image>() ?? gameObject.AddComponent<Image>();
+            DisableKeyboardNavigation(_button);
             _legacyText = GetComponentInChildren<Text>();
             _text = GetComponentInChildren<TextMeshProUGUI>();
             // 仅在既无 legacy 又无 TMP 时才尝试创建 TMP；UIEntityFactory 已为 Button 创建 legacy Text，
@@ -125,6 +127,14 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         private void OnButtonClick()
         {
             if (Dao is UIButtonComponent buttonDao) buttonDao.Click();
+            if (EventSystem.current != null)
+                EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        private static void DisableKeyboardNavigation(Button button)
+        {
+            if (button == null) return;
+            button.navigation = new Navigation { mode = Navigation.Mode.None };
         }
 
         /// <summary>

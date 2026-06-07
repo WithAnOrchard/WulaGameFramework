@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EssSystem.Core.Presentation.InputManager;
 
 namespace Demo.Tribe.Interaction
 {
@@ -17,7 +18,7 @@ namespace Demo.Tribe.Interaction
         [Header("Detection")]
         [Tooltip("玩家进入此半径时显示提示")]
         [SerializeField, Min(0.1f)] private float _radius = 2.5f;
-        [SerializeField] private KeyCode _interactKey = KeyCode.F;
+        [SerializeField] private string _interactAction = "TribeInteract";
 
         [Header("Prompt")]
         [Tooltip("提示文字。可用 emoji / 中文，例如 \"[F] 对话\" 或 \"[F] 制作\"")]
@@ -27,7 +28,7 @@ namespace Demo.Tribe.Interaction
         [SerializeField] private int _promptSortingOrder = 1000;
 
         public float Radius { get => _radius; set => _radius = Mathf.Max(0.1f, value); }
-        public KeyCode InteractKey { get => _interactKey; set => _interactKey = value; }
+        public string InteractAction { get => _interactAction; set => _interactAction = value; }
         public string PromptLabel { get => _promptLabel; set { _promptLabel = value; if (_promptText != null) _promptText.text = value; } }
 
         /// <summary>玩家按下 InteractKey 时触发；建议外部通过 <see cref="SetOnInteract"/> 注入业务逻辑。</summary>
@@ -55,7 +56,8 @@ namespace Demo.Tribe.Interaction
             _inRange = dist <= _radius * _radius;
             SetPromptVisible(_inRange);
 
-            if (_inRange && Input.GetKeyDown(_interactKey))
+            var input = InputManager.TryGetInstance();
+            if (_inRange && input != null && input.IsDown(_interactAction))
                 OnInteract?.Invoke();
         }
 

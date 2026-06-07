@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
+using InputManagerRuntime = EssSystem.Core.Presentation.InputManager.InputManager;
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
 {
@@ -18,7 +19,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
     public class InteractableComponent : IInteractable, ITickableCapability
     {
         public float   Radius      { get; set; }
-        public KeyCode InteractKey { get; set; } = KeyCode.F;
+        public string  InteractAction { get; set; } = InputManagerRuntime.ACTION_ENTITY_INTERACT;
         public string  PromptLabel { get; set; } = "[F] 互动";
         public bool    Enabled     { get; set; } = true;
         public bool    PlayerInRange { get; private set; }
@@ -48,7 +49,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         public InteractableComponent(
             float radius = 2.5f,
             string promptLabel = "[F] 互动",
-            KeyCode interactKey = KeyCode.F,
+            string interactAction = null,
             Action onInteract = null,
             Vector3? promptOffset = null,
             Color? promptColor = null,
@@ -58,7 +59,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
         {
             Radius = Mathf.Max(0.1f, radius);
             PromptLabel = promptLabel ?? "[F] 互动";
-            InteractKey = interactKey;
+            InteractAction = string.IsNullOrWhiteSpace(interactAction)
+                ? InputManagerRuntime.ACTION_ENTITY_INTERACT
+                : interactAction;
             OnInteract = onInteract;
             // 默认抬到 2.4 —— 给头顶名牌（典型 1.4）和角色头部留出余量，避免文字重叠
             _promptOffset = promptOffset ?? new Vector3(0f, 2.4f, 0f);
@@ -113,7 +116,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
                 SetPromptVisible(_isClosestActive);
             }
 
-            if (_isClosestActive && Input.GetKeyDown(InteractKey))
+            var input = InputManagerRuntime.TryGetInstance();
+            if (_isClosestActive && input != null && input.IsDown(InteractAction))
                 OnInteract?.Invoke();
         }
 
