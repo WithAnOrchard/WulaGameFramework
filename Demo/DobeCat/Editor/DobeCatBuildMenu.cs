@@ -7,6 +7,7 @@ using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Demo.DobeCat.Editor
 {
@@ -35,6 +36,7 @@ namespace Demo.DobeCat.Editor
             public bool VisibleInBackground;
             public bool ResizableWindow;
             public FullScreenMode FullScreenMode;
+            public GraphicsDeviceType[] GraphicsApis;
         }
 
         /// <summary>自动计算输出路径：{项目根}/Builds/DobeCat/DobeCat.exe</summary>
@@ -124,6 +126,7 @@ namespace Demo.DobeCat.Editor
                     addrSettings.BuildAddressablesWithPlayerBuild = prevBuildOption;
                 RestorePlayerSettings(playerSettings);
                 SetFrameworkGroupIncluded(true);
+                DeleteBuildDebugArtifacts(outputPath);
                 LogBuildResult(report, outputPath);
             }
         }
@@ -137,7 +140,8 @@ namespace Demo.DobeCat.Editor
                 RunInBackground           = PlayerSettings.runInBackground,
                 VisibleInBackground       = PlayerSettings.visibleInBackground,
                 ResizableWindow           = PlayerSettings.resizableWindow,
-                FullScreenMode            = PlayerSettings.fullScreenMode
+                FullScreenMode            = PlayerSettings.fullScreenMode,
+                GraphicsApis              = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows64)
             };
 
             PlayerSettings.useFlipModelSwapchain    = false;
@@ -146,6 +150,8 @@ namespace Demo.DobeCat.Editor
             PlayerSettings.visibleInBackground      = true;
             PlayerSettings.resizableWindow          = false;
             PlayerSettings.fullScreenMode           = FullScreenMode.Windowed;
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64,
+                new[] { GraphicsDeviceType.Direct3D11 });
 
             Debug.Log("[DobeCatBuild] 已应用透明桌面叠加 PlayerSettings：preserveFramebufferAlpha=true, useFlipModelSwapchain=false");
             return snapshot;
@@ -160,9 +166,31 @@ namespace Demo.DobeCat.Editor
             PlayerSettings.visibleInBackground      = snapshot.VisibleInBackground;
             PlayerSettings.resizableWindow          = snapshot.ResizableWindow;
             PlayerSettings.fullScreenMode           = snapshot.FullScreenMode;
+            if (snapshot.GraphicsApis != null && snapshot.GraphicsApis.Length > 0)
+                PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, snapshot.GraphicsApis);
         }
 
         // ─── Addressables 组控制 ──────────────────────────────────
+        private static void DeleteBuildDebugArtifacts(string outputPath)
+        {
+            var dir = Path.GetDirectoryName(outputPath);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+
+            var productName = Path.GetFileNameWithoutExtension(outputPath);
+            var doNotShip = Path.Combine(dir, $"{productName}_BurstDebugInformation_DoNotShip");
+            if (!Directory.Exists(doNotShip)) return;
+
+            try
+            {
+                Directory.Delete(doNotShip, recursive: true);
+                Debug.Log($"[DobeCatBuild] Deleted build debug directory: {doNotShip}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[DobeCatBuild] Failed to delete build debug directory: {ex.Message}");
+            }
+        }
+
         private static void SetFrameworkGroupIncluded(bool included)
         {
             var settings = AddressableAssetSettingsDefaultObject.Settings;
