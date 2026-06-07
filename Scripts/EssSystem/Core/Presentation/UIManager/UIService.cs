@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Presentation.UIManager.Dao;
+using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Presentation.UIManager.Entity;
+using EssSystem.Core.Presentation.UIManager.Entity.CommonEntity;
+using UnityEngine.UI;
 
 namespace EssSystem.Core.Presentation.UIManager
 {
@@ -126,9 +129,42 @@ namespace EssSystem.Core.Presentation.UIManager
         {
             var entity = UIEntityFactory.CreateEntity(component, parent);
             if (entity == null) return null;
+
+            if (component is UIScrollViewComponent scrollComponent && entity is UIScrollViewEntity scrollEntity)
+            {
+                var content = scrollEntity.ContentTransform;
+                if (content != null)
+                {
+                    foreach (var child in scrollComponent.GetContentChildren())
+                    {
+                        var childEntity = CreateEntityRecursive(child, content);
+                        ApplyScrollContentLayout(child, childEntity);
+                    }
+                }
+            }
+
             foreach (var child in component.GetChildren())
                 CreateEntityRecursive(child, entity.transform);
             return entity;
+        }
+
+        private static void ApplyScrollContentLayout(UIComponent component, UIEntity entity)
+        {
+            if (component == null || entity == null) return;
+            var rt = entity.transform as RectTransform;
+            if (rt == null) return;
+
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.localScale = Vector3.one;
+
+            var layout = entity.gameObject.GetComponent<LayoutElement>()
+                         ?? entity.gameObject.AddComponent<LayoutElement>();
+            layout.minHeight = Mathf.Max(1f, component.Size.y);
+            layout.preferredHeight = Mathf.Max(1f, component.Size.y);
+            layout.flexibleHeight = 0f;
+            if (component.Size.x > 0f) layout.preferredWidth = component.Size.x;
         }
     }
 }

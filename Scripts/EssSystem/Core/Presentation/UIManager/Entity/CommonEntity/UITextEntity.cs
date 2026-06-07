@@ -51,5 +51,6 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         {
             return _text;
         }
+
     }
 }

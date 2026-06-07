@@ -99,6 +99,22 @@
     {
       "Action": "HotbarUse9",
       "Keys": [ "Alpha9", "Keypad9" ]
+    },
+    {
+      "Action": "SkillUse1",
+      "Keys": [ "J" ]
+    },
+    {
+      "Action": "SkillUse2",
+      "Keys": [ "K" ]
+    },
+    {
+      "Action": "SkillUse3",
+      "Keys": [ "L" ]
+    },
+    {
+      "Action": "SkillUse4",
+      "Keys": [ "Semicolon" ]
     }
   ]
 }

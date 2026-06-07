@@ -46,10 +46,14 @@ namespace EssSystem.Core.Presentation.InputManager
         public const string EVT_INPUT_UP   = "OnInputUp";
 
         public const string ACTION_HOTBAR_USE_PREFIX = "HotbarUse";
+        public const string ACTION_SKILL_USE_PREFIX = "SkillUse";
         public const string ACTION_ENTITY_INTERACT = "EntityInteract";
 
         public static string GetHotbarUseActionName(int slotIndex) =>
             $"{ACTION_HOTBAR_USE_PREFIX}{slotIndex + 1}";
+
+        public static string GetSkillUseActionName(int slotIndex) =>
+            $"{ACTION_SKILL_USE_PREFIX}{slotIndex + 1}";
 
         // ============================================================
         // 默认 Action 绑定

@@ -122,6 +122,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
 
                     var sr = gameObject.AddComponent<ScrollRect>();
                     sr.horizontal = false;
+                    sr.scrollSensitivity = svDao != null ? svDao.ScrollSensitivity : 30f;
 
                     var vpGo = new GameObject("Viewport");
                     vpGo.transform.SetParent(gameObject.transform, false);
@@ -179,11 +180,45 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
 
         private static void CreateChildrenRecursive(UIComponent parentDao, UIEntity parentEntity)
         {
+            if (parentDao is UIScrollViewComponent scrollDao && parentEntity is UIScrollViewEntity scrollEntity)
+            {
+                var content = scrollEntity.ContentTransform;
+                if (content != null)
+                {
+                    foreach (var childDao in scrollDao.GetContentChildren())
+                    {
+                        var childEntity = CreateEntity(childDao, content);
+                        if (childEntity == null) continue;
+                        ApplyScrollContentLayout(childDao, childEntity);
+                        CreateChildrenRecursive(childDao, childEntity);
+                    }
+                }
+            }
+
             foreach (var childDao in parentDao.GetChildren())
             {
                 var childEntity = CreateEntity(childDao, parentEntity.transform);
                 if (childEntity != null) CreateChildrenRecursive(childDao, childEntity);
             }
+        }
+
+        private static void ApplyScrollContentLayout(UIComponent dao, UIEntity entity)
+        {
+            if (dao == null || entity == null) return;
+            var rt = entity.transform as RectTransform;
+            if (rt == null) return;
+
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.localScale = Vector3.one;
+
+            var layout = entity.gameObject.GetComponent<LayoutElement>()
+                         ?? entity.gameObject.AddComponent<LayoutElement>();
+            layout.minHeight = Mathf.Max(1f, dao.Size.y);
+            layout.preferredHeight = Mathf.Max(1f, dao.Size.y);
+            layout.flexibleHeight = 0f;
+            if (dao.Size.x > 0f) layout.preferredWidth = dao.Size.x;
         }
 
         private static void LoadSpriteFromId(string spriteId, Image targetImage)

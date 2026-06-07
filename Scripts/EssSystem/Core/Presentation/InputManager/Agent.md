@@ -28,6 +28,7 @@
 - `InputManager.EVT_UNBIND_ACTION` = `"UnbindInputAction"`
 
 ## 维护注意
+- 数字快捷栏使用 `HotbarUse1..9`，技能快捷栏使用 `SkillUse1..4`；业务侧只读 Action，不直接写 KeyCode。
 - 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
 - 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
 - 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。
