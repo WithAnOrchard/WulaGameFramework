@@ -11,7 +11,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
     /// <summary>
     ///     UI Entity
     /// </summary>
-    public class UIButtonEntity : UIEntity
+    public class UIButtonEntity : UIEntity, IPointerEnterHandler, IPointerExitHandler
     {
         private Button _button;
         private TextMeshProUGUI _text;
@@ -129,6 +129,16 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
             if (Dao is UIButtonComponent buttonDao) buttonDao.Click();
             if (EventSystem.current != null)
                 EventSystem.current.SetSelectedGameObject(null);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (Dao is UIButtonComponent buttonDao) buttonDao.HoverEnter();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (Dao is UIButtonComponent buttonDao) buttonDao.HoverExit();
         }
 
         private static void DisableKeyboardNavigation(Button button)

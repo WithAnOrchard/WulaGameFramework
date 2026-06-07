@@ -87,6 +87,8 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         ///     点击事件
         /// </summary>
         public event Action<UIButtonComponent> OnClick;
+        public event Action<UIButtonComponent> OnHoverEnter;
+        public event Action<UIButtonComponent> OnHoverExit;
 
         /// <summary>
         ///     设置文本
@@ -179,6 +181,18 @@ namespace EssSystem.Core.Presentation.UIManager.Dao.CommonComponents
         public UIButtonComponent Click()
         {
             if (Interactable) OnClick?.Invoke(this);
+            return this;
+        }
+
+        public UIButtonComponent HoverEnter()
+        {
+            if (Interactable) OnHoverEnter?.Invoke(this);
+            return this;
+        }
+
+        public UIButtonComponent HoverExit()
+        {
+            OnHoverExit?.Invoke(this);
             return this;
         }
 

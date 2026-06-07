@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 using UnityEngine;
 
@@ -48,6 +49,11 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
 
         /// <summary>标题配置（通用 <see cref="UITextSpec"/>，Text 字段非空时覆盖 DisplayName）</summary>
         public UITextSpec TitleConfig = new UITextSpec();
+
+        public UIPanelSpec SlotAreaConfig;
+        public UIPanelSpec BodyVisualConfig;
+        public List<InventorySlotVisualConfig> SlotVisuals = new List<InventorySlotVisualConfig>();
+        public List<InventoryInfoTabConfig> InfoTabs = new List<InventoryInfoTabConfig>();
 
         #endregion
 
@@ -145,5 +151,35 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
 
         public override string ToString() =>
             $"InventoryConfig[{ConfigId} {DisplayName} {PageCount}页x{SlotsPerPage}格]";
+    }
+
+    [Serializable]
+    public class InventorySlotVisualConfig
+    {
+        public int SlotIndex;
+        public bool OverridePosition;
+        public Vector2 Position;
+        public string Label;
+        public UITextSpec LabelConfig = new UITextSpec();
+        public string EmptyHintSpriteId;
+        public Color EmptyHintColor = new Color(1f, 0.90f, 0.68f, 0.58f);
+    }
+
+    [Serializable]
+    public class InventoryInfoTabConfig
+    {
+        public string Id;
+        public UIButtonSpec ButtonConfig = new UIButtonSpec();
+        public string IconSpriteId;
+        public UIIconSpec IconConfig = new UIIconSpec(17f, 17f, 22f, 22f);
+        public string Tooltip;
+        public UIPanelSpec TooltipPanelConfig = new UIPanelSpec(132f, 28f);
+        public UITextSpec TooltipTextConfig = new UITextSpec(122f, 22f, 66f, 14f, 14, TextAnchor.MiddleCenter);
+        public string ContentMode = "StaticText";
+        public string Title;
+        public string SubTitle;
+        public string Description;
+        public string EntityId;
+        public List<string> ExtraLines = new List<string>();
     }
 }
