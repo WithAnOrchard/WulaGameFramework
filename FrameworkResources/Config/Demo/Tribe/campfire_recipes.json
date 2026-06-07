@@ -1,0 +1,557 @@
+{
+  "Recipes": [
+    {
+      "Id": "tribe_campfire_mushroom_soup",
+      "DisplayName": "杂菇汤",
+      "Description": "把红蘑菇和浆果在营火边慢慢煮开，味道古怪但能快速补充体力。",
+      "Ingredients": [
+        {
+          "ItemId": "tribe_red_mushroom",
+          "Count": 2
+        },
+        {
+          "ItemId": "tribe_berries",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "CampfireMushroomSoup",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 2.5,
+      "LearnedByDefault": true,
+      "CategoryId": "food"
+    },
+    {
+      "Id": "tribe_campfire_berry_jam",
+      "DisplayName": "浆果热酱",
+      "Description": "把浆果熬成浓稠果酱，适合在短途探索前塞进背包。",
+      "Ingredients": [
+        {
+          "ItemId": "tribe_berries",
+          "Count": 5
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "BerryJam",
+          "Count": 2,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 2.0,
+      "LearnedByDefault": true,
+      "CategoryId": "food"
+    },
+    {
+      "Id": "tribe_campfire_roasted_vegetable",
+      "DisplayName": "营火烤菜",
+      "Description": "胡萝卜和向日葵籽一起烤，焦香简单，是营地里最稳定的热食。",
+      "Ingredients": [
+        {
+          "ItemId": "tribe_carrot",
+          "Count": 2
+        },
+        {
+          "ItemId": "tribe_sunflower",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "RoastedVegetable",
+          "Count": 2,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 2.5,
+      "LearnedByDefault": true,
+      "CategoryId": "food"
+    },
+    {
+      "Id": "tribe_campfire_herbal_tea",
+      "DisplayName": "草药热饮",
+      "Description": "青叶草和浆果泡成的热饮，入口微苦，适合刚挨过一场战斗后饮用。",
+      "Ingredients": [
+        {
+          "ItemId": "GreenHerb",
+          "Count": 2
+        },
+        {
+          "ItemId": "tribe_berries",
+          "Count": 2
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "HerbalTea",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 3.0,
+      "LearnedByDefault": true,
+      "CategoryId": "food"
+    },
+    {
+      "Id": "tribe_campfire_hearty_stew",
+      "DisplayName": "营地浓汤",
+      "Description": "把奶酪、蘑菇和胡萝卜煮成浓汤，恢复量更高，适合出发前准备。",
+      "Ingredients": [
+        {
+          "ItemId": "Cheese",
+          "Count": 1
+        },
+        {
+          "ItemId": "tribe_red_mushroom",
+          "Count": 2
+        },
+        {
+          "ItemId": "tribe_carrot",
+          "Count": 2
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "HeartyCampStew",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 4.5,
+      "LearnedByDefault": true,
+      "CategoryId": "food"
+    },
+    {
+      "Id": "tribe_campfire_small_potion",
+      "DisplayName": "小型治疗药水",
+      "Description": "用青叶草和红蘑菇熬出基础治疗液，适合放在快捷栏前排。",
+      "Ingredients": [
+        {
+          "ItemId": "GreenHerb",
+          "Count": 1
+        },
+        {
+          "ItemId": "tribe_red_mushroom",
+          "Count": 1
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "SmallHealthPotion",
+          "Count": 2,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 3.5,
+      "LearnedByDefault": true,
+      "CategoryId": "potion"
+    },
+    {
+      "Id": "tribe_campfire_health_potion",
+      "DisplayName": "治疗药水",
+      "Description": "稳定剂量的治疗药水，比直接吃草药可靠，适合遭遇怪物前准备。",
+      "Ingredients": [
+        {
+          "ItemId": "GreenHerb",
+          "Count": 2
+        },
+        {
+          "ItemId": "BlueMushroom",
+          "Count": 1
+        },
+        {
+          "ItemId": "GreenVial",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "HealthPotion",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 5.0,
+      "LearnedByDefault": true,
+      "CategoryId": "potion"
+    },
+    {
+      "Id": "tribe_campfire_greater_health_potion",
+      "DisplayName": "强效治疗药水",
+      "Description": "加入蓝晶花后药性更集中，适合危险区域和精英战斗。",
+      "Ingredients": [
+        {
+          "ItemId": "PurpleHerb",
+          "Count": 1
+        },
+        {
+          "ItemId": "CrystalFlower",
+          "Count": 1
+        },
+        {
+          "ItemId": "GreenVial",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "GreaterHealthPotion",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 3,
+      "CraftSeconds": 6.5,
+      "LearnedByDefault": true,
+      "CategoryId": "potion"
+    },
+    {
+      "Id": "tribe_campfire_slime_vial",
+      "DisplayName": "翠色试剂",
+      "Description": "把凝胶和草药加热到刚刚起泡，制成后续药水常用的半成品试剂。",
+      "Ingredients": [
+        {
+          "ItemId": "GreenSlime",
+          "Count": 3
+        },
+        {
+          "ItemId": "GreenHerb",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "GreenVial",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 4.0,
+      "LearnedByDefault": true,
+      "CategoryId": "potion"
+    },
+    {
+      "Id": "tribe_campfire_wood_bow",
+      "DisplayName": "木弓",
+      "Description": "用原木削成弓身，再用绿色凝胶固定临时弓弦，是营地里最早能做出的远程武器。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 3
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "WoodBow",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 5.0,
+      "LearnedByDefault": true,
+      "CategoryId": "weapon"
+    },
+    {
+      "Id": "tribe_campfire_wood_shield",
+      "DisplayName": "圆木盾",
+      "Description": "用削平的原木和碎石加固边缘，挡不住重击，但足够应急。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 4
+        },
+        {
+          "ItemId": "StonePile",
+          "Count": 2
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "WoodShield",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 5.0,
+      "LearnedByDefault": true,
+      "CategoryId": "armor"
+    },
+    {
+      "Id": "tribe_campfire_leather_helmet",
+      "DisplayName": "皮革头盔",
+      "Description": "用兽牙和骨片做支撑的轻头盔，重量低，适合早期探索。",
+      "Ingredients": [
+        {
+          "ItemId": "WhiteBone",
+          "Count": 2
+        },
+        {
+          "ItemId": "WhiteFang",
+          "Count": 1
+        },
+        {
+          "ItemId": "WoodLog",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "LeatherHelmet",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 6.0,
+      "LearnedByDefault": true,
+      "CategoryId": "armor"
+    },
+    {
+      "Id": "tribe_campfire_leather_armor",
+      "DisplayName": "皮革胸甲",
+      "Description": "用骨片作内衬、兽牙作扣具，再以凝胶固定接缝，能提供基础防护且不影响移动。",
+      "Ingredients": [
+        {
+          "ItemId": "WhiteBone",
+          "Count": 4
+        },
+        {
+          "ItemId": "WhiteFang",
+          "Count": 2
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 2
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "LeatherArmor",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 8.0,
+      "LearnedByDefault": true,
+      "CategoryId": "armor"
+    },
+    {
+      "Id": "tribe_campfire_green_robe",
+      "DisplayName": "绿纹长袍",
+      "Description": "用草药染色并以凝胶定型的长袍，更偏向辅助和探索用途。",
+      "Ingredients": [
+        {
+          "ItemId": "GreenHerb",
+          "Count": 4
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 3
+        },
+        {
+          "ItemId": "CrystalFlower",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "GreenRobe",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 3,
+      "CraftSeconds": 8.0,
+      "LearnedByDefault": true,
+      "CategoryId": "armor"
+    },
+    {
+      "Id": "tribe_campfire_iron_pickaxe",
+      "DisplayName": "铁镐",
+      "Description": "用木柄和碎石临时整形的矿镐，用来验证采矿/工具装备流程。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 2
+        },
+        {
+          "ItemId": "StonePile",
+          "Count": 6
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "IronPickaxe",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 6.0,
+      "LearnedByDefault": true,
+      "CategoryId": "tool"
+    },
+    {
+      "Id": "tribe_campfire_fishing_rod",
+      "DisplayName": "钓竿",
+      "Description": "把原木削成细竿，用绿色凝胶固定鱼线，并把兽牙磨成简易鱼钩。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 2
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 1
+        },
+        {
+          "ItemId": "WhiteFang",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "FishingRod",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 1,
+      "CraftSeconds": 4.0,
+      "LearnedByDefault": true,
+      "CategoryId": "tool"
+    },
+    {
+      "Id": "tribe_campfire_explorer_backpack",
+      "DisplayName": "探索背包",
+      "Description": "用原木做支撑、绿色凝胶粘合边角，再用浆果汁做醒目的野外标记。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 4
+        },
+        {
+          "ItemId": "GreenSlime",
+          "Count": 2
+        },
+        {
+          "ItemId": "tribe_berries",
+          "Count": 3
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "ExplorerBackpack",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 2,
+      "CraftSeconds": 7.0,
+      "LearnedByDefault": true,
+      "CategoryId": "tool"
+    },
+    {
+      "Id": "tribe_campfire_steel_spear",
+      "DisplayName": "钢矛",
+      "Description": "以兽牙、碎石和长木柄做成的穿刺武器，先作为营火高级武器配方验证。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 3
+        },
+        {
+          "ItemId": "WhiteFang",
+          "Count": 3
+        },
+        {
+          "ItemId": "StonePile",
+          "Count": 4
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "SteelSpear",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 3,
+      "CraftSeconds": 8.5,
+      "LearnedByDefault": true,
+      "CategoryId": "weapon"
+    },
+    {
+      "Id": "tribe_campfire_ruby_staff",
+      "DisplayName": "红晶法杖",
+      "Description": "用蓝晶花和试剂稳定魔力，再以营火完成最后的烘干定型。",
+      "Ingredients": [
+        {
+          "ItemId": "WoodLog",
+          "Count": 2
+        },
+        {
+          "ItemId": "CrystalFlower",
+          "Count": 2
+        },
+        {
+          "ItemId": "GreenVial",
+          "Count": 1
+        }
+      ],
+      "Outputs": [
+        {
+          "ItemId": "RubyStaff",
+          "Count": 1,
+          "Chance": 1.0
+        }
+      ],
+      "WorkstationId": "campfire",
+      "Tier": 3,
+      "CraftSeconds": 9.0,
+      "LearnedByDefault": true,
+      "CategoryId": "weapon"
+    }
+  ]
+}

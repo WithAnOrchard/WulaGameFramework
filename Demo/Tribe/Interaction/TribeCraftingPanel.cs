@@ -4,7 +4,9 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.UIManager.Dao;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
+using EssSystem.Core.Application.MultiManagers.CraftingManager.Dao;
 
 namespace Demo.Tribe.Interaction
 {
@@ -19,17 +21,21 @@ namespace Demo.Tribe.Interaction
     {
         private const string PanelDaoId = "__tribe_craft_panel";
         private const string PlayerInvId = "player";
+        private const string CraftingBackgroundSpriteId = "Common/UI/Crafting/crafting_panel_bg";
+        private const string RecipeConfigPath = "Demo/Tribe/campfire_recipes.json";
 
         private static UIPanelComponent _panel;
         private static UITextComponent _statusText;
+        private static CraftingRecipe[] _recipesCache;
 
-        private static readonly Color PanelBg = new Color(0.045f, 0.038f, 0.034f, 0.86f);
-        private static readonly Color PanelInnerBg = new Color(0.020f, 0.026f, 0.026f, 0.42f);
-        private static readonly Color HeaderBg = new Color(0.070f, 0.060f, 0.055f, 0.92f);
-        private static readonly Color RowBgA = new Color(0.16f, 0.10f, 0.075f, 0.88f);
-        private static readonly Color RowBgB = new Color(0.12f, 0.085f, 0.070f, 0.88f);
-        private static readonly Color GoldLine = new Color(0.88f, 0.69f, 0.35f, 0.76f);
-        private static readonly Color GoldLineSoft = new Color(0.88f, 0.69f, 0.35f, 0.34f);
+        private static readonly Color PanelTint = Color.white;
+        private static readonly Color HeaderBg = new Color(0.10f, 0.055f, 0.035f, 0.64f);
+        private static readonly Color ListBg = new Color(0.025f, 0.020f, 0.018f, 0.34f);
+        private static readonly Color RowBgA = new Color(0.17f, 0.105f, 0.070f, 0.82f);
+        private static readonly Color RowBgB = new Color(0.11f, 0.080f, 0.065f, 0.82f);
+        private static readonly Color EmberLine = new Color(1.0f, 0.46f, 0.18f, 0.72f);
+        private static readonly Color EmberLineSoft = new Color(1.0f, 0.52f, 0.22f, 0.26f);
+        private static readonly Color StoneLine = new Color(0.62f, 0.58f, 0.50f, 0.34f);
 
         /// <summary>uGUI Text 模糊主因：默认像素分辨率渲染。×N 超采样 → N× 字号 + N× 尺寸 + 1/N 缩放，
         /// 视觉体积不变但字体在 N× 分辨率 raster。与 InventoryUIBuilder 保持一致。</summary>
@@ -38,39 +44,25 @@ namespace Demo.Tribe.Interaction
         /// <summary>1920×1080 参考分辨率下画布中心（与 InventoryManager 面板同一参考系）。</summary>
         private static readonly Vector2 CanvasCenter = new Vector2(960f, 540f);
 
-        // ─── 配方表 ────────────────────────────────────────────
-        private struct Recipe
+        [System.Serializable]
+        private class RecipeConfigFile
         {
-            public string Name;
-            public (string id, int amount)[] Inputs;
-            public (string id, int amount) Output;
-            public string OutputDisplay;
+            public CraftingRecipe[] Recipes;
         }
 
-        private static readonly Recipe[] Recipes = new[]
+        private static CraftingRecipe[] GetRecipes()
         {
-            new Recipe
+            if (_recipesCache != null) return _recipesCache;
+            if (RuntimeConfigLoader.TryLoadJson<RecipeConfigFile>(RecipeConfigPath, out var file)
+                && file?.Recipes != null)
             {
-                Name = "杂菇汤",
-                Inputs = new (string,int)[] { ("tribe_red_mushroom", 2), ("tribe_berries", 1) },
-                Output = ("tribe_carrot", 3),
-                OutputDisplay = "胡萝卜 x3"
-            },
-            new Recipe
-            {
-                Name = "果味浆",
-                Inputs = new (string,int)[] { ("tribe_berries", 4) },
-                Output = ("tribe_red_mushroom", 1),
-                OutputDisplay = "红蘑菇 x1"
-            },
-            new Recipe
-            {
-                Name = "野菜烩",
-                Inputs = new (string,int)[] { ("tribe_carrot", 2), ("tribe_sunflower", 1) },
-                Output = ("tribe_berries", 5),
-                OutputDisplay = "浆果 x5"
-            },
-        };
+                _recipesCache = file.Recipes;
+                return _recipesCache;
+            }
+
+            _recipesCache = new CraftingRecipe[0];
+            return _recipesCache;
+        }
 
         // ─── 显隐控制 ────────────────────────────────────────────
         public static void Toggle()
@@ -84,6 +76,7 @@ namespace Demo.Tribe.Interaction
             if (!EventProcessor.HasInstance) return;
             if (IsOpen()) return;
 
+            _recipesCache = null;
             _panel = BuildPanel();
             EventProcessor.Instance.TriggerEventMethod(
                 "RegisterUIEntity", new List<object> { PanelDaoId, _panel });
@@ -111,43 +104,39 @@ namespace Demo.Tribe.Interaction
         //   • UIPanel / UIButton / UIText 全部使用父节点左下角 → 自身中心的偏移（BL 约定）。
         private static UIPanelComponent BuildPanel()
         {
-            const float W = 620f, H = 390f;
-            const float innerW = W - 72f;
+            const float W = 720f, H = 480f;
+            const float innerW = W - 100f;
+            const float listH = 300f;
 
             // 根面板：BL 约定 → 面板中心 = canvas-BL + (CanvasCenter)
             var panel = new UIPanelComponent(PanelDaoId, "TribeCraftingPanel")
                 .SetPosition(CanvasCenter.x, CanvasCenter.y)
                 .SetSize(W, H)
-                .SetBackgroundColor(PanelBg);
+                .SetBackgroundColor(PanelTint)
+                .SetBackgroundSpriteId(CraftingBackgroundSpriteId);
 
             panel.AddChild(new UIPanelComponent($"{PanelDaoId}_HeaderBg", "HeaderBg")
-                .SetPosition(W * 0.5f, H - 34f)
-                .SetSize(innerW, 54f)
+                .SetPosition(W * 0.5f, H - 102f)
+                .SetSize(innerW, 42f)
                 .SetBackgroundColor(HeaderBg));
 
-            panel.AddChild(new UIPanelComponent($"{PanelDaoId}_InnerBg", "InnerBg")
-                .SetPosition(W * 0.5f, H * 0.5f - 30f)
-                .SetSize(innerW, H - 112f)
-                .SetBackgroundColor(PanelInnerBg));
-
-            AddBorder(panel, $"{PanelDaoId}_OuterBorder", W * 0.5f, H * 0.5f, W - 24f, H - 12f, 2f, GoldLine);
-            AddBorder(panel, $"{PanelDaoId}_InnerBorder", W * 0.5f, H * 0.5f - 30f, innerW, H - 112f, 1f, GoldLineSoft);
+            AddBorder(panel, $"{PanelDaoId}_ListBorder", W * 0.5f, H * 0.5f - 32f, innerW + 6f, listH + 8f, 1f, StoneLine);
 
             // 标题
             panel.AddChild(BuildText(
                 $"{PanelDaoId}_Title", "Title", "篝火 · 制作",
-                centerX: W * 0.5f, centerY: H - 35f,
-                width: innerW, height: 44f,
-                fontSize: 26, color: new Color(1f, 0.85f, 0.4f),
+                centerX: W * 0.5f, centerY: H - 102f,
+                width: innerW, height: 42f,
+                fontSize: 25, color: new Color(1f, 0.78f, 0.38f),
                 align: TextAnchor.MiddleCenter));
 
             // 关闭按钮（UIButton 用 BL 约定：从面板左下角出发）—— 右上角 32px 内缩
             var closeBtn = new UIButtonComponent($"{PanelDaoId}_Close", "Close", "×")
-                .SetPosition(W - 48f, H - 34f)
+                .SetPosition(W - 54f, H - 58f)
                 .SetSize(34f, 34f)
-                .SetButtonColor(new Color(0.18f, 0.045f, 0.035f, 0.92f));
+                .SetButtonColor(new Color(0.16f, 0.050f, 0.030f, 0.92f));
             closeBtn.SetText(string.Empty);
-            AddBorder(closeBtn, $"{PanelDaoId}_CloseBorder", 17f, 17f, 34f, 34f, 1f, new Color(1f, 0.42f, 0.34f, 0.45f));
+            AddBorder(closeBtn, $"{PanelDaoId}_CloseBorder", 17f, 17f, 34f, 34f, 1f, EmberLine);
             closeBtn.AddChild(BuildText(
                 $"{PanelDaoId}_CloseText", "CloseText", "×",
                 centerX: 17f, centerY: 17f,
@@ -157,22 +146,36 @@ namespace Demo.Tribe.Interaction
             closeBtn.OnClick += _ => Close();
             panel.AddChild(closeBtn);
 
-            // 配方行（在面板中间垂直布局）
-            const float rowH = 74f, rowGap = 10f;
-            // 顶行中心 Y（从面板 BL 起算）：顶部 - 标题区 110
-            var rowCenterYTop = H - 102f - rowH * 0.5f;
-            for (var i = 0; i < Recipes.Length; i++)
+            var scroll = new UIScrollViewComponent($"{PanelDaoId}_RecipeScroll", "RecipeScroll")
+                .SetPosition(W * 0.5f, H * 0.5f - 32f)
+                .SetSize(innerW, listH)
+                .SetBackgroundColor(ListBg)
+                .SetContentPadding(10)
+                .SetItemSpacing(8f)
+                .SetScrollSensitivity(42f);
+            const float rowH = 72f;
+            var recipes = GetRecipes();
+            for (var i = 0; i < recipes.Length; i++)
             {
-                var rowCenterY = rowCenterYTop - i * (rowH + rowGap);
-                BuildRecipeRow(panel, Recipes[i], i, rowCenterY, innerW, rowH);
+                BuildRecipeRow(scroll, recipes[i], i, 0f, innerW - 24f, rowH);
             }
+            if (recipes.Length == 0)
+            {
+                scroll.AddContentChild(BuildText(
+                    $"{PanelDaoId}_RecipeMissing", "RecipeMissing", "未读取到营火配方配置。",
+                    centerX: innerW * 0.5f - 12f, centerY: rowH * 0.5f,
+                    width: innerW - 24f, height: rowH,
+                    fontSize: 16, color: new Color(1f, 0.58f, 0.45f),
+                    align: TextAnchor.MiddleCenter));
+            }
+            panel.AddChild(scroll);
 
             // 底部状态栏
             _statusText = BuildText(
                 $"{PanelDaoId}_Status", "Status", "材料不足时会提示在这里。",
-                centerX: W * 0.5f, centerY: 36f,
-                width: innerW, height: 36f,
-                fontSize: 16, color: new Color(0.7f, 0.7f, 0.7f),
+                centerX: W * 0.5f, centerY: 34f,
+                width: innerW, height: 32f,
+                fontSize: 15, color: new Color(0.78f, 0.76f, 0.68f),
                 align: TextAnchor.MiddleCenter);
             panel.AddChild(_statusText);
 
@@ -189,17 +192,18 @@ namespace Demo.Tribe.Interaction
         private const float IconLabelW = 32f;     // 图标右侧 "x N" 文本宽度
         private const float IconGroupGap = 6f;    // 图标 + 数量 与下一组之间的间距
 
-        private static void BuildRecipeRow(UIPanelComponent parent, Recipe recipe, int idx, float rowCenterY, float width, float h)
+        private static void BuildRecipeRow(UIComponent parent, CraftingRecipe recipe, int idx, float rowCenterY, float width, float h)
         {
-            // 行容器（面板中心水平：parentW = W = 640，行 center.x = parentW/2 = 320）
-            const float parentW = 640f;
             const float namePaneW = 112f;
             var row = new UIPanelComponent($"{PanelDaoId}_Row{idx}", $"Row_{idx}")
-                .SetPosition(parentW * 0.5f - 10f, rowCenterY)
+                .SetPosition(width * 0.5f, rowCenterY + h * 0.5f)
                 .SetSize(width, h)
                 .SetBackgroundColor(idx % 2 == 0 ? RowBgA : RowBgB);
-            parent.AddChild(row);
-            AddBorder(row, $"{PanelDaoId}_Row{idx}_Border", width * 0.5f, h * 0.5f, width, h, 1f, GoldLineSoft);
+            if (parent is UIScrollViewComponent scroll)
+                scroll.AddContentChild(row);
+            else
+                parent.AddChild(row);
+            AddBorder(row, $"{PanelDaoId}_Row{idx}_Border", width * 0.5f, h * 0.5f, width, h, 1f, EmberLineSoft);
 
             row.AddChild(new UIPanelComponent($"{PanelDaoId}_Row{idx}_NamePane", "NamePane")
                 .SetPosition(namePaneW * 0.5f + 8f, h * 0.5f)
@@ -209,10 +213,16 @@ namespace Demo.Tribe.Interaction
             // 1) 配方名 —— 左侧 120 区（UIText 中心约定）
             var nameCenterX = -width * 0.5f + namePaneW * 0.5f + 8f;
             row.AddChild(BuildText(
-                $"{PanelDaoId}_Row{idx}_Name", "Name", recipe.Name,
-                centerX: width * 0.5f + nameCenterX, centerY: h * 0.5f,
-                width: namePaneW, height: h - 8f,
-                fontSize: 20, color: new Color(1f, 0.95f, 0.7f),
+                $"{PanelDaoId}_Row{idx}_Name", "Name", GetRecipeName(recipe),
+                centerX: width * 0.5f + nameCenterX, centerY: h * 0.64f,
+                width: namePaneW, height: 26f,
+                fontSize: 17, color: new Color(1f, 0.95f, 0.7f),
+                align: TextAnchor.MiddleCenter));
+            row.AddChild(BuildText(
+                $"{PanelDaoId}_Row{idx}_Desc", "Desc", GetRecipeDescription(recipe),
+                centerX: width * 0.5f + nameCenterX, centerY: h * 0.30f,
+                width: namePaneW, height: 24f,
+                fontSize: 9, color: new Color(0.78f, 0.72f, 0.62f),
                 align: TextAnchor.MiddleCenter));
 
             // 2) 输入图标组 —— 从配方名右边开始；制作按钮 + 输出 (~180) 留在右侧
@@ -221,25 +231,28 @@ namespace Demo.Tribe.Interaction
             var inputsStartX = -width * 0.5f + namePaneW + 16f;
             var inputsEndX   =  width * 0.5f - btnW - 8f - outputW - 8f;
 
+            var ingredients = recipe?.Ingredients ?? new CraftIngredient[0];
             var groupW = IconSize + IconLabelW + IconGroupGap;
-            var inputsAllW = recipe.Inputs.Length * groupW - IconGroupGap;
+            var inputsAllW = ingredients.Length * groupW - IconGroupGap;
             var inputsCenterX = (inputsStartX + inputsEndX) * 0.5f;
             var firstGroupCenterX = inputsCenterX - inputsAllW * 0.5f + groupW * 0.5f;
 
-            for (var i = 0; i < recipe.Inputs.Length; i++)
+            for (var i = 0; i < ingredients.Length; i++)
             {
-                var (id, amount) = recipe.Inputs[i];
+                var ingredient = ingredients[i];
+                if (ingredient == null || string.IsNullOrEmpty(ingredient.ItemId)) continue;
                 var groupCenterX = firstGroupCenterX + i * groupW;
                 BuildItemIcon(row, $"{PanelDaoId}_Row{idx}_In{i}",
                     iconCenterX: groupCenterX - IconLabelW * 0.5f,
                     labelCenterX: groupCenterX + IconSize * 0.5f,
                     rowSize: new Vector2(width, h),
-                    spritePath: ResolveItemIcon(id),
-                    amount: amount,
+                    spritePath: ResolveItemIcon(ingredient.ItemId),
+                    amount: Mathf.Max(1, ingredient.Count),
                     labelColor: Color.white);
             }
 
             // 3) 输出区：→ + icon + 数量
+            var output = GetPrimaryOutput(recipe);
             var outputCenterX = inputsEndX + outputW * 0.5f;
             row.AddChild(BuildText(
                 $"{PanelDaoId}_Row{idx}_Arrow", "Arrow", "→",
@@ -252,8 +265,8 @@ namespace Demo.Tribe.Interaction
                 iconCenterX: outputCenterX,
                 labelCenterX: outputCenterX + IconSize * 0.5f + IconLabelW * 0.5f,
                 rowSize: new Vector2(width, h),
-                spritePath: ResolveItemIcon(recipe.Output.id),
-                amount: recipe.Output.amount,
+                spritePath: ResolveItemIcon(output?.ItemId),
+                amount: Mathf.Max(1, output?.Count ?? 1),
                 labelColor: new Color(0.6f, 1f, 0.6f));
 
             // 4) 制作按钮（UIButton BL 约定）
@@ -303,9 +316,32 @@ namespace Demo.Tribe.Interaction
         /// <summary>查 InventoryItem 模板 IconSpriteId（同 InventoryUIBuilder 模式）。fallback null。</summary>
         private static string ResolveItemIcon(string itemId)
         {
-            if (!InventoryService.HasInstance) return null;
+            if (string.IsNullOrEmpty(itemId) || !InventoryService.HasInstance) return null;
             var template = InventoryService.Instance.InstantiateTemplate(itemId, 1);
             return template?.IconSpriteId;
+        }
+
+        private static string GetRecipeName(CraftingRecipe recipe)
+        {
+            if (recipe == null) return "未知配方";
+            return !string.IsNullOrEmpty(recipe.DisplayName) ? recipe.DisplayName : recipe.Id;
+        }
+
+        private static string GetRecipeDescription(CraftingRecipe recipe)
+        {
+            if (recipe == null || string.IsNullOrEmpty(recipe.Description)) return string.Empty;
+            return recipe.Description.Length <= 18 ? recipe.Description : recipe.Description.Substring(0, 18) + "...";
+        }
+
+        private static CraftOutput GetPrimaryOutput(CraftingRecipe recipe)
+        {
+            return recipe?.Outputs != null && recipe.Outputs.Length > 0 ? recipe.Outputs[0] : null;
+        }
+
+        private static string GetOutputDisplay(CraftOutput output)
+        {
+            if (output == null || string.IsNullOrEmpty(output.ItemId)) return "无产物";
+            return $"{ResolveItemDisplayName(output.ItemId)} x{Mathf.Max(1, output.Count)}";
         }
 
         /// <summary>创建 UIText（中心约定），自动应用 ×N 超采样 —— 重构后可复用。</summary>
@@ -362,38 +398,48 @@ namespace Demo.Tribe.Interaction
         }
 
         // ─── 制作执行 ────────────────────────────────────────────
-        private static void TryCraft(Recipe recipe)
+        private static void TryCraft(CraftingRecipe recipe)
         {
             if (!InventoryService.HasInstance) { ShowStatus("InventoryService 未就绪"); return; }
             var inv = InventoryService.Instance.GetInventory(PlayerInvId);
             if (inv == null) { ShowStatus("玩家容器不存在"); return; }
+            var output = GetPrimaryOutput(recipe);
+            if (output == null || string.IsNullOrEmpty(output.ItemId))
+            {
+                ShowStatus($"配方缺少产物：{GetRecipeName(recipe)}", isError: true);
+                return;
+            }
 
             // 1) 校验材料足够
-            foreach (var (id, amount) in recipe.Inputs)
+            var ingredients = recipe?.Ingredients ?? new CraftIngredient[0];
+            foreach (var ingredient in ingredients)
             {
-                var have = inv.CountOf(id);
+                if (ingredient == null || string.IsNullOrEmpty(ingredient.ItemId)) continue;
+                var amount = Mathf.Max(1, ingredient.Count);
+                var have = inv.CountOf(ingredient.ItemId);
                 if (have < amount)
                 {
-                    ShowStatus($"材料不足：{ResolveItemDisplayName(id)} 需 {amount}，当前 {have}", isError: true);
+                    ShowStatus($"材料不足：{ResolveItemDisplayName(ingredient.ItemId)} 需 {amount}，当前 {have}", isError: true);
                     return;
                 }
             }
 
             // 2) 消耗（走事件 → InventoryService 自动广播 EVT_CHANGED 让 UI 刷新）
-            foreach (var (id, amount) in recipe.Inputs)
+            foreach (var ingredient in ingredients)
             {
+                if (ingredient == null || string.IsNullOrEmpty(ingredient.ItemId)) continue;
                 EventProcessor.Instance.TriggerEventMethod(
                     InventoryService.EVT_REMOVE,
-                    new List<object> { PlayerInvId, id, amount });
+                    new List<object> { PlayerInvId, ingredient.ItemId, Mathf.Max(1, ingredient.Count) });
             }
 
             // 3) 产出
             EventProcessor.Instance.TriggerEventMethod(
                 InventoryService.EVT_ADD,
-                new List<object> { PlayerInvId, recipe.Output.id, recipe.Output.amount });
+                new List<object> { PlayerInvId, output.ItemId, Mathf.Max(1, output.Count) });
 
             // 4) 反馈：提示 + 音效
-            ShowStatus($"制作成功：{recipe.Name} → {recipe.OutputDisplay}");
+            ShowStatus($"制作成功：{GetRecipeName(recipe)} → {GetOutputDisplay(output)}");
             EventProcessor.Instance.TriggerEventMethod(
                 "PlaySFX", new List<object> { "Tribe/Common/Sound/harvest" });
         }

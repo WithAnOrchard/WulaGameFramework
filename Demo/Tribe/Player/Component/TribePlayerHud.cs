@@ -59,12 +59,18 @@ namespace Demo.Tribe.Player
                 .SetPosition(56f, 56f).SetSize(86f, 86f)
                 .SetBackgroundColor(Color.white).SetVisible(true);
 
-            _hpBar  = MakeBar("hp",  252f, 102f, 260f, 24f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
-            _mpBar  = MakeBar("mp",  239f,  76f, 234f, 20f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
-            _expBar = MakeBar("exp", 239f,  52f, 234f, 20f, "Bar_2", "Brown_Bar", new Color(0.55f, 0.32f, 0.15f));
+            const float statusLeft = 122f;
+            const float hpWidth = 260f;
+            const float statusWidth = 234f;
+            const float coinWidth = 100f;
+            static float CenterX(float left, float width) => left + width * 0.5f;
+
+            _hpBar  = MakeBar("hp",  CenterX(statusLeft, hpWidth),     102f, hpWidth,     24f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
+            _mpBar  = MakeBar("mp",  CenterX(statusLeft, statusWidth),  76f, statusWidth, 20f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
+            _expBar = MakeBar("exp", CenterX(statusLeft, statusWidth),  52f, statusWidth, 20f, "Bar_2", "Brown_Bar", new Color(0.55f, 0.32f, 0.15f));
 
             var coinContainer = new UIPanelComponent($"{_hudId}_coins_bg", "CoinContainer")
-                .SetPosition(166f, 24f).SetSize(100f, 25f)
+                .SetPosition(CenterX(statusLeft, coinWidth), 24f).SetSize(coinWidth, 25f)
                 .SetBackgroundSpriteId("CoinContainer").SetBackgroundColor(Color.white).SetVisible(true);
 
             _hpText    = MakeValueText("hp_value",  280f, 28f);
