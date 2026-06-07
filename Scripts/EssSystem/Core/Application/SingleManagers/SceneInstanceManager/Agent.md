@@ -1,32 +1,24 @@
-﻿# SceneInstanceManager 指南
-## 概述
-`SceneInstanceManager`（`[Manager(16)]`）+ `SceneInstanceService`（业务服务 + 持久化）
-管理子场景（Instance）/ 副本系统。
-**多人在线核心策略**：所有 Instance 与 OverWorld **共存**于同一 Unity Scene，通过坐标偏移
-（如 `OriginOffset = (50000, 0)`）彼此隔离。玩家"进入"是瞬移到目标坐标，**不切场景、不冻结**。
-任意时刻多个玩家可分布在 OverWorld + 不同 Instance，互相不影响。
-## 状态
-🚧 **骨架阶段**：Manager / Service 已挂入优先级链；Dao（`InstanceConfig` / `InstanceTheme`
-/ `InstanceRules` / `PortalSpec`）已定义；进 / 出流程、Membership、Hibernation 与事件
-API 尚未实现。详见 `Demo/Tribe/ToDo.md` 条目 #3 各里程碑。
-## 文件结构
-```
-SceneInstanceManager/
-├── SceneInstanceManager.cs      薄门面（Manager 单例）
-├── SceneInstanceService.cs      业务服务（CAT_INSTANCES / CAT_MEMBERSHIP）
-├── Agent.md                     本文档
-└── Dao/
-    ├── InstanceConfig.cs        Id / Theme / OriginOffset / EntryPosition / Rules / ExitPortals
-    ├── InstanceTheme.cs         Safe / Event / Combat / Puzzle / Social
-    ├── InstanceRules.cs         DisableEnemySpawn / ForceFriendly / HpRegenPerSec / LockTimeOfDay / HibernateAfterEmptySeconds
-    └── PortalSpec.cs            出 / 入门描述（Position / TargetInstanceId / Prompt）
-```
-## 数据分类（持久化）
-| 常量 | 用途 |
-|---|---|
-| `SceneInstanceService.CAT_INSTANCES`  = `"Instances"`  | 全部已注册 `InstanceConfig`（按 Id） |
-| `SceneInstanceService.CAT_MEMBERSHIP` = `"Membership"` | 玩家 ↔ 当前所在 Instance（按 playerId） |
-## 计划事件（M1 实施时新增）
-> 当前骨架阶段尚未声明 `EVT_*` 常量。M1 里程碑落地时按 ToDo #3 第 (8) 节注册：
-> RegisterInstance / EnterInstance / ExitInstance / InstancePlayerEntered / InstancePlayerExited
-> / InstanceHibernated / InstanceAwoke。
+# SceneInstanceManager 场景实例模块
+
+## 职责
+- 负责场景实例生命周期和稳定运行时引用。
+- 模块路径：`Scripts/EssSystem/Core/Application/SingleManagers/SceneInstanceManager`。
+- 本文档只记录模块契约，具体实现细节以代码为准。
+
+## 结构
+- `Dao/`
+- `SceneInstanceManager.cs`
+- `SceneInstanceService.cs`
+
+## 边界
+- 本模块只拥有“职责”中描述的行为，不隐式接管兄弟模块职责。
+- 跨模块协作优先使用 EventProcessor 字符串协议，或目标模块明确暴露的窄接口。
+- Demo 专属逻辑留在 Demo 目录，除非已经确认可复用为框架能力。
+
+## Event API
+- 本目录没有声明本地 EVT_XXX 常量。
+
+## 维护注意
+- 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
+- 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
+- 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。

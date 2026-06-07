@@ -1,50 +1,36 @@
-﻿# AudioManager 指南
-## 概述
-`Presentation/AudioManager`（`[Manager(3)]`）—— BGM + SFX 音频管理。
-| | 类 | 角色 |
-|---|---|---|
-| Manager | `AudioManager` | MonoBehaviour 单例，SFX 对象池 + BGM 淡入淡出 |
-| Service | `AudioService` | 纯 C# 单例，持久化音量设置 + 运行时 SFX 路径映射 |
-音频资源通过 `ResourceManager` 加载（bare-string `"GetAudioClip"`，§4.1），进入统一缓存。
-## 文件结构
-```
-Presentation/AudioManager/
-├── AudioManager.cs   Manager（MonoBehaviour 单例 + Inspector + SFX 池）
-├── AudioService.cs   Service（持久化音量 + SFX 路径映射）
-└── Agent.md          本文档
-```
-## 优先级 / 启动
-`[Manager(3)]` —— 介于 `ResourceManager(0)` 之后、`UIManager(5)` 之前。由 `AbstractGameManager.EnsureBaseManagers` 自动挂载。
+# AudioManager 音频模块
+
+## 职责
+- 负责 BGM、SFX、音量控制、位置循环音效和常用音效入口。
+- 模块路径：`Scripts/EssSystem/Core/Presentation/AudioManager`。
+- 本文档只记录模块契约，具体实现细节以代码为准。
+
+## 结构
+- `AudioManager.cs`
+- `AudioService.cs`
+
+## 边界
+- 本模块只拥有“职责”中描述的行为，不隐式接管兄弟模块职责。
+- 跨模块协作优先使用 EventProcessor 字符串协议，或目标模块明确暴露的窄接口。
+- Demo 专属逻辑留在 Demo 目录，除非已经确认可复用为框架能力。
+
 ## Event API
+- `AudioManager.EVT_PAUSE_BGM` = `"PauseBGM"`
+- `AudioManager.EVT_PLAY_ATTACK_SFX` = `"PlayAttackSFX"`
+- `AudioManager.EVT_PLAY_BGM` = `"PlayBGM"`
+- `AudioManager.EVT_PLAY_DAMAGE_SFX` = `"PlayDamageSFX"`
+- `AudioManager.EVT_PLAY_ITEM_USE_SFX` = `"PlayItemUseSFX"`
+- `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX` = `"PlayPositionalLoopSFX"`
+- `AudioManager.EVT_PLAY_SFX` = `"PlaySFX"`
+- `AudioManager.EVT_PLAY_UI_SFX` = `"PlayUISFX"`
+- `AudioManager.EVT_RESUME_BGM` = `"ResumeBGM"`
+- `AudioManager.EVT_SET_BGM_VOLUME` = `"SetBGMVolume"`
+- `AudioManager.EVT_SET_MASTER_VOLUME` = `"SetMasterVolume"`
+- `AudioManager.EVT_SET_SFX_VOLUME` = `"SetSFXVolume"`
+- `AudioManager.EVT_STOP_BGM` = `"StopBGM"`
+- `AudioManager.EVT_STOP_POSITIONAL_SFX` = `"StopPositionalSFX"`
 
-> Full Event definitions (params / return / side effects / usage) live in root Events.md -> section: **AudioManager Event**.
-
-- `AudioManager.EVT_PAUSE_BGM`
-- `AudioManager.EVT_PLAY_ATTACK_SFX`
-- `AudioManager.EVT_PLAY_BGM`
-- `AudioManager.EVT_PLAY_DAMAGE_SFX`
-- `AudioManager.EVT_PLAY_ITEM_USE_SFX`
-- `AudioManager.EVT_PLAY_POSITIONAL_LOOP_SFX`
-- `AudioManager.EVT_PLAY_SFX`
-- `AudioManager.EVT_PLAY_UI_SFX`
-- `AudioManager.EVT_RESUME_BGM`
-- `AudioManager.EVT_SET_BGM_VOLUME`
-- `AudioManager.EVT_SET_MASTER_VOLUME`
-- `AudioManager.EVT_SET_SFX_VOLUME`
-- `AudioManager.EVT_STOP_BGM`
-- `AudioManager.EVT_STOP_POSITIONAL_SFX`
-
-## AudioService 持久化
-| 分类 | 键 | 类型 | 说明 |
-|---|---|---|---|
-| `Settings` | `MasterVolume` | float | 主音量（0~1） |
-| `Settings` | `BGMVolume` | float | BGM 音量 |
-| `Settings` | `SFXVolume` | float | SFX 音量 |
-| `Settings` | `BGMPath` | string | 当前 BGM 路径（重启后自动恢复播放） |
-| `Resources` | `SFXPath_{name}` | string | 运行时 SFX 路径映射（**Transient**，不持久化） |
-## 跨模块调用示例
-## 注意事项
-- 音频文件需放在 `Resources/Sound/` 或其它 `Resources/` 子目录；`AudioManager` 通过 `ResourceManager` 加载，不直接 `Resources.Load`（Anti-Patterns §B4）
-- SFX 池由 `AudioManager` 内部管理，避免每次 `PlayOneShot` 都 new `AudioSource`
-- 业务模块**禁止**直接 `AudioSource.Play` —— 走事件让 `AudioManager` 统一调度音量、池、淡入淡出
-- 跨模块调用一律 bare-string；不要为读 `EVT_*` 常量而 `using EssSystem.Core.Presentation.AudioManager`（Anti-Patterns §A2）
+## 维护注意
+- 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
+- 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
+- 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。

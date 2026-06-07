@@ -1,323 +1,483 @@
 # 反模式黑名单（Anti-Patterns）
 
-> **写代码前必读。** 看到 AI 或人写出以下任何一条 → 立刻拒绝 / 重写，无需讨论。
->
-> 本文是"硬性禁令"清单，配合 `Agent.md` 的"必须做"形成完整规则。条目按危害程度从高到低排列。
+> 本文件记录项目中明确禁止或需要强约束的写法。`Agent.md` 负责说明“应该怎么做”，本文件负责说明“哪些做法不要再出现”。
 
----
+使用方式：
 
-## 🔴 P0 — 框架契约级（破坏后果：运行期崩溃 / 数据丢失 / 启动失败）
+- 写代码前先看相关模块的 `Agent.md`，再看本文件中对应禁区。
+- 如果发现代码已经存在反模式，先判断是不是历史遗留；新增代码不允许继续复制。
+- 如果确实需要例外，必须写在模块 `Agent.md` 中，说明适用范围、理由和替代检查方式。
 
-### A1. ❌ `[Event("...")]` 用字符串字面量
+## P0：框架契约级禁区
+
+这类问题会造成模块耦合、事件失效、数据损坏、启动失败或构建资源失控。新增代码必须避免。
+
+### A1. 禁止在 `[Event(...)]` 定义侧直接写字符串字面量
+
+错误写法：
+
 ```csharp
-// ❌ 禁止
 [Event("OpenInventoryUI")]
-public List<object> Open(...) { ... }
+public List<object> Open(List<object> data) { ... }
+```
 
-// ✅ 必须
+正确写法：
+
+```csharp
 public const string EVT_OPEN_UI = "OpenInventoryUI";
+
 [Event(EVT_OPEN_UI)]
-public List<object> Open(...) { ... }
+public List<object> Open(List<object> data) { ... }
 ```
-**理由**：根 `Agent.md` §4.1 强制规则，违反即丢失 IDE 跳转 / 重命名安全 / 全局可搜索。
 
-### A2. ❌ 跨模块调用为读常量而 `using` 其他业务模块
-事件名遵循**非对称协议**（`Agent.md` §4.1）：定义方常量、消费方字符串。
+原因：定义侧必须可搜索、可重命名、可被 `agent_lint` 追踪。字符串字面量会让事件协议失去来源。
+
+### A2. 禁止为了读取事件常量而跨业务模块 `using` 对方 Manager
+
+错误写法：
 
 ```csharp
-// ❌ 跨模块仅为读 EVT_X 常量而 using 其他业务 Manager ——等同于运行时引用，破坏 Event 解耦
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
+
 EventProcessor.Instance.TriggerEventMethod(InventoryManager.EVT_OPEN_UI, data);
-
-// ✅ 跨模块消费方：直接 bare-string
-EventProcessor.Instance.TriggerEventMethod("OpenInventoryUI", data);
-
-// ✅ 同模块（本就在 using 范围内）：继续用常量
-EventProcessor.Instance.TriggerEventMethod(EVT_OPEN_UI, data);
 ```
 
-**理由**：`agent_lint.ps1 [6]` 扫描所有 bare-string、cross-ref 全工程 `EVT_XXX` 常量池——拼错会打不过 lint。查 Event 不要猜：先看根 `Agent.md` 的【全局 Event 索引】表，再跳转到模块 `Agent.md` 的 `## Event API` 节。
+正确写法：
 
-#### A2-例外. ✅ "数据密集型子系统" 允许保留直接 C# Singleton API
-**Event API 不是万能锤**。当模块满足下列**全部**条件时，可保留 `XxxService.Instance.Method(...)` 直接调用，不需要 EVT_ 常量化：
-
-1. **高频访问**：API 每帧/每 chunk 调用数百次以上（事件分派 + 装拆箱开销不可接受）
-2. **类型签名复杂**：参数/返回值含模块领域类型（`Map` / `IChunkDecorator` / `VoxelChunk` 等），bare-string `List<object>` 严重损害可读性与编译期检查
-3. **协作内聚**：API 间彼此关联深（chunk 流式生成 / 装饰器链 / 持久化协调），切碎成独立事件后业务侧反而要重新拼装
-4. **不依赖**其他 Application 层 Manager 的内部类型（即仍可独立部署，不破坏分层）
-
-**唯一合规先例**：`Application/MultiManagers/MapManager` & `Voxel3DMapManager`（地形生成 / 流式 chunk / atlas / 持久化）。Demo 侧 ~95 处直接耦合。
-
-**强制要求**（缺一不可）：
-- 模块 `Agent.md` **必须**在 `## Event API` 节顶部用粗体声明：
-  > **本模块当前不暴露任何 EVT_ 常量。** 业务层直接调用 `XxxService.Instance` 的 C# API 即可。
-- 该声明下**必须**完整列出 Service 的 public API（替代 EVT 列表的角色）
-- Service 的 public 方法签名**必须稳定**（破坏性改动按 §C 处理）
-- **依然**通过 `[Event]` 暴露低频/无类型耦合的命令（如 `DeleteMapData(string)` 这类标量 API），不要全有全无
-
-**理由**：硬把 `MapService` 事件化会让业务侧失去 IntelliSense / 编译期类型检查，且 95 处调用代价巨大。承认例外比假装合规更诚实。但例外**只**适用于 Application 层的内聚子系统，**不**适用 Foundation / Presentation（这两层必须 100% 走 §4.1）。
-
-### A3. ❌ Service 里存 `GameObject` / `MonoBehaviour` / `Transform`
 ```csharp
-// ❌ Unity 对象不可序列化，持久化会炸
-public class FooService : Service<FooService>
+EventProcessor.Instance.TriggerEventMethod("OpenInventoryUI", data);
+```
+
+规则：
+
+- 事件定义方使用 `EVT_XXX` 常量。
+- 同模块内部可以直接使用本模块常量。
+- 跨模块消费方优先使用字符串，并依赖 lint 反查常量池。
+- 不要为了“少写字符串”引入业务模块引用。
+
+原因：事件名是协议，不是运行时依赖。消费方如果 `using` 对方业务 Manager，只是把事件解耦又绕回直接耦合。
+
+### A3. 禁止同一个事件字符串注册多个 `[Event]` 处理器
+
+错误写法：
+
+```csharp
+public class A
 {
-    private GameObject _player;  // ← 错
-    public void Save() { SetData("cat", "player", _player); }  // ← 必崩
+    [Event("Foo")]
+    public List<object> HandleA(List<object> data) { ... }
+}
+
+public class B
+{
+    [Event("Foo")]
+    public List<object> HandleB(List<object> data) { ... }
 }
 ```
-**理由**：`Service<T>` 数据走 MiniJson + `AssemblyQualifiedName` 持久化，Unity 对象无法序列化。**Service 只存纯 C# 数据**；运行时实例放 `Manager<T>`（MonoBehaviour）。
 
-### A4. ❌ DAO / 持久化数据类不加 `[Serializable]`
+正确做法：
+
+- 命令型事件只保留一个 `[Event]` 处理器。
+- 多播通知使用 `[EventListener]`。
+- Facade 与 Service 共用字符串时，要确认是否为历史兼容；新增代码不要复制这种结构。
+
+原因：命令事件通常由字典按字符串注册，重复 key 会覆盖或产生不可预期结果。
+
+### A4. 禁止新增或修改事件后不更新文档
+
+凡是新增、删除、重命名 `[Event]` / `[EventListener]` / `EVT_XXX`，必须同步检查：
+
+- 对应模块 `Agent.md` 的 `## Event API` 是否需要更新。
+- 全局事件索引或相关文档是否需要同步。
+- `tools/agent_lint.ps1 -Strict` 是否通过。
+
+原因：事件是 AI 和人工协作时最容易误用的协议层。文档过期会导致后续修改持续走错方向。
+
+### A5. 禁止业务 Manager 之间直接互相持有或直接驱动
+
+错误写法：
+
 ```csharp
-// ❌
-public class QuestData { public string id; public int progress; }
+public class InventoryManager : Manager<InventoryManager>
+{
+    private SkillManager _skillManager;
 
-// ✅
+    protected override void Initialize()
+    {
+        _skillManager = SkillManager.Instance;
+        _skillManager.Cast(...);
+    }
+}
+```
+
+正确做法：
+
+- 优先拆小接口或上下文对象。
+- 低频跨模块命令走事件。
+- 数据查询优先走稳定只读 API。
+- EntityManager 与 SkillManager 尤其不能重新形成双向强引用。
+
+原因：业务 Manager 互相持有会让模块图变成网状，后续 Demo 拆分、构建裁剪和单模块测试都会变困难。
+
+### A6. 禁止跨模块事件参数暴露模块私有类型
+
+错误写法：
+
+```csharp
+[Event(EVT_GET_UI_ENTITY)]
+public List<object> GetUIEntity(List<object> data)
+{
+    return ResultCode.Ok(_entity); // UIEntity 属于 UIManager 内部实现
+}
+```
+
+正确做法：
+
+- 跨模块事件返回 `string id`、`GameObject`、`Transform`、`Vector3`、纯数据结构等稳定类型。
+- 模块私有类型只在模块内部 API 中流动。
+
+原因：事件参数一旦暴露私有类型，消费方就必须 `using` 发布模块命名空间，事件解耦会失效。
+
+### A7. 禁止 Service 持久化 Unity 对象
+
+错误写法：
+
+```csharp
+public class FooService : Service<FooService>
+{
+    private GameObject _player;
+    private Transform _target;
+}
+```
+
+正确做法：
+
+- Service 存纯 C# 数据、配置、id、快照、状态机数据。
+- GameObject / MonoBehaviour / Transform 等运行时对象放在 Manager 或场景组件里。
+- 必要时 Service 只保存对象 id，由 Manager 负责绑定运行时实例。
+
+原因：Unity 对象无法稳定序列化，也不应该跨场景长期持久化。
+
+### A8. 禁止持久化数据类缺少 `[Serializable]`
+
+错误写法：
+
+```csharp
+public class QuestData
+{
+    public string Id;
+    public int Progress;
+}
+```
+
+正确写法：
+
+```csharp
 [Serializable]
-public class QuestData { public string id; public int progress; }
+public class QuestData
+{
+    public string Id;
+    public int Progress;
+}
 ```
-**理由**：MiniJson 反序列化依赖。漏加 → 加载时字段全空。
 
-### A5. ❌ 改了 `[Event]` 不同步改 `Agent.md`
-**理由**：`Agent.md` 的 `## Event API` 章节 + 根 `Agent.md` 全局索引是 AI 唯一可信的 Event 文档。腐烂一次，后续 AI 全部走错路。**修改 Event 后必做自查**：「我新增/改了哪个 EVT_XXX？对应 Agent.md 改了吗？根 Agent.md 索引改了吗？」
+原因：持久化和反序列化依赖可序列化数据结构。漏掉后容易出现加载字段为空的问题。
 
-### A6. ❌ 业务 Manager 之间直接 `using`
+### A9. 禁止无范围资源扫描和全量加载
+
+错误写法：
+
 ```csharp
-// ❌ InventoryManager 里
-using EssSystem.Manager.QuestManager;
-QuestManager.Instance.AcceptQuest(...);
-
-// ✅
-EventProcessor.Instance.TriggerEventMethod("AcceptQuest", data);
+Resources.LoadAll<GameObject>("");
+Resources.LoadAll<Sprite>("");
 ```
-**理由**：跨模块解耦的核心契约。直 `using` 会让模块图变成网状，重构地狱。**例外**：业务 Manager 调框架 Manager（`UIManager` / `ResourceManager`）走事件即可，但**同模块**的 Manager → Service 必须直调（性能 + 类型安全）。
 
-### A7. ❌ 跨模块 Event 参数 / 返回值泄露模块私有类型
+正确做法：
+
+- ResourceManager / ResourceService 必须按 Demo、模块或资源清单加载。
+- Tribe 构建只纳入 Tribe 资源和声明共享资源。
+- Editor 调试用全量加载必须有明确开关，不能影响构建包。
+
+原因：无范围扫描会拖慢启动，污染 Demo 构建资源，也会让资源问题难以定位。
+
+## P1：架构纪律级禁区
+
+这类问题通常不会立刻炸，但会持续增加维护成本。
+
+### B1. 禁止给 Manager 手写 `[DefaultExecutionOrder]`
+
+正确做法：
+
 ```csharp
-// ❌ 返回 UIEntity —— 调用方被迫 using UIManager.Entity 命名空间
-[Event(EVT_GET_ENTITY)]
-public List<object> GetUIEntity(List<object> data) => ResultCode.Ok(_entity);  // UIEntity
-
-// ✅ 只返 Unity 中立类型
-[Event(EVT_GET_UI_GAMEOBJECT)]
-public List<object> GetUIGameObject(List<object> data) => ResultCode.Ok(_entity.gameObject);
-```
-**理由**：跨模块协议只能用 `GameObject` / `Transform` / `Vector3` / `string id` 等 Unity 中立类型。泄露 `UIEntity` / `Character` / `Entity` / `UIComponent` 子类等模块私有类型 = 购者必须 `using` 发布者，与 A6 同质。参考：`UIManager.EVT_GET_UI_GAMEOBJECT` 返 `GameObject`；`CharacterManager.EVT_CREATE_CHARACTER` 返 `Transform`。
-
----
-
-## 🟠 P1 — 架构纪律级（破坏后果：可维护性塌陷）
-
-### B1. ❌ 在 `Awake` / 构造函数里调用更低优先级的 Manager
-```csharp
-// ❌ InventoryManager(10) 的 Awake 里调 UIManager(5) 时它在但 ResourceManager(0) 已注册了
-// 但你拿不到尚未 Initialize 的 Manager 的 Service 实例
 [Manager(10)]
 public class InventoryManager : Manager<InventoryManager>
 {
-    protected override void Initialize() { UIManager.Instance.RegisterX(...); }  // ← 还行
-    private void Awake() { ResourceManager.Instance.GetX(...); }  // ← 危险，绕过 [Manager(N)] 排序
 }
 ```
-**理由**：`AbstractGameManager` 通过 `[Manager(N)]` 排序后**依次** `Initialize`。Awake 顺序由 Unity 决定（仍走 `[DefaultExecutionOrder]` 但更脆弱）。**业务初始化一律放 `Initialize` override，不要用 `Awake`**。
 
-### B2. ❌ `Manager<T>` 写 `private void Update()` 而非 `protected override void Update()`
+规则：
+
+- Manager 加载顺序统一通过 `[Manager(N)]` 表达。
+- 调整顺序时同步更新根 `Agent.md` 中的 Manager 顺序表。
+- 同一优先级内不要依赖固定先后。
+
+原因：`ManagerAttribute` 已继承 Unity 执行顺序能力。再额外写 `[DefaultExecutionOrder]` 会产生重复规则。
+
+### B2. 禁止在 Manager 子类里用 `private void Update()` 隐藏框架生命周期
+
+错误写法：
+
 ```csharp
-// ❌ 静默隐藏框架 Update（无 base 调用 → 框架钩子失效）
-private void Update() { ... }
+private void Update()
+{
+    // 会隐藏基类 Update，导致框架钩子不稳定
+}
+```
 
-// ✅
+正确写法：
+
+```csharp
 protected override void Update()
 {
     base.Update();
-    // your logic
+    // 自己的逻辑
 }
 ```
-**理由**：`Manager<T>` 的虚生命周期方法（Update/Initialize 等）有框架职责。覆盖时**必须** `protected override` + `base.Xxx()`。
 
-### B3. ❌ 给 `Manager<T>` / `Service<T>` 加构造函数
+原因：Manager 基类已经承担 Inspector 同步等框架职责，覆盖生命周期时必须保留基类行为。
+
+### B3. 禁止给 Manager / Service 写构造函数承载初始化逻辑
+
+错误写法：
+
 ```csharp
-// ❌ 单例由框架构造，写构造函数会迷惑实例化路径
 public class FooService : Service<FooService>
 {
-    public FooService() { /* ... */ }  // ← 不要写
+    public FooService()
+    {
+        LoadConfig();
+    }
 }
 ```
-**理由**：`Service<T>` 用 `SingletonNormal<T>`（懒加载）；`Manager<T>` 是 `MonoBehaviour`（不能用构造函数初始化）。**初始化逻辑放 `Initialize()` override**。
 
-### B4. ❌ Service 里直接 `Instantiate` / `Resources.Load`
+正确做法：
+
+- Service 初始化写在 `Initialize()`。
+- Manager 初始化写在 `Initialize()`。
+- MonoBehaviour 运行时引用绑定放在 Awake / Start，但要尊重 `[Manager(N)]` 顺序。
+
+原因：Manager 是 MonoBehaviour，Service 是框架单例。构造函数不是可靠的 Unity / 框架生命周期入口。
+
+### B4. 禁止 AddComponent 后再设置会影响 Awake 的字段
+
+错误写法：
+
 ```csharp
-// ❌ 绕过缓存 + 与 ResourceManager 冲突
-var prefab = Resources.Load<GameObject>("Prefabs/X");
-GameObject.Instantiate(prefab);
+var holder = new GameObject(nameof(MapManager));
+var map = holder.AddComponent<MapManager>();
+map.SetTemplateId("forest"); // Awake 可能已经跑完
 ```
-**理由**：所有资源走 `ResourceManager.EVT_*` 才会进缓存 / 触发预加载 / 走外部文件路径。直接 `Resources.Load` 是双轨，导致内存泄漏排查困难。
 
-### B5. ❌ 命令事件 vs 广播事件命名混用
-约定（**强制**）：
-- **命令**（让别人做某事）：`EVT_<VERB>_<NOUN>`，方法名动词开头 → e.g. `EVT_OPEN_UI` → `"OpenInventoryUI"`
-- **广播**（已经发生）：广播事件常量值用 `On` 前缀字符串，方法名 `On` 开头 → e.g. `EVT_STARTED` → `"OnDialogueStarted"`
+正确写法：
 
-**理由**：旧版 `Inventory` 模块曾出现 `InventoryManager.EVT_OPEN_UI`（命令）与同名 Service 广播的碰撞，已统一收敛到 Manager 侧。**新模块务必在 `Agent.md` 的 Event API 标注"命令/广播"**，避免再次出现 façade ↔ Service 同字符串。
-
-### B6. ❌ 同字符串多处 `[Event(...)]` 注册
 ```csharp
-// ❌ 两个类都 [Event("Foo")] → _eventMethods 字典 key 冲突，后者覆盖前者
-public class A { [Event("Foo")] public List<object> X(...) { ... } }
-public class B { [Event("Foo")] public List<object> Y(...) { ... } }
-```
-**理由**：`EventProcessor._eventMethods` 是 `Dictionary<string, ...>`，**单一 handler**。需要多播请用 `[EventListener]`，不要用 `[Event]`。已存在的同名（如 `ResourceManager`/`ResourceService` 的 `UnloadResource`）属历史 façade dead-code，新代码禁止复制。
-
-### B7. ❌ DAO 类放在业务模块根目录
-```
-Manager/QuestManager/
-├── QuestManager.cs
-├── QuestService.cs
-└── QuestData.cs   ← ❌ 错位置
-
-Manager/QuestManager/
-├── QuestManager.cs
-├── QuestService.cs
-└── Dao/
-    └── QuestData.cs  ← ✅
-```
-**理由**：根 `Agent.md` §3 文件组织规则。
-
-### B8. ❌ UI Entity 类放业务模块
-所有继承 `UIEntity` 的 MonoBehaviour **只能** 放在 `Scripts/EssSystem/Core/EssManagers/Presentation/UIManager/Entity/`。业务模块只产 DAO（`UIComponent` 子类）。
-**理由**：业务模块不依赖 uGUI，方便独立测试。
-
-### B9. ❌ 业务代码自建 Canvas / uGUI 组件
-```csharp
-// ❌ 绕过 UIManager 自建界面
-var go = new GameObject("MyPanel");
-go.AddComponent<Canvas>();
-go.AddComponent<Image>();
-go.AddComponent<Button>();
-
-// ✅ 走 UIManager DAO 树
-var panel = new UIPanelComponent("my_panel", "面板")
-    .SetPosition(960, 540).SetSize(400, 300);
-panel.AddChild(new UIButtonComponent("btn_ok", "确定"));
-EventProcessor.Instance.TriggerEventMethod("RegisterUIEntity",
-    new List<object> { panel.Id, panel });
-```
-**理由**：`Agent.md` §5 强制规则。运行时 UI 必须走 `UIManager` DAO 树。禁止 `AddComponent<Canvas/Image/Button/Text/CanvasScaler/VerticalLayoutGroup/...>`，禁止在业务层 `using UnityEngine.UI`。按钮交互用 `btnDao.OnClick += handler`，不是 `btn.onClick.AddListener`。**例外**：纯非交互 `SpriteRenderer`（如 Character 贴图）不属于 UI。参考实现：`InventoryUIBuilder.cs`。
-
-### B10. ❌ 需高 DPI 文字就引入 TextMeshPro
-框架仅用 uGUI `Text` (LegacyRuntime.ttf)，**未引入 TMP**。需要清晰文字时用**超采样**：`dao.FontSize ×= 2; dao.Size ×= 2; dao.SetScale(0.5f, 0.5f);`。倍率用整数（2×/3×），避免与 Canvas pixelPerfect 冲突。要真正矢量文字是架构级改动，禁止业务单方面加依赖。
-
-### B11. ❌ 静态注册表用 `RuntimeInitializeLoadType.SubsystemRegistration`
-```csharp
-// ❌ PlayModeResetGuard 也在这阶段跑，顺序未定义 → 你的注册可能被抹掉
-[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-private static void AutoRegister() { MyRegistry.Register(new Template()); }
-
-// ✅
-[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-private static void AutoRegister() {
-    if (!MyRegistry.Contains(Id)) MyRegistry.Register(new Template());
-}
-```
-**理由**：`Agent.md` 【项目特定规则 §1】。`PlayModeResetGuard` 也跑在 `SubsystemRegistration`，会清空已知静态注册表；同阶段多个 `RuntimeInitializeOnLoadMethod` 顺序未定义。用 `BeforeSceneLoad`（严格晚于清理，早于所有 Awake）。新增静态注册表同步在 `PlayModeResetGuard.ResetStaticRegistries()` 添加清理。
-
-### B12. ❌ `AddComponent<XxxManager>()` 后立即改 Inspector 字段
-```csharp
-// ❌ AddComponent 同步触发 Awake，SetTemplateId 来不及
-var mgr = new GameObject().AddComponent<MapManager>();
-mgr.SetTemplateId("forest");   // Awake 已跑完，迟了
-
-// ✅ 先 Inactive，AddComponent 不触发 Awake
 var holder = new GameObject(nameof(MapManager));
 holder.SetActive(false);
 holder.transform.SetParent(transform);
-var mgr = holder.AddComponent<MapManager>();
-mgr.SetTemplateId("forest");
-holder.SetActive(true);   // 此刻才同步触发 Awake/Initialize
+var map = holder.AddComponent<MapManager>();
+map.SetTemplateId("forest");
+holder.SetActive(true);
 ```
-**理由**：`Agent.md` 【项目特定规则 §2】。参考 `Demo/DayNight/DayNightGameManager.cs`。
 
----
+原因：`AddComponent` 会同步触发 Awake。需要先配置再初始化时，应先创建 inactive 对象。
 
-## 🟡 P2 — 风格 / 可读性级
+### B5. 禁止 Service 直接 Instantiate 或直接 Resources.Load
 
-### C1. ❌ 用 `"成功"` / `"错误"` / `"失败"` 中文字符串当返回码
+错误写法：
+
 ```csharp
-// ❌
-return new List<object> { "成功", data };
-
-// ✅
-return ResultCode.Ok(data);
+var prefab = Resources.Load<GameObject>("Prefabs/X");
+var go = GameObject.Instantiate(prefab);
 ```
-**理由**：历史已统一到 `ResultCode.OK`/`ERROR` 常量 + `Ok()`/`Fail()`/`IsOk()`。
 
-### C2. ❌ `TriggerEvent` vs `TriggerEventMethod` 混用
-- `TriggerEventMethod(name, data)` — 调一个 `[Event]` 标注的方法（**单点 RPC**，有返回值）
-- `TriggerEvent(name, data)` — 触发**广播**（所有 `[EventListener]` 监听者都跑，按优先级）
+正确做法：
 
-**理由**：用错会"事件没人接"或"返回值丢失"。命令型用 Method，广播型用 Event。
+- 资源定位走 ResourceManager / ResourceService 的统一入口。
+- 实例化运行时对象由 Manager、工厂或场景组件负责。
+- 高频 VFX 等可使用对象池，但资源来源仍需统一。
 
-### C3. ❌ `[Event]` 方法名乱起
-- `[Event]` 方法：动词开头（`OpenX` / `GetX` / `RegisterX`）
-- `[EventListener]` 方法：`On` 开头（`OnPlayerDamage` / `OnInventoryChanged`）
+原因：Service 直接加载和实例化会绕过缓存、资源清单、构建裁剪和释放策略。
 
-### C4. ❌ 文件中间 / 函数内部写 `using`
+### B6. 禁止业务代码自建 Canvas 或绕过 UIManager 管 UI
+
+错误写法：
+
+```csharp
+var go = new GameObject("Panel");
+go.AddComponent<Canvas>();
+go.AddComponent<UnityEngine.UI.Button>();
+```
+
+正确做法：
+
+- 窗口打开、关闭、层级、输入阻挡通过 UIManager。
+- Demo UI 可以有自己的样式构建器，但入口和生命周期要回到 UIManager。
+- UI 对齐、缩放、超采样策略要在统一 UI 构建逻辑中处理。
+
+原因：UI 一旦分散创建，窗口层级、输入遮挡、适配和释放都会失控。
+
+### B7. 禁止把 Demo 专属逻辑塞进框架公共层
+
+错误写法：
+
+```csharp
+// ResourceManager 中硬编码 Tribe 路径和玩法规则
+if (demo == "Tribe") LoadCampfireOnly();
+```
+
+正确做法：
+
+- 框架层提供通用资源范围、清单、构建参数能力。
+- Demo 层声明自己需要的路径、资源组、启动配置。
+- 通用能力被第二个 Demo 复用后，再考虑上移框架层。
+
+原因：Demo 逻辑污染框架后，其他 Demo 构建和运行会被迫承担无关规则。
+
+### B8. 禁止在启动阶段做全项目反射、全资源加载或同步重 IO
+
+正确做法：
+
+- 能构建期生成的清单不要运行时扫描。
+- 必须运行时扫描时，按 Demo / 模块 / Manager 明确范围。
+- 排查耗时时补充分段计时日志，不盲目猜瓶颈。
+
+原因：Tribe 启动卡顿已经暴露过这类问题，启动流程需要持续收敛。
+
+### B9. 禁止静态注册表只依赖 `SubsystemRegistration` 自动注册
+
+正确做法：
+
+- 清理静态状态可以放在 `SubsystemRegistration`。
+- 自动注册更适合 `BeforeSceneLoad` 或显式初始化入口。
+- 新增静态注册表时，同步考虑 Play Mode 重置逻辑。
+
+原因：同阶段多个 RuntimeInitialize 方法顺序不稳定，可能出现刚注册又被清理的情况。
+
+## P2：可维护性与风格禁区
+
+这类问题会降低可读性和协作效率，新增代码也应避免。
+
+### C1. 禁止用中文字符串当 ResultCode
+
+错误写法：
+
+```csharp
+return new List<object> { "成功", data };
+return new List<object> { "失败", error };
+```
+
+正确写法：
+
+```csharp
+return ResultCode.Ok(data);
+return ResultCode.Fail(error);
+```
+
+原因：返回码必须稳定、可判断、可被工具和调用方统一处理。
+
+### C2. 禁止混用 `TriggerEvent` 与 `TriggerEventMethod`
+
+规则：
+
+- `TriggerEventMethod`：调用单个 `[Event]` 命令，有返回值。
+- `TriggerEvent`：广播给多个 `[EventListener]`，通常表达已发生事实。
+
+原因：用错会导致“没有返回值”“没人处理”“监听器被当命令”等隐蔽问题。
+
+### C3. 禁止 `[Event]` / `[EventListener]` 命名语义混乱
+
+规则：
+
+- `[Event]` 方法使用动词开头，例如 `OpenInventory`、`GetSprite`、`RegisterUI`。
+- `[EventListener]` 方法使用 `On` 开头，例如 `OnInventoryChanged`。
+- 命令事件常量用 `EVT_VERB_NOUN`。
+- 广播事件字符串通常表达已发生事实。
+
+原因：命令和广播混在一起会让调用方不知道该等返回值还是监听通知。
+
+### C4. 禁止在函数中间写 `using`
+
+错误写法：
+
 ```csharp
 public void Foo()
 {
-    using EssSystem.Core;  // ← C# 不允许，但 AI 偶尔会幻觉出来
+    using EssSystem.Core;
 }
 ```
-所有 `using` **必须**在文件顶部。
 
-### C5. ❌ 直接读写 `EnableLogging` 字段而不是属性
-`EnableLogging` 已是自动属性（历史决策表），用属性。
+正确做法：
 
-### C6. ❌ 给 Manager 加 `[DefaultExecutionOrder]`
-**用 `[Manager(N)]` 即可**，框架内部会处理。两个一起加是冗余且可能冲突。
+- C# using 放在文件顶部。
+- 如果只用一次类型，优先完整限定名或整理文件顶部 using。
 
----
+### C5. 禁止留下临时日志、临时菜单和临时测试入口
 
-## 🚫 不要复活的"老路"（历史决策表）
+规则：
 
-读到 AI 想做以下任一，立刻打住：
+- 排查问题可以加临时日志，但完成后要移除或收敛到可开关日志。
+- Demo 专属日志落盘必须可关闭，发布包中不能默认刷屏。
+- Editor 菜单新增前先归类到清晰层级。
 
-| ❌ 复活的老路 | 现状 |
+原因：工具和日志入口散乱后，后续构建和排查会变得很难信任。
+
+### C6. 禁止中文文档写入乱码或混用错误编码
+
+规则：
+
+- 所有 `Agent.md`、`Anti-Patterns.md`、`TODO.md` 保持中文 UTF-8。
+- 修改中文文档后必须跑乱码扫描。
+- PowerShell 控制台显示乱码不等于文件内容乱码，必要时用 UTF-8 方式读取确认。
+
+原因：文档是后续 AI 和人工判断架构的入口，乱码会直接破坏协作质量。
+
+## 数据密集型直接 API 例外
+
+事件系统不是所有调用的唯一答案。满足以下条件时，可以保留直接 C# API：
+
+- 高频访问，事件分派和装拆箱成本不可接受。
+- 参数或返回值包含强领域类型，事件化会明显破坏类型安全。
+- 调用关系属于同一内聚子系统内部，而不是跨业务 Manager 随意互调。
+- 模块 `Agent.md` 明确写出 public API 清单、适用范围和为什么不事件化。
+
+当前可参考的例外方向：MapManager / Voxel3DMapManager 这类地形、chunk、持久化强内聚子系统。例外不自动扩散到 Foundation、Presentation 或普通业务 Manager。
+
+## 不要复活的旧路
+
+以下做法属于历史决策中已经放弃的方向，不要重新引入：
+
+| 旧路 | 当前规则 |
 |---|---|
-| 新建 `EventManager` 类 | 已合并入 `EventProcessor`（namespace `EssSystem.Core.Event`） |
-| 用 `Event` 类名 | 已重命名为 `EventBase`（避免与 namespace 同名冲突） |
-| `Manager<T>` 加空 `FixedUpdate`/`LateUpdate`/`OnEnable`/`OnDisable`/`OnApplicationFocus`/`OnApplicationPause`/`Cleanup` 占位 | 已删除，子类需要直接声明 |
-| `UIService` 内部 `ServiceXxx` 事件 thin wrapper | 已删除 |
-| `DataService` 用反射保存 Service | 改用 `IServicePersistence` 接口，**零反射** |
-| `UIService` 用反射拿 Canvas | 改用 `UIManager.EVT_GET_CANVAS_TRANSFORM` 事件 |
-| `InventoryManager` 直接 `using UIManager` | 已改为通过 Event 调，完全解耦 |
-| `ResultCode.cs` 在 `Core/` 根目录 | 已移到 `Core/Util/`（namespace 仍 `EssSystem.Core`） |
-| `EssManagers/` 平铺业务 Manager（极早期布局） | 已拆除 `EssManagers/`，按 `Foundation/` `Presentation/` `Application/` 三层直接平铺在 `Core/` 下（与 `Base/` 同级） |
-| 业务 Manager 放在 `EssSystem/Manager/` | 仅限可选第三方模块（如 `DanmuManager`）；框架原生业务全部迁入 `Core/Foundation/` / `Core/Presentation/` / `Core/Application/` |
-| `UIEntity` 命名空间为 `EssSystem.Core.UI.Entity.*` | 已收回 `EssSystem.Core.Presentation.UIManager.Entity.*`（UIManager 私有实现） |
-| `EventProcessor.TriggerEventMethod` 吞后续异常 | 已解 `TargetInvocationException` 暴露真实 `InnerException`，不要加 try/catch 遮盖 |
-| 在 `Manager/` 下手写业务脚手架 | 用 `tools/new-module.ps1 -Name Xxx -Priority N`，自动遵守常量化/目录结构/Agent.md 模板 |
-| `AudioManager` 放 `Manager/` 基类文件夹 | 已迁到 `Core/Presentation/AudioManager/`（namespace `EssSystem.Core.Presentation.AudioManager`），优先级 `[Manager(3)]`；旧文件 `#if false` 待删 |
-| `AudioManager` 手动 `AddListener` 注册事件 | 全部改 `[Event(EVT_XXX)]`，去掉 `RegisterEvents()` / `OnDestroy` 手动注销 |
-| `AudioManager` 直接 `Resources.Load<AudioClip>` | 改走 ResourceManager bare-string `"GetAudioClip"` |
-| 提交前不跑 `agent_lint` | `tools/install-hooks.ps1` 一次性安装 pre-commit hook，自动 `agent_lint -Strict` |
+| 新建独立 EventManager | 使用 EventProcessor |
+| 给 Manager 同时写 `[DefaultExecutionOrder]` 和 `[Manager(N)]` | 只写 `[Manager(N)]` |
+| Service 反射保存所有内部状态 | 通过明确持久化数据和接口处理 |
+| UIService 反射查 Canvas | 通过 UIManager 公开入口 |
+| 业务 Manager 放进无边界的公共 Manager 目录 | 按 Foundation / Presentation / Application / Demo 边界归位 |
+| 运行时全量 Resources 扫描 | 按 Demo / 模块 / 清单收敛加载 |
+| 构建前手动跑零散配置工具 | 统一收敛到 BuildSystem |
+| 新增工具随意挂菜单 | 先归类，再加入清晰菜单层级 |
 
----
+## 提交前自查
 
-## 自查清单（提交前 30 秒）
+提交前至少确认：
 
-- [ ] `[Event(...)]` 定义方用了 `EVT_XXX` 常量吗？（A1）
-- [ ] 跨模块 `TriggerEventMethod` / `[EventListener]` 走了 bare-string 而不是 `using` 其他业务模块拿常量吗？（A2）
-- [ ] 我新增/改了 `[Event]` 吗？对应模块 `Agent.md` 的 `## Event API` + 根 `Agent.md` 【全局 Event 索引】改了吗？（A5）
-- [ ] 业务 Manager 之间有 `using` 吗？事件返回值有泄露 `UIEntity` / `Character` / `Entity` 吗？（A6/A7）
-- [ ] Service 里有 `GameObject` / `MonoBehaviour` 字段吗？（A3）
-- [ ] DAO 类加 `[Serializable]` 了吗？（A4）
-- [ ] 覆盖 `Manager<T>` 生命周期方法时用了 `protected override` + `base.Xxx()` 吗？（B2）
-- [ ] 资源加载走 `ResourceManager.EVT_*` 还是 `Resources.Load`？（B4）
-- [ ] 新事件标了"命令"还是"广播"吗？（B5）
-- [ ] UI 走了 `UIManager` DAO 树，没有自建 Canvas / `using UnityEngine.UI` 吗？（B9）
-- [ ] 静态注册表用了 `BeforeSceneLoad` 而不是 `SubsystemRegistration` 吗？（B11）
-- [ ] 跑了 `tools\agent_lint.ps1 -Strict` 吗（或 pre-commit hook 已安装）？
-
-不全 ✅ 不要提交。
+- `[Event(...)]` 定义侧使用了 `EVT_XXX` 常量。
+- 跨模块消费事件没有为了读常量而 `using` 对方业务模块。
+- 新增或修改 Event 后，对应模块 `Agent.md` 已同步。
+- Service 没有持有需要持久化的 Unity 对象。
+- DAO / 持久化数据类有 `[Serializable]`。
+- Manager 生命周期覆盖使用 `protected override` 并调用 `base`。
+- 没有新增无范围资源扫描或启动期全量加载。
+- UI 生命周期仍由 UIManager 统一管理。
+- 没有把 Demo 专属逻辑塞进框架公共层。
+- 中文文档无乱码，`agent_lint` 和相关检查通过。

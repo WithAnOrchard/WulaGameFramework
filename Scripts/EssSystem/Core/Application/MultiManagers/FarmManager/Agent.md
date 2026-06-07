@@ -1,73 +1,42 @@
-﻿# FarmManager 指南
-## 概述
-`FarmManager`（`[Manager(18)]`）+ `FarmService`（业务服务 + 持久化）管理游戏中的农场建筑与作物种植系统。
-**职责单一**：本 Manager 仅管"农场是谁、在哪、长着什么、长到哪一阶段"；
-- 种子消耗 / 产物入背包 → `InventoryManager`
-- 农场作为可互动 Entity / 进入子场景 → `EntityManager` + `SceneInstanceManager`
-- 作物视觉 / 农场建筑视觉 → 业务侧自由选择（`CharacterManager` 多部件 sprite、裸 ResourceManager spriteId 均可，CropConfig 仅暴露 `StageSpriteIds`）
-## 状态
-**M1 已实施**：SpawnFarm + 广播 OnFarmSpawned。
-**M2 已实施**：PlantCrop / WaterCrop / FertilizeCrop / RemovePest / HarvestCrop / QueryFarmSlot。
-生长周期由 `FarmManager.Update`（1秒一Tick）驱动，支持浇水加速、施肥加速、害虫停滞、枯萎过期。
-🚧 **尚未实施**：UpgradeFarm / EnterFarm / ExitFarm。
-业务上游需求（玩家提出）：
-1. 营地以左侧某一边界为地图极限，禁止玩家越界。
-2. 建造一座农场扩展一格宽度的可行走边界。
-3. 走近农场可进入"农场内部小场景"，在子场景里种植 / 收割。
-4. 农场可升级，升级后扩张容量 / 解锁新作物 / 进一步扩展边界。
-本 Manager 是上述需求的核心数据/状态层，边界扩展逻辑由业务侧（Tribe / CampFeature）订阅
-`FarmInstance` 的注册/销毁事件后驱动。
-## 文件结构
-```
-FarmManager/
-├── FarmManager.cs                薄门面（Manager 单例）
-├── FarmService.cs                业务服务（CAT_FARM_CONFIGS / CAT_CROP_CONFIGS / CAT_INSTANCES）
-├── Agent.md                      本文档
-└── Dao/
-    ├── FarmConfig.cs             农场模板：Id / DisplayName / Rows×Cols / AllowedCropIds / BuildCosts / Upgrades / InteriorSceneInstanceId
-    ├── FarmInstance.cs           运行时实例：InstanceId / ConfigId / WorldPosition / Level / Rows×Cols / Slots / ActiveSceneInstanceId
-    ├── FarmSlot.cs               单个槽位：Row / Col / CropConfigId / PlantedAtUnixSeconds / Stage / Watered
-    │                              + HasPest / FertilizeBoostUntilUnix / StageStartUnixSeconds / ScheduledPestUnixSeconds
-    ├── CropConfig.cs             作物模板：Id / DisplayName / SeedItemId / OutputItemId / OutputAmount / StageDurations / StageSpriteIds
-    └── CropGrowthStage.cs        枚举：Empty / Seed / Sprout / Growing / Mature / Wilted
-```
-## 数据分类（持久化）
-| 常量 | 用途 |
-|---|---|
-| `FarmService.CAT_FARM_CONFIGS` = `"FarmConfigs"` | 已注册 `FarmConfig`（按 Id） |
-| `FarmService.CAT_CROP_CONFIGS` = `"CropConfigs"` | 已注册 `CropConfig`（按 Id） |
-| `FarmService.CAT_INSTANCES`    = `"FarmInstances"` | 运行时 `FarmInstance`（按 InstanceId） |
+# FarmManager 农场模块
+
+## 职责
+- 负责作物状态、成长阶段、收获和农田数据。
+- 模块路径：`Scripts/EssSystem/Core/Application/MultiManagers/FarmManager`。
+- 本文档只记录模块契约，具体实现细节以代码为准。
+
+## 结构
+- `Dao/`
+- `FarmManager.cs`
+- `FarmService.cs`
+
+## 边界
+- 本模块只拥有“职责”中描述的行为，不隐式接管兄弟模块职责。
+- 跨模块协作优先使用 EventProcessor 字符串协议，或目标模块明确暴露的窄接口。
+- Demo 专属逻辑留在 Demo 目录，除非已经确认可复用为框架能力。
+
 ## Event API
+- `FarmManager.EVT_CLEAR_SLOT` = `"ClearFarmSlot"`
+- `FarmManager.EVT_FERTILIZE` = `"FertilizeCrop"`
+- `FarmManager.EVT_HARVEST_CROP` = `"HarvestCrop"`
+- `FarmManager.EVT_PLANT_CROP` = `"PlantCrop"`
+- `FarmManager.EVT_QUERY_SLOT` = `"QueryFarmSlot"`
+- `FarmManager.EVT_REGISTER_CROP_CONFIG` = `"RegisterCropConfig"`
+- `FarmManager.EVT_REGISTER_FARM_CONFIG` = `"RegisterFarmConfig"`
+- `FarmManager.EVT_REMOVE_PEST` = `"RemovePest"`
+- `FarmManager.EVT_SPAWN_FARM` = `"SpawnFarm"`
+- `FarmManager.EVT_WATER_CROP` = `"WaterCrop"`
+- `FarmService.EVT_ON_CROP_FERTILIZED` = `"OnCropFertilized"`
+- `FarmService.EVT_ON_CROP_HARVESTED` = `"OnCropHarvested"`
+- `FarmService.EVT_ON_CROP_PLANTED` = `"OnCropPlanted"`
+- `FarmService.EVT_ON_CROP_STAGE_CHANGED` = `"OnCropStageChanged"`
+- `FarmService.EVT_ON_CROP_WATERED` = `"OnCropWatered"`
+- `FarmService.EVT_ON_CROP_WILTED` = `"OnCropWilted"`
+- `FarmService.EVT_ON_FARM_SPAWNED` = `"OnFarmSpawned"`
+- `FarmService.EVT_ON_PEST_REMOVED` = `"OnPestRemoved"`
+- `FarmService.EVT_ON_PEST_SPAWNED` = `"OnPestSpawned"`
 
-> Full Event definitions (params / return / side effects / usage) live in root Events.md -> section: **FarmManager Event**.
-
-- `EVT_CLEAR_SLOT`
-- `EVT_FERTILIZE`
-- `EVT_HARVEST_CROP`
-- `EVT_ON_CROP_FERTILIZED`
-- `EVT_ON_CROP_HARVESTED`
-- `EVT_ON_CROP_PLANTED`
-- `EVT_ON_CROP_STAGE_CHANGED`
-- `EVT_ON_CROP_WATERED`
-- `EVT_ON_CROP_WILTED`
-- `EVT_ON_FARM_SPAWNED`
-- `EVT_ON_PEST_REMOVED`
-- `EVT_ON_PEST_SPAWNED`
-- `EVT_PLANT_CROP`
-- `EVT_QUERY_SLOT`
-- `EVT_REGISTER_CROP_CONFIG`
-- `EVT_REGISTER_FARM_CONFIG`
-- `EVT_REMOVE_PEST`
-- `EVT_SPAWN_FARM`
-- `EVT_WATER_CROP`
-
-## 生长机制
-- `FarmManager.Update` 每秒调用 `FarmService.TickAllFarms()`。
-- 每个占用槽位：计算 `realElapsed = nowUnix - slot.StageStartUnixSeconds`，乘以速度倍数（浇水“2×” / 施肥“1.5×” / 害虫“0×”），与 `CropConfig.StageDurations[stageIndex]` 比较推进阶段。
-- 枯萎：`Mature` 阶段对应 `StageDurations[3]`（可选）超时后自动变为 `Wilted`。
-- 害虫：广播 `OnPestSpawned`，搜集时间就预约在 `ScheduledPestUnixSeconds`，默认随机 120–600 秒后。宇虫阶段（Sprout / Growing）才能触发。
-- 速度参数可在运行时覆盖：`FarmService.Instance.WateredSpeedMultiplier`、`FertilizedSpeedMultiplier`、`PestMinDelaySec`、`PestMaxDelaySec`。
-## 与上游模块的解耦
-- FarmManager **不**直接 `using InventoryManager` 命名空间；扣种子 / 入产物均走 bare-string 事件（如 `RemoveItemFromInventory` / `AddItemToInventory`）。
-- 农场可互动 = 业务侧在 SpawnFarm 后用 `Entity.CanInteract` 挂 `IInteractable`，回调里 `TriggerEventMethod("EnterFarm", ...)`。
-- 边界扩展（玩家"地图极限"随农场数量推进）= Tribe 业务侧订阅 `OnFarmSpawned`，自己维护一个左边界 X 值。
+## 维护注意
+- 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
+- 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
+- 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。

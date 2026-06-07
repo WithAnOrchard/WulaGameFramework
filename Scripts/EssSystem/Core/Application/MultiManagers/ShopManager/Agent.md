@@ -1,45 +1,35 @@
-﻿# ShopManager 指南
-## 概述
-`ShopManager`（`[Manager(19)]`）+ `ShopService`（业务服务 + 持久化）提供商店交易系统：
-配置 / 货币 / 钱包 / Buy-Sell 事务原子性。
-**与 NPC 解耦**：本 Manager 不知道 NPC 是谁；NpcConfig 通过 `ShopId` 字段反向指向某 ShopConfig，
-触发 `OpenShop` 由业务侧粘合。**与 IStats 软依赖**：CHA 折扣公式可降级为固定 markup。
-## 状态
-Service 已提供商店注册、货币注册、钱包初始化 / 充值 / 查询、购买事务与失败回滚。
-钱包底层复用 Inventory 容器，但 ShopManager 只通过 Inventory 事件通信，不直接依赖 Inventory DTO。
-## 文件结构
-```
-ShopManager/
-├── ShopManager.cs               薄门面（Manager 单例）
-├── ShopService.cs               业务服务（CAT_CONFIGS / CAT_CURRENCIES / CAT_WALLETS）
-├── Agent.md                     本文档
-└── Dao/
-    ├── ShopConfig.cs            Id / DisplayName / OwnerNpcConfigId / Type / Stock / Policy / CurrencyId
-    ├── ShopStock.cs             ItemId / BasePrice / Stock / SellbackRatio / 补货
-    ├── ShopPolicy.cs            BuyMarkupRatio / SellMarkdownRatio / AcceptedSellTypes / CHA 阈值
-    ├── ShopType.cs              General / Weapon / Armor / Magic / BlackMarket
-    └── CurrencyEntry.cs         Id / DisplayName / IconSpriteId
-```
-## 数据分类（持久化）
-| 常量 | 用途 |
-|---|---|
-| `ShopService.CAT_CONFIGS`    = `"ShopConfigs"` | 已注册 `ShopConfig`（按 Id） |
-| `ShopService.CAT_CURRENCIES` = `"Currencies"`  | 已注册 `CurrencyEntry`（按 Id） |
-| `wallet_{playerId}` Inventory | 玩家钱包容器；余额通过 `InventoryCountItem` 查询 |
-## 价格公式（实施时落到 ShopFormulas.cs）
-```
-基础买入价 = stock.BasePrice * Policy.BuyMarkupRatio
-CHA 折扣  = max(0, (CHA - 10) * 0.01)        // 每点 CHA -1%
-最终买入价 = round(基础买入价 * (1 - CHA折扣))
-卖出价 = item.Value * stock.SellbackRatio * Policy.SellMarkdownRatio * (1 + (CHA-10)*0.005)
-```
+# ShopManager 商店模块
+
+## 职责
+- 负责商店配置、价格、库存规则、购买和出售流程。
+- 模块路径：`Scripts/EssSystem/Core/Application/MultiManagers/ShopManager`。
+- 本文档只记录模块契约，具体实现细节以代码为准。
+
+## 结构
+- `Dao/`
+- `ShopManager.cs`
+- `ShopService.cs`
+
+## 边界
+- 本模块只拥有“职责”中描述的行为，不隐式接管兄弟模块职责。
+- 跨模块协作优先使用 EventProcessor 字符串协议，或目标模块明确暴露的窄接口。
+- Demo 专属逻辑留在 Demo 目录，除非已经确认可复用为框架能力。
+
 ## Event API
+- `ShopManager.EVT_ADD_WALLET` -> `ShopService.EVT_ADD_WALLET`
+- `ShopManager.EVT_BUY_ITEM` -> `ShopService.EVT_BUY_ITEM`
+- `ShopManager.EVT_GET_WALLET` -> `ShopService.EVT_GET_WALLET`
+- `ShopManager.EVT_INIT_WALLET` -> `ShopService.EVT_INIT_WALLET`
+- `ShopManager.EVT_REGISTER_CURRENCY` -> `ShopService.EVT_REGISTER_CURRENCY`
+- `ShopManager.EVT_REGISTER_SHOP` -> `ShopService.EVT_REGISTER_SHOP`
+- `ShopService.EVT_ADD_WALLET` = `"ShopAddWallet"`
+- `ShopService.EVT_BUY_ITEM` = `"ShopBuy"`
+- `ShopService.EVT_GET_WALLET` = `"ShopGetWallet"`
+- `ShopService.EVT_INIT_WALLET` = `"ShopInitWallet"`
+- `ShopService.EVT_REGISTER_CURRENCY` = `"ShopRegisterCurrency"`
+- `ShopService.EVT_REGISTER_SHOP` = `"ShopRegister"`
 
-> Full Event definitions (params / return / side effects / usage) live in root Events.md -> section: **ShopManager Event**.
-
-- `ShopManager.EVT_ADD_WALLET`
-- `ShopManager.EVT_BUY_ITEM`
-- `ShopManager.EVT_GET_WALLET`
-- `ShopManager.EVT_INIT_WALLET`
-- `ShopManager.EVT_REGISTER_CURRENCY`
-- `ShopManager.EVT_REGISTER_SHOP`
+## 维护注意
+- 新增、改名或删除事件常量时，同步更新本节和根目录 Events.md。
+- 示例保持最小化；实现细节写在代码注释里，模块契约写在本文档里。
+- 已完成的 TODO 从本文档移除，必要时移动到 TODO.md。
