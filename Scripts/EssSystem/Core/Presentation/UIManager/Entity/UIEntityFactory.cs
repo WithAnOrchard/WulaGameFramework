@@ -86,12 +86,13 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     canvasGroup.alpha = dao.Visible ? 1f : 0f;
                     canvasGroup.interactable = canvasGroup.blocksRaycasts = dao.Interactable;
 
-                    var panelImage = gameObject.AddComponent<Image>();
-                    panelImage.color = dao is UIPanelComponent panelDao ? panelDao.BackgroundColor : Color.white;
-                    // 如果BackgroundSpriteId不为空，通过Event机制加载Sprite
-                    if (dao is UIPanelComponent panelComponent && !string.IsNullOrEmpty(panelComponent.BackgroundSpriteId))
+                    if (dao is UIPanelComponent panelDao && HasPanelGraphic(panelDao))
                     {
-                        LoadSpriteFromId(panelComponent.BackgroundSpriteId, panelImage);
+                        var panelImage = gameObject.AddComponent<Image>();
+                        panelImage.raycastTarget = false;
+                        panelImage.color = string.IsNullOrEmpty(panelDao.BackgroundSpriteId)
+                            ? panelDao.BackgroundColor
+                            : Color.clear;
                     }
                     break;
 
@@ -194,6 +195,12 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                 
             AsyncSpriteLoader.StartLoad(spriteId, targetImage);
         }
+
+        private static bool HasPanelGraphic(UIPanelComponent panel)
+        {
+            return panel != null
+                   && (!string.IsNullOrEmpty(panel.BackgroundSpriteId) || panel.BackgroundColor.a > 0f);
+        }
     }
     
     internal static class AsyncSpriteLoader
@@ -202,9 +209,14 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
         
         public static void StartLoad(string spriteId, Image targetImage)
         {
+            StartLoad(spriteId, targetImage, targetImage != null ? targetImage.color : Color.white);
+        }
+
+        public static void StartLoad(string spriteId, Image targetImage, Color loadedTint)
+        {
             var helper = new GameObject("AsyncSpriteLoader").AddComponent<AsyncSpriteLoaderComponent>();
             UnityEngine.Object.DontDestroyOnLoad(helper.gameObject);
-            helper.StartLoad(spriteId, targetImage);
+            helper.StartLoad(spriteId, targetImage, loadedTint);
         }
     }
     
@@ -212,12 +224,19 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
     {
         private string _spriteId;
         private Image _targetImage;
+        private Color _loadedTint;
         private int _attempts;
         
         public void StartLoad(string spriteId, Image targetImage)
         {
+            StartLoad(spriteId, targetImage, targetImage != null ? targetImage.color : Color.white);
+        }
+
+        public void StartLoad(string spriteId, Image targetImage, Color loadedTint)
+        {
             _spriteId = spriteId;
             _targetImage = targetImage;
+            _loadedTint = loadedTint;
             _attempts = 0;
         }
         
@@ -237,6 +256,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                 if (sprite != null && _targetImage != null)
                 {
                     _targetImage.sprite = sprite;
+                    _targetImage.color = _loadedTint;
                 }
                 Destroy(gameObject);
                 return;
