@@ -90,8 +90,7 @@ namespace Demo.DobeCat.Editor
                 return;
             }
 
-            var dir = Path.GetDirectoryName(outputPath)!;
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            CleanOutputDirectory(outputPath);
 
             // 排除 Framework Addressable 组（迁移完成后 Assets/Resources 已不存在，此步确保组不入包）
             SetFrameworkGroupIncluded(false);
@@ -127,6 +126,7 @@ namespace Demo.DobeCat.Editor
                 RestorePlayerSettings(playerSettings);
                 SetFrameworkGroupIncluded(true);
                 DeleteBuildDebugArtifacts(outputPath);
+                DeleteStaleD3D12Artifacts(outputPath);
                 LogBuildResult(report, outputPath);
             }
         }
@@ -171,6 +171,29 @@ namespace Demo.DobeCat.Editor
         }
 
         // ─── Addressables 组控制 ──────────────────────────────────
+        private static void CleanOutputDirectory(string outputPath)
+        {
+            var dir = Path.GetDirectoryName(outputPath);
+            if (string.IsNullOrEmpty(dir)) return;
+
+            var projectRoot = Directory.GetParent(Application.dataPath)!.FullName;
+            var buildsRoot = Path.Combine(projectRoot, "Builds");
+            var fullDir = Path.GetFullPath(dir);
+            var fullBuildsRoot = Path.GetFullPath(buildsRoot);
+            if (!fullDir.StartsWith(fullBuildsRoot, System.StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.LogWarning($"[DobeCatBuild] Refuse to clean output outside Builds: {fullDir}");
+                return;
+            }
+
+            if (Directory.Exists(fullDir))
+            {
+                Directory.Delete(fullDir, recursive: true);
+                Debug.Log($"[DobeCatBuild] Cleaned output directory: {fullDir}");
+            }
+            Directory.CreateDirectory(fullDir);
+        }
+
         private static void DeleteBuildDebugArtifacts(string outputPath)
         {
             var dir = Path.GetDirectoryName(outputPath);
@@ -188,6 +211,42 @@ namespace Demo.DobeCat.Editor
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[DobeCatBuild] Failed to delete build debug directory: {ex.Message}");
+            }
+        }
+
+        private static void DeleteStaleD3D12Artifacts(string outputPath)
+        {
+            var dir = Path.GetDirectoryName(outputPath);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+
+            DeleteFileIfExists(Path.Combine(dir, "dstorage.dll"));
+            DeleteFileIfExists(Path.Combine(dir, "dstoragecore.dll"));
+
+            var d3d12Dir = Path.Combine(dir, "D3D12");
+            if (!Directory.Exists(d3d12Dir)) return;
+
+            try
+            {
+                Directory.Delete(d3d12Dir, recursive: true);
+                Debug.Log($"[DobeCatBuild] Deleted stale D3D12 directory: {d3d12Dir}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[DobeCatBuild] Failed to delete stale D3D12 directory: {ex.Message}");
+            }
+        }
+
+        private static void DeleteFileIfExists(string path)
+        {
+            if (!File.Exists(path)) return;
+            try
+            {
+                File.Delete(path);
+                Debug.Log($"[DobeCatBuild] Deleted stale file: {path}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[DobeCatBuild] Failed to delete stale file {path}: {ex.Message}");
             }
         }
 
