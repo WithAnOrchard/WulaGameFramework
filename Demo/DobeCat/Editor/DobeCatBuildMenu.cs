@@ -219,9 +219,6 @@ namespace Demo.DobeCat.Editor
             var dir = Path.GetDirectoryName(outputPath);
             if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
 
-            DeleteFileIfExists(Path.Combine(dir, "dstorage.dll"));
-            DeleteFileIfExists(Path.Combine(dir, "dstoragecore.dll"));
-
             var d3d12Dir = Path.Combine(dir, "D3D12");
             if (!Directory.Exists(d3d12Dir)) return;
 
@@ -233,20 +230,6 @@ namespace Demo.DobeCat.Editor
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[DobeCatBuild] Failed to delete stale D3D12 directory: {ex.Message}");
-            }
-        }
-
-        private static void DeleteFileIfExists(string path)
-        {
-            if (!File.Exists(path)) return;
-            try
-            {
-                File.Delete(path);
-                Debug.Log($"[DobeCatBuild] Deleted stale file: {path}");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[DobeCatBuild] Failed to delete stale file {path}: {ex.Message}");
             }
         }
 
