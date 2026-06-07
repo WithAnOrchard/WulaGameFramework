@@ -1,0 +1,137 @@
+{
+  "Configs": [
+    {
+      "ConfigId": "Default",
+      "DisplayName": "默认对话框配置",
+      "Panel": {
+        "Size": { "x": 760.0, "y": 220.0 },
+        "Position": { "x": 960.0, "y": 340.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": { "r": 0.09, "g": 0.10, "b": 0.13, "a": 0.97 }
+      },
+      "SpeakerText": {
+        "Position": { "x": 260.0, "y": 136.0 },
+        "Size": { "x": 220.0, "y": 30.0 },
+        "FontSize": 22,
+        "TextColor": { "r": 0.96, "g": 0.88, "b": 0.62, "a": 1.0 },
+        "Alignment": 3,
+        "Visible": true,
+        "Text": ""
+      },
+      "BodyText": {
+        "Position": { "x": 440.0, "y": 86.0 },
+        "Size": { "x": 560.0, "y": 64.0 },
+        "FontSize": 20,
+        "TextColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+        "Alignment": 0,
+        "Visible": true,
+        "Text": ""
+      },
+      "Portrait": {
+        "Size": { "x": 104.0, "y": 104.0 },
+        "Position": { "x": 78.0, "y": 94.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": { "r": 0.12, "g": 0.11, "b": 0.16, "a": 0.95 }
+      },
+      "NextButton": {
+        "Position": { "x": 724.0, "y": 28.0 },
+        "Size": { "x": 34.0, "y": 22.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "Text": "",
+        "ButtonSpriteId": "Tribe/Common/Items/Weapons/arrow_gold",
+        "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+        "Visible": true,
+        "Interactable": true
+      },
+      "Options": {
+        "MaxOptions": 4,
+        "Spacing": 5.0,
+        "FirstButtonOffset": { "x": 450.0, "y": 102.0 },
+        "ButtonTemplate": {
+          "Position": { "x": 380.0, "y": 280.0 },
+          "Size": { "x": 520.0, "y": 28.0 },
+          "Scale": { "x": 1.0, "y": 1.0 },
+          "Text": "×",
+          "ButtonSpriteId": "",
+          "ButtonColor": { "r": 0.03, "g": 0.04, "b": 0.07, "a": 0.92 },
+          "Visible": false,
+          "Interactable": false
+        }
+      },
+      "CloseButton": {
+        "Position": { "x": 742.0, "y": 199.0 },
+        "Size": { "x": 34.0, "y": 36.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "Text": "",
+        "ButtonSpriteId": "Tribe/Common/Items/UI/cross_mark_red",
+        "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+        "Visible": true,
+        "Interactable": true
+      }
+    }
+  ],
+  "Dialogues": [
+    {
+      "Id": "DebugDialogue",
+      "Name": "调试对话",
+      "DefaultBackgroundSpriteId": "",
+      "ConfigId": "Default",
+      "FirstLineId": "",
+      "Lines": [
+        {
+          "Id": "L1",
+          "Speaker": "向导",
+          "Text": "你好，旅行者。这是一段调试对话。",
+          "BackgroundSpriteId": "",
+          "PortraitSpriteId": "",
+          "NextLineId": "",
+          "Options": []
+        },
+        {
+          "Id": "L2",
+          "Speaker": "向导",
+          "Text": "点击右下角三角按钮可以继续。",
+          "BackgroundSpriteId": "",
+          "PortraitSpriteId": "",
+          "NextLineId": "L3",
+          "Options": []
+        },
+        {
+          "Id": "L3",
+          "Speaker": "向导",
+          "Text": "现在选择你的回应：",
+          "BackgroundSpriteId": "",
+          "PortraitSpriteId": "",
+          "NextLineId": "",
+          "Options": [
+            {
+              "Text": "继续探索",
+              "NextDialogueId": "",
+              "NextLineId": "L4",
+              "EventName": "",
+              "EventArgs": []
+            },
+            {
+              "Text": "结束对话",
+              "NextDialogueId": "",
+              "NextLineId": "",
+              "EventName": "",
+              "EventArgs": []
+            }
+          ]
+        },
+        {
+          "Id": "L4",
+          "Speaker": "向导",
+          "Text": "祝你好运！",
+          "BackgroundSpriteId": "",
+          "PortraitSpriteId": "",
+          "NextLineId": "",
+          "Options": []
+        }
+      ]
+    }
+  ]
+}

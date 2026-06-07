@@ -1,0 +1,104 @@
+{
+  "Bindings": [
+    {
+      "Action": "MoveLeft",
+      "Keys": [ "A", "LeftArrow" ]
+    },
+    {
+      "Action": "MoveRight",
+      "Keys": [ "D", "RightArrow" ]
+    },
+    {
+      "Action": "MoveUp",
+      "Keys": [ "W", "UpArrow" ]
+    },
+    {
+      "Action": "MoveDown",
+      "Keys": [ "S", "DownArrow" ]
+    },
+    {
+      "Action": "Jump",
+      "Keys": [ "Space" ]
+    },
+    {
+      "Action": "Attack",
+      "Keys": [ "Mouse0" ]
+    },
+    {
+      "Action": "AltAction",
+      "Keys": [ "Mouse1" ]
+    },
+    {
+      "Action": "Interact",
+      "Keys": [ "E" ]
+    },
+    {
+      "Action": "EntityInteract",
+      "Keys": [ "F" ]
+    },
+    {
+      "Action": "Cancel",
+      "Keys": [ "Escape" ]
+    },
+    {
+      "Action": "Pause",
+      "Keys": [ "P", "Pause" ]
+    },
+    {
+      "Action": "Sprint",
+      "Keys": [ "LeftShift", "RightShift" ]
+    },
+    {
+      "Action": "InventoryToggle",
+      "Keys": [ "B" ]
+    },
+    {
+      "Action": "DialogueToggle",
+      "Keys": [ "I" ]
+    },
+    {
+      "Action": "DebugSpawn",
+      "Keys": [ "G" ]
+    },
+    {
+      "Action": "TribeInteract",
+      "Keys": [ "F" ]
+    },
+    {
+      "Action": "HotbarUse1",
+      "Keys": [ "Alpha1", "Keypad1" ]
+    },
+    {
+      "Action": "HotbarUse2",
+      "Keys": [ "Alpha2", "Keypad2" ]
+    },
+    {
+      "Action": "HotbarUse3",
+      "Keys": [ "Alpha3", "Keypad3" ]
+    },
+    {
+      "Action": "HotbarUse4",
+      "Keys": [ "Alpha4", "Keypad4" ]
+    },
+    {
+      "Action": "HotbarUse5",
+      "Keys": [ "Alpha5", "Keypad5" ]
+    },
+    {
+      "Action": "HotbarUse6",
+      "Keys": [ "Alpha6", "Keypad6" ]
+    },
+    {
+      "Action": "HotbarUse7",
+      "Keys": [ "Alpha7", "Keypad7" ]
+    },
+    {
+      "Action": "HotbarUse8",
+      "Keys": [ "Alpha8", "Keypad8" ]
+    },
+    {
+      "Action": "HotbarUse9",
+      "Keys": [ "Alpha9", "Keypad9" ]
+    }
+  ]
+}

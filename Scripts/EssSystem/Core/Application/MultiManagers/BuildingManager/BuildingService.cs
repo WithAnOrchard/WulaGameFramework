@@ -278,11 +278,28 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager
 
             try { b.Config.ApplyCapabilities?.Invoke(b.EntityInstanceId); }
             catch (System.Exception e) { LogWarning($"ApplyCapabilities for {b.InstanceId} failed: {e.Message}"); }
+            ApplyCapabilityActions(b.Config, b.EntityInstanceId);
 
             if (!silent && EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEvent(EVT_COMPLETED, new List<object> { b.InstanceId, b.ConfigId });
 
             Log($"Building completed: {b.InstanceId}", Color.cyan);
+        }
+
+        private static void ApplyCapabilityActions(BuildingConfig config, string entityId)
+        {
+            if (config?.CapabilityActions == null || string.IsNullOrEmpty(entityId) || !EventProcessor.HasInstance) return;
+            foreach (var action in config.CapabilityActions)
+            {
+                if (action == null || string.IsNullOrEmpty(action.Capability)) continue;
+                var data = new List<object> { entityId, action.Capability };
+                if (action.Args != null)
+                {
+                    foreach (var arg in action.Args)
+                        data.Add(arg?.ToObject());
+                }
+                EventProcessor.Instance.TriggerEventMethod("AddEntityCapability", data);
+            }
         }
 
         private void ReplaceCharacterIfNeeded(Building b)

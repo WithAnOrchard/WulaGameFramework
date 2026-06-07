@@ -53,6 +53,9 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             Log("InventoryService 初始化完成", Color.green);
         }
 
+        protected override bool IsTransientCategory(string category)
+            => category == CAT_CONFIGS || category == CAT_TEMPLATES;
+
         /// <summary>
         /// 热重载Service数据
         /// </summary>

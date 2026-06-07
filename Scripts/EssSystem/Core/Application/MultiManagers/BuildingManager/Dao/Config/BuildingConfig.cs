@@ -33,12 +33,45 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
         }
     }
 
+    [Serializable]
+    public class BuildingCapabilityArg
+    {
+        public string Type = "string";
+        public string StringValue;
+        public int IntValue;
+        public float FloatValue;
+        public bool BoolValue;
+
+        public object ToObject()
+        {
+            return Type switch
+            {
+                "int" => IntValue,
+                "float" => FloatValue,
+                "bool" => BoolValue,
+                _ => StringValue
+            };
+        }
+    }
+
+    [Serializable]
+    public class BuildingCapabilityAction
+    {
+        public string Capability;
+        public List<BuildingCapabilityArg> Args = new List<BuildingCapabilityArg>();
+    }
+
+    [Serializable]
+    public class BuildingDefaultConfigFile
+    {
+        public List<BuildingConfig> Buildings = new List<BuildingConfig>();
+    }
+
     /// <summary>
     /// 建筑模板配置。建筑运行时通过 EntityManager 事件创建为静态实体，
     /// 增加了：材料清单（建造期）+ HP（可被破坏）+ 一段在"建造完成"瞬间施加的链式能力工厂。
     ///
-    /// <para>由于 <see cref="ApplyCapabilities"/> 是 <see cref="Action{T}"/>（不可序列化），
-    /// 本配置**不进入持久化**，需要在 GameManager 启动时通过代码注册一次（参 <c>DefaultBuildingConfigs</c>）。</para>
+    /// <para>默认模板从 <c>FrameworkResources/Config</c> JSON 读取并注册；运行时状态不进入模板配置。</para>
     /// </summary>
     public class BuildingConfig
     {
@@ -65,6 +98,8 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config
 
         /// <summary>建造材料清单。空表示直接完成态（无需建造阶段）。</summary>
         public List<BuildingCost> Costs = new List<BuildingCost>();
+
+        public List<BuildingCapabilityAction> CapabilityActions = new List<BuildingCapabilityAction>();
 
         /// <summary>
         /// 完成时对底层实体 ID 施加能力的回调。跨模块能力注入应走 EntityManager 事件。

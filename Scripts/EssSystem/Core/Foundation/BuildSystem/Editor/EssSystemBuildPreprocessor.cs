@@ -37,6 +37,7 @@ namespace EssSystem.Core.Foundation.BuildSystem.Editor
         public void OnPostprocessBuild(BuildReport report)
         {
             Debug.Log("[EssSystem Build] 开始执行构建后处理...");
+            RunStep("导出 FrameworkResources 到构建目录", () => FrameworkContentBuildSync.CopyToBuildOutput(report));
             RunStep("生成 AutoUpdate 更新包", () => GenerateAutoUpdatePackage(report));
             Debug.Log("[EssSystem Build] 构建后处理完成");
         }

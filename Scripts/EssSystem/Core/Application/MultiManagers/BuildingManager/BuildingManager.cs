@@ -5,6 +5,7 @@ using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao;
 using EssSystem.Core.Application.MultiManagers.BuildingManager.Dao.Config;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 
 namespace EssSystem.Core.Application.MultiManagers.BuildingManager
 {
@@ -31,6 +32,7 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager
         public const string EVT_COMPLETED        = BuildingService.EVT_COMPLETED;
         public const string EVT_DESTROYED        = BuildingService.EVT_DESTROYED;
         public const string EVT_SUPPLY_PROGRESS  = BuildingService.EVT_SUPPLY_PROGRESS;
+        private const string DEFAULT_CONFIG_PATH = "Framework/Building/default_buildings.json";
 
         [Header("Default Templates")]
         [Tooltip("是否启动时注册 4 个示范建筑模板（铁丝网/治疗塔/墙/采集器）；业务侧可用同 ConfigId 覆盖。")]
@@ -43,13 +45,7 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager
             base.Initialize();
             if (Service != null) _serviceEnableLogging = Service.EnableLogging;
 
-            if (_registerDebugTemplates)
-            {
-                Service.RegisterConfig(DefaultBuildingConfigs.BuildBarbedWire());
-                Service.RegisterConfig(DefaultBuildingConfigs.BuildHealingTower());
-                Service.RegisterConfig(DefaultBuildingConfigs.BuildWall());
-                Service.RegisterConfig(DefaultBuildingConfigs.BuildHarvester());
-            }
+            if (_registerDebugTemplates) RegisterConfiguredTemplatesFromJson();
 
             Log("BuildingManager 初始化完成", Color.green);
         }
@@ -59,6 +55,19 @@ namespace EssSystem.Core.Application.MultiManagers.BuildingManager
             if (Service == null) return;
             Service.UpdateInspectorInfo();
             _serviceInspectorInfo = Service.InspectorInfo;
+        }
+
+        private void RegisterConfiguredTemplatesFromJson()
+        {
+            if (!RuntimeConfigLoader.TryLoadJson<BuildingDefaultConfigFile>(DEFAULT_CONFIG_PATH, out var file,
+                    message => Log(message, Color.cyan)) || file?.Buildings == null)
+            {
+                LogWarning($"Building default config missing: {DEFAULT_CONFIG_PATH}");
+                return;
+            }
+
+            foreach (var config in file.Buildings)
+                Service.RegisterConfig(config);
         }
 
         protected override void SyncServiceLoggingSettings()

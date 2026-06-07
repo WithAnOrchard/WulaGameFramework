@@ -5,6 +5,7 @@ using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao;
 using EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 // §4.1 跨模块调用走 bare-string 协议，不 using UIManager 命名空间。
 
@@ -47,6 +48,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         public const string DefaultConfigId = "Default";
         public const string DebugDialogueId = "DebugDialogue";
+        private const string DEFAULT_CONFIG_PATH = "Framework/Dialogue/default_dialogue.json";
 
         #endregion
 
@@ -61,8 +63,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             base.Initialize();
             if (Service != null) _serviceEnableLogging = Service.EnableLogging;
 
-            if (_registerDefaultConfig) RegisterDefaultConfigIfMissing();
-            if (_registerDebugDialogue) RegisterDebugDialogueIfMissing();
+            RegisterDefaultsFromConfig();
 
             Log("DialogueManager 初始化完成", Color.green);
         }
@@ -81,29 +82,40 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         #region Defaults
 
-        private void RegisterDefaultConfigIfMissing()
+        private void RegisterDefaultsFromConfig()
         {
-            // 内置默认以代码为准，每次启动覆盖写入持久化 —— 与 CharacterManager.Initialize 同款做法。
-            // 否则升级布局后旧持久化值不会被刷新（业务侧不知道要去 Inspector 右键"重置默认配置"）。
-            Service.RegisterConfig(new DialogueConfig(DefaultConfigId, "默认对话框配置"));
+            if (Service == null) return;
+            if (!RuntimeConfigLoader.TryLoadJson<DialogueDefaultConfigFile>(
+                    DEFAULT_CONFIG_PATH,
+                    out var file,
+                    msg => Log(msg, Color.gray)))
+            {
+                Log($"Dialogue default config not found: {DEFAULT_CONFIG_PATH}", Color.yellow);
+                return;
+            }
+
+            if (_registerDefaultConfig && file?.Configs != null)
+            {
+                ClearCategory(DialogueService.CAT_CONFIGS);
+                foreach (var config in file.Configs)
+                    if (config != null && !string.IsNullOrEmpty(config.ConfigId))
+                        Service.RegisterConfig(config);
+            }
+
+            if (_registerDebugDialogue && file?.Dialogues != null)
+            {
+                ClearCategory(DialogueService.CAT_DIALOGUES);
+                foreach (var dialogue in file.Dialogues)
+                    if (dialogue != null && !string.IsNullOrEmpty(dialogue.Id))
+                        Service.RegisterDialogue(dialogue);
+            }
         }
 
-        private void RegisterDebugDialogueIfMissing()
+        private void ClearCategory(string category)
         {
-            // 同上：每次启动覆盖。DebugDialogue 是开发期工具，不应被旧持久化锁死。
-            Service.RemoveData(DialogueService.CAT_DIALOGUES, DebugDialogueId);
-
-            var d = new Dialogue(DebugDialogueId, "调试对话")
-                .WithConfig(DefaultConfigId)
-                .AddLine(new DialogueLine("L1", "向导", "你好，旅行者。这是一段调试对话。"))
-                .AddLine(new DialogueLine("L2", "向导", "点击右下角 ▶ 按钮可以继续。")
-                    .WithNextLine("L3"))
-                .AddLine(new DialogueLine("L3", "向导", "现在选择你的回应：")
-                    .AddOption(new DialogueOption("继续探索").WithNextLine("L4"))
-                    .AddOption(new DialogueOption("结束对话")));
-            d.AddLine(new DialogueLine("L4", "向导", "祝你好运！"));
-
-            Service.RegisterDialogue(d);
+            var keys = new List<string>(Service.GetKeys(category));
+            foreach (var key in keys)
+                Service.RemoveData(category, key);
         }
 
         #endregion
@@ -308,21 +320,14 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
         #region Editor
 
         /// <summary>
-        /// 强制覆盖磁盘上保存的 Default 配置 / DebugDialogue 为代码中最新默认值。
-        /// <para>用途：升级 DialogueConfig 默认布局后，旧持久化值不会被自动覆盖
-        /// （<see cref="RegisterDefaultConfigIfMissing"/> 仅在缺失时写）；调此可强制刷新。</para>
+        /// 从 FrameworkResources/Config 重新读取 Default 配置 / DebugDialogue。
+        /// <para>用途：调整 Dialogue 默认配置文件后，调此可强制刷新当前运行时注册表。</para>
         /// </summary>
         [ContextMenu("强制重置默认配置（覆盖持久化）")]
         private void EditorForceResetDefaults()
         {
             if (Service == null) return;
-            Service.RegisterConfig(new DialogueConfig(DefaultConfigId, "默认对话框配置"));
-            // DebugDialogue 业务无关字段（线条/选项）几乎不会变；仅在 toggle 启用时刷新
-            if (_registerDebugDialogue)
-            {
-                Service.RemoveData(DialogueService.CAT_DIALOGUES, DebugDialogueId);
-                RegisterDebugDialogueIfMissing();
-            }
+            RegisterDefaultsFromConfig();
             Log("已强制重置默认 DialogueConfig（下次打开对话时生效）", Color.yellow);
         }
 

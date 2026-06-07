@@ -1,0 +1,110 @@
+{
+  "Buildings": [
+    {
+      "ConfigId": "BarbedWire",
+      "DisplayName": "铁丝网",
+      "CharacterConfigId": "",
+      "PendingCharacterConfigId": "",
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": true
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "MaxHp": 30.0,
+      "Costs": [
+        { "ItemId": "wood", "Amount": 2, "DisplayName": "木材" },
+        { "ItemId": "iron", "Amount": 1, "DisplayName": "铁块" }
+      ],
+      "CapabilityActions": [
+        {
+          "Capability": "ContactDamage",
+          "Args": [
+            { "Type": "float", "FloatValue": 5.0 },
+            { "Type": "float", "FloatValue": 1.0 },
+            { "Type": "float", "FloatValue": 1.0 },
+            { "Type": "string", "StringValue": "BarbedWire" }
+          ]
+        }
+      ]
+    },
+    {
+      "ConfigId": "HealingTower",
+      "DisplayName": "治疗塔",
+      "CharacterConfigId": "",
+      "PendingCharacterConfigId": "",
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": true
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "MaxHp": 120.0,
+      "Costs": [
+        { "ItemId": "wood", "Amount": 5, "DisplayName": "木材" },
+        { "ItemId": "iron", "Amount": 3, "DisplayName": "铁块" },
+        { "ItemId": "crystal", "Amount": 1, "DisplayName": "水晶" }
+      ],
+      "CapabilityActions": [
+        {
+          "Capability": "Aura",
+          "Args": [
+            { "Type": "float", "FloatValue": 5.0 },
+            { "Type": "float", "FloatValue": 3.5 },
+            { "Type": "float", "FloatValue": 1.0 },
+            { "Type": "bool", "BoolValue": false }
+          ]
+        }
+      ]
+    },
+    {
+      "ConfigId": "Wall",
+      "DisplayName": "石墙",
+      "CharacterConfigId": "",
+      "PendingCharacterConfigId": "",
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": false
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "MaxHp": 200.0,
+      "Costs": [
+        { "ItemId": "stone", "Amount": 3, "DisplayName": "石材" }
+      ],
+      "CapabilityActions": []
+    },
+    {
+      "ConfigId": "Harvester",
+      "DisplayName": "采集器",
+      "CharacterConfigId": "",
+      "PendingCharacterConfigId": "",
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": true
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "MaxHp": 50.0,
+      "Costs": [
+        { "ItemId": "wood", "Amount": 4, "DisplayName": "木材" },
+        { "ItemId": "iron", "Amount": 2, "DisplayName": "铁块" }
+      ],
+      "CapabilityActions": [
+        {
+          "Capability": "Harvest",
+          "Args": [
+            { "Type": "string", "StringValue": "wood" },
+            { "Type": "int", "IntValue": 1 },
+            { "Type": "float", "FloatValue": 5.0 },
+            { "Type": "string", "StringValue": "player" }
+          ]
+        }
+      ]
+    }
+  ]
+}

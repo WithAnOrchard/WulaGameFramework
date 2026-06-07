@@ -66,6 +66,9 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
             Log("DialogueService 初始化完成", Color.green);
         }
 
+        protected override bool IsTransientCategory(string category)
+            => category == CAT_CONFIGS || category == CAT_DIALOGUES;
+
         // ───────────────────────────────────────────
         #region Registration
 

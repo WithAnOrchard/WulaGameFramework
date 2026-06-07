@@ -1,0 +1,197 @@
+{
+  "ItemTemplates": [
+    {
+      "Id": "Sword",
+      "Name": "铁剑",
+      "Description": "",
+      "Type": 4,
+      "Value": 50,
+      "IconSpriteId": "Tribe/Common/Items/Weapons/sword_iron",
+      "MaxStack": 1,
+      "CurrentStack": 1
+    },
+    {
+      "Id": "Apple",
+      "Name": "苹果",
+      "Description": "",
+      "Type": 1,
+      "Value": 10,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/apple_red",
+      "MaxStack": 99,
+      "CurrentStack": 1
+    }
+  ],
+  "Inventories": [
+    { "Id": "player", "DisplayName": "玩家背包", "MaxSlots": 30 },
+    { "Id": "hotbar", "DisplayName": "快捷栏", "MaxSlots": 9 },
+    { "Id": "equipment", "DisplayName": "装备栏", "MaxSlots": 5 }
+  ],
+  "InventoryConfigs": [
+    {
+      "ConfigId": "PlayerBackPack",
+      "DisplayName": "玩家背包",
+      "PageCount": 1,
+      "SlotsPerPage": 30,
+      "SlotConfig": {
+        "SlotWidth": 80.0,
+        "SlotHeight": 80.0,
+        "SlotSpacingX": 12.0,
+        "SlotSpacingY": 12.0,
+        "SlotsPerRow": 6,
+        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_blue",
+        "StartOffsetX": 110.0,
+        "StartOffsetY": 440.0
+      },
+      "PanelConfig": {
+        "Size": { "x": 680.0, "y": 560.0 },
+        "Position": { "x": 1110.0, "y": 540.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
+        "BackgroundColor": { "r": 0.08, "g": 0.08, "b": 0.12, "a": 0.95 }
+      },
+      "CloseButtonConfig": {
+        "Position": { "x": 650.0, "y": 532.0 },
+        "Size": { "x": 28.0, "y": 28.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "Text": "",
+        "ButtonSpriteId": "",
+        "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+        "Visible": true,
+        "Interactable": true
+      },
+      "ShowDescription": true,
+      "DescriptionPanelConfig": {
+        "Width": 340.0,
+        "Height": 560.0,
+        "Offset": { "x": -194.0, "y": 280.0 },
+        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
+        "BackgroundColor": { "r": 0.05, "g": 0.05, "b": 0.08, "a": 0.92 },
+        "TextPadding": { "x": 40.0, "y": 40.0 },
+        "FontSize": 20,
+        "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
+        "EmptyPlaceholder": "（点击物品查看描述）",
+        "IconConfig": {
+          "Visible": true,
+          "Position": { "x": 170.0, "y": 420.0 },
+          "Size": { "x": 112.0, "y": 112.0 }
+        },
+        "NameConfig": {
+          "Position": { "x": 170.0, "y": 316.0 },
+          "Size": { "x": 300.0, "y": 48.0 },
+          "FontSize": 26,
+          "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
+          "Alignment": 4,
+          "Visible": true,
+          "Text": ""
+        },
+        "StackConfig": {
+          "Position": { "x": 170.0, "y": 274.0 },
+          "Size": { "x": 300.0, "y": 36.0 },
+          "FontSize": 20,
+          "TextColor": { "r": 1.0, "g": 0.85, "b": 0.4, "a": 1.0 },
+          "Alignment": 4,
+          "Visible": true,
+          "Text": ""
+        },
+        "DescTextConfig": {
+          "Position": { "x": 170.0, "y": 145.0 },
+          "Size": { "x": 300.0, "y": 240.0 },
+          "FontSize": 20,
+          "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
+          "Alignment": 4,
+          "Visible": true,
+          "Text": ""
+        }
+      },
+      "ShowTitle": true,
+      "TitleConfig": {
+        "Position": { "x": 340.0, "y": 530.0 },
+        "Size": { "x": 420.0, "y": 40.0 },
+        "FontSize": 22,
+        "TextColor": { "r": 1.0, "g": 0.92, "b": 0.7, "a": 1.0 },
+        "Alignment": 4,
+        "Visible": true,
+        "Text": ""
+      }
+    },
+    {
+      "ConfigId": "Hotbar",
+      "DisplayName": "快捷栏",
+      "PageCount": 1,
+      "SlotsPerPage": 9,
+      "SlotConfig": {
+        "SlotWidth": 70.0,
+        "SlotHeight": 70.0,
+        "SlotSpacingX": 8.0,
+        "SlotSpacingY": 8.0,
+        "SlotsPerRow": 9,
+        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_gold",
+        "StartOffsetX": 78.0,
+        "StartOffsetY": 50.0
+      },
+      "PanelConfig": {
+        "Size": { "x": 780.0, "y": 100.0 },
+        "Position": { "x": 960.0, "y": 80.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": { "r": 0.025, "g": 0.032, "b": 0.047, "a": 0.74 }
+      },
+      "CloseButtonConfig": {
+        "Position": { "x": 0.0, "y": 0.0 },
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "Text": "",
+        "ButtonSpriteId": "",
+        "ButtonColor": { "r": 1.0, "g": 0.3, "b": 0.3, "a": 1.0 },
+        "Visible": false,
+        "Interactable": false
+      },
+      "ShowDescription": false,
+      "ShowTitle": false
+    },
+    {
+      "ConfigId": "PlayerEquipment",
+      "DisplayName": "装备栏",
+      "PageCount": 1,
+      "SlotsPerPage": 5,
+      "SlotConfig": {
+        "SlotWidth": 80.0,
+        "SlotHeight": 80.0,
+        "SlotSpacingX": 0.0,
+        "SlotSpacingY": 12.0,
+        "SlotsPerRow": 1,
+        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_blue",
+        "StartOffsetX": 60.0,
+        "StartOffsetY": 416.0
+      },
+      "PanelConfig": {
+        "Size": { "x": 120.0, "y": 550.0 },
+        "Position": { "x": 1536.0, "y": 540.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
+        "BackgroundColor": { "r": 0.08, "g": 0.08, "b": 0.12, "a": 0.95 }
+      },
+      "CloseButtonConfig": {
+        "Position": { "x": 0.0, "y": 0.0 },
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Scale": { "x": 1.0, "y": 1.0 },
+        "Text": "",
+        "ButtonSpriteId": "",
+        "ButtonColor": { "r": 1.0, "g": 0.3, "b": 0.3, "a": 1.0 },
+        "Visible": false,
+        "Interactable": false
+      },
+      "ShowDescription": false,
+      "ShowTitle": true,
+      "TitleConfig": {
+        "Position": { "x": 60.0, "y": 520.0 },
+        "Size": { "x": 110.0, "y": 30.0 },
+        "FontSize": 16,
+        "TextColor": { "r": 1.0, "g": 0.92, "b": 0.7, "a": 1.0 },
+        "Alignment": 4,
+        "Visible": true,
+        "Text": ""
+      }
+    }
+  ]
+}

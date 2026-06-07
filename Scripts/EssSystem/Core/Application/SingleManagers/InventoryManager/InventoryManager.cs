@@ -5,8 +5,9 @@ using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Dao;
 using EssSystem.Core.Application.SingleManagers.InventoryManager.Runtime;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
+using EssSystem.Core.Presentation.InputManager;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
-using EssSystem.Core.Presentation.UIManager.Dao.Specs;
 // §4.1 跨模块调用走 bare-string 协议，不 using UIManager 获得运行时零跨模块依赖
 
 namespace EssSystem.Core.Application.SingleManagers.InventoryManager
@@ -30,19 +31,13 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         /// <summary>快捷栏使用事件：玩家按下 1~9 时广播。args: [string inventoryId, int slotIndex, InventoryItem item|null]</summary>
         public const string EVT_HOTBAR_USE = "InventoryHotbarUse";
 
-        // ─── 默认容器 ID（代码侧默认创建的 3 个）
+        // ─── 默认容器 ID
         public const string ID_PLAYER       = "player";
         public const string ID_HOTBAR       = "hotbar";
         public const string ID_EQUIPMENT    = "equipment";
-        // ─── 默认 ConfigId
-        private const string CFG_PLAYER     = "PlayerBackPack";
         private const string CFG_HOTBAR     = "Hotbar";
         private const string CFG_EQUIPMENT  = "PlayerEquipment";
-        private const string SPR_SLOT_FRAME = "Tribe/Common/Items/UI/slot_frame_blue";
-        private const string SPR_HOTBAR_SLOT_FRAME = "Tribe/Common/Items/UI/slot_frame_gold";
-        private const string SPR_PANEL_BG   = "Tribe/Common/Items/UI/slot_background_dark";
-        private const string SPR_SWORD      = "Tribe/Common/Items/Weapons/sword_iron";
-        private const string SPR_APPLE      = "Tribe/Common/Items/Consumables/apple_red";
+        private const string DEFAULT_CONFIG_PATH = "Framework/Inventory/default_inventory.json";
 
         #region Inspector
 
@@ -76,6 +71,13 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         private readonly Dictionary<string, UIPanelComponent> _rootPanels = new Dictionary<string, UIPanelComponent>();
 
         private readonly Dictionary<string, PickableItemDefinition> _pickableDefinitions = new Dictionary<string, PickableItemDefinition>();
+        private static readonly Color HotbarNormalButtonColor = new Color(1f, 0.95f, 0.82f, 0.96f);
+        private static readonly Color HotbarSelectedButtonColor = new Color(0.25f, 0.95f, 1f, 1f);
+        private int _hotbarSelectedSlot = -1;
+
+        public int SelectedHotbarSlot => _hotbarSelectedSlot;
+
+        public InventoryItem HotbarHeldItem => GetHotbarItem(_hotbarSelectedSlot);
 
         #region Lifecycle
 
@@ -84,9 +86,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             base.Initialize();
             if (Service != null) _serviceEnableLogging = Service.EnableLogging;
 
-            if (_registerDebugTemplates) RegisterDefaultItemTemplates();
-            RegisterDefaultConfigs();
-            CreateDefaultInventories();
+            RegisterDefaultsFromJson(includeItemTemplates: _registerDebugTemplates);
 
             Log("InventoryManager 初始化完成", Color.green);
         }
@@ -112,11 +112,69 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             if (Service == null) return;
             for (var i = 0; i < 9; i++)
             {
-                if (!Input.GetKeyDown(KeyCode.Alpha1 + i)) continue;
-                var inv  = Service.GetInventory(ID_HOTBAR);
-                var item = inv?.GetSlot(i)?.Item;
-                EventProcessor.Instance.TriggerEvent(EVT_HOTBAR_USE,
-                    new List<object> { ID_HOTBAR, i, item });
+                if (!IsHotbarUseActionDown(i)) continue;
+                UseHotbarSlot(i);
+            }
+        }
+
+        private static bool IsHotbarUseActionDown(int slotIndex)
+        {
+            var input = InputManager.TryGetInstance();
+            return input != null && input.IsDown(InputManager.GetHotbarUseActionName(slotIndex));
+        }
+
+        public void UseHotbarSlot(int slotIndex)
+        {
+            if (!IsValidHotbarSlot(slotIndex)) return;
+
+            ToggleHotbarSelection(slotIndex);
+
+            var item = GetHotbarItem(slotIndex);
+            EventProcessor.Instance?.TriggerEvent(EVT_HOTBAR_USE,
+                new List<object> { ID_HOTBAR, slotIndex, item });
+        }
+
+        public void ToggleHotbarSelection(int slotIndex)
+        {
+            if (!IsValidHotbarSlot(slotIndex)) return;
+            SetHotbarSelectedSlot(_hotbarSelectedSlot == slotIndex ? -1 : slotIndex);
+        }
+
+        public void ClearHotbarSelection()
+        {
+            SetHotbarSelectedSlot(-1);
+        }
+
+        private void SetHotbarSelectedSlot(int slotIndex)
+        {
+            _hotbarSelectedSlot = IsValidHotbarSlot(slotIndex) ? slotIndex : -1;
+            RefreshHotbarSelectionVisual();
+        }
+
+        private InventoryItem GetHotbarItem(int slotIndex)
+        {
+            if (!IsValidHotbarSlot(slotIndex)) return null;
+            return Service?.GetInventory(ID_HOTBAR)?.GetSlot(slotIndex)?.Item;
+        }
+
+        private static bool IsValidHotbarSlot(int slotIndex)
+        {
+            return slotIndex >= 0 && slotIndex < 9;
+        }
+
+        private void RefreshHotbarSelectionVisual()
+        {
+            if (!_slotRefs.TryGetValue(ID_HOTBAR, out var refs) || refs == null) return;
+
+            for (var i = 0; i < 9; i++)
+            {
+                var selected = i == _hotbarSelectedSlot;
+
+                if (refs.SelectionRoots != null && i < refs.SelectionRoots.Length && refs.SelectionRoots[i] != null)
+                    refs.SelectionRoots[i].SetVisible(selected);
+
+                if (refs.Buttons != null && i < refs.Buttons.Length && refs.Buttons[i] != null)
+                    refs.Buttons[i].SetButtonColor(selected ? HotbarSelectedButtonColor : HotbarNormalButtonColor);
             }
         }
 
@@ -146,159 +204,57 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
 
         #region Defaults Registration
 
-        /// <summary>注册调试用默认物品模板。</summary>
-        private void RegisterDefaultItemTemplates()
+        private void RegisterDefaultsFromJson(bool includeItemTemplates)
         {
-            RegisterTemplateIfMissing(new InventoryItem("Sword", "铁剑")
-                .WithType(InventoryItemType.Equipment).WithMaxStack(1).WithCurrentStack(1)
-                .WithIcon(SPR_SWORD).WithValue(50));
+            if (!RuntimeConfigLoader.TryLoadJson<InventoryDefaultConfigFile>(DEFAULT_CONFIG_PATH, out var file,
+                    message => Log(message, Color.cyan)) || file == null)
+            {
+                LogWarning($"Inventory default config missing: {DEFAULT_CONFIG_PATH}");
+                return;
+            }
 
-            RegisterTemplateIfMissing(new InventoryItem("Apple", "苹果")
-                .WithType(InventoryItemType.Consumable).WithMaxStack(99).WithCurrentStack(1)
-                .WithIcon(SPR_APPLE).WithValue(10));
+            ClearCategory(InventoryService.CAT_CONFIGS);
+            if (includeItemTemplates) ClearCategory(InventoryService.CAT_TEMPLATES);
 
-            Log("注册默认物品模板完成（仅创建缺失项）", Color.cyan);
+            if (includeItemTemplates && file.ItemTemplates != null)
+            {
+                foreach (var template in file.ItemTemplates)
+                    RegisterTemplateFromConfig(template);
+            }
+
+            if (file.InventoryConfigs != null)
+            {
+                foreach (var config in file.InventoryConfigs)
+                    RegisterConfigFromFile(config);
+            }
+
+            if (file.Inventories != null)
+            {
+                foreach (var def in file.Inventories)
+                {
+                    if (def == null || string.IsNullOrEmpty(def.Id)) continue;
+                    Service.CreateInventory(def.Id, def.DisplayName, Mathf.Max(1, def.MaxSlots));
+                }
+            }
         }
 
-        /// <summary>仅在模板不存在时注册，避免每次启动覆盖磁盘上用户修改过的模板。</summary>
-        private void RegisterTemplateIfMissing(InventoryItem template)
+        private void ClearCategory(string category)
+        {
+            var keys = new List<string>(Service.GetKeys(category));
+            foreach (var key in keys)
+                Service.RemoveData(category, key);
+        }
+
+        private void RegisterTemplateFromConfig(InventoryItem template)
         {
             if (template == null || string.IsNullOrEmpty(template.Id)) return;
-            if (Service.GetTemplate(template.Id) != null) return;
             Service.RegisterTemplate(template);
         }
 
-        /// <summary>注册默认容器配置（玩家背包 / 快捷栏 / 装备栏）。
-        /// <para>仅当持久化中不存在时注册；已有持久化数据时尊重用户/存档侧配置，不覆盖。</para>
-        /// </summary>
-        private void RegisterDefaultConfigs()
+        private void RegisterConfigFromFile(InventoryConfig config)
         {
-            RegisterConfigIfMissing(CFG_PLAYER,    "玩家背包", BuildPlayerConfig);
-            RegisterConfigIfMissing(CFG_HOTBAR,    "快捷栏",   BuildHotbarConfig);
-            RegisterConfigIfMissing(CFG_EQUIPMENT, "装备栏",   BuildEquipmentConfig);
-        }
-
-        private void RegisterConfigIfMissing(string id, string label, System.Func<string, string, InventoryConfig> builder)
-        {
-            if (Service.HasData(InventoryService.CAT_CONFIGS, id))
-            {
-                Log($"{label}配置已存在，跳过注册", Color.yellow);
-                return;
-            }
-            Service.RegisterConfig(builder(id, label));
-            Log($"注册默认{label}配置", Color.cyan);
-        }
-
-        private static InventoryConfig BuildPlayerConfig(string id, string label) =>
-            new InventoryConfig(id, label)
-                .WithPageCount(1)
-                .WithSlotsPerPage(30)
-                .WithSlotConfig(new SlotConfig(80f, 80f, 6)
-                    .WithSlotSpacing(12f, 12f)
-                    .WithStartOffset(110f, 440f)
-                    .WithSlotBackgroundId(SPR_SLOT_FRAME))
-                .WithPanelConfig(new UIPanelSpec(680f, 560f)
-                    // 主面板向右偏移 150：补偿左侧伸出的 300 宽描述子面板，
-                    // 让 (主面板 + 描述子面板) 组合 bounding-box 在 1920×1080 参考分辨率下水平居中
-                    .WithPosition(1110f, 540f)
-                    .WithScale(1f, 1f)
-                    .WithBackgroundId(SPR_PANEL_BG)
-                    .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new UIButtonSpec(650f, 532f, 28f, 28f)
-                    .WithScale(1f, 1f).WithText(string.Empty)
-                    .WithSpriteId(string.Empty)
-                    .WithColor(Color.white)
-                    .WithVisible(true).WithInteractable(true))
-                .WithShowDescription(true)
-                .WithDescriptionPanelConfig(new DescriptionPanelConfig(340f, 560f)
-                    .WithOffset(-194f, 280f)
-                    .WithBackgroundId(SPR_PANEL_BG)
-                    .WithTextPadding(40f, 40f)
-                    .WithFontSize(20)
-                    .WithTextColor(new Color(0.95f, 0.95f, 0.95f, 1f))
-                    .WithEmptyPlaceholder("（点击物品查看描述）")
-                    // 内部图标 / 文本整体在 300 宽面板内右移 ~25px（避免贴左边缘），同步收窄宽度避免溢出
-                    .WithIconConfig(new UIIconSpec()
-                        .WithPosition(170f, 420f)
-                        .WithSize(112f, 112f))
-                    .WithNameConfig(new UITextSpec
-                    {
-                        Position  = new Vector2(170f, 316f),
-                        Size      = new Vector2(300f, 48f),
-                        FontSize  = 26,
-                        TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
-                        Alignment = TextAnchor.MiddleCenter,
-                    })
-                    .WithStackConfig(new UITextSpec
-                    {
-                        Position  = new Vector2(170f, 274f),
-                        Size      = new Vector2(300f, 36f),
-                        FontSize  = 20,
-                        TextColor = new Color(1f, 0.85f, 0.4f, 1f),
-                        Alignment = TextAnchor.MiddleCenter,
-                    })
-                    .WithDescTextConfig(new UITextSpec
-                    {
-                        Position  = new Vector2(170f, 145f),
-                        Size      = new Vector2(300f, 240f),
-                        FontSize  = 20,
-                        TextColor = new Color(0.95f, 0.95f, 0.95f, 1f),
-                        Alignment = TextAnchor.MiddleCenter,
-                    }))
-                .WithShowTitle(true)
-                .WithTitleConfig(new UITextSpec(420f, 40f)
-                    .WithPosition(340f, 530f)        // 主面板顶部居中（680/2, 560-30）
-                    .WithFontSize(22)
-                    .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
-                    .WithAlignment(TextAnchor.MiddleCenter));
-
-        /// <summary>快捷栏配置：9 格 × 1 行，常驻屏幕底部居中，无标题/描述/关闭按钮。</summary>
-        private static InventoryConfig BuildHotbarConfig(string id, string label) =>
-            new InventoryConfig(id, label)
-                .WithPageCount(1)
-                .WithSlotsPerPage(9)
-                .WithSlotConfig(new SlotConfig(70f, 70f, 9)
-                    .WithSlotSpacing(8f, 8f)
-                    .WithStartOffset(78f, 50f)             // 780 宽：左右各 43 padding + 半槽 35 = 78；垂直居中 100/2
-                    .WithSlotBackgroundId(SPR_HOTBAR_SLOT_FRAME))
-                .WithPanelConfig(new UIPanelSpec(780f, 100f)
-                    .WithPosition(960f, 80f)          // 1920×1080 底部居中（上沿距屏底 30）
-                    .WithScale(1f, 1f)
-                    .WithBackgroundColor(new Color(0.025f, 0.032f, 0.047f, 0.74f)))
-                .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
-                .WithShowTitle(false)
-                .WithShowDescription(false);
-
-        /// <summary>装备栏配置：5 格 × 1 列（头盔/盔甲/护腿/鞋子/背包），插在玩家背包右侧。</summary>
-        private static InventoryConfig BuildEquipmentConfig(string id, string label) =>
-            new InventoryConfig(id, label)
-                .WithPageCount(1)
-                .WithSlotsPerPage(5)
-                .WithSlotConfig(new SlotConfig(80f, 80f, 1)
-                    .WithSlotSpacing(0f, 12f)
-                    .WithStartOffset(60f, 416f)            // 120 宽 → 居中 60；标题下方留足呼吸空间
-                    .WithSlotBackgroundId(SPR_SLOT_FRAME))
-                .WithPanelConfig(new UIPanelSpec(120f, 550f)
-                    .WithPosition(1536f, 540f)        // PlayerBackPack 右边沿 1450，留 26 间距
-                    .WithScale(1f, 1f)
-                    .WithBackgroundId(SPR_PANEL_BG)
-                    .WithBackgroundColor(new Color(0.08f, 0.08f, 0.12f, 0.95f)))
-                .WithCloseButtonConfig(new UIButtonSpec(0f, 0f, 1f, 1f).WithVisible(false).WithInteractable(false))
-                .WithShowTitle(true)
-                .WithTitleConfig(new UITextSpec(110f, 30f)
-                    .WithPosition(60f, 520f)               // 120 宽中心 60，标题栏内居中
-                    .WithFontSize(16)
-                    .WithTextColor(new Color(1f, 0.92f, 0.7f, 1f))
-                    .WithAlignment(TextAnchor.MiddleCenter))
-                .WithShowDescription(false);
-
-        /// <summary>创建调试用默认 Inventory（玩家背包 / 快捷栏 / 装备栏）。</summary>
-        private void CreateDefaultInventories()
-        {
-            Service.CreateInventory(ID_PLAYER,    "玩家背包", 30);
-            Service.CreateInventory(ID_HOTBAR,    "快捷栏",    9);
-            Service.CreateInventory(ID_EQUIPMENT, "装备栏",    5);
-            Log("创建默认 Inventory: player / hotbar / equipment", Color.cyan);
+            if (config == null || string.IsNullOrEmpty(config.ConfigId)) return;
+            Service.RegisterConfig(config);
         }
 
         #endregion
@@ -327,6 +283,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                     cached.Visible = true;
                     // 每次打开都刷新一次 slot，确保物品注册后图标能正确显示
                     RefreshSlots(inventoryId);
+                    if (inventoryId == ID_HOTBAR) RefreshHotbarSelectionVisual();
                     Log($"复用缓存的Inventory UI: {inventoryId}", Color.green);
                     LinkPlayerEquipmentVisibility(inventoryId, true);
                     return ResultCode.Ok(inventoryId);
@@ -361,6 +318,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             _slotRefs[inventoryId] = slotRefs;
             if (descRefs != null) _descRefs[inventoryId] = descRefs;
             _rootPanels[inventoryId] = panel;
+            if (inventoryId == ID_HOTBAR) RefreshHotbarSelectionVisual();
 
             // UI 注册后挂上拖拽处理器（依赖 GameObject 已创建）
             sample = System.Diagnostics.Stopwatch.StartNew();
@@ -544,6 +502,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
                 var item = inv.GetSlot(i)?.Item;
                 InventoryUIBuilder.ApplyItemToSlot(refs.Icons[i], refs.Names[i], refs.Stacks[i], item);
             }
+            if (invId == ID_HOTBAR) RefreshHotbarSelectionVisual();
             return null;
         }
 
@@ -575,6 +534,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
             var slotCount = Mathf.Min(Mathf.Min(refs.Icons.Length, refs.Names.Length), refs.Stacks.Length);
             for (var i = 0; i < slotCount; i++)
                 InventoryUIBuilder.ApplyItemToSlot(refs.Icons[i], refs.Names[i], refs.Stacks[i], inv.GetSlot(i)?.Item);
+            if (inventoryId == ID_HOTBAR) RefreshHotbarSelectionVisual();
         }
 
         /// <summary>统一参数校验：从 data[index] 取非空字符串。</summary>
@@ -597,9 +557,12 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager
         [ContextMenu("重新加载数据")]
         private void EditorReloadData()
         {
-            Log("开始重新加载InventoryService数据", Color.yellow);
-            Service.ReloadData();
-            Log("InventoryService数据重新加载完成", Color.green);
+            Log("开始重新加载 Inventory FrameworkResources/Config", Color.yellow);
+            RegisterDefaultsFromJson(includeItemTemplates: _registerDebugTemplates);
+            RefreshSlots(ID_PLAYER);
+            RefreshSlots(ID_HOTBAR);
+            RefreshSlots(ID_EQUIPMENT);
+            Log("Inventory FrameworkResources/Config 重新加载完成", Color.green);
         }
 
         /// <summary>
