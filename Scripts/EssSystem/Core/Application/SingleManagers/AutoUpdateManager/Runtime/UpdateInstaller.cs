@@ -44,7 +44,7 @@ namespace EssSystem.Core.Application.SingleManagers.AutoUpdateManager.Runtime
             // 例如：C:\Games\WulaGame\WulaGame_Data  →  installDir = C:\Games\WulaGame
             string dataPath = UnityEngine.Application.dataPath.Replace('/', '\\');
             string installDir = Path.GetDirectoryName(dataPath);
-            string exeName   = Process.GetCurrentProcess().MainModule.ModuleName;   // e.g. "WulaGame.exe"
+            string exeName   = GetPlayerExecutableName(dataPath);   // e.g. "WulaGame.exe"
             int    gamePid   = Process.GetCurrentProcess().Id;
 
             // stub 写到 temp（不在游戏目录，避免被覆盖锁住）
@@ -124,6 +124,16 @@ namespace EssSystem.Core.Application.SingleManagers.AutoUpdateManager.Runtime
                 "    Write-Log (\"Exe not found at {0}\" -f $exePath)",
                 "}",
             });
+        }
+
+        private static string GetPlayerExecutableName(string dataPath)
+        {
+            var dataDir = Path.GetFileName(dataPath);
+            const string suffix = "_Data";
+            if (!string.IsNullOrEmpty(dataDir) && dataDir.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return dataDir.Substring(0, dataDir.Length - suffix.Length) + ".exe";
+
+            return UnityEngine.Application.productName + ".exe";
         }
 #endif
     }

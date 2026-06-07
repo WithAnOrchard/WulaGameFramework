@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using UnityEngine;
 
@@ -152,7 +153,7 @@ namespace EssSystem.Core.Platform.Windows
         {
             try
             {
-                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+                var exePath = GetCurrentExecutablePath();
                 if (!string.IsNullOrEmpty(exePath))
                 {
                     var small = new IntPtr[1];
@@ -173,6 +174,13 @@ namespace EssSystem.Core.Platform.Windows
                 Debug.LogWarning("[SystemTray] LoadExeIcon 失败，回退默认图标：" + ex.Message);
             }
             return TrayNative.LoadIcon(IntPtr.Zero, TrayNative.IDI_APPLICATION);
+        }
+
+        private static string GetCurrentExecutablePath()
+        {
+            var buffer = new StringBuilder(1024);
+            var length = TrayNative.GetModuleFileName(IntPtr.Zero, buffer, (uint)buffer.Capacity);
+            return length > 0 ? buffer.ToString() : null;
         }
 
         private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

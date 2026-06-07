@@ -1,6 +1,7 @@
 #if UNITY_STANDALONE_WIN
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace EssSystem.Core.Platform.Windows
 {
@@ -172,6 +173,9 @@ namespace EssSystem.Core.Platform.Windows
 
         [DllImport("kernel32.dll")]
         public static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, EntryPoint = "GetModuleFileNameW")]
+        public static extern uint GetModuleFileName(IntPtr hModule, StringBuilder lpFilename, uint nSize);
     }
 }
 #endif

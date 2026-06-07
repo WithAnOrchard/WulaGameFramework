@@ -1,4 +1,5 @@
 #if UNITY_STANDALONE_WIN && !UNITY_EDITOR
+using System.IO;
 using Microsoft.Win32;
 using UnityEngine;
 
@@ -49,7 +50,7 @@ namespace Demo.DobeCat.Sys.Tray
         {
             try
             {
-                var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                var exePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), AppName + ".exe");
                 using (var key = Registry.CurrentUser.OpenSubKey(RegistryPath, true))
                 {
                     if (key != null)
