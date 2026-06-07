@@ -8,25 +8,20 @@ namespace Demo.DobeCat.Sys.Audio
     /// 桌宠音效控制器。通过 AudioManager.EVT_PLAY_SFX 触发对应音效。
     /// 静态方法供全局调用，挂载后自动激活。
     ///
-    /// 音效资源放在 Resources/Sound/DobeCat/ 下（不存在时安静地跳过）：
-    ///   meow_01.wav / meow_02.wav / meow_03.wav — 喵叫（点击 / 互动）
-    ///   purr.wav     — 呼噜（撸猫 / 投喂）
-    ///   notify.wav   — 提醒（陪伴提醒 / 闹钟）
-    ///   pop.wav      — 气泡弹出音
+    /// 音效资源放在 DobeCat/Resources/Sounds/ 下，路径使用 Resources 相对路径。
     /// DESIGN.md §12.1 AudioManager
     /// </summary>
     public class PetSoundController : MonoBehaviour
     {
         private static readonly string[] MeowSounds =
         {
-            "Sound/DobeCat/meow_01",
-            "Sound/DobeCat/meow_02",
-            "Sound/DobeCat/meow_03",
+            "Sounds/pick",
+            "Sounds/harvest",
         };
 
-        private const string SFX_PURR   = "Sound/DobeCat/purr";
-        private const string SFX_NOTIFY = "Sound/DobeCat/notify";
-        private const string SFX_POP    = "Sound/DobeCat/pop";
+        private const string SFX_PURR   = "Sounds/harvest";
+        private const string SFX_NOTIFY = "Sounds/pick";
+        private const string SFX_POP    = "Sounds/pick";
 
         private static PetSoundController _instance;
         private float _meowCooldown;

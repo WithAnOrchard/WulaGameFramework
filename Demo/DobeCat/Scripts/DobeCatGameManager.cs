@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using EssSystem.Core.Base;
 using EssSystem.Core.Presentation.UIManager;
@@ -133,6 +134,23 @@ namespace Demo.DobeCat
         private bool _backpackOpen;
         private string _randomizedCharacterConfigId;
         private Demo.DobeCat.Game.Pet.PetHUD _petHud;
+
+        protected override IEnumerable<Type> GetEventScanRootTypes()
+        {
+            foreach (var type in base.GetEventScanRootTypes())
+                yield return type;
+
+            yield return typeof(DobeCatGameManager);
+            yield return typeof(EssSystem.Core.Application.SingleManagers.DialogueManager.DialogueManager);
+            yield return typeof(EssSystem.Core.Application.SingleManagers.InventoryManager.InventoryManager);
+            yield return typeof(EssSystem.Core.Application.SingleManagers.EntityManager.EntityManager);
+            yield return typeof(EssSystem.Core.Application.MultiManagers.FarmManager.FarmManager);
+            yield return typeof(EssSystem.Core.Application.MultiManagers.ShopManager.ShopManager);
+            yield return typeof(NetMgr);
+            yield return typeof(CharMgr);
+            yield return typeof(BilibiliDanmuManager);
+            yield return typeof(LiveStatusManager);
+        }
 
         protected override void Awake()
         {
