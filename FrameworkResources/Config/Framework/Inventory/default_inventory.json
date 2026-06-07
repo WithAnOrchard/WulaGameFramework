@@ -3,28 +3,393 @@
     {
       "Id": "Sword",
       "Name": "铁剑",
-      "Description": "",
-      "Type": 4,
+      "Description": "普通铁匠铺能稳定打造的制式短剑，重量适中，适合新手巡逻、采集路上的自卫，以及作为后续钢制武器的升级基底。",
+      "Type": 2,
       "Value": 50,
       "IconSpriteId": "Tribe/Common/Items/Weapons/sword_iron",
       "MaxStack": 1,
-      "CurrentStack": 1
+      "CurrentStack": 0
     },
     {
       "Id": "Apple",
       "Name": "苹果",
-      "Description": "",
+      "Description": "刚摘下不久的红苹果，果皮还带着淡淡清香。快捷使用后恢复 10 点生命，适合在轻伤时快速补给。",
       "Type": 1,
       "Value": 10,
       "IconSpriteId": "Tribe/Common/Items/Consumables/apple_red",
       "MaxStack": 99,
-      "CurrentStack": 1
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 10.0
+    },
+    {
+      "Id": "RedBerries",
+      "Name": "野莓串",
+      "Description": "林地浆果结成的小串，酸甜但不耐存放。快捷使用后恢复 8 点生命，也可以作为烹饪甜味材料。",
+      "Type": 1,
+      "Value": 6,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/berries_red",
+      "MaxStack": 99,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 8.0
+    },
+    {
+      "Id": "Carrot",
+      "Name": "胡萝卜",
+      "Description": "从松软土层里拔出的胡萝卜，脆甜耐放。快捷使用后恢复 10 点生命，也常被用作炖菜和动物饲料。",
+      "Type": 1,
+      "Value": 8,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/carrot",
+      "MaxStack": 99,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 10.0
+    },
+    {
+      "Id": "Cheese",
+      "Name": "熟成奶酪",
+      "Description": "经过简单熟成的奶酪，味道浓郁，能在长途探索时提供扎实补给。快捷使用后恢复 16 点生命。",
+      "Type": 1,
+      "Value": 18,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/cheese",
+      "MaxStack": 50,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 16.0
+    },
+    {
+      "Id": "MilkBucket",
+      "Name": "牛奶桶",
+      "Description": "装在小桶里的新鲜牛奶，能缓和疲惫与擦伤。快捷使用后恢复 18 点生命，空桶未来可回收为容器材料。",
+      "Type": 1,
+      "Value": 24,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/bucket_milk",
+      "MaxStack": 20,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 18.0
+    },
+    {
+      "Id": "GreenHerb",
+      "Name": "青叶草",
+      "Description": "常见的温和草药，揉碎后会散出清凉气味。快捷使用后恢复 12 点生命，也能作为治疗药水的基础材料。",
+      "Type": 1,
+      "Value": 12,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/herb_green",
+      "MaxStack": 99,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 12.0
+    },
+    {
+      "Id": "PurpleHerb",
+      "Name": "紫斑药草",
+      "Description": "叶片带有紫色脉络的稀有草药，通常生长在潮湿阴影处。快捷使用后恢复 20 点生命，炼金价值也很高。",
+      "Type": 1,
+      "Value": 28,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/herb_purple",
+      "MaxStack": 99,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 20.0
+    },
+    {
+      "Id": "BlueMushroom",
+      "Name": "蓝蘑菇",
+      "Description": "散发微弱蓝光的蘑菇，口感古怪但有稳定的恢复效果。快捷使用后恢复 15 点生命，也适合制成清醒药剂。",
+      "Type": 1,
+      "Value": 16,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/mushroom_blue",
+      "MaxStack": 50,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 15.0
+    },
+    {
+      "Id": "SmallHealthPotion",
+      "Name": "小型治疗药水",
+      "Description": "浅红色的基础治疗药水，药效来得快但容量有限。快捷使用后恢复 25 点生命，适合放在快捷栏前排。",
+      "Type": 1,
+      "Value": 35,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/potion_red_small",
+      "MaxStack": 50,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 25.0
+    },
+    {
+      "Id": "HealthPotion",
+      "Name": "治疗药水",
+      "Description": "标准剂量的红色治疗药水，适合在战斗中把濒危状态拉回来。快捷使用后恢复 45 点生命。",
+      "Type": 1,
+      "Value": 70,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/potion_red",
+      "MaxStack": 30,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 45.0
+    },
+    {
+      "Id": "GreaterHealthPotion",
+      "Name": "强效治疗药水",
+      "Description": "透明瓶身里晃动着明亮药液，通常留给精英怪、地下遗迹或长距离探险。快捷使用后恢复 60 点生命。",
+      "Type": 1,
+      "Value": 110,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/potion_cyan_large",
+      "MaxStack": 20,
+      "CurrentStack": 0,
+      "UseEffectType": "HealEntity",
+      "UseEffectTargetEntityId": "TribePlayer",
+      "UseEffectAmount": 60.0
+    },
+    {
+      "Id": "Twig",
+      "Name": "枯枝",
+      "Description": "随处可捡的干枯树枝，强度不高，但很适合点火、制作简易把手，或作为早期工作台配方的填充材料。",
+      "Type": 5,
+      "Value": 2,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/twig_brown",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "WoodLog",
+      "Name": "原木",
+      "Description": "砍伐树木获得的结实木料，是营火、木墙、基础工具和建筑升级最常见的材料。",
+      "Type": 5,
+      "Value": 6,
+      "IconSpriteId": "Tribe/Common/Items/Materials/log_wood",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "StonePile",
+      "Name": "碎石",
+      "Description": "从石堆或浅层矿脉中采下来的碎石，可用于营地地基、熔炉外壳和粗糙石质工具。",
+      "Type": 5,
+      "Value": 5,
+      "IconSpriteId": "Tribe/Common/Items/Materials/stones",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "GreenSlime",
+      "Name": "绿色凝胶",
+      "Description": "史莱姆体内残留的半透明凝胶，黏性稳定，常用于粘合剂、陷阱机关和低级药剂增稠。",
+      "Type": 5,
+      "Value": 14,
+      "IconSpriteId": "Tribe/Common/Items/Materials/slime_green",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "BlueSlime",
+      "Name": "蓝色凝胶",
+      "Description": "比普通凝胶更清澈的史莱姆材料，能保存少量魔力流动，适合制作冷却药剂或法术容器。",
+      "Type": 5,
+      "Value": 20,
+      "IconSpriteId": "Tribe/Common/Items/Materials/slime_blue",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "WhiteBone",
+      "Name": "白骨",
+      "Description": "清理干净的骨质材料，质地轻而坚硬，可用于护符、骨柄武器或亡灵主题配方。",
+      "Type": 5,
+      "Value": 16,
+      "IconSpriteId": "Tribe/Common/Items/Materials/bone_white",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "WhiteFang",
+      "Name": "兽牙",
+      "Description": "野兽掉落的尖锐牙齿，边缘天然带有切割角度，适合制作匕首、箭头和狩猎饰品。",
+      "Type": 5,
+      "Value": 22,
+      "IconSpriteId": "Tribe/Common/Items/Materials/fang_white",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "BloodDrops",
+      "Name": "血滴结晶",
+      "Description": "凝固后仍保持暗红光泽的材料，通常来自危险生物。可用于生命系炼金或高风险强化配方。",
+      "Type": 5,
+      "Value": 34,
+      "IconSpriteId": "Tribe/Common/Items/Materials/blood_drops",
+      "MaxStack": 99,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "GoldEgg",
+      "Name": "金纹蛋",
+      "Description": "表面带有金色纹理的稀有蛋类，既能作为高价值交易品，也可留作特殊孵化或祭坛配方材料。",
+      "Type": 5,
+      "Value": 120,
+      "IconSpriteId": "Tribe/Common/Items/Materials/egg_gold",
+      "MaxStack": 20,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "CrystalFlower",
+      "Name": "蓝晶花",
+      "Description": "花瓣像晶片一样坚硬的植物素材，能稳定储存清冷魔力，是法杖、药剂和饰品的优质材料。",
+      "Type": 5,
+      "Value": 45,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/flower_blue_crystal",
+      "MaxStack": 50,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "GreenVial",
+      "Name": "翠色试剂",
+      "Description": "封存在小瓶中的半成品试剂，尚不适合直接饮用，但可作为治疗、毒素中和和植物催化配方的核心材料。",
+      "Type": 5,
+      "Value": 32,
+      "IconSpriteId": "Tribe/Common/Items/Consumables/vial_green",
+      "MaxStack": 50,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "WoodBow",
+      "Name": "木弓",
+      "Description": "用韧木和简易弓弦制成的远程武器，威力普通但维护简单，适合安全距离消耗小型敌人。",
+      "Type": 2,
+      "Value": 55,
+      "IconSpriteId": "Tribe/Common/Items/Weapons/bow_wood",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "IronAxe",
+      "Name": "铁斧",
+      "Description": "兼具工具和武器特性的铁斧，砍伐效率可靠，必要时也能对近身目标造成沉重打击。",
+      "Type": 2,
+      "Value": 68,
+      "IconSpriteId": "Tribe/Common/Items/Weapons/axe_iron",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "SteelSpear",
+      "Name": "钢矛",
+      "Description": "带有钢制矛头的长柄武器，攻击距离更安全，适合对付会接触伤害的野兽和怪物。",
+      "Type": 2,
+      "Value": 95,
+      "IconSpriteId": "Tribe/Common/Items/Weapons/spear_steel",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "RubyStaff",
+      "Name": "红晶法杖",
+      "Description": "镶有红色晶石的法杖，杖芯能引导炽热魔力。当前作为武器模板注册，后续可接入 SkillManager 释放技能。",
+      "Type": 2,
+      "Value": 140,
+      "IconSpriteId": "Tribe/Common/Items/Weapons/staff_red_gem",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "LeatherHelmet",
+      "Name": "皮革头盔",
+      "Description": "用厚皮缝制的轻便头盔，防护有限但不会明显拖慢行动，适合作为早期防具。",
+      "Type": 3,
+      "Value": 35,
+      "IconSpriteId": "Tribe/Common/Items/Armor/helmet_leather",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "LeatherArmor",
+      "Name": "皮革胸甲",
+      "Description": "覆盖胸腹的基础护甲，能抵挡枝刺、碎石和轻度撕咬，是探索森林前值得准备的装备。",
+      "Type": 3,
+      "Value": 75,
+      "IconSpriteId": "Tribe/Common/Items/Armor/armor_chest_leather",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "WoodShield",
+      "Name": "圆木盾",
+      "Description": "以木板和皮带固定的圆盾，适合抵挡正面冲撞。虽然不够华丽，但在早期战斗中十分实用。",
+      "Type": 3,
+      "Value": 48,
+      "IconSpriteId": "Tribe/Common/Items/Armor/shield_wood_round",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "GreenRobe",
+      "Name": "绿纹长袍",
+      "Description": "以草木染料处理过的长袍，重量很轻，适合药师、施法者或偏向探索的角色穿戴。",
+      "Type": 3,
+      "Value": 88,
+      "IconSpriteId": "Tribe/Common/Items/Armor/robe_green",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "IronPickaxe",
+      "Name": "铁镐",
+      "Description": "矿区常用的坚固铁镐，可作为采矿、破碎岩块和收集矿物资源的基础工具。",
+      "Type": 4,
+      "Value": 72,
+      "IconSpriteId": "Tribe/Common/Items/Tools/pickaxe_iron",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "FishingRod",
+      "Name": "钓竿",
+      "Description": "轻便的木制钓竿，适合在湖泊与河岸收集鱼类资源。未来可接入钓鱼系统作为交互工具。",
+      "Type": 4,
+      "Value": 40,
+      "IconSpriteId": "Tribe/Common/Items/Tools/fishing_rod",
+      "MaxStack": 1,
+      "CurrentStack": 0
+    },
+    {
+      "Id": "ExplorerBackpack",
+      "Name": "探索背包",
+      "Description": "用于长途采集的扩展背包模板，当前作为装备类物品注册，后续可接入容量或重量系统。",
+      "Type": 4,
+      "Value": 90,
+      "IconSpriteId": "Tribe/Common/Items/Tools/backpack",
+      "MaxStack": 1,
+      "CurrentStack": 0
     }
   ],
   "Inventories": [
-    { "Id": "player", "DisplayName": "玩家背包", "MaxSlots": 30 },
-    { "Id": "hotbar", "DisplayName": "快捷栏", "MaxSlots": 9 },
-    { "Id": "equipment", "DisplayName": "装备栏", "MaxSlots": 5 }
+    {
+      "Id": "player",
+      "DisplayName": "玩家背包",
+      "MaxSlots": 30
+    },
+    {
+      "Id": "hotbar",
+      "DisplayName": "快捷栏",
+      "MaxSlots": 9
+    },
+    {
+      "Id": "equipment",
+      "DisplayName": "装备栏",
+      "MaxSlots": 7
+    }
   ],
   "InventoryConfigs": [
     {
@@ -38,24 +403,52 @@
         "SlotSpacingX": 12.0,
         "SlotSpacingY": 12.0,
         "SlotsPerRow": 6,
-        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_blue",
+        "SlotBackgroundSpriteId": "Common/UI/Inventory/slot_frame_blue",
         "StartOffsetX": 110.0,
         "StartOffsetY": 440.0
       },
       "PanelConfig": {
-        "Size": { "x": 680.0, "y": 560.0 },
-        "Position": { "x": 1110.0, "y": 540.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
-        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
-        "BackgroundColor": { "r": 0.08, "g": 0.08, "b": 0.12, "a": 0.95 }
+        "Size": {
+          "x": 680.0,
+          "y": 560.0
+        },
+        "Position": {
+          "x": 1110.0,
+          "y": 540.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": {
+          "r": 0.08,
+          "g": 0.08,
+          "b": 0.12,
+          "a": 0.95
+        }
       },
       "CloseButtonConfig": {
-        "Position": { "x": 650.0, "y": 532.0 },
-        "Size": { "x": 28.0, "y": 28.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
+        "Position": {
+          "x": 650.0,
+          "y": 532.0
+        },
+        "Size": {
+          "x": 28.0,
+          "y": 28.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
         "Text": "",
         "ButtonSpriteId": "",
-        "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
+        "ButtonColor": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+        },
         "Visible": true,
         "Interactable": true
       },
@@ -63,41 +456,85 @@
       "DescriptionPanelConfig": {
         "Width": 340.0,
         "Height": 560.0,
-        "Offset": { "x": -194.0, "y": 280.0 },
-        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
-        "BackgroundColor": { "r": 0.05, "g": 0.05, "b": 0.08, "a": 0.92 },
-        "TextPadding": { "x": 40.0, "y": 40.0 },
-        "FontSize": 20,
-        "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
-        "EmptyPlaceholder": "（点击物品查看描述）",
-        "IconConfig": {
-          "Visible": true,
-          "Position": { "x": 170.0, "y": 420.0 },
-          "Size": { "x": 112.0, "y": 112.0 }
+        "Offset": {
+          "x": -194.0,
+          "y": 280.0
         },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": {
+          "r": 0.05,
+          "g": 0.05,
+          "b": 0.08,
+          "a": 0.92
+        },
+        "TextPadding": {
+          "x": 40.0,
+          "y": 40.0
+        },
+        "FontSize": 20,
+        "TextColor": {
+          "r": 0.95,
+          "g": 0.95,
+          "b": 0.95,
+          "a": 1.0
+        },
+        "EmptyPlaceholder": "（点击物品查看描述）",
         "NameConfig": {
-          "Position": { "x": 170.0, "y": 316.0 },
-          "Size": { "x": 300.0, "y": 48.0 },
+          "Position": {
+            "x": 170.0,
+            "y": 350.0
+          },
+          "Size": {
+            "x": 300.0,
+            "y": 48.0
+          },
           "FontSize": 26,
-          "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
+          "TextColor": {
+            "r": 0.95,
+            "g": 0.95,
+            "b": 0.95,
+            "a": 1.0
+          },
           "Alignment": 4,
           "Visible": true,
           "Text": ""
         },
         "StackConfig": {
-          "Position": { "x": 170.0, "y": 274.0 },
-          "Size": { "x": 300.0, "y": 36.0 },
+          "Position": {
+            "x": 170.0,
+            "y": 312.0
+          },
+          "Size": {
+            "x": 300.0,
+            "y": 36.0
+          },
           "FontSize": 20,
-          "TextColor": { "r": 1.0, "g": 0.85, "b": 0.4, "a": 1.0 },
+          "TextColor": {
+            "r": 1.0,
+            "g": 0.85,
+            "b": 0.4,
+            "a": 1.0
+          },
           "Alignment": 4,
           "Visible": true,
           "Text": ""
         },
         "DescTextConfig": {
-          "Position": { "x": 170.0, "y": 145.0 },
-          "Size": { "x": 300.0, "y": 240.0 },
+          "Position": {
+            "x": 170.0,
+            "y": 188.0
+          },
+          "Size": {
+            "x": 300.0,
+            "y": 240.0
+          },
           "FontSize": 20,
-          "TextColor": { "r": 0.95, "g": 0.95, "b": 0.95, "a": 1.0 },
+          "TextColor": {
+            "r": 0.95,
+            "g": 0.95,
+            "b": 0.95,
+            "a": 1.0
+          },
           "Alignment": 4,
           "Visible": true,
           "Text": ""
@@ -105,14 +542,294 @@
       },
       "ShowTitle": true,
       "TitleConfig": {
-        "Position": { "x": 340.0, "y": 530.0 },
-        "Size": { "x": 420.0, "y": 40.0 },
+        "Position": {
+          "x": 340.0,
+          "y": 530.0
+        },
+        "Size": {
+          "x": 420.0,
+          "y": 40.0
+        },
         "FontSize": 22,
-        "TextColor": { "r": 1.0, "g": 0.92, "b": 0.7, "a": 1.0 },
+        "TextColor": {
+          "r": 1.0,
+          "g": 0.92,
+          "b": 0.7,
+          "a": 1.0
+        },
         "Alignment": 4,
         "Visible": true,
         "Text": ""
-      }
+      },
+      "InfoTabs": [
+        {
+          "Id": "Items",
+          "ButtonConfig": {
+            "Position": {
+              "x": 55.0,
+              "y": 584.0
+            },
+            "Size": {
+              "x": 42.0,
+              "y": 42.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "Text": "",
+            "ButtonSpriteId": "Common/UI/Inventory/slot_frame_gold",
+            "ButtonColor": {
+              "r": 1.0,
+              "g": 0.93,
+              "b": 0.74,
+              "a": 0.96
+            },
+            "Visible": true,
+            "Interactable": true
+          },
+          "IconSpriteId": "Common/UI/Inventory/backpack_tab_items",
+          "IconConfig": {
+            "Visible": true,
+            "Position": {
+              "x": 21.0,
+              "y": 21.0
+            },
+            "Size": {
+              "x": 28.0,
+              "y": 28.0
+            }
+          },
+          "Tooltip": "物品",
+          "TooltipPanelConfig": {
+            "Size": {
+              "x": 86.0,
+              "y": 30.0
+            },
+            "Position": {
+              "x": 55.0,
+              "y": 542.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "BackgroundSpriteId": "",
+            "BackgroundColor": {
+              "r": 0.018,
+              "g": 0.014,
+              "b": 0.012,
+              "a": 0.94
+            }
+          },
+          "TooltipTextConfig": {
+            "Position": {
+              "x": 43.0,
+              "y": 15.0
+            },
+            "Size": {
+              "x": 78.0,
+              "y": 24.0
+            },
+            "FontSize": 15,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.92,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "ContentMode": "ItemPrompt",
+          "Title": "物品信息",
+          "SubTitle": "",
+          "Description": "",
+          "EntityId": "",
+          "ExtraLines": []
+        },
+        {
+          "Id": "Attributes",
+          "ButtonConfig": {
+            "Position": {
+              "x": 103.0,
+              "y": 584.0
+            },
+            "Size": {
+              "x": 42.0,
+              "y": 42.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "Text": "",
+            "ButtonSpriteId": "Common/UI/Inventory/slot_frame_gold",
+            "ButtonColor": {
+              "r": 1.0,
+              "g": 0.93,
+              "b": 0.74,
+              "a": 0.96
+            },
+            "Visible": true,
+            "Interactable": true
+          },
+          "IconSpriteId": "Common/UI/Inventory/backpack_tab_attributes",
+          "IconConfig": {
+            "Visible": true,
+            "Position": {
+              "x": 21.0,
+              "y": 21.0
+            },
+            "Size": {
+              "x": 28.0,
+              "y": 28.0
+            }
+          },
+          "Tooltip": "属性",
+          "TooltipPanelConfig": {
+            "Size": {
+              "x": 86.0,
+              "y": 30.0
+            },
+            "Position": {
+              "x": 103.0,
+              "y": 542.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "BackgroundSpriteId": "",
+            "BackgroundColor": {
+              "r": 0.018,
+              "g": 0.014,
+              "b": 0.012,
+              "a": 0.94
+            }
+          },
+          "TooltipTextConfig": {
+            "Position": {
+              "x": 43.0,
+              "y": 15.0
+            },
+            "Size": {
+              "x": 78.0,
+              "y": 24.0
+            },
+            "FontSize": 15,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.92,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "ContentMode": "EntityHpSummary",
+          "Title": "玩家属性",
+          "SubTitle": "",
+          "Description": "",
+          "EntityId": "TribePlayer",
+          "ExtraLines": [
+            "法力: 待接入",
+            "攻击: 待接入",
+            "防御: 待接入",
+            "移动: 待接入",
+            "经验: 待接入"
+          ]
+        },
+        {
+          "Id": "Skills",
+          "ButtonConfig": {
+            "Position": {
+              "x": 151.0,
+              "y": 584.0
+            },
+            "Size": {
+              "x": 42.0,
+              "y": 42.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "Text": "",
+            "ButtonSpriteId": "Common/UI/Inventory/slot_frame_gold",
+            "ButtonColor": {
+              "r": 1.0,
+              "g": 0.93,
+              "b": 0.74,
+              "a": 0.96
+            },
+            "Visible": true,
+            "Interactable": true
+          },
+          "IconSpriteId": "Common/UI/Inventory/backpack_tab_skills",
+          "IconConfig": {
+            "Visible": true,
+            "Position": {
+              "x": 21.0,
+              "y": 21.0
+            },
+            "Size": {
+              "x": 28.0,
+              "y": 28.0
+            }
+          },
+          "Tooltip": "技能",
+          "TooltipPanelConfig": {
+            "Size": {
+              "x": 86.0,
+              "y": 30.0
+            },
+            "Position": {
+              "x": 151.0,
+              "y": 542.0
+            },
+            "Scale": {
+              "x": 1.0,
+              "y": 1.0
+            },
+            "BackgroundSpriteId": "",
+            "BackgroundColor": {
+              "r": 0.018,
+              "g": 0.014,
+              "b": 0.012,
+              "a": 0.94
+            }
+          },
+          "TooltipTextConfig": {
+            "Position": {
+              "x": 43.0,
+              "y": 15.0
+            },
+            "Size": {
+              "x": 78.0,
+              "y": 24.0
+            },
+            "FontSize": 15,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.92,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "ContentMode": "StaticText",
+          "Title": "技能面板",
+          "SubTitle": "待接入 SkillManager",
+          "Description": "这里会显示主动技能、被动技能和快捷配置。\n后续技能数据接入后，可以继续从这个入口扩展。",
+          "EntityId": "",
+          "ExtraLines": []
+        }
+      ]
     },
     {
       "ConfigId": "Hotbar",
@@ -125,24 +842,52 @@
         "SlotSpacingX": 8.0,
         "SlotSpacingY": 8.0,
         "SlotsPerRow": 9,
-        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_gold",
+        "SlotBackgroundSpriteId": "Common/UI/Inventory/slot_frame_gold",
         "StartOffsetX": 78.0,
         "StartOffsetY": 50.0
       },
       "PanelConfig": {
-        "Size": { "x": 780.0, "y": 100.0 },
-        "Position": { "x": 960.0, "y": 80.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
+        "Size": {
+          "x": 780.0,
+          "y": 100.0
+        },
+        "Position": {
+          "x": 960.0,
+          "y": 80.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
         "BackgroundSpriteId": "",
-        "BackgroundColor": { "r": 0.025, "g": 0.032, "b": 0.047, "a": 0.74 }
+        "BackgroundColor": {
+          "r": 0.0,
+          "g": 0.0,
+          "b": 0.0,
+          "a": 0.0
+        }
       },
       "CloseButtonConfig": {
-        "Position": { "x": 0.0, "y": 0.0 },
-        "Size": { "x": 1.0, "y": 1.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
+        "Position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "Size": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
         "Text": "",
         "ButtonSpriteId": "",
-        "ButtonColor": { "r": 1.0, "g": 0.3, "b": 0.3, "a": 1.0 },
+        "ButtonColor": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3,
+          "a": 1.0
+        },
         "Visible": false,
         "Interactable": false
       },
@@ -153,45 +898,380 @@
       "ConfigId": "PlayerEquipment",
       "DisplayName": "装备栏",
       "PageCount": 1,
-      "SlotsPerPage": 5,
+      "SlotsPerPage": 7,
       "SlotConfig": {
-        "SlotWidth": 80.0,
-        "SlotHeight": 80.0,
+        "SlotWidth": 64.0,
+        "SlotHeight": 64.0,
         "SlotSpacingX": 0.0,
         "SlotSpacingY": 12.0,
         "SlotsPerRow": 1,
-        "SlotBackgroundSpriteId": "Tribe/Common/Items/UI/slot_frame_blue",
-        "StartOffsetX": 60.0,
+        "SlotBackgroundSpriteId": "Common/UI/Inventory/slot_frame_gold",
+        "StartOffsetX": 160.0,
         "StartOffsetY": 416.0
       },
       "PanelConfig": {
-        "Size": { "x": 120.0, "y": 550.0 },
-        "Position": { "x": 1536.0, "y": 540.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
-        "BackgroundSpriteId": "Tribe/Common/Items/UI/slot_background_dark",
-        "BackgroundColor": { "r": 0.08, "g": 0.08, "b": 0.12, "a": 0.95 }
+        "Size": {
+          "x": 300.0,
+          "y": 560.0
+        },
+        "Position": {
+          "x": 1605.0,
+          "y": 540.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "BackgroundSpriteId": "Common/UI/Inventory/slot_background_dark",
+        "BackgroundColor": {
+          "r": 0.08,
+          "g": 0.08,
+          "b": 0.12,
+          "a": 0.95
+        }
       },
       "CloseButtonConfig": {
-        "Position": { "x": 0.0, "y": 0.0 },
-        "Size": { "x": 1.0, "y": 1.0 },
-        "Scale": { "x": 1.0, "y": 1.0 },
+        "Position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "Size": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
         "Text": "",
         "ButtonSpriteId": "",
-        "ButtonColor": { "r": 1.0, "g": 0.3, "b": 0.3, "a": 1.0 },
+        "ButtonColor": {
+          "r": 1.0,
+          "g": 0.3,
+          "b": 0.3,
+          "a": 1.0
+        },
         "Visible": false,
         "Interactable": false
       },
       "ShowDescription": false,
       "ShowTitle": true,
       "TitleConfig": {
-        "Position": { "x": 60.0, "y": 520.0 },
-        "Size": { "x": 110.0, "y": 30.0 },
-        "FontSize": 16,
-        "TextColor": { "r": 1.0, "g": 0.92, "b": 0.7, "a": 1.0 },
+        "Position": {
+          "x": 150.0,
+          "y": 530.0
+        },
+        "Size": {
+          "x": 210.0,
+          "y": 32.0
+        },
+        "FontSize": 18,
+        "TextColor": {
+          "r": 1.0,
+          "g": 0.92,
+          "b": 0.7,
+          "a": 1.0
+        },
         "Alignment": 4,
         "Visible": true,
         "Text": ""
-      }
+      },
+      "SlotAreaConfig": {
+        "Size": {
+          "x": 276.0,
+          "y": 460.0
+        },
+        "Position": {
+          "x": 150.0,
+          "y": 232.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "BackgroundSpriteId": "",
+        "BackgroundColor": {
+          "r": 0.01,
+          "g": 0.012,
+          "b": 0.014,
+          "a": 0.16
+        }
+      },
+      "BodyVisualConfig": {
+        "Size": {
+          "x": 292.0,
+          "y": 438.0
+        },
+        "Position": {
+          "x": 150.0,
+          "y": 268.0
+        },
+        "Scale": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "BackgroundSpriteId": "Common/UI/Inventory/Equipment/equipment_body_silhouette",
+        "BackgroundColor": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 0.88
+        }
+      },
+      "SlotVisuals": [
+        {
+          "SlotIndex": 0,
+          "OverridePosition": true,
+          "Position": {
+            "x": 150.0,
+            "y": 442.0
+          },
+          "Label": "头盔",
+          "LabelConfig": {
+            "Position": {
+              "x": 150.0,
+              "y": 486.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_head",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 1,
+          "OverridePosition": true,
+          "Position": {
+            "x": 150.0,
+            "y": 288.0
+          },
+          "Label": "护甲",
+          "LabelConfig": {
+            "Position": {
+              "x": 150.0,
+              "y": 332.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_chest",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 2,
+          "OverridePosition": true,
+          "Position": {
+            "x": 150.0,
+            "y": 202.0
+          },
+          "Label": "护腿",
+          "LabelConfig": {
+            "Position": {
+              "x": 150.0,
+              "y": 246.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_legs",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 3,
+          "OverridePosition": true,
+          "Position": {
+            "x": 56.0,
+            "y": 294.0
+          },
+          "Label": "主手",
+          "LabelConfig": {
+            "Position": {
+              "x": 56.0,
+              "y": 338.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_weapon",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 4,
+          "OverridePosition": true,
+          "Position": {
+            "x": 244.0,
+            "y": 294.0
+          },
+          "Label": "副手",
+          "LabelConfig": {
+            "Position": {
+              "x": 244.0,
+              "y": 338.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_offhand",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 5,
+          "OverridePosition": true,
+          "Position": {
+            "x": 150.0,
+            "y": 104.0
+          },
+          "Label": "鞋子",
+          "LabelConfig": {
+            "Position": {
+              "x": 150.0,
+              "y": 148.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_boots",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        },
+        {
+          "SlotIndex": 6,
+          "OverridePosition": true,
+          "Position": {
+            "x": 150.0,
+            "y": 368.0
+          },
+          "Label": "项链",
+          "LabelConfig": {
+            "Position": {
+              "x": 220.0,
+              "y": 368.0
+            },
+            "Size": {
+              "x": 70.0,
+              "y": 22.0
+            },
+            "FontSize": 14,
+            "TextColor": {
+              "r": 1.0,
+              "g": 0.9,
+              "b": 0.68,
+              "a": 1.0
+            },
+            "Alignment": 4,
+            "Visible": true,
+            "Text": ""
+          },
+          "EmptyHintSpriteId": "Common/UI/Inventory/Equipment/equipment_hint_necklace",
+          "EmptyHintColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.68,
+            "a": 0.58
+          }
+        }
+      ]
     }
   ]
 }
