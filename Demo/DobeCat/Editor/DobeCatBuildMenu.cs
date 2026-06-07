@@ -37,6 +37,7 @@ namespace Demo.DobeCat.Editor
             public bool ResizableWindow;
             public FullScreenMode FullScreenMode;
             public GraphicsDeviceType[] GraphicsApis;
+            public ManagedStrippingLevel ManagedStrippingLevel;
         }
 
         /// <summary>自动计算输出路径：{项目根}/Builds/DobeCat/DobeCat.exe</summary>
@@ -80,6 +81,7 @@ namespace Demo.DobeCat.Editor
         {
             var outputPath = AutoOutputPath;
             var sceneFullPath = Path.Combine(Application.dataPath, "..", ScenePath).Replace('\\', '/');
+            DobeCatMirrorExamplesStripper.EnsureMirrorExamplesOptInOnly();
 
             if (!File.Exists(sceneFullPath))
             {
@@ -141,7 +143,8 @@ namespace Demo.DobeCat.Editor
                 VisibleInBackground       = PlayerSettings.visibleInBackground,
                 ResizableWindow           = PlayerSettings.resizableWindow,
                 FullScreenMode            = PlayerSettings.fullScreenMode,
-                GraphicsApis              = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows64)
+                GraphicsApis              = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneWindows64),
+                ManagedStrippingLevel     = PlayerSettings.GetManagedStrippingLevel(NamedBuildTarget.Standalone)
             };
 
             PlayerSettings.useFlipModelSwapchain    = false;
@@ -152,6 +155,7 @@ namespace Demo.DobeCat.Editor
             PlayerSettings.fullScreenMode           = FullScreenMode.Windowed;
             PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64,
                 new[] { GraphicsDeviceType.Direct3D11 });
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Standalone, ManagedStrippingLevel.Low);
 
             Debug.Log("[DobeCatBuild] 已应用透明桌面叠加 PlayerSettings：preserveFramebufferAlpha=true, useFlipModelSwapchain=false");
             return snapshot;
@@ -168,6 +172,7 @@ namespace Demo.DobeCat.Editor
             PlayerSettings.fullScreenMode           = snapshot.FullScreenMode;
             if (snapshot.GraphicsApis != null && snapshot.GraphicsApis.Length > 0)
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, snapshot.GraphicsApis);
+            PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Standalone, snapshot.ManagedStrippingLevel);
         }
 
         // ─── Addressables 组控制 ──────────────────────────────────
@@ -272,6 +277,54 @@ namespace Demo.DobeCat.Editor
                 Debug.Log($"[DobeCatBuild] ✓ 构建成功  {s.totalSize / 1048576f:F1} MB → {outputPath}  耗时 {s.totalTime.TotalSeconds:F1}s");
             else
                 Debug.LogError($"[DobeCatBuild] ✗ 构建失败: {s.result}  错误数={s.totalErrors}  警告数={s.totalWarnings}");
+        }
+    }
+
+    [InitializeOnLoad]
+    internal static class DobeCatMirrorExamplesStripper
+    {
+        private const string MirrorPackageName = "com.mirrornetworking.mirror";
+        private const string ExamplesAsmdefRelativePath = "Mirror/Assets/Mirror/Examples/Mirror.Examples.asmdef";
+        private const string IncludeExamplesDefine = "WULA_INCLUDE_MIRROR_EXAMPLES";
+
+        static DobeCatMirrorExamplesStripper()
+        {
+            EditorApplication.delayCall += EnsureMirrorExamplesOptInOnly;
+        }
+
+        public static void EnsureMirrorExamplesOptInOnly()
+        {
+            var asmdefPath = ResolveMirrorExamplesAsmdefPath();
+            if (string.IsNullOrEmpty(asmdefPath) || !File.Exists(asmdefPath))
+                return;
+
+            var json = File.ReadAllText(asmdefPath);
+            if (json.Contains($"\"{IncludeExamplesDefine}\""))
+                return;
+
+            const string emptyDefineConstraints = "\"defineConstraints\": []";
+            if (!json.Contains(emptyDefineConstraints))
+            {
+                Debug.LogWarning($"[DobeCatBuild] Mirror.Examples asmdef already has define constraints; skip auto exclusion: {asmdefPath}");
+                return;
+            }
+
+            var optInDefineConstraints =
+                "\"defineConstraints\": [\n" +
+                $"        \"{IncludeExamplesDefine}\"\n" +
+                "    ]";
+            File.WriteAllText(asmdefPath, json.Replace(emptyDefineConstraints, optInDefineConstraints));
+            AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
+            Debug.Log($"[DobeCatBuild] Mirror.Examples is opt-in only. Add {IncludeExamplesDefine} define only when examples are needed.");
+        }
+
+        private static string ResolveMirrorExamplesAsmdefPath()
+        {
+            var package = UnityEditor.PackageManager.PackageInfo.FindForPackageName(MirrorPackageName);
+            if (package == null || string.IsNullOrEmpty(package.resolvedPath))
+                return null;
+
+            return Path.Combine(package.resolvedPath, ExamplesAsmdefRelativePath);
         }
     }
 }
