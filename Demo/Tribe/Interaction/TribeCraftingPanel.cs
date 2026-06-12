@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
@@ -6,6 +6,7 @@ using EssSystem.Core.Presentation.UIManager.Dao;
 using EssSystem.Core.Presentation.UIManager.Dao.CommonComponents;
 using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 using EssSystem.Core.Application.SingleManagers.InventoryManager;
+using EssSystem.Core.Application.MultiManagers.CraftingManager;
 using EssSystem.Core.Application.MultiManagers.CraftingManager.Dao;
 
 namespace Demo.Tribe.Interaction
@@ -84,9 +85,9 @@ namespace Demo.Tribe.Interaction
 
         public static void Close()
         {
-            if (!EventProcessor.HasInstance) return;
-            EventProcessor.Instance.TriggerEventMethod(
-                "UnregisterUIEntity", new List<object> { PanelDaoId });
+            if (EventProcessor.HasInstance)
+                EventProcessor.Instance.TriggerEventMethod(
+                    "UnregisterUIEntity", new List<object> { PanelDaoId });
             _panel = null;
             _statusText = null;
         }
@@ -285,7 +286,7 @@ namespace Demo.Tribe.Interaction
                 fontSize: 18, color: Color.white,
                 align: TextAnchor.MiddleCenter));
             var capturedRecipe = recipe;
-            btn.OnClick += _ => TryCraft(capturedRecipe);
+            btn.OnClick += _ => CraftRecipe(capturedRecipe);
             row.AddChild(btn);
         }
 
@@ -397,53 +398,46 @@ namespace Demo.Tribe.Interaction
             return template != null && !string.IsNullOrEmpty(template.Name) ? template.Name : itemId;
         }
 
-        // ─── 制作执行 ────────────────────────────────────────────
-        private static void TryCraft(CraftingRecipe recipe)
+        private static void CraftRecipe(CraftingRecipe recipe)
         {
-            if (!InventoryService.HasInstance) { ShowStatus("InventoryService 未就绪"); return; }
-            var inv = InventoryService.Instance.GetInventory(PlayerInvId);
-            if (inv == null) { ShowStatus("玩家容器不存在"); return; }
-            var output = GetPrimaryOutput(recipe);
-            if (output == null || string.IsNullOrEmpty(output.ItemId))
+            if (!CraftingService.HasInstance)
             {
-                ShowStatus($"配方缺少产物：{GetRecipeName(recipe)}", isError: true);
+                ShowStatus("Crafting system is not ready", isError: true);
                 return;
             }
 
-            // 1) 校验材料足够
-            var ingredients = recipe?.Ingredients ?? new CraftIngredient[0];
-            foreach (var ingredient in ingredients)
+            if (!CraftingService.Instance.TryCraft(PlayerInvId, recipe, out var result))
             {
-                if (ingredient == null || string.IsNullOrEmpty(ingredient.ItemId)) continue;
-                var amount = Mathf.Max(1, ingredient.Count);
-                var have = inv.CountOf(ingredient.ItemId);
-                if (have < amount)
-                {
-                    ShowStatus($"材料不足：{ResolveItemDisplayName(ingredient.ItemId)} 需 {amount}，当前 {have}", isError: true);
-                    return;
-                }
+                ShowCraftFail(recipe, result);
+                return;
             }
 
-            // 2) 消耗（走事件 → InventoryService 自动广播 EVT_CHANGED 让 UI 刷新）
-            foreach (var ingredient in ingredients)
-            {
-                if (ingredient == null || string.IsNullOrEmpty(ingredient.ItemId)) continue;
-                EventProcessor.Instance.TriggerEventMethod(
-                    InventoryService.EVT_REMOVE,
-                    new List<object> { PlayerInvId, ingredient.ItemId, Mathf.Max(1, ingredient.Count) });
-            }
-
-            // 3) 产出
-            EventProcessor.Instance.TriggerEventMethod(
-                InventoryService.EVT_ADD,
-                new List<object> { PlayerInvId, output.ItemId, Mathf.Max(1, output.Count) });
-
-            // 4) 反馈：提示 + 音效
-            ShowStatus($"制作成功：{GetRecipeName(recipe)} → {GetOutputDisplay(output)}");
+            ShowStatus($"Crafted: {GetRecipeName(recipe)} -> {GetOutputDisplay(GetPrimaryOutput(recipe))}");
             EventProcessor.Instance.TriggerEventMethod(
                 "PlaySFX", new List<object> { "Tribe/Common/Sound/harvest" });
         }
 
+        private static void ShowCraftFail(CraftingRecipe recipe, CraftingResult result)
+        {
+            if (result.Code == "missing_ingredient")
+            {
+                ShowStatus($"Missing material: {ResolveItemDisplayName(result.MissingItemId)} need {result.RequiredCount}, have {result.AvailableCount}", isError: true);
+                return;
+            }
+
+            var recipeName = GetRecipeName(recipe);
+            var msg = result.Code switch
+            {
+                "inventory_service_missing" => "Inventory system is not ready",
+                "inventory_missing" => "Player inventory does not exist",
+                "output_missing" => $"Recipe has no output: {recipeName}",
+                "output_template_missing" => $"Output item template is missing: {recipeName}",
+                "output_no_space" => "Inventory has no space",
+                "consume_failed" => "Failed to consume materials",
+                _ => $"Craft failed: {recipeName}",
+            };
+            ShowStatus(msg, isError: true);
+        }
         private static void ShowStatus(string msg, bool isError = false)
         {
             if (_statusText == null) return;

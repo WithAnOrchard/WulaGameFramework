@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Base.Event;
 using EssSystem.Core.Application.SingleManagers.EntityManager;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
@@ -66,18 +64,17 @@ namespace Demo.Tribe.Entities
 
             // 注册技能定义（幂等）+ 学技能
             Slime.EnsureSkillsRegistered();
-            if (!string.IsNullOrEmpty(_entity.InstanceId) && EventProcessor.HasInstance)
+            if (!string.IsNullOrEmpty(_entity.InstanceId))
             {
-                EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_LEARN_SKILL,
-                    new List<object> { _entity.InstanceId, Slime.SKILL_BIG_HOP });
-                _learned = true;
+                _learned = SkillService.HasInstance
+                           && SkillService.Instance.LearnSkill(_entity.InstanceId, Slime.SKILL_BIG_HOP) != null;
 
                 // 巨大化：按 config.GiantChance 摇骰；命中则学技能 + 2~5 秒后自动施放一次
                 if (_config != null && _config.GiantChance > 0f)
                 {
-                    EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_LEARN_SKILL,
-                        new List<object> { _entity.InstanceId, Slime.SKILL_GIANT });
-                    if (Random.value <= _config.GiantChance)
+                    var learnedGiant = SkillService.HasInstance
+                                       && SkillService.Instance.LearnSkill(_entity.InstanceId, Slime.SKILL_GIANT) != null;
+                    if (learnedGiant && Random.value <= _config.GiantChance)
                         _giantCastTime = Time.time + Random.Range(2f, 5f);
                 }
             }
@@ -148,11 +145,9 @@ namespace Demo.Tribe.Entities
             if (_giantCastTime < 0f || Time.time < _giantCastTime) return false;
             _giantCastTime = -1f; // 一次性：无论成败都不再尝试
 
-            if (_entity == null || !EventProcessor.HasInstance) return false;
-            var result = EventProcessor.Instance.TriggerEventMethod(
-                SkillManager.EVT_CAST_SKILL,
-                new List<object> { _entity, Slime.SKILL_GIANT, null, Vector3.zero, transform.position });
-            var ok = result != null && result.Count > 0 && (object)result[0] == EssSystem.Core.Base.Util.ResultCode.OK;
+            if (_entity == null) return false;
+            var ok = SkillService.HasInstance
+                     && SkillService.Instance.CastSkill(_entity.InstanceId, Slime.SKILL_GIANT, null, Vector3.zero, transform.position);
             // 巨大化后稍歇，避免落地立刻小蹦盖过 buff 的"震慑感"
             if (ok) _nextSmallHopTime = Time.time + 0.6f;
             return ok;
@@ -164,7 +159,6 @@ namespace Demo.Tribe.Entities
         private bool TryCastBigHop()
         {
             if (!_learned || _entity == null) return false;
-            if (!EventProcessor.HasInstance) return false;
             if (Time.time < _nextBigHopAttemptTime) return false;
 
             EnsurePlayerRef();
@@ -183,12 +177,9 @@ namespace Demo.Tribe.Entities
             var dirX = dx > 0f ? 1f : -1f;
             var direction = new Vector3(dirX, 0f, 0f);
 
-            var result = EventProcessor.Instance.TriggerEventMethod(
-                SkillManager.EVT_CAST_SKILL,
-                new List<object> { _entity, Slime.SKILL_BIG_HOP, null, direction, transform.position });
-
             // SkillService 在冷却中会返回 Fail —— 安静处理：稍后再问一次
-            var ok = result != null && result.Count > 0 && (object)result[0] == EssSystem.Core.Base.Util.ResultCode.OK;
+            var ok = SkillService.HasInstance
+                     && SkillService.Instance.CastSkill(_entity.InstanceId, Slime.SKILL_BIG_HOP, null, direction, transform.position);
             if (ok)
             {
                 // 大蹦后让小蹦也歇一会儿，避免落地立刻再小蹦

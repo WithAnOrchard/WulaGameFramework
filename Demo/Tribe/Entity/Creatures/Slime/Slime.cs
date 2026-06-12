@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using EssSystem.Core.Base.Event;
 using EssSystem.Core.Presentation.CharacterManager.Dao;
 using EssSystem.Core.Application.MultiManagers.SkillManager;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao;
@@ -84,7 +83,6 @@ namespace Demo.Tribe.Entities
         public static void EnsureSkillsRegistered()
         {
             if (_skillsRegistered) return;
-            if (!EventProcessor.HasInstance) return;
 
             // ─── 大蹦：通用 DashEffect（水平冲量 + 替换竖直速度） ─────────
             var bigHopDef = new SkillDefinition
@@ -106,8 +104,8 @@ namespace Demo.Tribe.Entities
                 },
                 MaxLevel = 1,
             };
-            EventProcessor.Instance.TriggerEventMethod(
-                SkillManager.EVT_REGISTER_SKILL, new List<object> { bigHopDef });
+            if (!SkillService.HasInstance) return;
+            SkillService.Instance.RegisterDefinition(bigHopDef);
 
             // ─── 巨大化：通用 BuffEffect + BuffFactory 闭包 ─────────────
             // Tribe 专属"应用 / 撤销"逻辑封装在 BuildGiantBuff 内：
@@ -134,8 +132,7 @@ namespace Demo.Tribe.Entities
                 },
                 MaxLevel = 1,
             };
-            EventProcessor.Instance.TriggerEventMethod(
-                SkillManager.EVT_REGISTER_SKILL, new List<object> { giantDef });
+            SkillService.Instance.RegisterDefinition(giantDef);
 
             _skillsRegistered = true;
         }

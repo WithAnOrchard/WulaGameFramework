@@ -28,6 +28,9 @@ namespace Demo.Tribe.Player
         private UIPanelComponent _headSprite;
         private bool _headSpriteReady;
         private bool _registered;
+        private const float HpBarWidth = 260f;
+        private const float StatusBarWidth = 234f;
+        private const float FillPadX = 10f;
 
         // ─── 缓存（避免每帧重写 UIText）────────────────────────────
         private float _lastHp = -1f, _lastMaxHp = -1f, _lastMp = -1f, _lastMaxMp = -1f;
@@ -60,23 +63,21 @@ namespace Demo.Tribe.Player
                 .SetBackgroundColor(Color.white).SetVisible(true);
 
             const float statusLeft = 122f;
-            const float hpWidth = 260f;
-            const float statusWidth = 234f;
             const float coinWidth = 100f;
             static float CenterX(float left, float width) => left + width * 0.5f;
 
-            _hpBar  = MakeBar("hp",  CenterX(statusLeft, hpWidth),     102f, hpWidth,     24f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
-            _mpBar  = MakeBar("mp",  CenterX(statusLeft, statusWidth),  76f, statusWidth, 20f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
-            _expBar = MakeBar("exp", CenterX(statusLeft, statusWidth),  52f, statusWidth, 20f, "Bar_2", "Brown_Bar", new Color(0.55f, 0.32f, 0.15f));
+            _hpBar  = MakeBar("hp",  CenterX(statusLeft, HpBarWidth),     102f, HpBarWidth,     24f, "Bar_1", "RedBar",   new Color(1f, 0.25f, 0.25f));
+            _mpBar  = MakeBar("mp",  CenterX(statusLeft, StatusBarWidth),  76f, StatusBarWidth, 20f, "Bar_2", "BlueBar",  new Color(0.25f, 0.55f, 1f));
+            _expBar = MakeBar("exp", CenterX(statusLeft, StatusBarWidth),  52f, StatusBarWidth, 20f, "Bar_2", "Brown_Bar", new Color(0.55f, 0.32f, 0.15f));
 
             var coinContainer = new UIPanelComponent($"{_hudId}_coins_bg", "CoinContainer")
                 .SetPosition(CenterX(statusLeft, coinWidth), 24f).SetSize(coinWidth, 25f)
                 .SetBackgroundSpriteId("CoinContainer").SetBackgroundColor(Color.white).SetVisible(true);
 
-            _hpText    = MakeValueText("hp_value",  280f, 28f);
-            _mpText    = MakeValueText("mp_value",  230f, 24f);
-            _expText   = MakeValueText("exp_value", 230f, 24f);
-            _coinsText = MakeValueText("coins",     100f, 25f);
+            _hpText    = MakeValueText("hp_value",  74f, 18f, 14);
+            _mpText    = MakeValueText("mp_value",  58f, 16f, 13);
+            _expText   = MakeValueText("exp_value", 58f, 16f, 13);
+            _coinsText = MakeValueText("coins",     48f, 17f, 13).SetPosition(50f, 12.5f);
 
             _hpBar.AddChild(_hpText);
             _mpBar.AddChild(_mpText);
@@ -143,19 +144,22 @@ namespace Demo.Tribe.Player
             {
                 _lastHp = hp; _lastMaxHp = maxHp;
                 _hpBar.SetValue(hp, maxHp);
-                _hpText.SetText($"{Mathf.CeilToInt(hp)}/{Mathf.CeilToInt(maxHp)}");
+                _hpText.SetText(FormatResourceValue(hp, maxHp));
+                PositionBarText(_hpText, hp, maxHp, HpBarWidth, 74f, 24f);
             }
             if (force || !Mathf.Approximately(mp, _lastMp) || !Mathf.Approximately(maxMp, _lastMaxMp))
             {
                 _lastMp = mp; _lastMaxMp = maxMp;
                 _mpBar.SetValue(mp, maxMp);
-                _mpText.SetText($"{Mathf.CeilToInt(mp)}/{Mathf.CeilToInt(maxMp)}");
+                _mpText.SetText(FormatResourceValue(mp, maxMp));
+                PositionBarText(_mpText, mp, maxMp, StatusBarWidth, 58f, 20f);
             }
             if (force || exp != _lastExp || maxExp != _lastMaxExp)
             {
                 _lastExp = exp; _lastMaxExp = maxExp;
                 _expBar.SetValue(exp, maxExp);
                 _expText.SetText($"{exp}/{maxExp}");
+                PositionBarText(_expText, exp, maxExp, StatusBarWidth, 58f, 20f);
             }
             if (force || coins != _lastCoins)
             {
@@ -183,13 +187,33 @@ namespace Demo.Tribe.Player
                 .SetFillPadding(10f, 6f).SetBackgroundColor(Color.white).SetFillColor(fillColor).SetVisible(true);
 
         /// <summary>HUD 数值文本：4x 超采样消除缩放走样。</summary>
-        private UITextComponent MakeValueText(string suffix, float w, float h)
+        private UITextComponent MakeValueText(string suffix, float w, float h, int fontSize)
         {
             const float s = 4f;
             return new UITextComponent($"{_hudId}_{suffix}", suffix)
                 .SetPosition(w * 0.5f, h * 0.5f).SetSize(w * s, h * s).SetScale(1f / s, 1f / s)
-                .SetFontSize(Mathf.RoundToInt(18f * s)).SetColor(Color.white)
+                .SetFontSize(Mathf.RoundToInt(fontSize * s)).SetColor(Color.white)
                 .SetAlignment(TextAnchor.MiddleCenter).SetText(string.Empty).SetVisible(true);
+        }
+
+        private static void PositionBarText(UITextComponent text, float value, float maxValue,
+            float barWidth, float textWidth, float barHeight)
+        {
+            if (text == null) return;
+            var fillWidth = Mathf.Max(1f, barWidth - FillPadX * 2f);
+            var ratio = maxValue > 0f ? Mathf.Clamp01(value / maxValue) : 0f;
+            var coloredWidth = Mathf.Max(textWidth, fillWidth * ratio);
+            var x = FillPadX + coloredWidth * 0.5f;
+            var maxX = barWidth - FillPadX - textWidth * 0.5f;
+            x = Mathf.Clamp(x, FillPadX + textWidth * 0.5f, Mathf.Max(FillPadX + textWidth * 0.5f, maxX));
+            text.SetPosition(x, barHeight * 0.5f);
+        }
+
+        private static string FormatResourceValue(float current, float max)
+        {
+            var visibleCurrent = Mathf.FloorToInt(Mathf.Max(0f, current));
+            var visibleMax = Mathf.CeilToInt(Mathf.Max(0f, max));
+            return $"{visibleCurrent}/{visibleMax}";
         }
     }
 }

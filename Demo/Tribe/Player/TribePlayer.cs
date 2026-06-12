@@ -46,6 +46,12 @@ namespace Demo.Tribe.Player
         [SerializeField, Min(0f)] private float _hp = 100f;
         [SerializeField, Min(0f)] private float _mp = 50f;
         [SerializeField, Min(1f)] private float _maxMp = 50f;
+        [SerializeField, Min(1)] private int _baseStr = 10;
+        [SerializeField, Min(1)] private int _baseDex = 10;
+        [SerializeField, Min(1)] private int _baseCon = 5;
+        [SerializeField, Min(1)] private int _baseInt = 4;
+        [SerializeField, Min(1)] private int _baseWis = 10;
+        [SerializeField, Min(1)] private int _baseCha = 10;
         [SerializeField, Min(0)]  private int _coins = 0;
         [SerializeField, Min(1)]  private int _maxExperience = 100;
         [SerializeField, Min(0)]  private int _experience = 0;
@@ -191,7 +197,14 @@ namespace Demo.Tribe.Player
             var entity = _movement.Entity;
             if (entity == null) return;
 
-            entity.CanBeAttacked(_maxHp)
+            var stats = new StatsComponent(_baseStr, _baseDex, _baseCon, _baseInt, _baseWis, _baseCha);
+            _maxHp = Mathf.Max(1f, stats.GetDerived(DerivedStat.MaxHp));
+            _hp = Mathf.Clamp(_hp, 0f, _maxHp);
+            _maxMp = Mathf.Max(1f, stats.GetDerived(DerivedStat.MaxMp));
+            _mp = Mathf.Clamp(_mp, 0f, _maxMp);
+
+            entity.With<IStats>(stats)
+                  .CanBeAttacked(_maxHp)
                   .OnDamaged(OnEntityDamaged)
                   // 框架 IFlashEffect：用 Sprites/Flash shader 闪整个 Character 所有子 SpriteRenderer，
                   // 自带 sourcePos 解析（无需依赖 _lastDamageSourcePos），避免单 renderer 闪烁不可见。
@@ -199,7 +212,9 @@ namespace Demo.Tribe.Player
                   // 框架 IKnockbackEffect：默认 KnockbackEffectComponent 走逻辑位移（直写 transform.position）
                   // 对 dynamic Rigidbody2D 玩家无效 → 装一个 velocity-based 适配器，把 sourcePos 转给
                   // TribePlayerDamageEffect.ApplyKnockback。这样击退方向永远基于真实攻击者坐标。
-                  .With<IKnockbackEffect>(new PlayerVelocityKnockbackAdapter(_damageEffect));
+                  .With<IKnockbackEffect>(new PlayerVelocityKnockbackAdapter(_damageEffect))
+                  .CanUseMana(_maxMp, _mp)
+                  .CanRegenerateFromStats();
         }
 
         /// <summary>IDamageable.Damaged 回调 —— 同步内部 HP 状态 + 强刷 HUD。
@@ -234,6 +249,12 @@ namespace Demo.Tribe.Player
             {
                 _hp = dmg.CurrentHp;
                 _maxHp = dmg.MaxHp;
+            }
+            var resources = _movement.Entity?.Get<IEntityResources>();
+            if (resources != null && resources.Has(EntityResourceIds.Mana))
+            {
+                _mp = resources.GetCurrent(EntityResourceIds.Mana);
+                _maxMp = resources.GetMax(EntityResourceIds.Mana);
             }
             _hud.SetStats(_hp, _maxHp, _mp, _maxMp, _experience, _maxExperience, _coins, force);
         }

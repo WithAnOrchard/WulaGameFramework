@@ -100,7 +100,6 @@ namespace Demo.Tribe.Resource
 
         private void OnHarvested(Entity self, Entity source, float dealt, string damageType)
         {
-            // §4.1 跨模块 AudioManager 走 bare-string
             if (EventProcessor.HasInstance)
                 EventProcessor.Instance.TriggerEventMethod(
                     "PlaySFX", new List<object> { "Tribe/Common/Sound/harvest" });

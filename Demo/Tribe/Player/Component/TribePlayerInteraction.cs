@@ -43,7 +43,6 @@ namespace Demo.Tribe.Player
                 visible ? new List<object> { _inventoryId }
                         : new List<object> { _inventoryId, _inventoryConfigId });
             
-            // 播放 UI 操作音效
             EventProcessor.Instance.TriggerEventMethod("PlayUISFX", null);
         }
 

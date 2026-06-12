@@ -35,7 +35,6 @@ namespace Demo.Tribe
 
         private void Start()
         {
-            // Awake 阶段 EventProcessor 可能尚未注册 AudioManager 的 [Event]；放到 Start 更稳。
             if (string.IsNullOrEmpty(_audioPath) || !EventProcessor.HasInstance) return;
             var r = EventProcessor.Instance.TriggerEventMethod(
                 "PlayPositionalLoopSFX",

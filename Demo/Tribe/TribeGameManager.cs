@@ -20,6 +20,7 @@ using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Template
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom.Generator;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Runtime;
 using EssSystem.Core.Foundation.ResourceManager;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 using UnityEngine.Tilemaps;
 using Demo.Tribe.Player;
 using Demo.Tribe.Background;
@@ -42,6 +43,7 @@ namespace Demo.Tribe
     public class TribeGameManager : AbstractGameManager
     {
         private const int StartupWarnMs = 16;
+        private const string TRIBE_INVENTORY_CONFIG_PATH = "Tribe/Inventory/default_inventory.json";
 
         private static System.Diagnostics.Stopwatch BeginStartupSample() =>
             System.Diagnostics.Stopwatch.StartNew();
@@ -203,48 +205,37 @@ namespace Demo.Tribe
         {
             if (!EventProcessor.HasInstance) return;
 
-            RegisterTribeItem(
-                new InventoryItem("tribe_carrot", "胡萝卜")
-                    .WithDescription("新鲜的胡萝卜。")
-                    .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Common/Items/Consumables/carrot")
-                    .WithMaxStack(99)
-                    .WithValue(3),
-                new PickableItemDefinition("tribe_carrot_pickable", "tribe_carrot", "胡萝卜", "Tribe/Common/Items/Consumables/carrot", 1));
+            if (!RuntimeConfigLoader.TryLoadJson<InventoryDefaultConfigFile>(
+                    TRIBE_INVENTORY_CONFIG_PATH, out var file, Debug.Log) || file == null)
+            {
+                Debug.LogWarning($"[TribeGameManager] Tribe inventory config missing: {TRIBE_INVENTORY_CONFIG_PATH}");
+                return;
+            }
 
-            RegisterTribeItem(
-                new InventoryItem("tribe_sunflower", "向日葵")
-                    .WithDescription("面向太阳盛开的花。")
-                    .WithType(InventoryItemType.Material)
-                    .WithIcon("Tribe/Common/Items/Consumables/flower_sunflower")
-                    .WithMaxStack(99)
-                    .WithValue(5),
-                new PickableItemDefinition("tribe_sunflower_pickable", "tribe_sunflower", "向日葵", "Tribe/Common/Items/Consumables/flower_sunflower", 1));
+            if (file.ItemTemplates != null)
+            {
+                foreach (var item in file.ItemTemplates)
+                    RegisterTribeItemTemplate(item);
+            }
 
-            RegisterTribeItem(
-                new InventoryItem("tribe_red_mushroom", "红蘑菇")
-                    .WithDescription("鲜红色的蘑菇。")
-                    .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Common/Items/Consumables/mushroom_red")
-                    .WithMaxStack(99)
-                    .WithValue(4),
-                new PickableItemDefinition("tribe_red_mushroom_pickable", "tribe_red_mushroom", "红蘑菇", "Tribe/Common/Items/Consumables/mushroom_red", 1));
-
-            RegisterTribeItem(
-                new InventoryItem("tribe_berries", "浆果")
-                    .WithDescription("从灌木上采下来的浆果。")
-                    .WithType(InventoryItemType.Consumable)
-                    .WithIcon("Tribe/Common/Items/Consumables/berries_bush")
-                    .WithMaxStack(99)
-                    .WithValue(2),
-                new PickableItemDefinition("tribe_berries_pickable", "tribe_berries", "浆果", "Tribe/Common/Items/Consumables/berries_bush", 1));
+            if (file.PickableItems != null)
+            {
+                foreach (var pickable in file.PickableItems)
+                    RegisterTribePickable(pickable);
+            }
         }
 
-        private static void RegisterTribeItem(InventoryItem item, PickableItemDefinition pickableDefinition)
+        private static void RegisterTribeItemTemplate(InventoryItem item)
         {
+            if (item == null || string.IsNullOrEmpty(item.Id)) return;
             EventProcessor.Instance.TriggerEventMethod(
                 "InventoryRegisterItem",
                 new List<object> { item });
+        }
+
+        private static void RegisterTribePickable(PickableItemDefinition pickableDefinition)
+        {
+            if (pickableDefinition == null || string.IsNullOrEmpty(pickableDefinition.Id)) return;
             EventProcessor.Instance.TriggerEventMethod(
                 "InventoryRegisterPickableItem",
                 new List<object> { pickableDefinition });
