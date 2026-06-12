@@ -26,6 +26,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
             if (ctx.Instance != null && !ctx.Instance.IsReady) return false;
 
             _ctx = ctx;
+            TriggerCastStartEffects();
 
             // 前摇
             if (_ctx.Definition.CastTime > 0f)
@@ -134,6 +135,20 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                 catch (System.Exception e)
                 {
                     Debug.LogWarning($"[SkillExecutor] 效果执行异常: {e.Message}");
+                }
+            }
+        }
+
+        private void TriggerCastStartEffects()
+        {
+            if (_ctx?.Definition?.Effects == null) return;
+            foreach (var effect in _ctx.Definition.Effects)
+            {
+                if (effect is not ISkillCastStartEffect startEffect) continue;
+                try { startEffect.OnCastStart(_ctx); }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[SkillExecutor] 施法起手效果异常: {e.Message}");
                 }
             }
         }

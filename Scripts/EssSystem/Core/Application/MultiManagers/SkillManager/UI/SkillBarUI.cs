@@ -20,13 +20,14 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
         private const string RootName = "SkillBarUI";
         private const string DefaultSkillIconSpriteId = "Common/UI/Inventory/backpack_tab_skills";
         private const float RootWidth = 116f;
-        private const float RootHeight = 462f;
+        private const float RootHeight = 520f;
         private const float RootLeftX = 96f;
         private const float RootCenterYOffset = -84f;
         private const float SlotSize = 100f;
         private const float SlotRootWidth = 108f;
-        private const float SlotRootHeight = 108f;
-        private const float SlotGap = 10f;
+        private const float SlotRootHeight = 124f;
+        private const float SlotGap = 8f;
+        private const float TextSupersample = 4f;
 
         private static readonly string[] KeyLabels = { "J", "K", "L", ";" };
         private static readonly Color RootClear = new(0f, 0f, 0f, 0f);
@@ -39,6 +40,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
         private static readonly Color EmptyNameColor = new(0.72f, 0.66f, 0.56f, 0.82f);
         private static readonly Color CooldownTextColor = new(1f, 0.92f, 0.82f, 1f);
         private static readonly Color KeyTextColor = new(0.88f, 0.88f, 0.82f, 1f);
+        private static readonly Color ManaCostColor = new(0.65f, 0.90f, 1f, 1f);
+        private static readonly Color ManaNotEnoughColor = new(1f, 0.42f, 0.42f, 1f);
 
         private string _entityId;
         private string _rootId;
@@ -50,6 +53,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
         private readonly UIPanelComponent[] _overlays = new UIPanelComponent[SlotCount];
         private readonly UITextComponent[] _names = new UITextComponent[SlotCount];
         private readonly UITextComponent[] _cooldowns = new UITextComponent[SlotCount];
+        private readonly UITextComponent[] _costs = new UITextComponent[SlotCount];
 
         public bool IsBuilt => _registered;
 
@@ -115,39 +119,52 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
                 .SetBackgroundColor(RootClear).SetVisible(true);
 
             var frame = new UIPanelComponent($"{_rootId}_slot_{index}_frame", "Frame")
-                .SetPosition(SlotRootWidth * 0.5f, SlotRootHeight * 0.5f).SetSize(size, size)
+                .SetPosition(SlotRootWidth * 0.5f, 70f).SetSize(size, size)
                 .SetBackgroundSpriteId(string.Empty).SetBackgroundColor(SlotBg).SetVisible(true);
 
             _icons[index] = new UIPanelComponent($"{_rootId}_slot_{index}_icon", "Icon")
-                .SetPosition(SlotRootWidth * 0.5f, SlotRootHeight * 0.5f).SetSize(72f, 72f)
+                .SetPosition(SlotRootWidth * 0.5f, 70f).SetSize(72f, 72f)
                 .SetBackgroundSpriteId(DefaultSkillIconSpriteId).SetBackgroundColor(EmptyIconTint).SetVisible(true);
 
             _overlays[index] = new UIPanelComponent($"{_rootId}_slot_{index}_cd_overlay", "CooldownOverlay")
-                .SetPosition(SlotRootWidth * 0.5f, SlotRootHeight * 0.5f).SetSize(88f, 88f)
+                .SetPosition(SlotRootWidth * 0.5f, 70f).SetSize(88f, 88f)
                 .SetBackgroundColor(EmptyOverlay).SetVisible(true);
 
             _cooldowns[index] = new UITextComponent($"{_rootId}_slot_{index}_cd_text", "CooldownText")
-                .SetPosition(SlotRootWidth * 0.5f, SlotRootHeight * 0.5f).SetSize(90f, 90f)
+                .SetPosition(SlotRootWidth * 0.5f, 70f).SetSize(90f, 90f)
                 .SetFontSize(28).SetColor(CooldownTextColor)
                 .SetAlignment(TextAnchor.MiddleCenter).SetText(string.Empty).SetVisible(true);
 
-            var key = new UITextComponent($"{_rootId}_slot_{index}_key", "KeyText", KeyLabels[index])
-                .SetPosition(22f, 88f).SetSize(34f, 22f)
-                .SetFontSize(16).SetColor(KeyTextColor)
-                .SetAlignment(TextAnchor.MiddleCenter).SetVisible(true);
+            var key = MakeCrispText($"{_rootId}_slot_{index}_key", "KeyText", KeyLabels[index],
+                22f, 88f, 34f, 22f, 16, KeyTextColor, TextAnchor.MiddleCenter);
 
-            _names[index] = new UITextComponent($"{_rootId}_slot_{index}_name", "SkillName")
-                .SetPosition(SlotRootWidth * 0.5f, 15f).SetSize(86f, 18f)
-                .SetFontSize(10).SetColor(EmptyNameColor)
-                .SetAlignment(TextAnchor.MiddleCenter).SetText(string.Empty).SetVisible(true);
+            _costs[index] = MakeCrispText($"{_rootId}_slot_{index}_cost", "ManaCost", string.Empty,
+                82f, 12f, 40f, 20f, 13, ManaCostColor, TextAnchor.MiddleRight);
+
+            _names[index] = MakeCrispText($"{_rootId}_slot_{index}_name", "SkillName", string.Empty,
+                32f, 12f, 56f, 20f, 12, EmptyNameColor, TextAnchor.MiddleLeft);
 
             root.AddChild(frame);
             root.AddChild(_icons[index]);
             root.AddChild(_overlays[index]);
             root.AddChild(_cooldowns[index]);
-            root.AddChild(key);
+            root.AddChild(_costs[index]);
             root.AddChild(_names[index]);
+            root.AddChild(key);
             return root;
+        }
+
+        private static UITextComponent MakeCrispText(string id, string name, string text,
+            float x, float y, float width, float height, int fontSize, Color color, TextAnchor alignment)
+        {
+            return new UITextComponent(id, name, text)
+                .SetPosition(x, y)
+                .SetSize(width * TextSupersample, height * TextSupersample)
+                .SetScale(1f / TextSupersample, 1f / TextSupersample)
+                .SetFontSize(Mathf.RoundToInt(fontSize * TextSupersample))
+                .SetColor(color)
+                .SetAlignment(alignment)
+                .SetVisible(true);
         }
 
         private void EnsureSlots()
@@ -196,6 +213,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
                 _icons[index].SetBackgroundSpriteId(DefaultSkillIconSpriteId).SetBackgroundColor(EmptyIconTint);
                 _overlays[index].SetBackgroundColor(EmptyOverlay);
                 _cooldowns[index].SetText(string.Empty);
+                _costs[index].SetText(string.Empty).SetVisible(true);
                 _names[index].SetText(string.Empty).SetColor(EmptyNameColor).SetVisible(true);
                 return;
             }
@@ -211,6 +229,19 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
 
             var name = string.IsNullOrEmpty(def.DisplayName) ? inst.SkillId : def.DisplayName;
             _names[index].SetText(TrimName(name)).SetColor(inst.IsReady ? ReadyNameColor : EmptyNameColor).SetVisible(true);
+
+            if (def.ManaCost > 0f)
+            {
+                var hasMana = HasEnoughMana(def.ManaCost);
+                _costs[index]
+                    .SetText($"MP{Mathf.CeilToInt(def.ManaCost)}")
+                    .SetColor(hasMana ? ManaCostColor : ManaNotEnoughColor)
+                    .SetVisible(true);
+            }
+            else
+            {
+                _costs[index].SetText(string.Empty).SetVisible(true);
+            }
         }
 
         private void ApplyIconSprite(int index, string spriteId)
@@ -248,6 +279,13 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
             var dot = spriteName.LastIndexOf('.');
             if (dot > 0) spriteName = spriteName[..dot];
             return !string.IsNullOrEmpty(spriteName) && spriteName != spriteId;
+        }
+
+        private bool HasEnoughMana(float cost)
+        {
+            if (cost <= 0f) return true;
+            return SkillEntityProxy.TryGetResource(_entityId, SkillEntityProxy.ResourceMana, out var current, out _) &&
+                   current + 0.0001f >= cost;
         }
 
         private SkillInstance GetSlotSkill(int index)

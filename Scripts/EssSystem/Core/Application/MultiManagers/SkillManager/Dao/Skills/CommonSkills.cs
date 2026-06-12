@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using EssSystem.Core.Base.Event;
+using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
@@ -49,31 +49,21 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
         public static void EnsureRegistered()
         {
             if (_defaultsRegistered) return;
-            if (!EventProcessor.HasInstance) return;
+            if (!SkillService.HasInstance) return;
             _defaultsRegistered = true;
 
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildDash() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildJumpSlash() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildTeleport() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildShield() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildWhirlwind() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildFireball() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildBurn() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildHealOverTime() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildShockwave() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildChainLightning() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildMeteor() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildLifeDrain() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildCleave() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildMultiShot() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildCleanse() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildFrostNova() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildHaste() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildStun() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildSilence() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildReflectShield() });
-            EventProcessor.Instance.TriggerEventMethod(SkillManager.EVT_REGISTER_SKILL, new List<object> { BuildChannelDrain() });
+            RegisterDefaults(
+                BuildDash(), BuildJumpSlash(), BuildTeleport(), BuildShield(), BuildWhirlwind(), BuildFireball(),
+                BuildBurn(), BuildHealOverTime(), BuildShockwave(), BuildChainLightning(), BuildMeteor(), BuildLifeDrain(),
+                BuildCleave(), BuildMultiShot(), BuildCleanse(), BuildFrostNova(), BuildHaste(), BuildStun(),
+                BuildSilence(), BuildReflectShield(), BuildChannelDrain());
             // SKILL_SUMMON 不带默认 ConfigId（必须由业务侧补完才能用），这里只占位生成空 def 也无意义 → 跳过。
+        }
+
+        private static void RegisterDefaults(params SkillDefinition[] definitions)
+        {
+            foreach (var definition in definitions)
+                SkillService.Instance.RegisterDefinition(definition);
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -238,9 +228,10 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
                 Id = SKILL_FIREBALL,
                 DisplayName = "火球术",
                 Description = "向面朝方向发射火球，命中后造成火焰伤害。",
-                IconPath = "Tribe/Common/Items/Weapons/fireball",
+                IconPath = "Common/Skills/Fireball/fireball",
+                ManaCost = 12f,
                 Cooldown = cooldown,
-                CastTime = 0.12f,
+                CastTime = 0.30f,
                 RecoveryTime = 0.12f,
                 TargetMode = SkillTargetMode.Directional,
                 Range = 12f,
@@ -249,11 +240,17 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
                     new ProjectileEffect(speed: speed, damage: damage,
                         damagePerLevel: damage * 0.3f, damageType: "fire", radius: 0.45f,
                         maxLifetime: 1.4f,
-                        spriteId: "Tribe/Common/Items/Weapons/fireball",
+                        spriteId: "Common/Skills/Fireball/fireball",
                         visualScale: 1.35f, sortingOrder: 260, forwardOffset: 0.7f, heightOffset: 0.35f,
-                        impactCharacterConfigId: "TribeFireballImpact",
+                        impactCharacterConfigId: "CommonFireballImpact",
                         impactActionName: "Special", impactScale: 8f, impactLifetime: 0.38f,
-                        visualRotationOffsetDegrees: -45f, ignoreStaticTargets: true),
+                        visualRotationOffsetDegrees: -45f, ignoreStaticTargets: true,
+                        areaDamageRadius: 1.65f, areaDamageMultiplier: 0.75f,
+                        impactSfxId: "Sound/fireball_explode_light", impactSfxVolume: 1.2f,
+                        suppressTargetHitSfx: true,
+                        castSfxId: "Sound/fireball_cast_a", castSfxVolume: 0.95f,
+                        castFlashPartId: "Weapon", castFlashDuration: 0.30f,
+                        castFlashColor: new Color(1f, 0.18f, 0.08f, 1f)),
                     // 命中后触发的"持续燃烧" —— 注意 ProjectileEffect 是在飞行物命中时直接 TryDamage，不会自动叠 DoT；
                     // 这里把 DoT 单独在 Apply 阶段注册到 ctx.Target？ ctx.Target 在 Directional 下通常为 null。
                     // 折中：火球的 DoT 不在此处直接绑（ProjectileEffect 没有"命中回调"）。

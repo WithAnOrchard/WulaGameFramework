@@ -31,6 +31,11 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
         public string ImpactActionName = "Special";
         public float ImpactScale = 1f;
         public float ImpactLifetime = 0.35f;
+        public float AreaDamageRadius;
+        public float AreaDamageMultiplier = 1f;
+        public string ImpactSfxId;
+        public float ImpactSfxVolume = 1f;
+        public bool SuppressTargetHitSfx;
         public float VisualScale = 1f;
         public float VisualRotationOffsetDegrees;
         public int SortingOrder = 260;
@@ -41,6 +46,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
         private static int _impactSeq;
         private static readonly Collider[] _buffer = new Collider[16];
         private static readonly Collider2D[] _buffer2D = new Collider2D[16];
+        private static readonly Collider[] _areaBuffer = new Collider[64];
+        private static readonly Collider2D[] _areaBuffer2D = new Collider2D[64];
         private static readonly ContactFilter2D _contactFilter = ContactFilter2D.noFilter;
         private static Sprite _fallbackSprite;
 
@@ -100,11 +107,54 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
             }
 
             if (SkillEntityProxy.IsDead(targetId)) return false;
-            SkillEntityProxy.Damage(targetId, Damage, CasterId, DamageType, transform.position);
+            var impactPosition = transform.position;
+            SkillEntityProxy.Damage(targetId, Damage, CasterId, DamageType, impactPosition, SuppressTargetHitSfx);
+            ApplyAreaDamage(targetId, impactPosition);
             SpawnImpact();
+            PlayImpactSfx();
 
             if (!Pierce) { Destroy(gameObject); return true; }
             return false;
+        }
+
+        private void ApplyAreaDamage(string primaryTargetId, Vector3 center)
+        {
+            if (AreaDamageRadius <= 0f || Damage <= 0f) return;
+            var amount = Damage * Mathf.Max(0f, AreaDamageMultiplier);
+            if (amount <= 0f) return;
+
+            var damaged = new System.Collections.Generic.HashSet<string>();
+            if (!string.IsNullOrEmpty(CasterId)) damaged.Add(CasterId);
+            if (!string.IsNullOrEmpty(primaryTargetId)) damaged.Add(primaryTargetId);
+
+            var count2D = Physics2D.OverlapCircle(center, AreaDamageRadius, _contactFilter, _areaBuffer2D);
+            for (var i = 0; i < count2D; i++)
+            {
+                var col = _areaBuffer2D[i];
+                if (col == null) continue;
+                TryDamageAreaTarget(col, damaged, amount, center);
+            }
+
+            var count3D = Physics.OverlapSphereNonAlloc(center, AreaDamageRadius, _areaBuffer, ~0, QueryTriggerInteraction.Collide);
+            for (var i = 0; i < count3D; i++)
+            {
+                var col = _areaBuffer[i];
+                if (col == null) continue;
+                TryDamageAreaTarget(col, damaged, amount, center);
+            }
+        }
+
+        private void TryDamageAreaTarget(Object targetObject, System.Collections.Generic.HashSet<string> damaged,
+            float amount, Vector3 sourcePosition)
+        {
+            var handle = ResolveHandle(targetObject);
+            if (IgnoreStaticTargets && IsStaticTarget(handle)) return;
+
+            var targetId = !string.IsNullOrEmpty(handle?.InstanceId) ? handle.InstanceId : SkillEntityProxy.IdFrom(targetObject);
+            if (string.IsNullOrEmpty(targetId) || !damaged.Add(targetId)) return;
+            if (SkillEntityProxy.IsDead(targetId)) return;
+
+            SkillEntityProxy.Damage(targetId, amount, CasterId, DamageType, sourcePosition, SuppressTargetHitSfx);
         }
 
         private void EnsureVisual()
@@ -162,28 +212,43 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Runtime
 
         private bool SpawnImpactCharacter()
         {
-            if (string.IsNullOrEmpty(ImpactCharacterConfigId) || !EventProcessor.HasInstance) return false;
+            return SpawnCharacterEffect(ImpactCharacterConfigId, ImpactActionName, transform.position,
+                ImpactScale, ImpactLifetime);
+        }
 
-            var instanceId = $"Impact_{DamageType}_{++_impactSeq}";
+        private void PlayImpactSfx()
+        {
+            if (string.IsNullOrEmpty(ImpactSfxId) || !EventProcessor.HasInstance) return;
+            EventProcessor.Instance.TriggerEventMethod(
+                "PlaySFX",
+                new System.Collections.Generic.List<object> { ImpactSfxId, Mathf.Max(0f, ImpactSfxVolume) });
+        }
+
+        public static bool SpawnCharacterEffect(string configId, string actionName, Vector3 position,
+            float scale, float lifetime)
+        {
+            if (string.IsNullOrEmpty(configId) || !EventProcessor.HasInstance) return false;
+
+            var instanceId = $"SkillEffect_{++_impactSeq}";
             var result = EventProcessor.Instance.TriggerEventMethod(
                 "CreateCharacter",
-                new System.Collections.Generic.List<object> { ImpactCharacterConfigId, instanceId, null, transform.position });
+                new System.Collections.Generic.List<object> { configId, instanceId, null, position });
 
             if (!ResultCode.IsOk(result) || result.Count < 2 || result[1] is not Transform root) return false;
 
             EventProcessor.Instance.TriggerEventMethod(
                 "SetCharacterScale",
-                new System.Collections.Generic.List<object> { instanceId, Vector3.one * Mathf.Max(0.01f, ImpactScale) });
+                new System.Collections.Generic.List<object> { instanceId, Vector3.one * Mathf.Max(0.01f, scale) });
 
-            if (!string.IsNullOrEmpty(ImpactActionName))
+            if (!string.IsNullOrEmpty(actionName))
             {
                 EventProcessor.Instance.TriggerEventMethod(
                     "PlayCharacterAction",
-                    new System.Collections.Generic.List<object> { instanceId, ImpactActionName });
+                    new System.Collections.Generic.List<object> { instanceId, actionName });
             }
 
-            var lifetime = root.gameObject.AddComponent<ImpactCharacterLifetime>();
-            lifetime.Initialize(instanceId, Mathf.Max(0.01f, ImpactLifetime));
+            var lifetimeComponent = root.gameObject.AddComponent<ImpactCharacterLifetime>();
+            lifetimeComponent.Initialize(instanceId, Mathf.Max(0.01f, lifetime));
             return true;
         }
 

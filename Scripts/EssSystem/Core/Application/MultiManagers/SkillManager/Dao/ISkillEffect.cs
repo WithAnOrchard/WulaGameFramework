@@ -13,6 +13,11 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         void Apply(SkillEffectContext ctx);
     }
 
+    public interface ISkillCastStartEffect
+    {
+        void OnCastStart(SkillEffectContext ctx);
+    }
+
     /// <summary>
     /// 技能效果执行上下文 —— 传递施法者、目标、技能实例等信息。
     /// </summary>

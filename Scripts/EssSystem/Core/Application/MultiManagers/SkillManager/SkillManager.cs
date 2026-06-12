@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using EssSystem.Core.Base.Manager;
 using EssSystem.Core.Base.Event;
 using EssSystem.Core.Base.Util;
+using EssSystem.Core.Application.MultiManagers.SkillManager.Dao;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 
 namespace EssSystem.Core.Application.MultiManagers.SkillManager
 {
@@ -22,12 +24,31 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
         /// <summary>释放技能：data = [casterId, string skillId, targetId?, Vector3 dir?, Vector3 pos?]</summary>
         public const string EVT_CAST_SKILL = "CastSkill";
+        private const string DEFAULT_CONFIG_PATH = "Framework/Skill/default_skills.json";
 
         // ─── 生命周期 ────────────────────────────────────────────────
         protected override void Initialize()
         {
             base.Initialize();
-            // Service 自动创建（Service<T> 单例）
+            RegisterConfiguredDefaults();
+        }
+
+        private void RegisterConfiguredDefaults()
+        {
+            if (!RuntimeConfigLoader.TryLoadJson<SkillDefaultConfigFile>(
+                    DEFAULT_CONFIG_PATH, out var file, message => Log(message, UnityEngine.Color.cyan)) ||
+                file?.Skills == null)
+            {
+                LogWarning($"Skill default config missing: {DEFAULT_CONFIG_PATH}");
+                return;
+            }
+
+            foreach (var spec in file.Skills)
+            {
+                var definition = spec?.ToDefinition();
+                if (definition == null || string.IsNullOrEmpty(definition.Id)) continue;
+                SkillService.Instance.RegisterDefinition(definition);
+            }
         }
 
         protected override void Update()

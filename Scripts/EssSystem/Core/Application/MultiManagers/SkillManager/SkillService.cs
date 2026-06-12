@@ -37,6 +37,9 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
         // ─── 活跃 Executor 列表（用于 Tick 推进前摇/后摇）──────────
         private readonly List<SkillExecutor> _activeExecutors = new();
+        private const string SFX_MANA_FAIL = "Sound/skill_mana_fail";
+        private const float FAIL_SFX_COOLDOWN = 0.12f;
+        private float _lastFailSfxTime = -999f;
 
         // ═══════════════════════════════════════════════════════════
         //  技能定义
@@ -164,8 +167,16 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
             var def = inst.Definition;
 
-            // TODO: 消耗检查（MP/HP），待接入 INeeds 或玩家状态
-            // if (def.ManaCost > 0f) { ... }
+            var consumedMana = false;
+            if (def.ManaCost > 0f)
+            {
+                consumedMana = SkillEntityProxy.ConsumeResource(casterId, SkillEntityProxy.ResourceMana, def.ManaCost);
+                if (!consumedMana)
+                {
+                    PlayFailSfx(SFX_MANA_FAIL);
+                    return false;
+                }
+            }
 
             var ctx = new SkillEffectContext
             {
@@ -178,7 +189,12 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
             };
 
             var executor = new SkillExecutor();
-            if (!executor.Begin(ctx)) return false;
+            if (!executor.Begin(ctx))
+            {
+                if (consumedMana)
+                    SkillEntityProxy.RestoreResource(casterId, SkillEntityProxy.ResourceMana, def.ManaCost);
+                return false;
+            }
 
             if (executor.IsActive)
                 _activeExecutors.Add(executor);
@@ -187,6 +203,17 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
             Runtime.ComboTracker.OnSkillCast(casterId, skillId);
 
             return true;
+        }
+
+        private void PlayFailSfx(string sfxPath)
+        {
+            if (string.IsNullOrEmpty(sfxPath) || !EventProcessor.HasInstance) return;
+
+            var now = Time.unscaledTime;
+            if (now - _lastFailSfxTime < FAIL_SFX_COOLDOWN) return;
+
+            _lastFailSfxTime = now;
+            EventProcessor.Instance.TriggerEventMethod("PlaySFX", new List<object> { sfxPath, 0.95f });
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -276,14 +303,18 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
 
     internal static class SkillEntityProxy
     {
+        public const string ResourceMana = "mana";
+
         public static bool CanUseEvents => EventProcessor.HasInstance;
 
         public static float Damage(string targetId, float amount, string sourceId = null,
-            string damageType = null, Vector3? sourcePosition = null)
+            string damageType = null, Vector3? sourcePosition = null, bool suppressHitSfx = false)
         {
             if (string.IsNullOrEmpty(targetId) || amount <= 0f || !CanUseEvents) return 0f;
             var args = new List<object> { targetId, amount, damageType, sourceId };
             if (sourcePosition.HasValue) args.Add(sourcePosition.Value);
+            else if (suppressHitSfx) args.Add(null);
+            if (suppressHitSfx) args.Add(true);
             return ReadFloat(EventProcessor.Instance.TriggerEventMethod("DamageEntity", args), 0f);
         }
 
@@ -334,6 +365,35 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
             var result = EventProcessor.Instance.TriggerEventMethod("GetControlState", new List<object> { entityId });
             if (!ResultCode.IsOk(result) || result.Count < 3) return false;
             return (result[1] is bool stunned && stunned) || (result[2] is bool silenced && silenced);
+        }
+
+        public static bool TryGetResource(string entityId, string resourceId, out float current, out float max)
+        {
+            current = 0f;
+            max = 0f;
+            if (string.IsNullOrEmpty(entityId) || string.IsNullOrEmpty(resourceId) || !CanUseEvents) return false;
+            var result = EventProcessor.Instance.TriggerEventMethod(
+                "GetEntityResource", new List<object> { entityId, resourceId });
+            if (!ResultCode.IsOk(result) || result.Count < 3) return false;
+            current = System.Convert.ToSingle(result[1]);
+            max = System.Convert.ToSingle(result[2]);
+            return true;
+        }
+
+        public static bool ConsumeResource(string entityId, string resourceId, float amount)
+        {
+            if (amount <= 0f) return true;
+            if (string.IsNullOrEmpty(entityId) || string.IsNullOrEmpty(resourceId) || !CanUseEvents) return false;
+            return ResultCode.IsOk(EventProcessor.Instance.TriggerEventMethod(
+                "ConsumeEntityResource", new List<object> { entityId, resourceId, amount }));
+        }
+
+        public static bool RestoreResource(string entityId, string resourceId, float amount)
+        {
+            if (amount <= 0f) return true;
+            if (string.IsNullOrEmpty(entityId) || string.IsNullOrEmpty(resourceId) || !CanUseEvents) return false;
+            return ResultCode.IsOk(EventProcessor.Instance.TriggerEventMethod(
+                "RestoreEntityResource", new List<object> { entityId, resourceId, amount }));
         }
 
         public static bool PushControl(string entityId, string state) => ChangeControl("PushControlState", entityId, state);
