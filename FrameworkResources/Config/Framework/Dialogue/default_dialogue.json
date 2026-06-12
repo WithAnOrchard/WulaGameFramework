@@ -40,7 +40,7 @@
         "Size": { "x": 34.0, "y": 22.0 },
         "Scale": { "x": 1.0, "y": 1.0 },
         "Text": "",
-        "ButtonSpriteId": "Tribe/Common/Items/Weapons/arrow_gold",
+        "ButtonSpriteId": "Common/UI/Dialogue/arrow_gold",
         "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
         "Visible": true,
         "Interactable": true
@@ -65,7 +65,7 @@
         "Size": { "x": 34.0, "y": 36.0 },
         "Scale": { "x": 1.0, "y": 1.0 },
         "Text": "",
-        "ButtonSpriteId": "Tribe/Common/Items/UI/cross_mark_red",
+        "ButtonSpriteId": "Common/UI/Dialogue/cross_mark_red",
         "ButtonColor": { "r": 1.0, "g": 1.0, "b": 1.0, "a": 1.0 },
         "Visible": true,
         "Interactable": true

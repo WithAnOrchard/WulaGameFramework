@@ -1,7 +1,7 @@
 namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao.Templates.DefaultVoxel
 {
     /// <summary>
-    /// 默认体素地图模板：注册 7 个内置 BlockType + 一份 PerlinHeightmap 默认 Config。
+    /// 默认体素地图模板：注册 7 个内置 BlockType。
     /// <para>对应 <see cref="VoxelBlockTypes.DefaultPalette"/> + 标准 Perlin heightmap 生成器。
     /// 后续要做生物群系/洞穴等定制玩法时新建模板（如 BiomeVoxelTemplate）即可，本模板保持简洁。</para>
     /// </summary>
@@ -22,12 +22,6 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao.Templa
             {
                 if (palette[i] != null) service.RegisterBlockType(palette[i]);
             }
-        }
-
-        public VoxelMapConfig CreateDefaultConfig()
-        {
-            // ConfigId / DisplayName 已与默认值绑定；保持 VoxelMapConfig 默认参数即可
-            return new VoxelMapConfig(DefaultConfigId, DisplayName);
         }
 
         public void RegisterDefaultDecorators(Voxel3DMapService service)

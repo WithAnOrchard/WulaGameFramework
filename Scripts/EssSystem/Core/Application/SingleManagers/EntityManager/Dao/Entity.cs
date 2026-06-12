@@ -154,6 +154,12 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
             return this;
         }
 
+        public Entity CanRegenerateFromStats()
+        {
+            Add<StatsRegenerationComponent>(new StatsRegenerationComponent());
+            return this;
+        }
+
         /// <summary>
         /// 监听死亡事件 —— 必须在 <see cref="CanBeAttacked"/> 之后链。无 <see cref="IDamageable"/> 时静默忽略。
         /// 等价于 <c>entity.Get&lt;IDamageable&gt;().Died += handler</c>。
@@ -220,6 +226,25 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
             float tickInterval = 1f, LayerMask layerMask = default, bool includeSelf = false)
         {
             Add<IAura>(new AuraComponent(healPerTick, radius, tickInterval, layerMask, includeSelf));
+            return this;
+        }
+
+        public Entity CanUseResources()
+        {
+            if (!Has<IEntityResources>())
+                Add<IEntityResources>(new EntityResourcesComponent());
+            return this;
+        }
+
+        public Entity CanUseMana(float maxMana, float currentMana = -1f, float regenPerSecond = 0f)
+        {
+            var resources = Get<IEntityResources>();
+            if (resources == null)
+            {
+                resources = new EntityResourcesComponent();
+                Add(resources);
+            }
+            resources.Define(EntityResourceIds.Mana, maxMana, currentMana, regenPerSecond);
             return this;
         }
 

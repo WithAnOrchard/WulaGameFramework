@@ -1,0 +1,70 @@
+{
+  "EntityConfigs": [
+    {
+      "ConfigId": "WarriorEntity",
+      "DisplayName": "战士 Entity",
+      "Kind": 1,
+      "CharacterConfigId": "Warrior",
+      "CharacterConfigVariants": [],
+      "Collider": {
+        "Shape": 0,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": false
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 }
+    },
+    {
+      "ConfigId": "MageEntity",
+      "DisplayName": "法师 Entity",
+      "Kind": 1,
+      "CharacterConfigId": "Mage",
+      "CharacterConfigVariants": [],
+      "Collider": {
+        "Shape": 0,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": false
+      },
+      "SpawnOffset": { "x": 0.0, "y": 0.0, "z": 0.0 }
+    },
+    {
+      "ConfigId": "SmallTreeEntity",
+      "DisplayName": "小树",
+      "Kind": 0,
+      "CharacterConfigId": "",
+      "CharacterConfigVariants": [
+        "SmallTreeChar_1",
+        "SmallTreeChar_2",
+        "SmallTreeChar_3",
+        "SmallTreeChar_4"
+      ],
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": false
+      },
+      "SpawnOffset": { "x": 0.0, "y": 1.0, "z": 0.0 }
+    },
+    {
+      "ConfigId": "MediumTreeEntity",
+      "DisplayName": "中型树",
+      "Kind": 0,
+      "CharacterConfigId": "",
+      "CharacterConfigVariants": [
+        "MediumTreeChar_1",
+        "MediumTreeChar_2",
+        "MediumTreeChar_3",
+        "MediumTreeChar_4"
+      ],
+      "Collider": {
+        "Shape": 1,
+        "Size": { "x": 1.0, "y": 1.0 },
+        "Offset": { "x": 0.0, "y": 0.0 },
+        "IsTrigger": false
+      },
+      "SpawnOffset": { "x": 0.0, "y": 1.0, "z": 0.0 }
+    }
+  ]
+}

@@ -7,7 +7,7 @@
 ### EntityManager Event
 | 常量 | 字符串 | 参数 | 返回 |
 |---|---|---|---|
-| `EVT_DAMAGE_ENTITY` | `DamageEntity` | `[targetId, damage, damageType?, sourceId?, sourcePosition?]` | `Ok(float dealt)` |
+| `EVT_DAMAGE_ENTITY` | `DamageEntity` | `[targetId, damage, damageType?, sourceId?, sourcePosition?, suppressHitSfx?]` | `Ok(float dealt)` |
 | `EVT_HEAL_ENTITY` | `HealEntity` | `[targetId, amount, sourceId?]` | `Ok(float healed)` |
 | `EVT_GET_ENTITY_POSITION` | `GetEntityPosition` | `[entityId]` | `Ok(Vector3)` |
 | `EVT_SET_ENTITY_POSITION` | `SetEntityPosition` | `[entityId, Vector3]` | `Ok(Vector3)` |
@@ -25,6 +25,10 @@
 | `EVT_REGISTER_DAMAGED_CALLBACK` | `RegisterDamagedCallback` | `[entityId, Action<string selfId, string sourceId, float dealt, string damageType>]` | `Ok(Action unsubscribe)` |
 | `EVT_REGISTER_DEATH_CALLBACK` | `RegisterDeathCallback` | `[entityId, Action<string selfId, string killerId>]` | `Ok(Action unsubscribe)` |
 | `EVT_SET_ENTITY_MAX_HP` | `SetEntityMaxHp` | `[entityId, maxHp, refill?]` | `Ok(float maxHp)` |
+| `EVT_GET_ENTITY_RESOURCE` | `GetEntityResource` | `[entityId, resourceId]` | `[OK, current, max, regenPerSecond]` |
+| `EVT_SET_ENTITY_RESOURCE` | `SetEntityResource` | `[entityId, resourceId, current, max?, regenPerSecond?]` | `[OK, current, max]` |
+| `EVT_CONSUME_ENTITY_RESOURCE` | `ConsumeEntityResource` | `[entityId, resourceId, amount]` | `[OK, current, max]` |
+| `EVT_RESTORE_ENTITY_RESOURCE` | `RestoreEntityResource` | `[entityId, resourceId, amount]` | `[OK, restored, current, max]` |
 | `EVT_ADD_ENTITY_CAPABILITY` | `AddEntityCapability` | `[entityId, capabilityKey, ...args]` | `Ok(capabilityKey)` |
 | `EVT_REGISTER_SIMPLE_ENTITY_CONFIG` | `RegisterSimpleEntityConfig` | `[configId, displayName, characterConfigId, collider, spawnOffset, kind?]` | `Ok(configId)` |
 
@@ -372,6 +376,10 @@
 | `EntityManager.EVT_REGISTER_DAMAGED_CALLBACK` | `RegisterDamagedCallback` | Core/Application/EntityManager | 注册受伤回调，参数 `[string instanceId, Action<EntityDamageContext> callback]` → `Ok()` |
 | `EntityManager.EVT_REGISTER_DEATH_CALLBACK` | `RegisterDeathCallback` | Core/Application/EntityManager | 注册死亡回调，参数 `[string instanceId, Action<EntityDeathContext> callback]` → `Ok()` |
 | `EntityManager.EVT_SET_ENTITY_MAX_HP` | `SetEntityMaxHp` | Core/Application/EntityManager | 设置 Entity 最大生命值，参数 `[string instanceId, float maxHp, bool refill]` → `Ok()` |
+| `EntityManager.EVT_GET_ENTITY_RESOURCE` | `GetEntityResource` | Core/Application/EntityManager | 查询 Entity 资源参数，参数 `[string instanceId, string resourceId]` → `[OK, current, max, regenPerSecond]` |
+| `EntityManager.EVT_SET_ENTITY_RESOURCE` | `SetEntityResource` | Core/Application/EntityManager | 设置 Entity 资源参数，参数 `[string instanceId, string resourceId, float current, float? max, float? regenPerSecond]` |
+| `EntityManager.EVT_CONSUME_ENTITY_RESOURCE` | `ConsumeEntityResource` | Core/Application/EntityManager | 消耗 Entity 资源参数，参数 `[string instanceId, string resourceId, float amount]` |
+| `EntityManager.EVT_RESTORE_ENTITY_RESOURCE` | `RestoreEntityResource` | Core/Application/EntityManager | 恢复 Entity 资源参数，参数 `[string instanceId, string resourceId, float amount]` |
 | `EntityManager.EVT_ADD_ENTITY_CAPABILITY` | `AddEntityCapability` | Core/Application/EntityManager | 为 Entity 添加能力对象，参数 `[string instanceId, object capability]` → `Ok()` |
 | `EntityManager.EVT_REGISTER_SIMPLE_ENTITY_CONFIG` | `RegisterSimpleEntityConfig` | Core/Application/EntityManager | 快速注册简单 Entity 配置，参数 `[string configId, GameObject prefab]` → `Ok(string configId)` |
 

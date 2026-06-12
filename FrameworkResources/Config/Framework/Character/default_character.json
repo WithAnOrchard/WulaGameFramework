@@ -1,0 +1,2573 @@
+{
+  "CharacterConfigs": [
+    {
+      "ConfigId": "Warrior",
+      "DisplayName": "??",
+      "Parts": [
+        {
+          "PartId": "Skin",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 0,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 1,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Skin_warrior_1_Walk_0",
+                "Skin_warrior_1_Walk_1",
+                "Skin_warrior_1_Walk_2",
+                "Skin_warrior_1_Walk_3",
+                "Skin_warrior_1_Walk_4",
+                "Skin_warrior_1_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Skin_warrior_1_Idle_0",
+                "Skin_warrior_1_Idle_1",
+                "Skin_warrior_1_Idle_2",
+                "Skin_warrior_1_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Skin_warrior_1_Jump_0",
+                "Skin_warrior_1_Jump_1",
+                "Skin_warrior_1_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Skin_warrior_1_Attack_0",
+                "Skin_warrior_1_Attack_1",
+                "Skin_warrior_1_Attack_2",
+                "Skin_warrior_1_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Skin_warrior_1_Defend_0",
+                "Skin_warrior_1_Defend_1",
+                "Skin_warrior_1_Defend_2",
+                "Skin_warrior_1_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Skin_warrior_1_Damage_0",
+                "Skin_warrior_1_Damage_1",
+                "Skin_warrior_1_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Skin_warrior_1_Death_0",
+                "Skin_warrior_1_Death_1",
+                "Skin_warrior_1_Death_2",
+                "Skin_warrior_1_Death_3",
+                "Skin_warrior_1_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Skin_warrior_1_Special_0",
+                "Skin_warrior_1_Special_1",
+                "Skin_warrior_1_Special_2",
+                "Skin_warrior_1_Special_3",
+                "Skin_warrior_1_Special_4",
+                "Skin_warrior_1_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Cloth",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 1,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 1,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Cloth_warrior_red_Walk_0",
+                "Cloth_warrior_red_Walk_1",
+                "Cloth_warrior_red_Walk_2",
+                "Cloth_warrior_red_Walk_3",
+                "Cloth_warrior_red_Walk_4",
+                "Cloth_warrior_red_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Cloth_warrior_red_Idle_0",
+                "Cloth_warrior_red_Idle_1",
+                "Cloth_warrior_red_Idle_2",
+                "Cloth_warrior_red_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Cloth_warrior_red_Jump_0",
+                "Cloth_warrior_red_Jump_1",
+                "Cloth_warrior_red_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Cloth_warrior_red_Attack_0",
+                "Cloth_warrior_red_Attack_1",
+                "Cloth_warrior_red_Attack_2",
+                "Cloth_warrior_red_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Cloth_warrior_red_Defend_0",
+                "Cloth_warrior_red_Defend_1",
+                "Cloth_warrior_red_Defend_2",
+                "Cloth_warrior_red_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Cloth_warrior_red_Damage_0",
+                "Cloth_warrior_red_Damage_1",
+                "Cloth_warrior_red_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Cloth_warrior_red_Death_0",
+                "Cloth_warrior_red_Death_1",
+                "Cloth_warrior_red_Death_2",
+                "Cloth_warrior_red_Death_3",
+                "Cloth_warrior_red_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Cloth_warrior_red_Special_0",
+                "Cloth_warrior_red_Special_1",
+                "Cloth_warrior_red_Special_2",
+                "Cloth_warrior_red_Special_3",
+                "Cloth_warrior_red_Special_4",
+                "Cloth_warrior_red_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Eyes",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 2,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Eyes_blue_Walk_0",
+                "Eyes_blue_Walk_1",
+                "Eyes_blue_Walk_2",
+                "Eyes_blue_Walk_3",
+                "Eyes_blue_Walk_4",
+                "Eyes_blue_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Eyes_blue_Idle_0",
+                "Eyes_blue_Idle_1",
+                "Eyes_blue_Idle_2",
+                "Eyes_blue_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Eyes_blue_Jump_0",
+                "Eyes_blue_Jump_1",
+                "Eyes_blue_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Eyes_blue_Attack_0",
+                "Eyes_blue_Attack_1",
+                "Eyes_blue_Attack_2",
+                "Eyes_blue_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Eyes_blue_Defend_0",
+                "Eyes_blue_Defend_1",
+                "Eyes_blue_Defend_2",
+                "Eyes_blue_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Eyes_blue_Damage_0",
+                "Eyes_blue_Damage_1",
+                "Eyes_blue_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Eyes_blue_Death_0",
+                "Eyes_blue_Death_1",
+                "Eyes_blue_Death_2",
+                "Eyes_blue_Death_3",
+                "Eyes_blue_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Eyes_blue_Special_0",
+                "Eyes_blue_Special_1",
+                "Eyes_blue_Special_2",
+                "Eyes_blue_Special_3",
+                "Eyes_blue_Special_4",
+                "Eyes_blue_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Hair",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 3,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Hair_1_1_brown_Walk_0",
+                "Hair_1_1_brown_Walk_1",
+                "Hair_1_1_brown_Walk_2",
+                "Hair_1_1_brown_Walk_3",
+                "Hair_1_1_brown_Walk_4",
+                "Hair_1_1_brown_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Hair_1_1_brown_Idle_0",
+                "Hair_1_1_brown_Idle_1",
+                "Hair_1_1_brown_Idle_2",
+                "Hair_1_1_brown_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Hair_1_1_brown_Jump_0",
+                "Hair_1_1_brown_Jump_1",
+                "Hair_1_1_brown_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Hair_1_1_brown_Attack_0",
+                "Hair_1_1_brown_Attack_1",
+                "Hair_1_1_brown_Attack_2",
+                "Hair_1_1_brown_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Hair_1_1_brown_Defend_0",
+                "Hair_1_1_brown_Defend_1",
+                "Hair_1_1_brown_Defend_2",
+                "Hair_1_1_brown_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Hair_1_1_brown_Damage_0",
+                "Hair_1_1_brown_Damage_1",
+                "Hair_1_1_brown_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Hair_1_1_brown_Death_0",
+                "Hair_1_1_brown_Death_1",
+                "Hair_1_1_brown_Death_2",
+                "Hair_1_1_brown_Death_3",
+                "Hair_1_1_brown_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Hair_1_1_brown_Special_0",
+                "Hair_1_1_brown_Special_1",
+                "Hair_1_1_brown_Special_2",
+                "Hair_1_1_brown_Special_3",
+                "Hair_1_1_brown_Special_4",
+                "Hair_1_1_brown_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Head",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 4,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Walk_0",
+                "Headgear_Helmet_Close_1_Walk_1",
+                "Headgear_Helmet_Close_1_Walk_2",
+                "Headgear_Helmet_Close_1_Walk_3",
+                "Headgear_Helmet_Close_1_Walk_4",
+                "Headgear_Helmet_Close_1_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Idle_0",
+                "Headgear_Helmet_Close_1_Idle_1",
+                "Headgear_Helmet_Close_1_Idle_2",
+                "Headgear_Helmet_Close_1_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Jump_0",
+                "Headgear_Helmet_Close_1_Jump_1",
+                "Headgear_Helmet_Close_1_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Attack_0",
+                "Headgear_Helmet_Close_1_Attack_1",
+                "Headgear_Helmet_Close_1_Attack_2",
+                "Headgear_Helmet_Close_1_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Defend_0",
+                "Headgear_Helmet_Close_1_Defend_1",
+                "Headgear_Helmet_Close_1_Defend_2",
+                "Headgear_Helmet_Close_1_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Damage_0",
+                "Headgear_Helmet_Close_1_Damage_1",
+                "Headgear_Helmet_Close_1_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Death_0",
+                "Headgear_Helmet_Close_1_Death_1",
+                "Headgear_Helmet_Close_1_Death_2",
+                "Headgear_Helmet_Close_1_Death_3",
+                "Headgear_Helmet_Close_1_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Headgear_Helmet_Close_1_Special_0",
+                "Headgear_Helmet_Close_1_Special_1",
+                "Headgear_Helmet_Close_1_Special_2",
+                "Headgear_Helmet_Close_1_Special_3",
+                "Headgear_Helmet_Close_1_Special_4",
+                "Headgear_Helmet_Close_1_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Weapon",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 5,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 2,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Weapon_Sword_1_Walk_0",
+                "Weapon_Sword_1_Walk_1",
+                "Weapon_Sword_1_Walk_2",
+                "Weapon_Sword_1_Walk_3",
+                "Weapon_Sword_1_Walk_4",
+                "Weapon_Sword_1_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Weapon_Sword_1_Idle_0",
+                "Weapon_Sword_1_Idle_1",
+                "Weapon_Sword_1_Idle_2",
+                "Weapon_Sword_1_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Weapon_Sword_1_Jump_0",
+                "Weapon_Sword_1_Jump_1",
+                "Weapon_Sword_1_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Weapon_Sword_1_Attack_0",
+                "Weapon_Sword_1_Attack_1",
+                "Weapon_Sword_1_Attack_2",
+                "Weapon_Sword_1_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Weapon_Sword_1_Defend_0",
+                "Weapon_Sword_1_Defend_1",
+                "Weapon_Sword_1_Defend_2",
+                "Weapon_Sword_1_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Weapon_Sword_1_Damage_0",
+                "Weapon_Sword_1_Damage_1",
+                "Weapon_Sword_1_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Weapon_Sword_1_Death_0",
+                "Weapon_Sword_1_Death_1",
+                "Weapon_Sword_1_Death_2",
+                "Weapon_Sword_1_Death_3",
+                "Weapon_Sword_1_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Weapon_Sword_1_Special_0",
+                "Weapon_Sword_1_Special_1",
+                "Weapon_Sword_1_Special_2",
+                "Weapon_Sword_1_Special_3",
+                "Weapon_Sword_1_Special_4",
+                "Weapon_Sword_1_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Shield",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 6,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 2,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Equipment_Shield_01_Walk_0",
+                "Equipment_Shield_01_Walk_1",
+                "Equipment_Shield_01_Walk_2",
+                "Equipment_Shield_01_Walk_3",
+                "Equipment_Shield_01_Walk_4",
+                "Equipment_Shield_01_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Equipment_Shield_01_Idle_0",
+                "Equipment_Shield_01_Idle_1",
+                "Equipment_Shield_01_Idle_2",
+                "Equipment_Shield_01_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Equipment_Shield_01_Jump_0",
+                "Equipment_Shield_01_Jump_1",
+                "Equipment_Shield_01_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Equipment_Shield_01_Attack_0",
+                "Equipment_Shield_01_Attack_1",
+                "Equipment_Shield_01_Attack_2",
+                "Equipment_Shield_01_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Equipment_Shield_01_Defend_0",
+                "Equipment_Shield_01_Defend_1",
+                "Equipment_Shield_01_Defend_2",
+                "Equipment_Shield_01_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Equipment_Shield_01_Damage_0",
+                "Equipment_Shield_01_Damage_1",
+                "Equipment_Shield_01_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Equipment_Shield_01_Death_0",
+                "Equipment_Shield_01_Death_1",
+                "Equipment_Shield_01_Death_2",
+                "Equipment_Shield_01_Death_3",
+                "Equipment_Shield_01_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Equipment_Shield_01_Special_0",
+                "Equipment_Shield_01_Special_1",
+                "Equipment_Shield_01_Special_2",
+                "Equipment_Shield_01_Special_3",
+                "Equipment_Shield_01_Special_4",
+                "Equipment_Shield_01_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        }
+      ],
+      "RootScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "RenderMode": 3
+    },
+    {
+      "ConfigId": "Mage",
+      "DisplayName": "??",
+      "Parts": [
+        {
+          "PartId": "Skin",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 0,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 1,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Skin_mage_1_Walk_0",
+                "Skin_mage_1_Walk_1",
+                "Skin_mage_1_Walk_2",
+                "Skin_mage_1_Walk_3",
+                "Skin_mage_1_Walk_4",
+                "Skin_mage_1_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Skin_mage_1_Idle_0",
+                "Skin_mage_1_Idle_1",
+                "Skin_mage_1_Idle_2",
+                "Skin_mage_1_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Skin_mage_1_Jump_0",
+                "Skin_mage_1_Jump_1",
+                "Skin_mage_1_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Skin_mage_1_Attack_0",
+                "Skin_mage_1_Attack_1",
+                "Skin_mage_1_Attack_2",
+                "Skin_mage_1_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Skin_mage_1_Defend_0",
+                "Skin_mage_1_Defend_1",
+                "Skin_mage_1_Defend_2",
+                "Skin_mage_1_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Skin_mage_1_Damage_0",
+                "Skin_mage_1_Damage_1",
+                "Skin_mage_1_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Skin_mage_1_Death_0",
+                "Skin_mage_1_Death_1",
+                "Skin_mage_1_Death_2",
+                "Skin_mage_1_Death_3",
+                "Skin_mage_1_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Skin_mage_1_Special_0",
+                "Skin_mage_1_Special_1",
+                "Skin_mage_1_Special_2",
+                "Skin_mage_1_Special_3",
+                "Skin_mage_1_Special_4",
+                "Skin_mage_1_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Cloth",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 1,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 1,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Cloth_mage_purple_Walk_0",
+                "Cloth_mage_purple_Walk_1",
+                "Cloth_mage_purple_Walk_2",
+                "Cloth_mage_purple_Walk_3",
+                "Cloth_mage_purple_Walk_4",
+                "Cloth_mage_purple_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Cloth_mage_purple_Idle_0",
+                "Cloth_mage_purple_Idle_1",
+                "Cloth_mage_purple_Idle_2",
+                "Cloth_mage_purple_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Cloth_mage_purple_Jump_0",
+                "Cloth_mage_purple_Jump_1",
+                "Cloth_mage_purple_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Cloth_mage_purple_Attack_0",
+                "Cloth_mage_purple_Attack_1",
+                "Cloth_mage_purple_Attack_2",
+                "Cloth_mage_purple_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Cloth_mage_purple_Defend_0",
+                "Cloth_mage_purple_Defend_1",
+                "Cloth_mage_purple_Defend_2",
+                "Cloth_mage_purple_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Cloth_mage_purple_Damage_0",
+                "Cloth_mage_purple_Damage_1",
+                "Cloth_mage_purple_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Cloth_mage_purple_Death_0",
+                "Cloth_mage_purple_Death_1",
+                "Cloth_mage_purple_Death_2",
+                "Cloth_mage_purple_Death_3",
+                "Cloth_mage_purple_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Cloth_mage_purple_Special_0",
+                "Cloth_mage_purple_Special_1",
+                "Cloth_mage_purple_Special_2",
+                "Cloth_mage_purple_Special_3",
+                "Cloth_mage_purple_Special_4",
+                "Cloth_mage_purple_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Eyes",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 2,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Eyes_blue_Walk_0",
+                "Eyes_blue_Walk_1",
+                "Eyes_blue_Walk_2",
+                "Eyes_blue_Walk_3",
+                "Eyes_blue_Walk_4",
+                "Eyes_blue_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Eyes_blue_Idle_0",
+                "Eyes_blue_Idle_1",
+                "Eyes_blue_Idle_2",
+                "Eyes_blue_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Eyes_blue_Jump_0",
+                "Eyes_blue_Jump_1",
+                "Eyes_blue_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Eyes_blue_Attack_0",
+                "Eyes_blue_Attack_1",
+                "Eyes_blue_Attack_2",
+                "Eyes_blue_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Eyes_blue_Defend_0",
+                "Eyes_blue_Defend_1",
+                "Eyes_blue_Defend_2",
+                "Eyes_blue_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Eyes_blue_Damage_0",
+                "Eyes_blue_Damage_1",
+                "Eyes_blue_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Eyes_blue_Death_0",
+                "Eyes_blue_Death_1",
+                "Eyes_blue_Death_2",
+                "Eyes_blue_Death_3",
+                "Eyes_blue_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Eyes_blue_Special_0",
+                "Eyes_blue_Special_1",
+                "Eyes_blue_Special_2",
+                "Eyes_blue_Special_3",
+                "Eyes_blue_Special_4",
+                "Eyes_blue_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Hair",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 3,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Hair_2_2_brown_Walk_0",
+                "Hair_2_2_brown_Walk_1",
+                "Hair_2_2_brown_Walk_2",
+                "Hair_2_2_brown_Walk_3",
+                "Hair_2_2_brown_Walk_4",
+                "Hair_2_2_brown_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Hair_2_2_brown_Idle_0",
+                "Hair_2_2_brown_Idle_1",
+                "Hair_2_2_brown_Idle_2",
+                "Hair_2_2_brown_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Hair_2_2_brown_Jump_0",
+                "Hair_2_2_brown_Jump_1",
+                "Hair_2_2_brown_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Hair_2_2_brown_Attack_0",
+                "Hair_2_2_brown_Attack_1",
+                "Hair_2_2_brown_Attack_2",
+                "Hair_2_2_brown_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Hair_2_2_brown_Defend_0",
+                "Hair_2_2_brown_Defend_1",
+                "Hair_2_2_brown_Defend_2",
+                "Hair_2_2_brown_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Hair_2_2_brown_Damage_0",
+                "Hair_2_2_brown_Damage_1",
+                "Hair_2_2_brown_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Hair_2_2_brown_Death_0",
+                "Hair_2_2_brown_Death_1",
+                "Hair_2_2_brown_Death_2",
+                "Hair_2_2_brown_Death_3",
+                "Hair_2_2_brown_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Hair_2_2_brown_Special_0",
+                "Hair_2_2_brown_Special_1",
+                "Hair_2_2_brown_Special_2",
+                "Hair_2_2_brown_Special_3",
+                "Hair_2_2_brown_Special_4",
+                "Hair_2_2_brown_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Head",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 4,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Walk_0",
+                "Headgear_WitchHat_1_purple_Walk_1",
+                "Headgear_WitchHat_1_purple_Walk_2",
+                "Headgear_WitchHat_1_purple_Walk_3",
+                "Headgear_WitchHat_1_purple_Walk_4",
+                "Headgear_WitchHat_1_purple_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Idle_0",
+                "Headgear_WitchHat_1_purple_Idle_1",
+                "Headgear_WitchHat_1_purple_Idle_2",
+                "Headgear_WitchHat_1_purple_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Jump_0",
+                "Headgear_WitchHat_1_purple_Jump_1",
+                "Headgear_WitchHat_1_purple_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Attack_0",
+                "Headgear_WitchHat_1_purple_Attack_1",
+                "Headgear_WitchHat_1_purple_Attack_2",
+                "Headgear_WitchHat_1_purple_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Defend_0",
+                "Headgear_WitchHat_1_purple_Defend_1",
+                "Headgear_WitchHat_1_purple_Defend_2",
+                "Headgear_WitchHat_1_purple_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Damage_0",
+                "Headgear_WitchHat_1_purple_Damage_1",
+                "Headgear_WitchHat_1_purple_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Death_0",
+                "Headgear_WitchHat_1_purple_Death_1",
+                "Headgear_WitchHat_1_purple_Death_2",
+                "Headgear_WitchHat_1_purple_Death_3",
+                "Headgear_WitchHat_1_purple_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Headgear_WitchHat_1_purple_Special_0",
+                "Headgear_WitchHat_1_purple_Special_1",
+                "Headgear_WitchHat_1_purple_Special_2",
+                "Headgear_WitchHat_1_purple_Special_3",
+                "Headgear_WitchHat_1_purple_Special_4",
+                "Headgear_WitchHat_1_purple_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        },
+        {
+          "PartId": "Weapon",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 5,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 2,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Walk",
+              "SpriteIds": [
+                "Weapon_Rod_1_Walk_0",
+                "Weapon_Rod_1_Walk_1",
+                "Weapon_Rod_1_Walk_2",
+                "Weapon_Rod_1_Walk_3",
+                "Weapon_Rod_1_Walk_4",
+                "Weapon_Rod_1_Walk_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Idle",
+              "SpriteIds": [
+                "Weapon_Rod_1_Idle_0",
+                "Weapon_Rod_1_Idle_1",
+                "Weapon_Rod_1_Idle_2",
+                "Weapon_Rod_1_Idle_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Jump",
+              "SpriteIds": [
+                "Weapon_Rod_1_Jump_0",
+                "Weapon_Rod_1_Jump_1",
+                "Weapon_Rod_1_Jump_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Attack",
+              "SpriteIds": [
+                "Weapon_Rod_1_Attack_0",
+                "Weapon_Rod_1_Attack_1",
+                "Weapon_Rod_1_Attack_2",
+                "Weapon_Rod_1_Attack_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 14,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Defend",
+              "SpriteIds": [
+                "Weapon_Rod_1_Defend_0",
+                "Weapon_Rod_1_Defend_1",
+                "Weapon_Rod_1_Defend_2",
+                "Weapon_Rod_1_Defend_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 10,
+              "Loop": true,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Damage",
+              "SpriteIds": [
+                "Weapon_Rod_1_Damage_0",
+                "Weapon_Rod_1_Damage_1",
+                "Weapon_Rod_1_Damage_2"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Death",
+              "SpriteIds": [
+                "Weapon_Rod_1_Death_0",
+                "Weapon_Rod_1_Death_1",
+                "Weapon_Rod_1_Death_2",
+                "Weapon_Rod_1_Death_3",
+                "Weapon_Rod_1_Death_4"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 8,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            },
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Weapon_Rod_1_Special_0",
+                "Weapon_Rod_1_Special_1",
+                "Weapon_Rod_1_Special_2",
+                "Weapon_Rod_1_Special_3",
+                "Weapon_Rod_1_Special_4",
+                "Weapon_Rod_1_Special_5"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Idle"
+        }
+      ],
+      "RootScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "RenderMode": 3
+    },
+    {
+      "ConfigId": "CommonFireballImpact",
+      "DisplayName": "Fireball Impact",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 1,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 280,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "",
+          "PrefabPath": "",
+          "Animations": [
+            {
+              "ActionName": "Special",
+              "SpriteIds": [
+                "Common/Effects/MiniEffect2D/Effect13_0",
+                "Common/Effects/MiniEffect2D/Effect13_1",
+                "Common/Effects/MiniEffect2D/Effect13_2",
+                "Common/Effects/MiniEffect2D/Effect13_3"
+              ],
+              "SheetResourcePath": "",
+              "SheetFrameIndices": [],
+              "FrameRate": 12,
+              "Loop": false,
+              "AnimatorStateName": "",
+              "AnimatorLayer": 0,
+              "CrossFadeDuration": 0.1
+            }
+          ],
+          "DefaultActionName": "Special"
+        }
+      ],
+      "RootScale": {
+        "x": 1,
+        "y": 1,
+        "z": 1
+      },
+      "RenderMode": 3
+    },
+    {
+      "ConfigId": "SmallTreeChar_1",
+      "DisplayName": "??#1",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_small_1",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "MediumTreeChar_1",
+      "DisplayName": "???#1",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_medium_1",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "SmallTreeChar_2",
+      "DisplayName": "??#2",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_small_2",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "MediumTreeChar_2",
+      "DisplayName": "???#2",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_medium_2",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "SmallTreeChar_3",
+      "DisplayName": "??#3",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_small_3",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "MediumTreeChar_3",
+      "DisplayName": "???#3",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_medium_3",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "SmallTreeChar_4",
+      "DisplayName": "??#4",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_small_4",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    },
+    {
+      "ConfigId": "MediumTreeChar_4",
+      "DisplayName": "???#4",
+      "Parts": [
+        {
+          "PartId": "Body",
+          "PartType": 0,
+          "LocalPosition": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "LocalScale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "LocalEulerAngles": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "SortingOrder": 50,
+          "Color": {
+            "r": 1,
+            "g": 1,
+            "b": 1,
+            "a": 1
+          },
+          "IsVisible": true,
+          "LocomotionRole": 0,
+          "StaticSpriteId": "Tree_medium_4",
+          "PrefabPath": "",
+          "Animations": [],
+          "DefaultActionName": ""
+        }
+      ],
+      "RootScale": {
+        "x": 10,
+        "y": 10,
+        "z": 10
+      },
+      "RenderMode": 0
+    }
+  ]
+}

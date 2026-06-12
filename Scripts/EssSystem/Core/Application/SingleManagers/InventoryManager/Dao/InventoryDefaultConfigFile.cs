@@ -7,6 +7,7 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Dao
     public class InventoryDefaultConfigFile
     {
         public List<InventoryItem> ItemTemplates = new();
+        public List<PickableItemDefinition> PickableItems = new();
         public List<InventoryConfig> InventoryConfigs = new();
         public List<InventoryContainerDefinition> Inventories = new();
     }

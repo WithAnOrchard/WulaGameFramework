@@ -1,0 +1,37 @@
+{
+  "MapConfigs": [
+    {
+      "ConfigId": "default_voxel_3d",
+      "DisplayName": "Default Voxel 3D",
+      "Seed": 20240501,
+      "ChunkSize": 16,
+      "MaxHeight": 96,
+      "SeaLevel": 12,
+      "TerrainAmplitude": 24.0,
+      "ContinentalnessScale": 0.0018,
+      "ErosionScale": 0.012,
+      "WeirdnessScale": 0.008,
+      "MCAmplitudeScale": 1.0,
+      "MCHeightSmoothRadius": 1,
+      "BeachBand": 2,
+      "SnowLine": 60,
+      "ElevationScale": 0.01,
+      "ElevationOctaves": 4,
+      "ElevationPersistence": 0.5,
+      "ElevationLacunarity": 2.0,
+      "BaseTemperature": 0.7,
+      "LatitudePeriod": 4000.0,
+      "LatitudeStrength": 0.5,
+      "ElevationLapseRate": 0.4,
+      "TemperatureNoiseScale": 0.005,
+      "TemperatureNoiseStrength": 0.1,
+      "BaseMoisture": 0.5,
+      "MoistureScale": 0.005,
+      "MoistureOctaves": 3,
+      "MoisturePersistence": 0.5,
+      "MoistureLacunarity": 2.0,
+      "OceanMoistureBoost": 0.4,
+      "ElevationDryness": 0.3
+    }
+  ]
+}

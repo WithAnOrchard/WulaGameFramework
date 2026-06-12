@@ -30,7 +30,7 @@ namespace EssSystem.Core.Presentation.CharacterManager.Dao
         // Loop 语义：
         //   true  = 持续状态动作（移动/待机/防御按住）→ 末帧回 0 重播
         //   false = 一次性动作（攻击/受击/死亡/跳跃/特殊）→ 停在末帧 + 触发 OnActionComplete
-        // 业务层（如 TribePlayer.PlayThenReturn）应监听完成事件再切回 Idle/Walk。
+        // 业务层应监听完成事件，再按自身状态切回 Idle/Walk。
         private static readonly ActionDef[] Actions =
         {
             new ActionDef { Name = "Walk",    FrameCount = 6, Fps = 12f, Loop = true  },
