@@ -65,13 +65,33 @@ namespace EssSystem.Core.Application.SingleManagers.InventoryManager.Runtime
         }
 
         // 框架层不得引用 Demo —— 仅按 tag/名字识别玩家。
-        // 业务侧（TribePlayer 等）需保证根 GameObject 设置 tag="Player" 或名字包含 "Player"。
+        // 碰撞体可能挂在玩家子节点上，因此需要沿父级向上查找。
         private static bool IsPlayerCollider(Component other)
         {
             if (other == null) return false;
-            var go = other.gameObject;
-            if (go.CompareTag("Player")) return true;
-            return go.name.IndexOf("Player", System.StringComparison.OrdinalIgnoreCase) >= 0;
+            var current = other.transform;
+            while (current != null)
+            {
+                var go = current.gameObject;
+                if (HasPlayerTag(go)) return true;
+                if (go.name.IndexOf("Player", System.StringComparison.OrdinalIgnoreCase) >= 0) return true;
+                current = current.parent;
+            }
+
+            return false;
+        }
+
+        private static bool HasPlayerTag(GameObject go)
+        {
+            if (go == null) return false;
+            try
+            {
+                return go.CompareTag("Player");
+            }
+            catch (UnityException)
+            {
+                return false;
+            }
         }
 
         public InventoryResult GiveToTargetInventory()

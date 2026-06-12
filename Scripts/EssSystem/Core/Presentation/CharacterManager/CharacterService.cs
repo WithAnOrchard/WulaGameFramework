@@ -165,8 +165,7 @@ namespace EssSystem.Core.Presentation.CharacterManager
         {
             var c = GetCharacter(instanceId);
             if (c == null || c.View == null) return false;
-            c.View.Play(actionName, partId);
-            return true;
+            return c.View.Play(actionName, partId);
         }
 
         /// <summary>停止动作；partId 为空则停止所有部件。</summary>
@@ -192,8 +191,7 @@ namespace EssSystem.Core.Presentation.CharacterManager
         {
             var c = GetCharacter(instanceId);
             if (c == null || c.View == null) return false;
-            c.View.TriggerAttack(duration);
-            return true;
+            return c.View.TriggerAttack(duration);
         }
 
         /// <summary>设置 Character 面朝（翻转 localScale.x）。</summary>

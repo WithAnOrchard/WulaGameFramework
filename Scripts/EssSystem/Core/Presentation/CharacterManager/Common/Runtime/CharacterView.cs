@@ -104,27 +104,53 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 
         /// <summary>给指定部件播放动作；partId 为空则对所有 Dynamic 部件尝试播放同名动作。
         /// <para>内部去重：同一部件连续送同名动作不会重置帧计数。</para></summary>
-        public void Play(string actionName, string partId = null)
+        public bool Play(string actionName, string partId = null)
         {
             if (string.IsNullOrEmpty(partId))
             {
-                foreach (var kv in _parts) PlayPart(kv.Key, kv.Value, actionName);
-                return;
+                var played = false;
+                foreach (var kv in _parts) played |= PlayPart(kv.Key, kv.Value, actionName);
+                return played;
             }
 
             if (_parts.TryGetValue(partId, out var view))
-                PlayPart(partId, view, actionName);
+                return PlayPart(partId, view, actionName);
+            return false;
         }
 
-        private void PlayPart(string partId, CharacterPartView view, string actionName)
+        private bool PlayPart(string partId, CharacterPartView view, string actionName)
         {
-            if (view == null || string.IsNullOrEmpty(actionName)) return;
-            if (_lastPartActions.TryGetValue(partId, out var current) && current == actionName) return;
+            if (view == null || string.IsNullOrEmpty(actionName)) return false;
+            if (_lastPartActions.TryGetValue(partId, out var current) && current == actionName) return true;
+            if (!view.Play(actionName)) return false;
             _lastPartActions[partId] = actionName;
-            view.Play(actionName);
+            LockAttackActionIfNeeded(view, actionName);
+            return true;
         }
 
         /// <summary>停止指定部件；partId 为空则停止全部。</summary>
+        private void LockAttackActionIfNeeded(CharacterPartView view, string actionName)
+        {
+            if (view?.Config == null || actionName != "Attack") return;
+            if (view.Config.LocomotionRole != CharacterLocomotionRole.Attack) return;
+            var action = view.Config.GetAction(actionName);
+            if (action == null) return;
+            _attackLockUntil = Mathf.Max(_attackLockUntil, Time.time + EstimateActionDuration(action));
+        }
+
+        private static float EstimateActionDuration(CharacterActionConfig action)
+        {
+            var frameCount = action.SpriteIds != null ? action.SpriteIds.Count : 0;
+            if (action.SheetFrameIndices != null && action.SheetFrameIndices.Length > 0)
+                frameCount = Mathf.Max(frameCount, action.SheetFrameIndices.Length);
+            if (action.DirectionalFrameIndices != null)
+            {
+                foreach (var frames in action.DirectionalFrameIndices.Values)
+                    if (frames != null) frameCount = Mathf.Max(frameCount, frames.Length);
+            }
+            return Mathf.Max(0.08f, frameCount / Mathf.Max(0.01f, action.FrameRate));
+        }
+
         public void Stop(string partId = null)
         {
             if (string.IsNullOrEmpty(partId))
@@ -209,16 +235,20 @@ namespace EssSystem.Core.Presentation.CharacterManager.Runtime
 
         /// <summary>触发一次攻击：锁定 <paramref name="duration"/> 秒，期间 Attack 角色部件播放 <paramref name="attackAction"/>。
         /// <para>同一锁定窗口内多次调用会动作重起。</para></summary>
-        public void TriggerAttack(float duration, string attackAction = "Attack")
+        public bool TriggerAttack(float duration, string attackAction = "Attack")
         {
-            _attackLockUntil = Time.time + Mathf.Max(0.01f, duration);
+            var played = false;
             foreach (var kv in _parts)
             {
                 if ((kv.Value?.Config?.LocomotionRole ?? CharacterLocomotionRole.Movement) != CharacterLocomotionRole.Attack)
                     continue;
+                if (kv.Value?.Config?.GetAction(attackAction) == null) continue;
                 _lastPartActions.Remove(kv.Key);
-                PlayPart(kv.Key, kv.Value, attackAction);
+                played |= PlayPart(kv.Key, kv.Value, attackAction);
             }
+            if (played)
+                _attackLockUntil = Time.time + Mathf.Max(0.01f, duration);
+            return played;
         }
 
         /// <summary>设置面朝：通过翻转 localScale.x 实现。</summary>

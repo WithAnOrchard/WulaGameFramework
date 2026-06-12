@@ -4,7 +4,7 @@ namespace EssSystem.Core.Presentation.UIManager
 {
     /// <summary>
     /// 世界坐标 → Screen-space UI 投影工具 —— 统一"HUD 跟随世界物体"的重复逻辑。
-    /// <para><see cref="BuildingCostHud"/> 和 <see cref="TribeCreatureHealthUI"/> 等
+    /// <para>建筑消耗提示、角色血条等
     /// 均使用 Camera.WorldToScreenPoint → 写 anchoredPosition 模式，本类将其抽为一次调用。</para>
     /// </summary>
     public static class UIWorldFollower

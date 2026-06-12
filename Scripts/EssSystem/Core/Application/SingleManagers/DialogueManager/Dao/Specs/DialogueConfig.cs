@@ -48,7 +48,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs
         /// <summary>"下一句" 按钮（无选项时显示）。</summary>
         public UIButtonSpec NextButton = new UIButtonSpec(724f, 28f, 34f, 22f)
             .WithText(string.Empty)
-            .WithSpriteId("Tribe/Common/Items/Weapons/arrow_gold")
+            .WithSpriteId("Common/UI/Dialogue/arrow_gold")
             .WithColor(Color.white);
 
         /// <summary>选项按钮列表（Dialogue 独有的多按钮堆叠布局）。</summary>
@@ -57,7 +57,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager.Dao.Specs
         /// <summary>关闭按钮（右上角）。</summary>
         public UIButtonSpec CloseButton = new UIButtonSpec(742f, 199f, 34f, 36f)
             .WithText(string.Empty)
-            .WithSpriteId("Tribe/Common/Items/UI/cross_mark_red")
+            .WithSpriteId("Common/UI/Dialogue/cross_mark_red")
             .WithColor(Color.white);
 
         public DialogueConfig() { }

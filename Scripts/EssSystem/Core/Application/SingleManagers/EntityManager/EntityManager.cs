@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Base.Util;
 using EssSystem.Core.Base.Event;
@@ -7,6 +7,7 @@ using EssSystem.Core.Application.SingleManagers.EntityManager.Dao;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Dao.Config;
 using EssSystem.Core.Application.SingleManagers.EntityManager.Runtime;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 // 本文件不 <c>using</c> CharacterManager——跨模块调用一律走 EventProcessor。
 
 namespace EssSystem.Core.Application.SingleManagers.EntityManager
@@ -24,6 +25,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
     [Manager(13)]
     public class EntityManager : Manager<EntityManager>
     {
+        private const string DEFAULT_ENTITY_CONFIG_PATH = "Framework/Entity/default_entity.json";
         // ─── Event 名常量（定义方）—— 跨模块调用走 bare-string（§4.1 方案 B）
         /// <summary>创建 Entity。data: [configId, instanceId, parent(Transform?), worldPosition(Vector3?)].
         /// 返回 ResultCode.Ok(Transform CharacterRoot) / Fail。
@@ -50,6 +52,10 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         public const string EVT_REGISTER_DAMAGED_CALLBACK = "RegisterDamagedCallback";
         public const string EVT_REGISTER_DEATH_CALLBACK = "RegisterDeathCallback";
         public const string EVT_SET_ENTITY_MAX_HP = "SetEntityMaxHp";
+        public const string EVT_GET_ENTITY_RESOURCE = "GetEntityResource";
+        public const string EVT_SET_ENTITY_RESOURCE = "SetEntityResource";
+        public const string EVT_CONSUME_ENTITY_RESOURCE = "ConsumeEntityResource";
+        public const string EVT_RESTORE_ENTITY_RESOURCE = "RestoreEntityResource";
         public const string EVT_ADD_ENTITY_CAPABILITY = "AddEntityCapability";
 
         /// <summary>注册 Entity 配置（模板）。data: [EntityConfig config]. → Ok(configId)/Fail.</summary>
@@ -85,14 +91,30 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
             if (_registerDebugTemplates)
             {
-                // 只注册 Entity 配置；Character 外观（含 Tree variants）由 CharacterManager 自己注册
-                Service.RegisterConfig(DefaultEntityConfigs.BuildWarriorEntity());    // Dynamic
-                Service.RegisterConfig(DefaultEntityConfigs.BuildMageEntity());       // Dynamic
-                Service.RegisterConfig(DefaultEntityConfigs.BuildSmallTreeEntity());  // Static
-                Service.RegisterConfig(DefaultEntityConfigs.BuildMediumTreeEntity()); // Static
+                RegisterDefaultsFromJson();
             }
 
             Log("EntityManager 初始化完成", Color.green);
+        }
+
+        private void RegisterDefaultsFromJson()
+        {
+            if (Service == null) return;
+
+            if (!RuntimeConfigLoader.TryLoadJson(
+                    DEFAULT_ENTITY_CONFIG_PATH,
+                    out EntityDefaultConfigFile file,
+                    msg => Log(msg, Color.gray)) || file == null)
+            {
+                Log($"Entity default config not found: {DEFAULT_ENTITY_CONFIG_PATH}", Color.yellow);
+                return;
+            }
+
+            foreach (var config in file.EntityConfigs ?? new List<EntityConfig>())
+            {
+                if (config == null || string.IsNullOrEmpty(config.ConfigId)) continue;
+                Service.RegisterConfig(config);
+            }
         }
 
         protected override void Update()
@@ -197,7 +219,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 : data.Count > 3 && data[3] is Vector3 legacySp
                     ? (Vector3?)legacySp
                     : null;
-            var dealt = Service.TryDamage(target, damage, source, damageType, sourcePos);
+            var suppressHitSfx = data.Count > 5 && data[5] is bool suppress && suppress;
+            var dealt = Service.TryDamage(target, damage, source, damageType, sourcePos, suppressHitSfx);
             return ResultCode.Ok(dealt);
         }
 
@@ -429,6 +452,86 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
                 e.CanBeAttacked(maxHp);
             }
             return ResultCode.Ok(maxHp);
+        }
+
+        [Event(EVT_GET_ENTITY_RESOURCE)]
+        public List<object> GetEntityResource(List<object> data)
+        {
+            var resources = GetEntityResources(data, out var resourceId);
+            if (resources == null) return ResultCode.Fail("Entity resource not found");
+            return new List<object>
+            {
+                ResultCode.OK,
+                resources.GetCurrent(resourceId),
+                resources.GetMax(resourceId),
+                resources.GetRegen(resourceId)
+            };
+        }
+
+        [Event(EVT_SET_ENTITY_RESOURCE)]
+        public List<object> SetEntityResource(List<object> data)
+        {
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            var resourceId = data != null && data.Count > 1 ? data[1] as string : null;
+            if (e == null || string.IsNullOrEmpty(resourceId) || data.Count < 3)
+                return ResultCode.Fail("SetEntityResource invalid args");
+
+            var resources = e.Get<IEntityResources>();
+            if (resources == null)
+            {
+                resources = new EntityResourcesComponent();
+                e.Add(resources);
+            }
+
+            var current = System.Convert.ToSingle(data[2]);
+            if (!resources.Has(resourceId))
+            {
+                var max = data.Count > 3 ? System.Convert.ToSingle(data[3]) : current;
+                var regen = data.Count > 4 ? System.Convert.ToSingle(data[4]) : 0f;
+                resources.Define(resourceId, max, current, regen);
+            }
+            else
+            {
+                if (data.Count > 3)
+                    resources.SetMax(resourceId, System.Convert.ToSingle(data[3]));
+                resources.Set(resourceId, current);
+            }
+
+            return new List<object> { ResultCode.OK, resources.GetCurrent(resourceId), resources.GetMax(resourceId) };
+        }
+
+        [Event(EVT_CONSUME_ENTITY_RESOURCE)]
+        public List<object> ConsumeEntityResource(List<object> data)
+        {
+            var resources = GetEntityResources(data, out var resourceId);
+            if (resources == null || data == null || data.Count < 3)
+                return ResultCode.Fail("ConsumeEntityResource invalid args");
+
+            var amount = Mathf.Max(0f, System.Convert.ToSingle(data[2]));
+            if (!resources.Consume(resourceId, amount))
+                return ResultCode.Fail("Resource not enough");
+
+            return new List<object> { ResultCode.OK, resources.GetCurrent(resourceId), resources.GetMax(resourceId) };
+        }
+
+        [Event(EVT_RESTORE_ENTITY_RESOURCE)]
+        public List<object> RestoreEntityResource(List<object> data)
+        {
+            var resources = GetEntityResources(data, out var resourceId);
+            if (resources == null || data == null || data.Count < 3)
+                return ResultCode.Fail("RestoreEntityResource invalid args");
+
+            var restored = resources.Restore(resourceId, Mathf.Max(0f, System.Convert.ToSingle(data[2])));
+            return new List<object> { ResultCode.OK, restored, resources.GetCurrent(resourceId), resources.GetMax(resourceId) };
+        }
+
+        private IEntityResources GetEntityResources(List<object> data, out string resourceId)
+        {
+            resourceId = data != null && data.Count > 1 ? data[1] as string : null;
+            var e = Service?.GetEntity(data != null && data.Count > 0 ? data[0] as string : null);
+            if (e == null || string.IsNullOrEmpty(resourceId)) return null;
+            var resources = e.Get<IEntityResources>();
+            return resources != null && resources.Has(resourceId) ? resources : null;
         }
 
         [Event(EVT_ADD_ENTITY_CAPABILITY)]

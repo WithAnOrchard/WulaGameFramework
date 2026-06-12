@@ -6,10 +6,13 @@ using EssSystem.Core.Base.Util;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom;
+using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.SideScrollerRandom.Config;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.TopDownRandom;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Templates.TopDownRandom.Config;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Runtime;
 using EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Spawn;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
+using MapConfig = EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D.Dao.Config.MapConfig;
 
 namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
 {
@@ -41,16 +44,13 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
         [SerializeField] private string _templateId = TopDownRandomTemplate.Id;
 
         [Header("Default Templates (auto-registered)")]
-        [InspectorHelp("启动时是否自动调用当前 Template 的默认注册流程（TileType + 默认 Config + Spawn 规则）。\n" +
-                       "关掉后下方 _defaultConfig 仅作为「重新生成」按钮的输入，不会自动注册。")]
+        [InspectorHelp("启动时是否自动注册当前 Template 的默认 Config 与 Spawn 规则。\n" +
+                       "默认数据从 FrameworkResources/Config/Framework/Map/top_down_default.json 读取。")]
         [SerializeField] private bool _registerDebugTemplates = true;
 
-        [InspectorHelp("默认地图配置（仅 top_down_random 模板使用）。展开此对象可直接编辑所有 Perlin / Continent / Elevation / Temperature / Moisture / River 参数。\n" +
-                       "ConfigId 必须与 GameManager._startupMapConfigId 保持一致（默认 'PerlinIsland'）。\n" +
-                       "ChunkSize 修改后必须「重新生成」才能生效。\n" +
-                       "切换其它模板时此字段会被忽略，模板自带 CreateDefaultConfig 接管默认配置生成。")]
-        [SerializeField] private PerlinMapConfig _defaultConfig =
-            new PerlinMapConfig("PerlinIsland", "Perlin 海陆地图");
+        [InspectorHelp("运行时调试用地图配置（仅 top_down_random 模板使用）。启动默认值从配置文件读取；这里用于 Play 模式下「重新生成」。\n" +
+                       "为空时会自动使用已注册的当前模板默认 Config。ChunkSize 修改后必须重新生成才能生效。")]
+        [SerializeField] private PerlinMapConfig _defaultConfig;
 
         [Header("View Streaming")]
         [InspectorHelp("渲染半径：以焦点（默认跟随玩家）为中心，渲染 (2r+1)² 个 Chunk。\n" +
@@ -139,9 +139,9 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
                 ActiveTemplate = MapTemplateRegistry.Get(TopDownRandomTemplate.Id);
             }
 
-            // ③ 调用模板默认注册：TileType 必需；Config / Spawn 规则可选
+            // ③ TileType 由模板注册；Config / Spawn 规则统一从配置文件读取。
             ActiveTemplate?.RegisterDefaultTileTypes(Service);
-            if (_registerDebugTemplates) RegisterDefaultConfigs();
+            if (_registerDebugTemplates) RegisterConfiguredDefaults();
 
             // ④ 持久化 / spawn 参数同步到 Service
             if (Service != null)
@@ -153,10 +153,6 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
 
             // ⑤ 注册 spawn 装饰器（priority=300，介于地形装饰 100~200 与结构 400+ 之间）
             Service?.RegisterDecorator(new EntitySpawnDecorator());
-
-            // ⑥ 交由模板注册默认 spawn 规则
-            if (_registerDebugTemplates)
-                ActiveTemplate?.RegisterDefaultSpawnRules(EntitySpawnService.Instance);
 
             Log($"MapManager 初始化完成 (template={ActiveTemplate?.TemplateId ?? "<null>"})", Color.green);
         }
@@ -212,33 +208,70 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
 
         #region Defaults Registration
 
-        /// <summary>
-        /// 注册当前模板的默认 Config。
-        /// <para>top_down_random 优先使用 Inspector 的 <see cref="_defaultConfig"/>（需 ConfigId 与模板 DefaultConfigId 一致）；
-        /// 其它模板走 <see cref="IMapTemplate.CreateDefaultConfig"/>。</para>
-        /// </summary>
-        private void RegisterDefaultConfigs()
+        private const string DEFAULT_CONFIG_PATH = "Framework/Map/top_down_default.json";
+
+        /// <summary>从 FrameworkResources 读取并注册当前模板的默认地图配置与 Spawn 规则。</summary>
+        private void RegisterConfiguredDefaults()
         {
             if (Service == null || ActiveTemplate == null) return;
-
-            // top-down 分支：Inspector 接管参数（保留原有可调体验）
-            if (ActiveTemplate.TemplateId == TopDownRandomTemplate.Id
-                && _defaultConfig != null && !string.IsNullOrEmpty(_defaultConfig.ConfigId))
+            if (!RuntimeConfigLoader.TryLoadJson<TopDownMapDefaultConfigFile>(
+                    DEFAULT_CONFIG_PATH, out var file, message => Log(message, Color.cyan)) || file == null)
             {
-                if (Service.GetConfig(_defaultConfig.ConfigId) != null) return;
-                Service.RegisterConfig(CloneConfig(_defaultConfig));
+                LogWarning($"TopDown map default config missing: {DEFAULT_CONFIG_PATH}");
                 return;
             }
 
-            // 其它模板交由 Template.CreateDefaultConfig
-            var cfg = ActiveTemplate.CreateDefaultConfig();
-            if (cfg == null || string.IsNullOrEmpty(cfg.ConfigId))
+            RegisterMapConfigs(file);
+            RegisterSpawnRuleSets(file);
+
+            if (_defaultConfig == null && ActiveTemplate.TemplateId == TopDownRandomTemplate.Id)
+                _defaultConfig = CloneConfig(FindPerlinConfig(file, ActiveTemplate.DefaultConfigId));
+        }
+
+        private void RegisterMapConfigs(TopDownMapDefaultConfigFile file)
+        {
+            if (file.PerlinMapConfigs != null)
             {
-                LogWarning($"Template '{ActiveTemplate.TemplateId}' 未返回有效默认 Config");
-                return;
+                foreach (var cfg in file.PerlinMapConfigs)
+                    RegisterMapConfig(cfg);
             }
+
+            if (file.SideScrollerMapConfigs != null)
+            {
+                foreach (var cfg in file.SideScrollerMapConfigs)
+                    RegisterMapConfig(cfg);
+            }
+        }
+
+        private void RegisterMapConfig(MapConfig cfg)
+        {
+            if (cfg == null || string.IsNullOrEmpty(cfg.ConfigId)) return;
             if (Service.GetConfig(cfg.ConfigId) != null) return;
             Service.RegisterConfig(cfg);
+        }
+
+        private void RegisterSpawnRuleSets(TopDownMapDefaultConfigFile file)
+        {
+            if (file.SpawnRuleSets == null) return;
+            foreach (var binding in file.SpawnRuleSets)
+            {
+                if (binding == null || string.IsNullOrEmpty(binding.MapConfigId) || binding.RuleSet == null)
+                    continue;
+                if (binding.MapConfigId != ActiveTemplate.DefaultConfigId)
+                    continue;
+
+                EntitySpawnService.Instance.RegisterRuleSet(binding.MapConfigId, binding.RuleSet);
+            }
+        }
+
+        private static PerlinMapConfig FindPerlinConfig(TopDownMapDefaultConfigFile file, string configId)
+        {
+            if (file?.PerlinMapConfigs == null) return null;
+            foreach (var cfg in file.PerlinMapConfigs)
+            {
+                if (cfg != null && cfg.ConfigId == configId) return cfg;
+            }
+            return null;
         }
 
         /// <summary>
@@ -247,119 +280,10 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.TopDown2D
         /// </summary>
         private static PerlinMapConfig CloneConfig(PerlinMapConfig src)
         {
+            if (src == null) return null;
             var json = JsonUtility.ToJson(src);
             return JsonUtility.FromJson<PerlinMapConfig>(json);
         }
-
-        #endregion
-
-        #region Spawn Rules (legacy demo, unused)
-
-        // 默认按群系分布的小/中型树 Spawn 规则已迁移至
-        // Dao/Templates/TopDownRandom/TopDownRandomTemplate.cs::RegisterDefaultSpawnRules。
-        // 以下代码作为历史示例块保留（#if false 隔离），业务侧不会调用。
-#if false
-        private void _RegisterDefaultSpawnRules_LEGACY()
-        {
-            const string mapConfigId = "PerlinIsland";
-            // 已存在同名规则集则跳过（业务侧或前序流程可能已注册）
-            var existing = EntitySpawnService.Instance.GetRuleSets(mapConfigId);
-            for (int i = 0; i < existing.Count; i++)
-            {
-                if (existing[i] != null && existing[i].Id == "default") return;
-            }
-
-            const string SmallTreeId  = "SmallTreeEntity";
-            const string MediumTreeId = "MediumTreeEntity";
-
-            var set = new EntitySpawnRuleSet("default")
-                // ─── 热带雨林：最密，大小树叠加 ────────────────────────
-                .WithRule(new EntitySpawnRule("rainforest_medium", MediumTreeId)
-                    .WithTileTypes(TileTypes.Rainforest)
-                    .WithMoistureRange(0.55f, 1.0f)
-                    .WithDensity(0.10f)
-                    .WithMaxPerChunk(28)
-                    .WithMinSpacing(1)
-                    .WithPriority(290)
-                    .WithRngTag("def_rainforest_med"))
-                .WithRule(new EntitySpawnRule("rainforest_small", SmallTreeId)
-                    .WithTileTypes(TileTypes.Rainforest)
-                    .WithMoistureRange(0.5f, 1.0f)
-                    .WithDensity(0.06f)
-                    .WithMaxPerChunk(20)
-                    .WithPriority(295)
-                    .WithRngTag("def_rainforest_small"))
-
-                // ─── 温带森林：密度高，主干为中型树 ───────────────────
-                .WithRule(new EntitySpawnRule("forest_medium", MediumTreeId)
-                    .WithTileTypes(TileTypes.Forest)
-                    .WithMoistureRange(0.4f, 1.0f)
-                    .WithDensity(0.06f)
-                    .WithMaxPerChunk(18)
-                    .WithMinSpacing(1)
-                    .WithPriority(300)
-                    .WithRngTag("def_forest_med"))
-                .WithRule(new EntitySpawnRule("forest_small", SmallTreeId)
-                    .WithTileTypes(TileTypes.Forest)
-                    .WithMoistureRange(0.35f, 1.0f)
-                    .WithDensity(0.05f)
-                    .WithMaxPerChunk(16)
-                    .WithPriority(305)
-                    .WithRngTag("def_forest_small"))
-
-                // ─── 针叶林：冷温带，聚簇 ─────────────────────────────
-                .WithRule(new EntitySpawnRule("taiga_medium", MediumTreeId)
-                    .WithTileTypes(TileTypes.Taiga)
-                    .WithTemperatureRange(0.0f, 0.45f)
-                    .WithMoistureRange(0.3f, 1.0f)
-                    .WithDensity(0.05f)
-                    .WithCluster(2, 3, 2)
-                    .WithMaxPerChunk(14)
-                    .WithMinSpacing(1)
-                    .WithPriority(310)
-                    .WithRngTag("def_taiga_med"))
-                .WithRule(new EntitySpawnRule("taiga_small", SmallTreeId)
-                    .WithTileTypes(TileTypes.Taiga)
-                    .WithTemperatureRange(0.0f, 0.5f)
-                    .WithMoistureRange(0.25f, 1.0f)
-                    .WithDensity(0.04f)
-                    .WithMaxPerChunk(12)
-                    .WithPriority(315)
-                    .WithRngTag("def_taiga_small"))
-
-                // ─── 沼泽：仅中型，散落 ────────────────────────────────
-                .WithRule(new EntitySpawnRule("swamp_medium", MediumTreeId)
-                    .WithTileTypes(TileTypes.Swamp)
-                    .WithMoistureRange(0.6f, 1.0f)
-                    .WithDensity(0.025f)
-                    .WithMaxPerChunk(8)
-                    .WithMinSpacing(2)
-                    .WithPriority(320)
-                    .WithRngTag("def_swamp_med"))
-
-                // ─── 草原：仅小树，稀疏点缀 ────────────────────────────
-                .WithRule(new EntitySpawnRule("grassland_small", SmallTreeId)
-                    .WithTileTypes(TileTypes.Grassland)
-                    .WithMoistureRange(0.3f, 0.85f)
-                    .WithDensity(0.012f)
-                    .WithMaxPerChunk(5)
-                    .WithMinSpacing(2)
-                    .WithPriority(330)
-                    .WithRngTag("def_grass_small"))
-
-                // ─── 稀树草原：极稀疏，单棵孤立 ─────────────────────
-                .WithRule(new EntitySpawnRule("savanna_small", SmallTreeId)
-                    .WithTileTypes(TileTypes.Savanna)
-                    .WithMoistureRange(0.2f, 0.6f)
-                    .WithDensity(0.006f)
-                    .WithMaxPerChunk(3)
-                    .WithMinSpacing(3)
-                    .WithPriority(340)
-                    .WithRngTag("def_savanna_small"));
-
-            EntitySpawnService.Instance.RegisterRuleSet(mapConfigId, set);
-        }
-#endif
 
         #endregion
 

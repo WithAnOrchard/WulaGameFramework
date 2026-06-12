@@ -245,7 +245,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
         /// <summary>给承载 GameObject 带上 <see cref="EntityHandle"/> 并绑定。已存在则重绑。
         /// <para>同时把 Entity 写进 <see cref="CAT_INSTANCES"/> 注册表（idempotent），让 EVT_DAMAGE_ENTITY
-        /// 这类按 InstanceId 查表的事件能正确路由 —— 否则像 TribePlayer 这种自己 new Entity
+        /// 这类按 InstanceId 查表的事件能正确路由；否则业务层自行 new Entity
         /// 又只调本方法的玩法就会"不可被攻击"（handle 拿得到 entity，但 DamageEntity 找不到实例）。</para>
         /// </summary>
         public static void AttachEntityHandle(GameObject host, Entity entity)
@@ -454,7 +454,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         /// </summary>
         /// <returns>实际造成的伤害（未命中 / 无敌 / 无 IDamageable 均返回 0）。</returns>
         public float TryDamage(Entity target, float amount, Entity source = null,
-            string damageType = null, Vector3? damageSourcePosition = null)
+            string damageType = null, Vector3? damageSourcePosition = null, bool suppressHitSfx = false)
         {
             if (target == null || amount <= 0f) return 0f;
 
@@ -486,7 +486,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
                 // 播放受伤音效（采集类实体可通过 SuppressHitSFX 抑制 → 由业务自播专属音效，避免双响）
                 // §4.1 跨模块 AudioManager 走 bare-string
-                if (!_silentDamageEntities.Contains(target.InstanceId))
+                if (!suppressHitSfx && !_silentDamageEntities.Contains(target.InstanceId))
                     EventProcessor.Instance?.TriggerEventMethod("PlayDamageSFX", null);
             }
 

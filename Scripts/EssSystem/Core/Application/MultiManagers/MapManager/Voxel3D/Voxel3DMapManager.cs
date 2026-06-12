@@ -5,6 +5,7 @@ using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao;
 using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao.Templates;
 using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Dao.Templates.DefaultVoxel;
 using EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D.Spawn;
+using EssSystem.Core.Foundation.DataManager.RuntimeConfig;
 
 namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D
 {
@@ -29,15 +30,12 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D
         [SerializeField] private string _templateId = DefaultVoxelTemplate.Id;
 
         [Header("Default Templates (auto-registered)")]
-        [InspectorHelp("启动时是否自动调用当前 Template 的默认注册流程（BlockType + 默认 Config + 默认装饰器）。\n" +
-                       "关掉后下方 _defaultConfig 仅作为「重新生成」按钮的输入，不会自动注册。")]
+        [InspectorHelp("启动时是否自动注册当前 Template 的默认 Config 与默认装饰器。\n" +
+                       "默认 Config 从 FrameworkResources/Config/Framework/Map/voxel_default.json 读取。")]
         [SerializeField] private bool _registerDebugTemplates = true;
 
-        [InspectorHelp("默认体素地图配置。展开此对象可直接编辑 Seed / ChunkSize / SeaLevel / 地形参数 / 雪线 等。\n" +
-                       "ConfigId 默认 'default_voxel_3d'，与 DefaultVoxelTemplate.DefaultConfigId 一致；改 Seed 立刻得到新世界。\n" +
-                       "切换 TemplateId 后此字段会被忽略，模板的 CreateDefaultConfig 接管默认配置生成。")]
-        [SerializeField] private VoxelMapConfig _defaultConfig =
-            new VoxelMapConfig(DefaultVoxelTemplate.Id, "Default Voxel 3D");
+        [InspectorHelp("运行时调试用体素地图配置。启动默认值从配置文件读取；这里用于 Play 模式下重新生成。")]
+        [SerializeField] private VoxelMapConfig _defaultConfig;
 
         [Header("Persistence")]
         [InspectorHelp("自动写盘间隔（秒）。<= 0 关闭。默认 30s。每次最多 flush AutoSaveMaxChunksPerTick 个 dirty chunk。")]
@@ -88,7 +86,7 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D
             ActiveTemplate?.RegisterDefaultBlockTypes(Service);
             if (_registerDebugTemplates)
             {
-                RegisterDefaultConfig();
+                RegisterConfiguredDefaults();
                 ActiveTemplate?.RegisterDefaultDecorators(Service);
             }
 
@@ -139,37 +137,33 @@ namespace EssSystem.Core.Application.MultiManagers.MapManager.Voxel3D
                 VoxelMapTemplateRegistry.Register(new DefaultVoxelTemplate());
         }
 
-        /// <summary>
-        /// 注册当前模板的默认 Config。
-        /// <para>default_voxel_3d 优先使用 Inspector 的 <see cref="_defaultConfig"/>（需 ConfigId 匹配模板 DefaultConfigId）；
-        /// 其它模板走 <see cref="IVoxelMapTemplate.CreateDefaultConfig"/>。</para>
-        /// </summary>
-        private void RegisterDefaultConfig()
+        private const string DEFAULT_CONFIG_PATH = "Framework/Map/voxel_default.json";
+
+        /// <summary>从 FrameworkResources 读取并注册当前模板的默认体素地图配置。</summary>
+        private void RegisterConfiguredDefaults()
         {
             if (Service == null || ActiveTemplate == null) return;
-
-            // 默认模板分支：Inspector 接管参数（保留 PlayMode 调试体验）
-            if (ActiveTemplate.TemplateId == DefaultVoxelTemplate.Id
-                && _defaultConfig != null && !string.IsNullOrEmpty(_defaultConfig.ConfigId))
+            if (!RuntimeConfigLoader.TryLoadJson<VoxelDefaultConfigFile>(
+                    DEFAULT_CONFIG_PATH, out var file, message => Log(message, Color.cyan)) || file?.MapConfigs == null)
             {
-                if (Service.GetConfig(_defaultConfig.ConfigId) != null) return;
-                Service.RegisterConfig(CloneConfig(_defaultConfig));
+                LogWarning($"Voxel default config missing: {DEFAULT_CONFIG_PATH}");
                 return;
             }
 
-            var cfg = ActiveTemplate.CreateDefaultConfig();
-            if (cfg == null || string.IsNullOrEmpty(cfg.ConfigId))
+            foreach (var cfg in file.MapConfigs)
             {
-                LogWarning($"VoxelTemplate '{ActiveTemplate.TemplateId}' 未返回有效默认 Config");
-                return;
+                if (cfg == null || string.IsNullOrEmpty(cfg.ConfigId)) continue;
+                if (Service.GetConfig(cfg.ConfigId) != null) continue;
+                Service.RegisterConfig(cfg);
+                if (_defaultConfig == null && cfg.ConfigId == ActiveTemplate.DefaultConfigId)
+                    _defaultConfig = CloneConfig(cfg);
             }
-            if (Service.GetConfig(cfg.ConfigId) != null) return;
-            Service.RegisterConfig(cfg);
         }
 
         /// <summary>JsonUtility 浅拷贝 —— 把 Inspector 实例与 Service 内存副本解耦。</summary>
         private static VoxelMapConfig CloneConfig(VoxelMapConfig src)
         {
+            if (src == null) return null;
             var json = JsonUtility.ToJson(src);
             return JsonUtility.FromJson<VoxelMapConfig>(json);
         }

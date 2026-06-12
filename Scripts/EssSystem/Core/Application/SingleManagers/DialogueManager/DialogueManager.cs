@@ -28,7 +28,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
 
         /// <summary>把一组运行时 <see cref="UnityEngine.Sprite"/> 按 z-order（背→前）层叠贴到头像位 ——
         /// 实现"角色多部件复合头像"（如 Skin + Eyes + Hair + Head 一起叠出完整脸）。
-        /// 与 Player HUD 单层 <c>TribePlayerHud.AttachHeadSprite</c> 互补；绕过 spriteId 通道，
+        /// 与 Player HUD 单层头像显示互补；绕过 spriteId 通道，
         /// 直接传 Sprite 引用，无需依赖 ResourceManager 是否已切片注册。
         /// <para>data: <c>[Sprite single]</c> 或 <c>[List&lt;Sprite&gt; layers]</c>。返回 Ok / Fail。
         /// 必须在 <see cref="EVT_OPEN_UI"/> 之后调。重复调用会先清空旧的覆盖层再贴新的。</para></summary>

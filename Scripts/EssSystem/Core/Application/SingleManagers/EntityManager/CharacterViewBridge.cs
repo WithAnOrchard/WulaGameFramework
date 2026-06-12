@@ -8,7 +8,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
     /// <summary>
     /// Entity → Character 视图桥 —— 提供类型安全的静态方法，封装所有 §4.1 bare-string 事件调用。
     /// <para>
-    /// <b>动机</b>：Capability（如 <c>FacingComponent</c>）和业务代码（如 <c>TribePlayer</c>）
+    /// <b>动机</b>：Capability（如 <c>FacingComponent</c>）和业务代码
     /// 此前各自硬编码 <c>"SetCharacterFacing"</c>、<c>"PlayCharacterLocomotion"</c> 等字符串 +
     /// 手动拼 <c>List&lt;object&gt;</c>。本桥把这些散落的调用统一收口到一处：
     /// <list type="bullet">

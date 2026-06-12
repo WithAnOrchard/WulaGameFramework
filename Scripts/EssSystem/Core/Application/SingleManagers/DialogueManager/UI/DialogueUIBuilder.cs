@@ -25,7 +25,7 @@ namespace EssSystem.Core.Application.SingleManagers.DialogueManager
         /// 显著降低 uGUI Text 在 1080p+ 屏幕上的模糊感。建议整数倍（2×/3×）。
         /// </summary>
         private const float TextSupersample = 6f;
-        private const string UiSpriteOptionArrow = "Tribe/Common/Items/Weapons/arrow_gold";
+        private const string UiSpriteOptionArrow = "Common/UI/Dialogue/arrow_gold";
 
         /// <summary>构建完整对话 UI 面板树。</summary>
         public static (UIPanelComponent panel, DialogueUIRefs refs)
