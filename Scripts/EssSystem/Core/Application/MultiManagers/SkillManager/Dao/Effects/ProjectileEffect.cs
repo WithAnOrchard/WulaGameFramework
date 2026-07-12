@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.SkillManager;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Runtime;
@@ -35,6 +36,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public string CastFlashPartId;
         public float CastFlashDuration = 0.16f;
         public Color CastFlashColor = Color.white;
+        public List<ISkillEffect> HitEffects = new();
         public float VisualScale = 1f;
         public float VisualRotationOffsetDegrees;
         public int SortingOrder = 260;
@@ -58,7 +60,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             float castForwardOffset = 0.2f, float castHeightOffset = 0.35f,
             string castSfxId = null, float castSfxVolume = 1f,
             string castFlashPartId = null, float castFlashDuration = 0.16f,
-            Color? castFlashColor = null)
+            Color? castFlashColor = null,
+            List<ISkillEffect> hitEffects = null)
         {
             Speed = speed;
             Damage = damage;
@@ -89,6 +92,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             CastFlashPartId = castFlashPartId;
             CastFlashDuration = castFlashDuration;
             CastFlashColor = castFlashColor ?? Color.white;
+            HitEffects = hitEffects ?? new List<ISkillEffect>();
             VisualScale = visualScale;
             VisualRotationOffsetDegrees = visualRotationOffsetDegrees;
             SortingOrder = sortingOrder;
@@ -115,7 +119,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             PlayCastSfx();
         }
 
-        public void Apply(SkillEffectContext ctx)
+        public virtual void Apply(SkillEffectContext ctx)
         {
             var root = SkillEntityProxy.Root(ctx?.CasterId);
             if (root == null) return;
@@ -143,6 +147,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             p.ImpactSfxId = ImpactSfxId;
             p.ImpactSfxVolume = ImpactSfxVolume;
             p.SuppressTargetHitSfx = SuppressTargetHitSfx;
+            p.SourceContext = ctx;
+            p.HitEffects = HitEffects;
             p.VisualScale = VisualScale;
             p.VisualRotationOffsetDegrees = VisualRotationOffsetDegrees;
             p.SortingOrder = SortingOrder;

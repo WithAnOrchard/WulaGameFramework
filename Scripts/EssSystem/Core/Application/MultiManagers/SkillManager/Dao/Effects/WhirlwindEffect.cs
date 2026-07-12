@@ -16,6 +16,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public bool IncludeSelf;
 
         private static readonly Collider[] _buffer = new Collider[64];
+        private static readonly Collider2D[] _buffer2D = new Collider2D[64];
+        private static readonly ContactFilter2D _contactFilter = ContactFilter2D.noFilter;
 
         public WhirlwindEffect() { }
         public WhirlwindEffect(float duration, float tickInterval, float radius, float damagePerTick,
@@ -47,17 +49,26 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
                 OnTick = (b, _) =>
                 {
                     var center = SkillEntityProxy.Position(b.SourceId);
+                    var seen = new System.Collections.Generic.HashSet<string>();
+
+                    var count2D = Physics2D.OverlapCircle(center, radius, _contactFilter, _buffer2D);
+                    for (var i = 0; i < count2D; i++)
+                        DamageTarget(SkillEntityProxy.IdFrom(_buffer2D[i]), seen, includeSelf, b.SourceId, damage, type, center);
+
                     var count = Physics.OverlapSphereNonAlloc(center, radius, _buffer, ~0, QueryTriggerInteraction.Collide);
                     for (var i = 0; i < count; i++)
-                    {
-                        var targetId = SkillEntityProxy.IdFrom(_buffer[i]);
-                        if (string.IsNullOrEmpty(targetId)) continue;
-                        if (!includeSelf && targetId == b.SourceId) continue;
-                        if (SkillEntityProxy.IsDead(targetId)) continue;
-                        SkillEntityProxy.Damage(targetId, damage, b.SourceId, type, center);
-                    }
+                        DamageTarget(SkillEntityProxy.IdFrom(_buffer[i]), seen, includeSelf, b.SourceId, damage, type, center);
                 },
             });
+        }
+
+        private static void DamageTarget(string targetId, System.Collections.Generic.HashSet<string> seen,
+            bool includeSelf, string sourceId, float damage, string type, Vector3 center)
+        {
+            if (string.IsNullOrEmpty(targetId) || !seen.Add(targetId)) return;
+            if (!includeSelf && targetId == sourceId) return;
+            if (SkillEntityProxy.IsDead(targetId)) return;
+            SkillEntityProxy.Damage(targetId, damage, sourceId, type, center);
         }
     }
 }

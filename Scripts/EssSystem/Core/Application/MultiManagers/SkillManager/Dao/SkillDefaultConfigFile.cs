@@ -18,6 +18,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         public string DisplayName;
         public string Description;
         public string IconPath;
+        public string Category;
+        public string SkillStatus;
         public float ManaCost;
         public float HpCost;
         public float Cooldown = 1f;
@@ -38,6 +40,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                 DisplayName = DisplayName,
                 Description = Description,
                 IconPath = IconPath,
+                Category = Category,
+                SkillStatus = SkillStatus,
                 ManaCost = ManaCost,
                 HpCost = HpCost,
                 Cooldown = Cooldown,
@@ -95,6 +99,12 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         public bool KeepVerticalVelocity = true;
         public float VerticalKick;
         public float InvulnerableDuration;
+        public float DashDuration = 0.18f;
+        public float JumpUp = 9f;
+        public float JumpForward = 4f;
+        public float AirTime = 0.45f;
+        public float SlamDownVelocity = -16f;
+        public float ImpactRadius = 2.5f;
         public float Force = 6f;
         public float UpwardForce = 1.5f;
         public float EffectRange = 3f;
@@ -105,13 +115,23 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         public bool Pierce;
         public int ProjectileCount = 3;
         public float SpreadAngleDeg = 30f;
+        public float SearchRadius = 8f;
+        public float HomingTurnSpeed = 900f;
+        public float SpawnSpread = 0.22f;
+        public float OrbitSpawnRadius = 0.55f;
+        public float InitialArcStrength = 0.55f;
+        public float HomingDelay = 0.14f;
         public int MaxJumps = 4;
         public float JumpRadius = 4f;
         public float FalloffPerJump = 0.8f;
+        public float VisualDuration = 0.16f;
+        public float VisualWidth = 0.07f;
         public float ImpactDelay = 1.2f;
         public float HealRatio = 0.5f;
         public float ReflectRatio = 0.5f;
         public string ReflectDamageType = "reflect";
+        public string BuffDisplayName;
+        public string BuffDescription;
         public string SpriteId;
         public string ImpactSpriteId;
         public string ImpactCharacterConfigId;
@@ -134,12 +154,31 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         public string CastFlashPartId;
         public float CastFlashDuration = 0.16f;
         public Color CastFlashColor = Color.white;
+        public string SfxId;
+        public float SfxVolume = 1f;
+        public Color CueColor = new(0.75f, 0.95f, 1f, 1f);
+        public float CueDuration = 0.45f;
+        public float CueRadius = 1.2f;
+        public float CueHeightOffset = 0.35f;
+        public int CueBurstCount = 42;
+        public bool CueAtTarget;
+        public bool CueAtPosition;
+        public bool CueOnCastStart = true;
+        public bool CueOnApply;
+        public float ArmTime = 0.35f;
+        public float TriggerRadius = 1.25f;
+        public bool DetonateOnExpire = true;
         public float VisualScale = 1f;
         public float VisualRotationOffsetDegrees;
         public int SortingOrder = 260;
         public float ForwardOffset = 0.7f;
         public float HeightOffset = 0.7f;
         public bool IgnoreStaticTargets;
+        public string ConfigId;
+        public int Count = 1;
+        public int CountPerLevel;
+        public float YOffset;
+        public string InstanceIdPrefix = "summon";
 
         public ISkillEffect Build()
         {
@@ -149,18 +188,56 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                     return new DamageEffect(ResolveDamage(), DamagePerLevel, DamageType);
                 case "heal":
                     return new HealEffect(Heal, HealPerLevel, ApplyToSelf);
+                case "cue":
+                case "skillcue":
+                case "skill_cue":
+                case "sfx":
+                case "vfx":
+                    return new SkillCueEffect
+                    {
+                        SfxId = string.IsNullOrEmpty(SfxId) ? CastSfxId : SfxId,
+                        SfxVolume = SfxVolume > 0f ? SfxVolume : CastSfxVolume,
+                        Color = CueColor,
+                        Duration = CueDuration,
+                        Radius = CueRadius,
+                        HeightOffset = CueHeightOffset,
+                        BurstCount = CueBurstCount,
+                        CueAtTarget = CueAtTarget,
+                        CueAtPosition = CueAtPosition,
+                        PlayOnCastStart = CueOnCastStart,
+                        PlayOnApply = CueOnApply,
+                    };
                 case "dash":
-                    return new DashEffect(Speed, SpeedPerLevel, InvulnerableDuration, KeepVerticalVelocity, VerticalKick);
+                    return new DashEffect(Speed, SpeedPerLevel, InvulnerableDuration,
+                        KeepVerticalVelocity, VerticalKick, DashDuration);
                 case "teleport":
                     return new TeleportEffect(Distance, DistancePerLevel, UseAbsolutePosition);
+                case "jumpslash":
+                case "jump_slash":
+                    return new JumpSlashEffect(JumpUp, JumpForward, AirTime, SlamDownVelocity,
+                        ImpactRadius, ResolveDamage(), DamagePerLevel, DamageType);
                 case "shield":
                     return new ShieldEffect(Reduction, Duration, ApplyToSelf);
                 case "aoe":
                     return BuildAoe();
+                case "zone":
+                case "field":
+                    return BuildZone();
+                case "mine":
+                case "trap":
+                    return BuildMine();
+                case "summon":
+                case "summonentity":
+                case "summon_entity":
+                    return new SummonEntityEffect(ConfigId, Count, Radius,
+                        CountPerLevel, YOffset, InstanceIdPrefix);
                 case "knockback":
                     return new KnockbackEffect(Force, UpwardForce);
                 case "slow":
                     return new SlowEffect(ResolveBuffId("slow"), Multiplier, Duration, ApplyToSelf);
+                case "freeze":
+                    return new FreezeEffect(ResolveBuffId("freeze"), Duration,
+                        ResolveDamage(), DamagePerLevel, DamageType);
                 case "stun":
                     return new StunEffect(ResolveBuffId("stun"), Duration);
                 case "silence":
@@ -207,7 +284,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                         castSfxVolume: CastSfxVolume,
                         castFlashPartId: CastFlashPartId,
                         castFlashDuration: CastFlashDuration,
-                        castFlashColor: CastFlashColor);
+                        castFlashColor: CastFlashColor,
+                        hitEffects: BuildSubEffects());
                 case "cleave":
                     return BuildCleave();
                 case "whirlwind":
@@ -219,13 +297,22 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                 case "chainlightning":
                 case "chain_lightning":
                     return new ChainLightningEffect(ResolveDamage(), MaxJumps, JumpRadius,
-                        FalloffPerJump, DamagePerLevel, DamageType);
+                        FalloffPerJump, DamagePerLevel, DamageType)
+                    {
+                        VisualDuration = VisualDuration,
+                        VisualWidth = VisualWidth,
+                    };
                 case "meteor":
                     return new MeteorEffect(ImpactDelay, Radius, ResolveDamage(),
                         DamagePerLevel, DamageType, IncludeSelf);
                 case "lifedrain":
                 case "life_drain":
                     return new LifeDrainEffect(ResolveDamage(), HealRatio, DamagePerLevel, DamageType);
+                case "lifestealbuff":
+                case "life_steal_buff":
+                case "bloodthirst":
+                    return new LifeStealBuffEffect(ResolveBuffId("bloodthirst"), Duration, HealRatio,
+                        DamageType, SpriteId, BuffDisplayName, BuffDescription);
                 case "multishot":
                 case "multi_shot":
                     return new MultiShotEffect(ProjectileCount, SpreadAngleDeg, Speed,
@@ -233,7 +320,28 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                     {
                         Radius = Radius,
                         MaxLifetime = MaxLifetime,
+                        SpriteId = SpriteId,
+                        ImpactSpriteId = ImpactSpriteId,
+                        ImpactCharacterConfigId = ImpactCharacterConfigId,
+                        ImpactActionName = ImpactActionName,
+                        ImpactScale = ImpactScale,
+                        ImpactLifetime = ImpactLifetime,
+                        AreaDamageRadius = AreaDamageRadius,
+                        AreaDamageMultiplier = AreaDamageMultiplier,
+                        ImpactSfxId = ImpactSfxId,
+                        ImpactSfxVolume = ImpactSfxVolume,
+                        SuppressTargetHitSfx = SuppressTargetHitSfx,
+                        HitEffects = BuildSubEffects(),
+                        VisualScale = VisualScale,
+                        VisualRotationOffsetDegrees = VisualRotationOffsetDegrees,
+                        SortingOrder = SortingOrder,
+                        IgnoreStaticTargets = IgnoreStaticTargets,
                     };
+                case "homingmultiprojectile":
+                case "homing_multi_projectile":
+                case "homingmultishot":
+                case "homing_multi_shot":
+                    return BuildHomingMultiProjectile();
                 case "cleanse":
                     return new CleanseEffect(BuffIds, ApplyToSelf);
                 case "damagereflect":
@@ -252,6 +360,91 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
             return effect;
         }
 
+        private ZoneEffect BuildZone()
+        {
+            var effect = new ZoneEffect
+            {
+                Duration = Duration,
+                TickInterval = TickInterval,
+                Radius = Radius,
+                RadiusPerLevel = RadiusPerLevel,
+                IncludeSelf = IncludeSelf,
+                ForwardOffset = ForwardOffset,
+                HeightOffset = HeightOffset,
+                Color = CueColor,
+            };
+            AddSubEffects(effect.SubEffects);
+            return effect;
+        }
+
+        private MineEffect BuildMine()
+        {
+            var effect = new MineEffect
+            {
+                Duration = Duration,
+                ArmTime = ArmTime,
+                TriggerRadius = TriggerRadius,
+                Radius = Radius,
+                IncludeSelf = IncludeSelf,
+                DetonateOnExpire = DetonateOnExpire,
+                ForwardOffset = ForwardOffset,
+                HeightOffset = HeightOffset,
+                Color = CueColor,
+            };
+            AddSubEffects(effect.SubEffects);
+            return effect;
+        }
+
+        private HomingMultiProjectileEffect BuildHomingMultiProjectile()
+        {
+            return new HomingMultiProjectileEffect
+            {
+                ProjectileCount = ProjectileCount,
+                SearchRadius = SearchRadius,
+                HomingTurnSpeed = HomingTurnSpeed,
+                SpawnSpread = SpawnSpread,
+                OrbitSpawnRadius = OrbitSpawnRadius,
+                InitialArcStrength = InitialArcStrength,
+                HomingDelay = HomingDelay,
+                Speed = Speed,
+                Damage = ResolveDamage(),
+                DamagePerLevel = DamagePerLevel,
+                DamageType = DamageType,
+                Radius = Radius,
+                MaxLifetime = MaxLifetime,
+                Pierce = Pierce,
+                SpriteId = SpriteId,
+                ImpactSpriteId = ImpactSpriteId,
+                ImpactCharacterConfigId = ImpactCharacterConfigId,
+                ImpactActionName = ImpactActionName,
+                ImpactScale = ImpactScale,
+                ImpactLifetime = ImpactLifetime,
+                AreaDamageRadius = AreaDamageRadius,
+                AreaDamageMultiplier = AreaDamageMultiplier,
+                ImpactSfxId = ImpactSfxId,
+                ImpactSfxVolume = ImpactSfxVolume,
+                SuppressTargetHitSfx = SuppressTargetHitSfx,
+                CastCharacterConfigId = CastCharacterConfigId,
+                CastActionName = CastActionName,
+                CastScale = CastScale,
+                CastLifetime = CastLifetime,
+                CastForwardOffset = CastForwardOffset,
+                CastHeightOffset = CastHeightOffset,
+                CastSfxId = CastSfxId,
+                CastSfxVolume = CastSfxVolume,
+                CastFlashPartId = CastFlashPartId,
+                CastFlashDuration = CastFlashDuration,
+                CastFlashColor = CastFlashColor,
+                HitEffects = BuildSubEffects(),
+                VisualScale = VisualScale,
+                VisualRotationOffsetDegrees = VisualRotationOffsetDegrees,
+                SortingOrder = SortingOrder,
+                ForwardOffset = ForwardOffset,
+                HeightOffset = HeightOffset,
+                IgnoreStaticTargets = IgnoreStaticTargets,
+            };
+        }
+
         private CleaveEffect BuildCleave()
         {
             var effect = new CleaveEffect(EffectRange, HalfAngleDeg, IncludeSelf);
@@ -267,6 +460,13 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
                 var built = SubEffects[i]?.Build();
                 if (built != null) target.Add(built);
             }
+        }
+
+        private List<ISkillEffect> BuildSubEffects()
+        {
+            var result = new List<ISkillEffect>();
+            AddSubEffects(result);
+            return result;
         }
 
         private float ResolveDamage()

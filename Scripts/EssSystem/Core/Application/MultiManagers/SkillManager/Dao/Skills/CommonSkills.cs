@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects;
 
@@ -228,7 +228,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
                 Id = SKILL_FIREBALL,
                 DisplayName = "火球术",
                 Description = "向面朝方向发射火球，命中后造成火焰伤害。",
-                IconPath = "Common/Skills/Fireball/fireball",
+                IconPath = "Common/Skills/Icons/fireball",
                 ManaCost = 12f,
                 Cooldown = cooldown,
                 CastTime = 0.30f,
@@ -240,7 +240,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
                     new ProjectileEffect(speed: speed, damage: damage,
                         damagePerLevel: damage * 0.3f, damageType: "fire", radius: 0.45f,
                         maxLifetime: 1.4f,
-                        spriteId: "Common/Skills/Fireball/fireball",
+                        spriteId: "Common/Skills/Projectiles/projectile_fireball",
                         visualScale: 1.35f, sortingOrder: 260, forwardOffset: 0.7f, heightOffset: 0.35f,
                         impactCharacterConfigId: "CommonFireballImpact",
                         impactActionName: "Special", impactScale: 8f, impactLifetime: 0.38f,
@@ -652,3 +652,4 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Skills
         }
     }
 }
+

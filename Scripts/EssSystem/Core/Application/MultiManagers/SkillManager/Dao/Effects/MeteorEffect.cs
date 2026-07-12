@@ -15,6 +15,8 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
         public string DamageType = "fire";
 
         private static readonly Collider[] _buffer = new Collider[64];
+        private static readonly Collider2D[] _buffer2D = new Collider2D[64];
+        private static readonly ContactFilter2D _contactFilter = ContactFilter2D.noFilter;
 
         public MeteorEffect() { }
         public MeteorEffect(float impactDelay, float radius, float damage, float damagePerLevel = 0f,
@@ -51,15 +53,24 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao.Effects
             bool includeSelf, string damageType)
         {
             if (damage <= 0f) return;
+            var seen = new System.Collections.Generic.HashSet<string>();
+
+            var count2D = Physics2D.OverlapCircle(center, radius, _contactFilter, _buffer2D);
+            for (var i = 0; i < count2D; i++)
+                DamageTarget(SkillEntityProxy.IdFrom(_buffer2D[i]), seen, casterId, includeSelf, damage, damageType, center);
+
             var count = Physics.OverlapSphereNonAlloc(center, radius, _buffer, ~0, QueryTriggerInteraction.Collide);
             for (var i = 0; i < count; i++)
-            {
-                var targetId = SkillEntityProxy.IdFrom(_buffer[i]);
-                if (string.IsNullOrEmpty(targetId)) continue;
-                if (!includeSelf && targetId == casterId) continue;
-                if (SkillEntityProxy.IsDead(targetId)) continue;
-                SkillEntityProxy.Damage(targetId, damage, casterId, damageType, center);
-            }
+                DamageTarget(SkillEntityProxy.IdFrom(_buffer[i]), seen, casterId, includeSelf, damage, damageType, center);
+        }
+
+        private static void DamageTarget(string targetId, System.Collections.Generic.HashSet<string> seen,
+            string casterId, bool includeSelf, float damage, string damageType, Vector3 center)
+        {
+            if (string.IsNullOrEmpty(targetId) || !seen.Add(targetId)) return;
+            if (!includeSelf && targetId == casterId) return;
+            if (SkillEntityProxy.IsDead(targetId)) return;
+            SkillEntityProxy.Damage(targetId, damage, casterId, damageType, center);
         }
     }
 }

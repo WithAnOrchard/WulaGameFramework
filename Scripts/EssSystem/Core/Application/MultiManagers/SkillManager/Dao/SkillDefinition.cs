@@ -23,6 +23,12 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.Dao
         /// <summary>图标路径（Resources 下）。</summary>
         public string IconPath;
 
+        /// <summary>技能大类，用于 UI 过滤和模板库整理。</summary>
+        public string Category;
+
+        /// <summary>制作状态，例如 Complete / Unfinished / Draft。</summary>
+        public string SkillStatus;
+
         // ─── 消耗 ─────────────────────────────────────────────
         /// <summary>MP 消耗。</summary>
         public float ManaCost;

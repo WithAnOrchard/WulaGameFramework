@@ -56,6 +56,9 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         public SkillDefinition GetDefinition(string skillId)
             => _definitions.TryGetValue(skillId, out var def) ? def : null;
 
+        public IEnumerable<SkillDefinition> GetAllDefinitions()
+            => _definitions.Values;
+
         // ═══════════════════════════════════════════════════════════
         //  实体技能实例
         // ═══════════════════════════════════════════════════════════
@@ -443,6 +446,13 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager
         {
             if (string.IsNullOrEmpty(entityId) || callback == null || !CanUseEvents) return null;
             var result = EventProcessor.Instance.TriggerEventMethod("RegisterDamagedCallback", new List<object> { entityId, callback });
+            return ResultCode.IsOk(result) && result.Count > 1 ? result[1] as System.Action : null;
+        }
+
+        public static System.Action RegisterDealtDamageCallback(string entityId, System.Action<string, string, float, string> callback)
+        {
+            if (string.IsNullOrEmpty(entityId) || callback == null || !CanUseEvents) return null;
+            var result = EventProcessor.Instance.TriggerEventMethod("RegisterDealtDamageCallback", new List<object> { entityId, callback });
             return ResultCode.IsOk(result) && result.Count > 1 ? result[1] as System.Action : null;
         }
 
