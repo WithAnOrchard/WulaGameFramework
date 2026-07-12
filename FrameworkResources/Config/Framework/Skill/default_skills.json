@@ -3,12 +3,12 @@
     {
       "Id": "common_fireball",
       "DisplayName": "火球术",
-      "Description": "向面朝方向发射火球，命中后造成火焰伤害。",
-      "IconPath": "Common/Skills/Fireball/fireball",
+      "Description": "发射火球命中目标并引发小范围爆炸，适合清理密集敌人。",
+      "IconPath": "Common/Skills/Icons/fireball",
       "ManaCost": 12.0,
       "HpCost": 0.0,
       "Cooldown": 6.0,
-      "CastTime": 0.30,
+      "CastTime": 0.3,
       "RecoveryTime": 0.12,
       "TargetMode": 2,
       "Range": 12.0,
@@ -23,7 +23,7 @@
           "Radius": 0.45,
           "MaxLifetime": 1.4,
           "Pierce": false,
-          "SpriteId": "Common/Skills/Fireball/fireball",
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
           "VisualScale": 1.35,
           "SortingOrder": 260,
           "ForwardOffset": 0.7,
@@ -42,21 +42,28 @@
           "CastSfxId": "Sound/fireball_cast_a",
           "CastSfxVolume": 0.95,
           "CastFlashPartId": "Weapon",
-          "CastFlashDuration": 0.30,
-          "CastFlashColor": { "r": 1.0, "g": 0.18, "b": 0.08, "a": 1.0 }
+          "CastFlashDuration": 0.3,
+          "CastFlashColor": {
+            "r": 1.0,
+            "g": 0.18,
+            "b": 0.08,
+            "a": 1.0
+          }
         }
-      ]
+      ],
+      "Category": "Elemental",
+      "SkillStatus": "Complete"
     },
     {
       "Id": "common_ice_shard",
-      "DisplayName": "冰锥",
-      "Description": "凝成一枚锋利冰锥快速射出，适合打断近身目标。",
-      "IconPath": "Common/Skills/IceShard/ice_shard",
+      "DisplayName": "冰霜碎片",
+      "Description": "射出冰霜碎片，命中后造成寒冰伤害并短暂冻结目标。",
+      "IconPath": "Common/Skills/Icons/ice_shard",
       "ManaCost": 10.0,
       "HpCost": 0.0,
       "Cooldown": 5.0,
       "CastTime": 0.22,
-      "RecoveryTime": 0.10,
+      "RecoveryTime": 0.1,
       "TargetMode": 2,
       "Range": 11.0,
       "MaxLevel": 3,
@@ -64,13 +71,13 @@
         {
           "EffectType": "Projectile",
           "Speed": 17.0,
-          "Damage": 10.0,
-          "DamagePerLevel": 3.0,
+          "Damage": 0.0,
+          "DamagePerLevel": 0.0,
           "DamageType": "frost",
           "Radius": 0.32,
-          "MaxLifetime": 1.20,
+          "MaxLifetime": 1.2,
           "Pierce": false,
-          "SpriteId": "Common/Skills/IceShard/ice_shard",
+          "SpriteId": "Common/Skills/Projectiles/projectile_ice_shard",
           "ImpactSpriteId": "Common/Effects/MiniEffect2D/IceImpact",
           "VisualScale": 1.15,
           "SortingOrder": 260,
@@ -78,26 +85,42 @@
           "HeightOffset": 0.28,
           "ImpactScale": 1.25,
           "ImpactLifetime": 0.24,
-          "VisualRotationOffsetDegrees": -18.0,
+          "VisualRotationOffsetDegrees": -45.0,
           "IgnoreStaticTargets": true,
           "AreaDamageRadius": 0.0,
           "AreaDamageMultiplier": 1.0,
-          "ImpactSfxId": "Sound/ice_shard_hit",
+          "ImpactSfxId": "Sound/ice_freeze_lock",
           "ImpactSfxVolume": 0.92,
           "SuppressTargetHitSfx": true,
           "CastSfxId": "Sound/ice_shard_cast",
           "CastSfxVolume": 0.82,
           "CastFlashPartId": "Weapon",
           "CastFlashDuration": 0.22,
-          "CastFlashColor": { "r": 0.38, "g": 0.86, "b": 1.0, "a": 1.0 }
+          "CastFlashColor": {
+            "r": 0.38,
+            "g": 0.86,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Freeze",
+              "BuffId": "ice_shard_freeze",
+              "Duration": 2.0,
+              "Damage": 12.0,
+              "DamagePerLevel": 3.5,
+              "DamageType": "frost"
+            }
+          ]
         }
-      ]
+      ],
+      "Category": "Elemental"
     },
     {
       "Id": "common_thunder_spear",
-      "DisplayName": "雷矛",
-      "Description": "掷出一支雷光长矛，贯穿首个目标并在命中点溅射闪电伤害。",
-      "IconPath": "Common/Skills/ThunderSpear/thunder_spear",
+      "DisplayName": "雷霆长矛",
+      "Description": "投射雷霆长矛，命中后在附近敌人之间跳跃闪电。",
+      "IconPath": "Common/Skills/Icons/thunder_spear",
       "ManaCost": 16.0,
       "HpCost": 0.0,
       "Cooldown": 8.0,
@@ -110,24 +133,24 @@
         {
           "EffectType": "Projectile",
           "Speed": 22.0,
-          "Damage": 13.0,
-          "DamagePerLevel": 4.0,
+          "Damage": 0.0,
+          "DamagePerLevel": 0.0,
           "DamageType": "lightning",
-          "Radius": 0.30,
+          "Radius": 0.3,
           "MaxLifetime": 1.12,
-          "Pierce": true,
-          "SpriteId": "Common/Skills/ThunderSpear/thunder_spear",
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
           "ImpactSpriteId": "Common/Effects/MiniEffect2D/ThunderImpact",
           "VisualScale": 1.22,
           "SortingOrder": 262,
           "ForwardOffset": 0.76,
-          "HeightOffset": 0.30,
+          "HeightOffset": 0.3,
           "ImpactScale": 1.35,
           "ImpactLifetime": 0.22,
-          "VisualRotationOffsetDegrees": -28.0,
+          "VisualRotationOffsetDegrees": -45.0,
           "IgnoreStaticTargets": true,
-          "AreaDamageRadius": 0.85,
-          "AreaDamageMultiplier": 0.45,
+          "AreaDamageRadius": 0.0,
+          "AreaDamageMultiplier": 1.0,
           "ImpactSfxId": "Sound/thunder_spear_hit",
           "ImpactSfxVolume": 0.96,
           "SuppressTargetHitSfx": true,
@@ -135,15 +158,34 @@
           "CastSfxVolume": 0.86,
           "CastFlashPartId": "Weapon",
           "CastFlashDuration": 0.24,
-          "CastFlashColor": { "r": 1.0, "g": 0.86, "b": 0.18, "a": 1.0 }
+          "CastFlashColor": {
+            "r": 1.0,
+            "g": 0.86,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "ChainLightning",
+              "Damage": 8.0,
+              "DamagePerLevel": 2.0,
+              "DamageType": "lightning",
+              "MaxJumps": 4,
+              "JumpRadius": 4.25,
+              "FalloffPerJump": 0.72,
+              "VisualDuration": 0.18,
+              "VisualWidth": 0.08
+            }
+          ]
         }
-      ]
+      ],
+      "Category": "Elemental"
     },
     {
       "Id": "common_arcane_bomb",
-      "DisplayName": "奥术爆弹",
-      "Description": "释放一颗缓慢飞行的奥术能量弹，命中后爆开并造成范围伤害。",
-      "IconPath": "Common/Skills/ArcaneBomb/arcane_bomb",
+      "DisplayName": "奥术飞弹",
+      "Description": "从身旁唤出多枚奥术飞弹，圆滑转向并追踪范围内敌人。",
+      "IconPath": "Common/Skills/Icons/arcane_bomb",
       "ManaCost": 20.0,
       "HpCost": 0.0,
       "Cooldown": 10.0,
@@ -154,26 +196,33 @@
       "MaxLevel": 3,
       "Effects": [
         {
-          "EffectType": "Projectile",
-          "Speed": 9.0,
-          "Damage": 18.0,
-          "DamagePerLevel": 5.4,
+          "EffectType": "HomingMultiProjectile",
+          "ProjectileCount": 4,
+          "SearchRadius": 14.0,
+          "HomingTurnSpeed": 820.0,
+          "SpawnSpread": 0.18,
+          "OrbitSpawnRadius": 0.62,
+          "InitialArcStrength": 0.34,
+          "HomingDelay": 0.06,
+          "Speed": 11.5,
+          "Damage": 6.5,
+          "DamagePerLevel": 2.0,
           "DamageType": "arcane",
-          "Radius": 0.48,
-          "MaxLifetime": 1.70,
+          "Radius": 0.36,
+          "MaxLifetime": 2.25,
           "Pierce": false,
-          "SpriteId": "Common/Skills/ArcaneBomb/arcane_bomb",
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
           "ImpactSpriteId": "Common/Effects/MiniEffect2D/ArcaneImpact",
           "VisualScale": 1.38,
           "SortingOrder": 264,
-          "ForwardOffset": 0.70,
+          "ForwardOffset": 0.7,
           "HeightOffset": 0.34,
-          "ImpactScale": 1.55,
-          "ImpactLifetime": 0.30,
+          "ImpactScale": 1.1,
+          "ImpactLifetime": 0.22,
           "VisualRotationOffsetDegrees": -45.0,
           "IgnoreStaticTargets": true,
-          "AreaDamageRadius": 2.10,
-          "AreaDamageMultiplier": 0.82,
+          "AreaDamageRadius": 0.0,
+          "AreaDamageMultiplier": 1.0,
           "ImpactSfxId": "Sound/arcane_bomb_explode",
           "ImpactSfxVolume": 1.0,
           "SuppressTargetHitSfx": true,
@@ -181,9 +230,4910 @@
           "CastSfxVolume": 0.88,
           "CastFlashPartId": "Weapon",
           "CastFlashDuration": 0.32,
-          "CastFlashColor": { "r": 0.86, "g": 0.22, "b": 1.0, "a": 1.0 }
+          "CastFlashColor": {
+            "r": 0.86,
+            "g": 0.22,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ],
+      "Category": "Elemental"
+    },
+    {
+      "Id": "common_dash",
+      "DisplayName": "冲刺",
+      "Description": "发动长距离冲刺向前突进，移动期间留下高速残影。",
+      "IconPath": "Common/Skills/Icons/!skill36",
+      "ManaCost": 0.0,
+      "HpCost": 0.0,
+      "Cooldown": 4.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1,
+      "TargetMode": 2,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.15,
+          "CueDuration": 0.28,
+          "CueBurstCount": 34,
+          "CueColor": {
+            "r": 0.62,
+            "g": 0.92,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Dash",
+          "Speed": 26.0,
+          "SpeedPerLevel": 2.0,
+          "InvulnerableDuration": 0.24,
+          "KeepVerticalVelocity": true,
+          "DashDuration": 0.28
+        }
+      ],
+      "Category": "Martial",
+      "SkillStatus": "Complete"
+    },
+    {
+      "Id": "common_blink",
+      "DisplayName": "闪现",
+      "Description": "施展闪现迅速调整站位，并在落点制造战斗收益。",
+      "IconPath": "Common/Skills/Icons/!skill21",
+      "ManaCost": 8.0,
+      "HpCost": 0.0,
+      "Cooldown": 7.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.05,
+      "TargetMode": 2,
+      "Range": 5.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_blink_phase",
+          "SfxVolume": 0.95,
+          "CueRadius": 1.55,
+          "CueDuration": 0.36,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.5,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Teleport",
+          "Distance": 4.5,
+          "DistancePerLevel": 0.5,
+          "UseAbsolutePosition": false
+        }
+      ],
+      "Category": "Mobility"
+    },
+    {
+      "Id": "common_jump_slash",
+      "DisplayName": "跳斩",
+      "Description": "发动跳斩跃向目标区域，落地时造成冲击伤害。",
+      "IconPath": "Common/Skills/Icons/!skill33",
+      "ManaCost": 10.0,
+      "HpCost": 0.0,
+      "Cooldown": 8.0,
+      "CastTime": 0.1,
+      "RecoveryTime": 0.3,
+      "TargetMode": 2,
+      "Range": 4.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.35,
+          "CueDuration": 0.32,
+          "CueBurstCount": 42,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.74,
+            "b": 0.34,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "JumpSlash",
+          "JumpUp": 9.0,
+          "JumpForward": 4.0,
+          "AirTime": 0.45,
+          "SlamDownVelocity": -16.0,
+          "ImpactRadius": 2.5,
+          "Damage": 18.0,
+          "DamagePerLevel": 4.5,
+          "DamageType": "physical"
+        }
+      ],
+      "Category": "Martial"
+    },
+    {
+      "Id": "common_summon_guard",
+      "DisplayName": "召唤卫士",
+      "Description": "召唤卫士协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 18.0,
+      "HpCost": 0.0,
+      "Cooldown": 16.0,
+      "CastTime": 0.35,
+      "RecoveryTime": 0.15,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.85,
+          "CueDuration": 0.62,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 0.55,
+            "g": 1.0,
+            "b": 0.7,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 1,
+          "CountPerLevel": 1,
+          "Radius": 1.6,
+          "YOffset": 0.0,
+          "InstanceIdPrefix": "skill_guard"
+        }
+      ],
+      "Category": "Summon"
+    },
+    {
+      "Id": "common_cleave",
+      "DisplayName": "横扫斩",
+      "Description": "挥出横扫斩打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill1",
+      "ManaCost": 4.0,
+      "HpCost": 0.0,
+      "Cooldown": 3.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.18,
+      "TargetMode": 2,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.35,
+          "CueDuration": 0.28,
+          "CueBurstCount": 38,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.86,
+            "b": 0.42,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.0,
+          "HalfAngleDeg": 50.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 12.0,
+              "DamagePerLevel": 3.0,
+              "DamageType": "physical"
+            }
+          ]
+        }
+      ],
+      "Category": "Martial"
+    },
+    {
+      "Id": "common_shockwave",
+      "DisplayName": "震荡波",
+      "Description": "释放震荡波影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill23",
+      "ManaCost": 12.0,
+      "HpCost": 0.0,
+      "Cooldown": 9.0,
+      "CastTime": 0.18,
+      "RecoveryTime": 0.2,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 1.05,
+          "CueRadius": 3.15,
+          "CueDuration": 0.52,
+          "CueBurstCount": 96,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.62,
+            "b": 0.3,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.2,
+          "RadiusPerLevel": 0.2,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10.0,
+              "DamagePerLevel": 2.5,
+              "DamageType": "shockwave"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 10.0,
+              "UpwardForce": 3.0
+            }
+          ]
+        }
+      ],
+      "Category": "Martial"
+    },
+    {
+      "Id": "common_whirlwind",
+      "DisplayName": "旋风斩",
+      "Description": "发动旋风斩连续旋转攻击，扫击周围敌人。",
+      "IconPath": "Common/Skills/Icons/!skill32",
+      "ManaCost": 14.0,
+      "HpCost": 0.0,
+      "Cooldown": 12.0,
+      "CastTime": 0.1,
+      "RecoveryTime": 0.2,
+      "TargetMode": 0,
+      "Range": 2.6,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.86,
+          "CueRadius": 2.35,
+          "CueDuration": 0.45,
+          "CueBurstCount": 82,
+          "CueColor": {
+            "r": 0.86,
+            "g": 0.95,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Whirlwind",
+          "Duration": 2.4,
+          "TickInterval": 0.4,
+          "Radius": 2.6,
+          "DamagePerTick": 5.0,
+          "DamagePerLevelPerTick": 1.2,
+          "DamageType": "physical",
+          "IncludeSelf": false
+        }
+      ],
+      "Category": "Martial"
+    },
+    {
+      "Id": "common_frost_nova",
+      "DisplayName": "冰霜新星",
+      "Description": "释放冰霜新星影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 14.0,
+      "HpCost": 0.0,
+      "Cooldown": 10.0,
+      "CastTime": 0.2,
+      "RecoveryTime": 0.2,
+      "TargetMode": 0,
+      "Range": 3.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_freeze_lock",
+          "SfxVolume": 0.95,
+          "CueRadius": 3.35,
+          "CueDuration": 0.55,
+          "CueBurstCount": 96,
+          "CueColor": {
+            "r": 0.32,
+            "g": 0.86,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.4,
+          "RadiusPerLevel": 0.25,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 2.0,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "frost_nova_slow",
+              "Multiplier": 0.45,
+              "Duration": 3.0
+            }
+          ]
+        }
+      ],
+      "Category": "Elemental"
+    },
+    {
+      "Id": "common_stunning_blow",
+      "DisplayName": "眩晕重击",
+      "Description": "挥出眩晕重击打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 8.0,
+      "HpCost": 0.0,
+      "Cooldown": 8.0,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.15,
+      "TargetMode": 2,
+      "Range": 2.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "SfxVolume": 0.92,
+          "CueRadius": 1.55,
+          "CueDuration": 0.34,
+          "CueBurstCount": 46,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.92,
+            "b": 0.28,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.8,
+          "HalfAngleDeg": 38.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 2.0,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "stunning_blow",
+              "Duration": 1.25
+            }
+          ]
+        }
+      ],
+      "Category": "Control"
+    },
+    {
+      "Id": "common_silence",
+      "DisplayName": "沉默领域",
+      "Description": "释放沉默领域影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill20",
+      "ManaCost": 10.0,
+      "HpCost": 0.0,
+      "Cooldown": 12.0,
+      "CastTime": 0.2,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 2.9,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_silence_muffle",
+          "SfxVolume": 0.95,
+          "CueRadius": 2.8,
+          "CueDuration": 0.48,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 0.72,
+            "g": 0.5,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.9,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Silence",
+              "BuffId": "silence",
+              "Duration": 3.0
+            }
+          ]
+        }
+      ],
+      "Category": "Control"
+    },
+    {
+      "Id": "common_shield",
+      "DisplayName": "能量护盾",
+      "Description": "启动能量护盾，获得短时间防护能力。",
+      "IconPath": "Common/Skills/Icons/!skill2",
+      "ManaCost": 10.0,
+      "HpCost": 0.0,
+      "Cooldown": 15.0,
+      "CastTime": 0.2,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.95,
+          "CueRadius": 1.75,
+          "CueDuration": 0.55,
+          "CueBurstCount": 66,
+          "CueColor": {
+            "r": 0.54,
+            "g": 0.86,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.5,
+          "Duration": 5.0,
+          "ApplyToSelf": true
+        }
+      ],
+      "Category": "Defense"
+    },
+    {
+      "Id": "common_reflect_guard",
+      "DisplayName": "反射护卫",
+      "Description": "启动反射护卫，将部分受到的伤害反弹给攻击者。",
+      "IconPath": "Common/Skills/Icons/!skill20",
+      "ManaCost": 14.0,
+      "HpCost": 0.0,
+      "Cooldown": 18.0,
+      "CastTime": 0.2,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_reflect_ping",
+          "SfxVolume": 0.95,
+          "CueRadius": 1.9,
+          "CueDuration": 0.58,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.82,
+            "b": 0.36,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "DamageReflect",
+          "BuffId": "reflect_guard",
+          "ReflectRatio": 0.35,
+          "ReflectDamageType": "reflect",
+          "Duration": 6.0,
+          "ApplyToSelf": true
+        }
+      ],
+      "Category": "Unfinished",
+      "SkillStatus": "Unfinished"
+    },
+    {
+      "Id": "common_first_aid",
+      "DisplayName": "急救术",
+      "Description": "释放急救术恢复生命，提升持续作战能力。",
+      "IconPath": "Common/Skills/Icons/!skill40",
+      "ManaCost": 8.0,
+      "HpCost": 0.0,
+      "Cooldown": 9.0,
+      "CastTime": 0.25,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.95,
+          "CueRadius": 1.45,
+          "CueDuration": 0.52,
+          "CueBurstCount": 56,
+          "CueColor": {
+            "r": 0.48,
+            "g": 1.0,
+            "b": 0.66,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Heal",
+          "Heal": 18.0,
+          "HealPerLevel": 5.0,
+          "ApplyToSelf": true
+        }
+      ],
+      "Category": "Support"
+    },
+    {
+      "Id": "common_regen",
+      "DisplayName": "再生术",
+      "Description": "释放再生术恢复生命，提升持续作战能力。",
+      "IconPath": "Common/Skills/Icons/!skill19",
+      "ManaCost": 12.0,
+      "HpCost": 0.0,
+      "Cooldown": 16.0,
+      "CastTime": 0.3,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.82,
+          "CueRadius": 1.65,
+          "CueDuration": 0.58,
+          "CueBurstCount": 62,
+          "CueColor": {
+            "r": 0.42,
+            "g": 1.0,
+            "b": 0.55,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Hot",
+          "BuffId": "regen",
+          "Duration": 6.0,
+          "TickInterval": 1.0,
+          "HealPerTick": 5.0,
+          "HealPerLevelPerTick": 1.5,
+          "ApplyToSelf": true
+        }
+      ],
+      "Category": "Support"
+    },
+    {
+      "Id": "common_cleanse",
+      "DisplayName": "净化术",
+      "Description": "释放净化术清除负面状态，稳定战斗节奏。",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 8.0,
+      "HpCost": 0.0,
+      "Cooldown": 20.0,
+      "CastTime": 0.2,
+      "RecoveryTime": 0.1,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 1,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.52,
+          "CueBurstCount": 66,
+          "CueColor": {
+            "r": 0.78,
+            "g": 1.0,
+            "b": 0.96,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleanse",
+          "ApplyToSelf": true
+        }
+      ],
+      "Category": "Support"
+    },
+    {
+      "Id": "common_meteor",
+      "DisplayName": "陨石术",
+      "Description": "呼叫陨石术轰击目标区域，造成高威力范围打击。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 18.0,
+      "HpCost": 0.0,
+      "Cooldown": 14.0,
+      "CastTime": 0.35,
+      "RecoveryTime": 0.18,
+      "TargetMode": 0,
+      "Range": 3.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_meteor_impact",
+          "SfxVolume": 1.0,
+          "CueRadius": 3.35,
+          "CueDuration": 0.7,
+          "CueBurstCount": 110,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.34,
+            "b": 0.12,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 0.72,
+          "Radius": 3.4,
+          "Damage": 28.0,
+          "DamagePerLevel": 7.0,
+          "DamageType": "fire",
+          "IncludeSelf": false
+        }
+      ],
+      "Category": "Elemental"
+    },
+    {
+      "Id": "common_life_drain",
+      "DisplayName": "生命汲取",
+      "Description": "发射生命汲取命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill34",
+      "ManaCost": 13.0,
+      "HpCost": 0.0,
+      "Cooldown": 9.0,
+      "CastTime": 0.18,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 14.0,
+          "Damage": 0.0,
+          "DamageType": "life_drain",
+          "Radius": 0.36,
+          "MaxLifetime": 1.35,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "ImpactSpriteId": "Common/Effects/MiniEffect2D/ArcaneImpact",
+          "VisualScale": 1.12,
+          "SortingOrder": 265,
+          "ForwardOffset": 0.7,
+          "HeightOffset": 0.34,
+          "ImpactScale": 1.05,
+          "ImpactLifetime": 0.24,
+          "VisualRotationOffsetDegrees": -45.0,
+          "IgnoreStaticTargets": true,
+          "ImpactSfxId": "Sound/skill_life_drain",
+          "ImpactSfxVolume": 0.95,
+          "SuppressTargetHitSfx": true,
+          "CastSfxId": "Sound/skill_life_drain",
+          "CastSfxVolume": 0.75,
+          "CastFlashPartId": "Weapon",
+          "CastFlashDuration": 0.22,
+          "CastFlashColor": {
+            "r": 0.78,
+            "g": 0.18,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "LifeDrain",
+              "Damage": 12.0,
+              "DamagePerLevel": 3.0,
+              "HealRatio": 0.65,
+              "DamageType": "life_drain"
+            }
+          ]
+        }
+      ],
+      "Category": "Dark"
+    },
+    {
+      "Id": "common_multishot",
+      "DisplayName": "多重射击",
+      "Description": "释放多重射击，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 12.0,
+      "HpCost": 0.0,
+      "Cooldown": 7.0,
+      "CastTime": 0.16,
+      "RecoveryTime": 0.14,
+      "TargetMode": 2,
+      "Range": 9.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.72,
+          "CueRadius": 1.25,
+          "CueDuration": 0.24,
+          "CueBurstCount": 34,
+          "CueColor": {
+            "r": 0.62,
+            "g": 0.88,
+            "b": 1.0,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 5,
+          "SpreadAngleDeg": 34.0,
+          "Speed": 16.5,
+          "Damage": 6.0,
+          "DamagePerLevel": 1.8,
+          "DamageType": "physical",
+          "Radius": 0.24,
+          "MaxLifetime": 1.05,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSpriteId": "Common/Effects/MiniEffect2D/ThunderImpact",
+          "VisualScale": 0.84,
+          "VisualRotationOffsetDegrees": -45.0,
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "ImpactSfxVolume": 0.72,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ],
+      "Category": "Gunner"
+    },
+    {
+      "Id": "common_burning_dart",
+      "DisplayName": "燃烧飞镖",
+      "Description": "发射燃烧飞镖命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill3",
+      "ManaCost": 9.0,
+      "HpCost": 0.0,
+      "Cooldown": 6.0,
+      "CastTime": 0.16,
+      "RecoveryTime": 0.1,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 18.0,
+          "Damage": 5.0,
+          "DamagePerLevel": 1.5,
+          "DamageType": "fire",
+          "Radius": 0.26,
+          "MaxLifetime": 1.1,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSpriteId": "Tribe/Common/Effects/MiniEffect2D/fireball_impact",
+          "VisualScale": 0.82,
+          "SortingOrder": 263,
+          "ForwardOffset": 0.7,
+          "HeightOffset": 0.32,
+          "ImpactScale": 0.9,
+          "ImpactLifetime": 0.22,
+          "VisualRotationOffsetDegrees": -45.0,
+          "IgnoreStaticTargets": true,
+          "ImpactSfxId": "Sound/fireball_explode_light",
+          "ImpactSfxVolume": 0.72,
+          "SuppressTargetHitSfx": true,
+          "CastSfxId": "Sound/fireball_cast_a",
+          "CastSfxVolume": 0.65,
+          "CastFlashPartId": "Weapon",
+          "CastFlashDuration": 0.18,
+          "CastFlashColor": {
+            "r": 1.0,
+            "g": 0.25,
+            "b": 0.08,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "burning_dart_dot",
+              "Duration": 3.0,
+              "TickInterval": 1.0,
+              "DamagePerTick": 3.0,
+              "DamagePerLevelPerTick": 1.0,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ],
+      "Category": "Elemental"
+    },
+    {
+      "Id": "martial_berserker_roar",
+      "Category": "Martial",
+      "DisplayName": "狂战怒吼",
+      "Description": "释放狂战怒吼影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill7",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 11,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.8,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.25,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 6,
+              "DamagePerLevel": 1.5,
+              "DamageType": "sonic"
+            },
+            {
+              "EffectType": "Silence",
+              "BuffId": "berserker_roar_silence",
+              "Duration": 1.2
+            }
+          ]
         }
       ]
+    },
+    {
+      "Id": "martial_counter_spin",
+      "Category": "Unfinished",
+      "DisplayName": "反击旋舞",
+      "Description": "发动反击旋舞连续旋转攻击，扫击周围敌人。",
+      "IconPath": "Common/Skills/Icons/!skill29",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 13,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_reflect_ping",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.0,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.86,
+            "b": 0.45,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "DamageReflect",
+          "BuffId": "counter_spin_reflect",
+          "ReflectRatio": 0.28,
+          "Duration": 3.5,
+          "ApplyToSelf": true,
+          "ReflectDamageType": "counter"
+        },
+        {
+          "EffectType": "Whirlwind",
+          "Duration": 1.1,
+          "TickInterval": 0.25,
+          "Radius": 2.2,
+          "DamagePerTick": 3.2,
+          "DamagePerLevelPerTick": 0.8,
+          "DamageType": "physical",
+          "IncludeSelf": false
+        }
+      ],
+      "SkillStatus": "Unfinished"
+    },
+    {
+      "Id": "martial_earth_splitter",
+      "Category": "Martial",
+      "DisplayName": "裂地斩",
+      "Description": "挥出裂地斩打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 9,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.58,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.4,
+          "HalfAngleDeg": 55,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 13,
+              "DamagePerLevel": 3,
+              "DamageType": "earth"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 8,
+              "UpwardForce": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_execute_arc",
+      "Category": "Martial",
+      "DisplayName": "处决弧光",
+      "Description": "挥出处决弧光打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill39",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.28,
+      "RecoveryTime": 0.22,
+      "TargetMode": 2,
+      "Range": 3.1,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.7,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.25,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.1,
+          "HalfAngleDeg": 48,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 24,
+              "DamagePerLevel": 5,
+              "DamageType": "physical"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_guard_break",
+      "Category": "Martial",
+      "DisplayName": "破防斩",
+      "Description": "挥出破防斩打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill27",
+      "ManaCost": 8,
+      "HpCost": 0.0,
+      "Cooldown": 7,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.6,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.5,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.92,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.6,
+          "HalfAngleDeg": 36,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "guard_break_stun",
+              "Duration": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_leap_crash",
+      "Category": "Martial",
+      "DisplayName": "跃击震地",
+      "Description": "发动跃击震地跃向目标区域，落地时造成冲击伤害。",
+      "IconPath": "Common/Skills/Icons/!skill33",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 9,
+      "CastTime": 0.08,
+      "RecoveryTime": 0.25,
+      "TargetMode": 2,
+      "Range": 2.7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.4,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.72,
+            "b": 0.26,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "JumpSlash",
+          "JumpUp": 9.5,
+          "JumpForward": 4.8,
+          "AirTime": 0.42,
+          "SlamDownVelocity": -17,
+          "ImpactRadius": 2.7,
+          "Damage": 17,
+          "DamagePerLevel": 4,
+          "DamageType": "physical"
+        }
+      ]
+    },
+    {
+      "Id": "martial_lunging_thrust",
+      "Category": "Martial",
+      "DisplayName": "突刺冲锋",
+      "Description": "发动突刺冲锋向前突进，兼具位移和进攻节奏。",
+      "IconPath": "Common/Skills/Icons/!skill36",
+      "ManaCost": 8,
+      "HpCost": 0.0,
+      "Cooldown": 6.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.1,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.7,
+            "g": 0.95,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Dash",
+          "Speed": 10,
+          "InvulnerableDuration": 0.08
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.2,
+          "HalfAngleDeg": 24,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 11,
+              "DamagePerLevel": 2.5,
+              "DamageType": "pierce"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_power_slash",
+      "Category": "Martial",
+      "DisplayName": "蓄力斩",
+      "Description": "挥出蓄力斩打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill27",
+      "ManaCost": 4,
+      "HpCost": 0.0,
+      "Cooldown": 3.2,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.3,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.78,
+            "b": 0.32,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.0,
+          "HalfAngleDeg": 42,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 14,
+              "DamagePerLevel": 3,
+              "DamageType": "physical"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_rising_cut",
+      "Category": "Unfinished",
+      "DisplayName": "升龙斩",
+      "Description": "挥出升龙斩打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill33",
+      "ManaCost": 7,
+      "HpCost": 0.0,
+      "Cooldown": 5.2,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.2,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.9,
+            "g": 1,
+            "b": 0.55,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.4,
+          "HalfAngleDeg": 34,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 9,
+              "DamagePerLevel": 2,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 4.0,
+              "UpwardForce": 5.5
+            }
+          ]
+        }
+      ],
+      "SkillStatus": "Unfinished"
+    },
+    {
+      "Id": "martial_shoulder_charge",
+      "Category": "Martial",
+      "DisplayName": "肩撞冲锋",
+      "Description": "发动肩撞冲锋向前突进，兼具位移和进攻节奏。",
+      "IconPath": "Common/Skills/Icons/!skill36",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 7.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.9,
+            "g": 0.75,
+            "b": 0.55,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Dash",
+          "Speed": 13,
+          "InvulnerableDuration": 0.1
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.8,
+          "HalfAngleDeg": 28,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 7,
+              "DamagePerLevel": 2,
+              "DamageType": "impact"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 11,
+              "UpwardForce": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "martial_whirlwind_burst",
+      "Category": "Martial",
+      "DisplayName": "爆裂旋风",
+      "Description": "发动爆裂旋风连续旋转攻击，扫击周围敌人。",
+      "IconPath": "Common/Skills/Icons/!skill32",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 10,
+      "CastTime": 0.05,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.2,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.9,
+            "g": 0.96,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Whirlwind",
+          "Duration": 1.8,
+          "TickInterval": 0.3,
+          "Radius": 2.5,
+          "DamagePerTick": 4.5,
+          "DamagePerLevelPerTick": 1.0,
+          "DamageType": "physical",
+          "IncludeSelf": false
+        }
+      ]
+    },
+    {
+      "Id": "defense_bulwark_aura",
+      "Category": "Defense",
+      "DisplayName": "壁垒光环",
+      "Description": "启动壁垒光环，获得短时间防护能力。",
+      "IconPath": "Common/Skills/Icons/!skill2",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.2,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.35,
+            "g": 0.95,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.45,
+          "Duration": 5,
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.2,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Knockback",
+              "Force": 7,
+              "UpwardForce": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "defense_iron_wall",
+      "Category": "Defense",
+      "DisplayName": "铁壁姿态",
+      "Description": "启动铁壁姿态，获得短时间防护能力。",
+      "IconPath": "Common/Skills/Icons/!skill20",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.1,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.7,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.82,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.7,
+          "Duration": 3.2,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "defense_rallying_cry",
+      "Category": "Defense",
+      "DisplayName": "振奋战吼",
+      "Description": "启动振奋战吼，获得短时间防护能力。",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 11,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.7,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Hot",
+          "BuffId": "rallying_cry_hot",
+          "Duration": 5,
+          "TickInterval": 1,
+          "HealPerTick": 4,
+          "HealPerLevelPerTick": 1.2,
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.25,
+          "Duration": 5,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "defense_sanctuary_guard",
+      "Category": "Defense",
+      "DisplayName": "圣域守护",
+      "Description": "展开圣域守护区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill30",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 20,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.7,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.82,
+            "g": 1,
+            "b": 0.92,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 4,
+          "TickInterval": 0.8,
+          "Radius": 2.7,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.9,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Slow",
+              "BuffId": "sanctuary_slow",
+              "Multiplier": 0.55,
+              "Duration": 1.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "defense_shield_bash",
+      "Category": "Defense",
+      "DisplayName": "盾牌猛击",
+      "Description": "挥出盾牌猛击打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill2",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 8.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.5,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.7,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.4,
+          "HalfAngleDeg": 38,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 7,
+              "DamagePerLevel": 1.8,
+              "DamageType": "impact"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "shield_bash_stun",
+              "Duration": 1.1
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 5,
+              "UpwardForce": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "defense_thorns_guard",
+      "Category": "Defense",
+      "DisplayName": "荆棘守卫",
+      "Description": "启动荆棘守卫，将部分受到的伤害反弹给攻击者。",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_reflect_ping",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.75,
+            "b": 0.32,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "DamageReflect",
+          "BuffId": "thorns_guard",
+          "ReflectRatio": 0.42,
+          "Duration": 6,
+          "ApplyToSelf": true,
+          "ReflectDamageType": "thorns"
+        }
+      ]
+    },
+    {
+      "Id": "assassin_bleeding_cross",
+      "Category": "Assassin",
+      "DisplayName": "血十字",
+      "Description": "挥出血十字打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill39",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 6.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 1,
+            "g": 0.2,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.7,
+          "HalfAngleDeg": 50,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 7,
+              "DamagePerLevel": 1.5,
+              "DamageType": "bleed"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "bleeding_cross_dot",
+              "Duration": 5,
+              "TickInterval": 1,
+              "DamagePerTick": 2.8,
+              "DamagePerLevelPerTick": 0.7,
+              "DamageType": "bleed"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "assassin_crippling_dash",
+      "Category": "Assassin",
+      "DisplayName": "断筋突袭",
+      "Description": "发动断筋突袭向前突进，兼具位移和进攻节奏。",
+      "IconPath": "Common/Skills/Icons/!skill36",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 8,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.6,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.2,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Dash",
+          "Speed": 12,
+          "InvulnerableDuration": 0.12
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.6,
+          "HalfAngleDeg": 42,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 6,
+              "DamagePerLevel": 1.5,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "crippling_dash_slow",
+              "Multiplier": 0.45,
+              "Duration": 2.4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "assassin_fan_of_knives",
+      "Category": "Assassin",
+      "DisplayName": "飞刀扇",
+      "Description": "释放飞刀扇，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 7,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.3,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.82,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 7,
+          "SpreadAngleDeg": 70,
+          "Speed": 13,
+          "Damage": 5.5,
+          "DamagePerLevel": 1.2,
+          "DamageType": "physical",
+          "Radius": 0.22,
+          "MaxLifetime": 0.8,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 0.65,
+          "VisualRotationOffsetDegrees": -45,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "assassin_poison_blade",
+      "Category": "Assassin",
+      "DisplayName": "淬毒刃",
+      "Description": "挥出淬毒刃打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 8,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_cleave_swing",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.2,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.48,
+            "g": 1,
+            "b": 0.38,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 2.5,
+          "HalfAngleDeg": 42,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 5,
+              "DamagePerLevel": 1,
+              "DamageType": "poison"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_blade_dot",
+              "Duration": 4,
+              "TickInterval": 1,
+              "DamagePerTick": 3.2,
+              "DamagePerLevelPerTick": 0.8,
+              "DamageType": "poison"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "assassin_shadow_step",
+      "Category": "Assassin",
+      "DisplayName": "暗影步",
+      "Description": "施展暗影步迅速调整站位，并在落点制造战斗收益。",
+      "IconPath": "Common/Skills/Icons/!skill21",
+      "ManaCost": 11,
+      "HpCost": 0.0,
+      "Cooldown": 7,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 2.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_blink_phase",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.5,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.35,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Teleport",
+          "Distance": 3.6,
+          "DistancePerLevel": 0.25
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10,
+              "DamagePerLevel": 2.5,
+              "DamageType": "shadow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "assassin_smoke_bomb",
+      "Category": "Assassin",
+      "DisplayName": "烟雾弹",
+      "Description": "展开烟雾弹区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill23",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 14,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_silence_muffle",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.6,
+          "CueDuration": 0.4,
+          "CueBurstCount": 48,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.45,
+            "b": 0.55,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 3.5,
+          "TickInterval": 0.75,
+          "Radius": 2.8,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.45,
+            "b": 0.55,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Silence",
+              "BuffId": "smoke_bomb_silence",
+              "Duration": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "assassin_vampiric_cut",
+      "Category": "Assassin",
+      "SkillStatus": "Complete",
+      "DisplayName": "嗜血",
+      "Description": "进入嗜血状态，持续 10 秒。期间造成的物理伤害会按 10% 转化为生命回复，每次至少回复 1 点。",
+      "IconPath": "Common/Skills/Icons/!skill34",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 8,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_life_drain",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.15,
+          "CueDuration": 0.45,
+          "CueBurstCount": 56,
+          "CueColor": {
+            "r": 0.82,
+            "g": 0.06,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "LifeStealBuff",
+          "BuffId": "bloodthirst",
+          "Duration": 10.0,
+          "HealRatio": 0.1,
+          "DamageType": "physical",
+          "SpriteId": "Common/Skills/Icons/!skill34",
+          "BuffDisplayName": "嗜血",
+          "BuffDescription": "持续 10 秒：造成的物理伤害按 10% 回复生命，每次至少回复 1 点。"
+        }
+      ]
+    },
+    {
+      "Id": "elemental_arcane_shards",
+      "Category": "Elemental",
+      "DisplayName": "奥术碎晶",
+      "Description": "释放奥术碎晶，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill6",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 7.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.85,
+            "g": 0.25,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 5,
+          "SpreadAngleDeg": 38,
+          "Speed": 15,
+          "Damage": 5.2,
+          "DamagePerLevel": 1.1440000000000001,
+          "DamageType": "arcane",
+          "Radius": 0.28,
+          "MaxLifetime": 1.2,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 0.85,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/arcane_bomb_explode",
+          "ImpactSfxVolume": 0.75,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "elemental_blizzard",
+      "Category": "Elemental",
+      "DisplayName": "暴风雪",
+      "Description": "展开暴风雪区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 22,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.35,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 4.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_freeze_lock",
+          "SfxVolume": 0.9,
+          "CueRadius": 4.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 120,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5,
+          "TickInterval": 0.65,
+          "Radius": 4.0,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 4.2,
+              "DamagePerLevel": 1.0,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "blizzard_slow",
+              "Multiplier": 0.5,
+              "Duration": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_chain_spark",
+      "Category": "Elemental",
+      "DisplayName": "连锁电火花",
+      "Description": "发射连锁电火花命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 10,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 12,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_cast",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.32,
+          "CueBurstCount": 45,
+          "CueColor": {
+            "r": 1,
+            "g": 0.92,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 19,
+          "Damage": 0,
+          "DamageType": "lightning",
+          "Radius": 0.3,
+          "MaxLifetime": 1.1,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 1,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "ChainLightning",
+              "Damage": 7,
+              "DamagePerLevel": 1.8,
+              "DamageType": "lightning",
+              "MaxJumps": 5,
+              "JumpRadius": 4.2,
+              "FalloffPerJump": 0.75,
+              "VisualDuration": 0.18,
+              "VisualWidth": 0.08
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_earth_spikes",
+      "Category": "Elemental",
+      "DisplayName": "大地尖刺",
+      "Description": "挥出大地尖刺打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.2,
+          "CueDuration": 0.45,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.65,
+            "g": 0.42,
+            "b": 0.2,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.4,
+          "HalfAngleDeg": 50,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 14,
+              "DamagePerLevel": 3,
+              "DamageType": "earth"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 7,
+              "UpwardForce": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_fire_lance",
+      "Category": "Elemental",
+      "DisplayName": "火焰长枪",
+      "Description": "发射火焰长枪命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/fireball",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_a",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 0.28,
+            "b": 0.08,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 18,
+          "Damage": 7,
+          "DamagePerLevel": 1.75,
+          "DamageType": "fire",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/fireball_explode_light",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "fire_lance_burn",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 3,
+              "DamagePerLevelPerTick": 0.75,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_fire_nova",
+      "Category": "Elemental",
+      "DisplayName": "烈焰新星",
+      "Description": "释放烈焰新星影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 9,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_explode_light",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.45,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 1,
+            "g": 0.28,
+            "b": 0.05,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10,
+              "DamagePerLevel": 2.5,
+              "DamageType": "fire"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "fire_nova_burn",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 2.5,
+              "DamagePerLevelPerTick": 0.625,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_frost_field",
+      "Category": "Elemental",
+      "DisplayName": "霜冻力场",
+      "Description": "展开霜冻力场区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_freeze_lock",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.1,
+          "CueDuration": 0.45,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.86,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 4.2,
+          "TickInterval": 0.7,
+          "Radius": 3.2,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.86,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 3.2,
+              "DamagePerLevel": 0.8,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "frost_field_slow",
+              "Multiplier": 0.55,
+              "Duration": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_ice_lance",
+      "Category": "Elemental",
+      "DisplayName": "冰枪术",
+      "Description": "发射冰枪术命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/ice_shard",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_shard_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.3,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 18,
+          "Damage": 8,
+          "DamagePerLevel": 2.0,
+          "DamageType": "frost",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_ice_shard",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/ice_freeze_lock",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Slow",
+              "BuffId": "ice_lance_slow",
+              "Multiplier": 0.55,
+              "Duration": 2.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_meteor_rain",
+      "Category": "Elemental",
+      "DisplayName": "流星雨",
+      "Description": "呼叫流星雨轰击目标区域，造成高威力范围打击。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 24,
+      "HpCost": 0.0,
+      "Cooldown": 20,
+      "CastTime": 0.45,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_meteor_impact",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.7,
+          "CueDuration": 0.7,
+          "CueBurstCount": 120,
+          "CueColor": {
+            "r": 1,
+            "g": 0.25,
+            "b": 0.08,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 0.85,
+          "Radius": 3.7,
+          "Damage": 32,
+          "DamagePerLevel": 7,
+          "DamageType": "fire",
+          "IncludeSelf": false
+        }
+      ]
+    },
+    {
+      "Id": "elemental_orbital_arcana",
+      "Category": "Elemental",
+      "DisplayName": "环绕奥能",
+      "Description": "释放多枚环绕奥能，自动寻找附近敌人并追踪命中。",
+      "IconPath": "Common/Skills/Icons/arcane_bomb",
+      "ManaCost": 20,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 12,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.5,
+          "CueDuration": 0.35,
+          "CueBurstCount": 55,
+          "CueColor": {
+            "r": 0.86,
+            "g": 0.22,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "HomingMultiProjectile",
+          "ProjectileCount": 6,
+          "SearchRadius": 13,
+          "HomingTurnSpeed": 820,
+          "SpawnSpread": 0.2,
+          "OrbitSpawnRadius": 0.75,
+          "InitialArcStrength": 0.35,
+          "HomingDelay": 0.05,
+          "Speed": 11.5,
+          "Damage": 5.8,
+          "DamagePerLevel": 1.6,
+          "DamageType": "arcane",
+          "Radius": 0.32,
+          "MaxLifetime": 2.2,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.05,
+          "ImpactSfxId": "Sound/arcane_bomb_explode",
+          "ImpactSfxVolume": 0.8,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "elemental_poison_cloud",
+      "Category": "Elemental",
+      "DisplayName": "毒云术",
+      "Description": "展开毒云术区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill16",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 13,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fire_hit_sizzle",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.32,
+            "g": 1,
+            "b": 0.22,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5.5,
+          "TickInterval": 1,
+          "Radius": 3.2,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.32,
+            "g": 1,
+            "b": 0.22,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_cloud_dot",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 3.5,
+              "DamagePerLevelPerTick": 0.875,
+              "DamageType": "poison"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_poison_spit",
+      "Category": "Elemental",
+      "DisplayName": "毒液喷吐",
+      "Description": "发射毒液喷吐命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.42,
+            "g": 1,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 13,
+          "Damage": 4,
+          "DamagePerLevel": 1.0,
+          "DamageType": "poison",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/fire_hit_sizzle",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_spit_dot",
+              "Duration": 5,
+              "TickInterval": 1,
+              "DamagePerTick": 3.2,
+              "DamagePerLevelPerTick": 0.8,
+              "DamageType": "poison"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_thunder_bolt",
+      "Category": "Elemental",
+      "DisplayName": "雷电箭",
+      "Description": "发射雷电箭命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/thunder_spear",
+      "ManaCost": 11,
+      "HpCost": 0.0,
+      "Cooldown": 6,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.2,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 20,
+          "Damage": 7.5,
+          "DamagePerLevel": 1.875,
+          "DamageType": "lightning",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Stun",
+              "BuffId": "thunder_bolt_stun",
+              "Duration": 0.55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_thunder_storm",
+      "Category": "Elemental",
+      "DisplayName": "雷暴领域",
+      "Description": "展开雷暴领域区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill25",
+      "ManaCost": 20,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.5,
+          "CueDuration": 0.5,
+          "CueBurstCount": 105,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 3.8,
+          "TickInterval": 0.75,
+          "Radius": 3.5,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 5.5,
+              "DamagePerLevel": 1.3,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "thunder_storm_stun",
+              "Duration": 0.35
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_tidal_ring",
+      "Category": "Elemental",
+      "DisplayName": "潮汐圆环",
+      "Description": "释放潮汐圆环影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill29",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 11,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.45,
+          "CueBurstCount": 85,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.72,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "water"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "tidal_ring_slow",
+              "Multiplier": 0.6,
+              "Duration": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_wind_cutter",
+      "Category": "Elemental",
+      "DisplayName": "风刃切割",
+      "Description": "挥出风刃切割打击前方范围敌人，适合近战清场。",
+      "IconPath": "Common/Skills/Icons/!skill11",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 8,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.5,
+          "CueDuration": 0.35,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.75,
+            "g": 1,
+            "b": 0.9,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.5,
+          "HalfAngleDeg": 60,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "wind"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 9,
+              "UpwardForce": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "light_holy_bolt",
+      "Category": "Light",
+      "DisplayName": "圣光弹",
+      "Description": "发射圣光弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 1,
+            "b": 0.65,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 15,
+          "Damage": 8,
+          "DamagePerLevel": 2,
+          "DamageType": "holy",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "VisualScale": 0.85,
+          "ImpactSfxId": "Sound/skill_heal_chime",
+          "ImpactSfxVolume": 0.75,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "light_holy_nova",
+      "Category": "Light",
+      "DisplayName": "圣光新星",
+      "Description": "释放圣光新星恢复生命，提升持续作战能力。",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 13,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 95,
+          "CueColor": {
+            "r": 1,
+            "g": 1,
+            "b": 0.72,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "holy"
+            }
+          ]
+        },
+        {
+          "EffectType": "Heal",
+          "Heal": 12,
+          "HealPerLevel": 3,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "dark_curse_field",
+      "Category": "Dark",
+      "DisplayName": "诅咒力场",
+      "Description": "展开诅咒力场区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_silence_muffle",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.2,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 4,
+          "TickInterval": 0.9,
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.2,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 3.5,
+              "DamagePerLevel": 1,
+              "DamageType": "shadow"
+            },
+            {
+              "EffectType": "Silence",
+              "BuffId": "curse_field_silence",
+              "Duration": 1.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "dark_void_burst",
+      "Category": "Dark",
+      "DisplayName": "虚空爆裂",
+      "Description": "释放虚空爆裂影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 17,
+      "HpCost": 0.0,
+      "Cooldown": 14,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_life_drain",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.8,
+          "CueDuration": 0.5,
+          "CueBurstCount": 85,
+          "CueColor": {
+            "r": 0.72,
+            "g": 0.1,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "LifeDrain",
+              "Damage": 9,
+              "DamagePerLevel": 2.2,
+              "HealRatio": 0.35,
+              "DamageType": "shadow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_shadow_bolt",
+      "Category": "Dark",
+      "DisplayName": "暗影箭",
+      "Description": "发射暗影箭命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill37",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 7,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_life_drain",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.68,
+            "g": 0.15,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 14,
+          "Damage": 0,
+          "DamagePerLevel": 0.0,
+          "DamageType": "shadow",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/skill_life_drain",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "LifeDrain",
+              "Damage": 10,
+              "DamagePerLevel": 2.5,
+              "HealRatio": 0.55,
+              "DamageType": "shadow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_arcane_barrier",
+      "Category": "Support",
+      "DisplayName": "奥术屏障",
+      "Description": "启动奥术屏障，获得短时间防护能力。",
+      "IconPath": "Common/Skills/Icons/!skill6",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.62,
+            "g": 0.35,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.5,
+          "Duration": 5,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "support_cleanse_ring",
+      "Category": "Support",
+      "DisplayName": "净化圆环",
+      "Description": "释放净化圆环清除负面状态，稳定战斗节奏。",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 1,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.8,
+            "g": 1,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleanse",
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "IncludeSelf": true,
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 5,
+              "HealPerLevel": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_group_heal",
+      "Category": "Support",
+      "DisplayName": "群体治疗",
+      "Description": "释放群体治疗影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill40",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 15,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.5,
+          "CueDuration": 0.55,
+          "CueBurstCount": 95,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.65,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.5,
+          "IncludeSelf": true,
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 14,
+              "HealPerLevel": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_haste",
+      "Category": "Support",
+      "DisplayName": "急速祝福",
+      "Description": "释放急速祝福，提供一项通用 RPG 战斗技能效果。",
+      "IconPath": "Common/Skills/Icons/!skill9",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.32,
+          "CueBurstCount": 45,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.95,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Slow",
+          "BuffId": "haste",
+          "Multiplier": 1.45,
+          "Duration": 5,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "support_regrowth_field",
+      "Category": "Support",
+      "DisplayName": "复苏领域",
+      "Description": "展开复苏领域区域，持续影响范围内的敌人或友方。",
+      "IconPath": "Common/Skills/Icons/!skill19",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.2,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.52,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5,
+          "TickInterval": 1,
+          "Radius": 3.2,
+          "IncludeSelf": true,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.52,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 4.5,
+              "HealPerLevel": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "summon_arcane_circle",
+      "Category": "Summon",
+      "DisplayName": "奥术召唤阵",
+      "Description": "召唤奥术阵协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill21",
+      "ManaCost": 28,
+      "HpCost": 0.0,
+      "Cooldown": 30,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.5,
+          "CueDuration": 0.65,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.82,
+            "g": 0.25,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 2,
+          "Radius": 2.0,
+          "InstanceIdPrefix": "summon_arcane_circle"
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.5,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "arcane"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "summon_mage_apprentice",
+      "Category": "Summon",
+      "DisplayName": "召唤法师学徒",
+      "Description": "召唤法师学徒协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill17",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 22,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 1.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.55,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.75,
+            "g": 0.45,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 1,
+          "CountPerLevel": 1,
+          "Radius": 1.5,
+          "InstanceIdPrefix": "summon_mage_apprentice"
+        }
+      ]
+    },
+    {
+      "Id": "summon_spirit_burst",
+      "Category": "Summon",
+      "DisplayName": "灵体爆发",
+      "Description": "召唤灵体爆发协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill24",
+      "ManaCost": 24,
+      "HpCost": 0.0,
+      "Cooldown": 28,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 100,
+          "CueColor": {
+            "r": 0.8,
+            "g": 1,
+            "b": 0.9,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 3,
+          "Radius": 2.2,
+          "InstanceIdPrefix": "spirit_burst_guard"
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 7,
+              "DamagePerLevel": 2,
+              "DamageType": "spirit"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 5,
+              "UpwardForce": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "summon_warrior_pair",
+      "Category": "Summon",
+      "DisplayName": "召唤双战士",
+      "Description": "召唤双战士协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill1",
+      "ManaCost": 22,
+      "HpCost": 0.0,
+      "Cooldown": 26,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 1.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.0,
+          "CueDuration": 0.6,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.75,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 2,
+          "CountPerLevel": 0,
+          "Radius": 1.8,
+          "InstanceIdPrefix": "summon_warrior_pair"
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_cryo_round",
+      "Category": "Gunner",
+      "DisplayName": "寒冻弹",
+      "Description": "发射寒冻弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/ice_shard",
+      "ManaCost": 9.0,
+      "Cooldown": 3.6,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 18.0,
+          "Damage": 8.0,
+          "DamagePerLevel": 1.7,
+          "DamageType": "frost",
+          "Radius": 0.24,
+          "MaxLifetime": 0.9,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/skill_stun_snap",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Slow",
+              "BuffId": "cryo_round_slow",
+              "Multiplier": 0.45,
+              "Duration": 2.0
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_explosive_round",
+      "Category": "Gunner",
+      "DisplayName": "爆裂弹",
+      "Description": "发射爆裂弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/fireball",
+      "ManaCost": 11.0,
+      "Cooldown": 3.8,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 16.0,
+          "Damage": 10.0,
+          "DamagePerLevel": 2.0,
+          "DamageType": "fire",
+          "Radius": 0.28,
+          "MaxLifetime": 1.0,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 1.45,
+          "AreaDamageMultiplier": 0.85,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.15,
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_grenade_launcher",
+      "Category": "Gunner",
+      "DisplayName": "榴弹发射",
+      "Description": "发射榴弹发射命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 16.0,
+      "Cooldown": 6.5,
+      "TargetMode": 2,
+      "Range": 12.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 11.0,
+          "Damage": 16.0,
+          "DamagePerLevel": 3.4,
+          "DamageType": "explosive",
+          "Radius": 0.42,
+          "MaxLifetime": 1.2,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 2.25,
+          "AreaDamageMultiplier": 0.9,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.2,
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_pistol_burst",
+      "Category": "Gunner",
+      "DisplayName": "手枪连射",
+      "Description": "释放手枪连射，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill18",
+      "ManaCost": 5.0,
+      "Cooldown": 1.1,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ShootArrow",
+          "SfxVolume": 0.85,
+          "CueRadius": 0.75,
+          "CueDuration": 0.16,
+          "CueBurstCount": 18,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.85,
+            "b": 0.35,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 3,
+          "SpreadAngleDeg": 7.0,
+          "Speed": 20.0,
+          "Damage": 5.0,
+          "DamagePerLevel": 1.2,
+          "DamageType": "bullet",
+          "Radius": 0.16,
+          "MaxLifetime": 0.65,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/Bump",
+          "ImpactSfxVolume": 0.65,
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_rocket_shell",
+      "Category": "Gunner",
+      "DisplayName": "火箭弹",
+      "Description": "发射火箭弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 22.0,
+      "Cooldown": 9.0,
+      "TargetMode": 2,
+      "Range": 13.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 9.0,
+          "Damage": 20.0,
+          "DamagePerLevel": 4.2,
+          "DamageType": "explosive",
+          "Radius": 0.5,
+          "MaxLifetime": 1.6,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 2.8,
+          "AreaDamageMultiplier": 0.95,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.35,
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Knockback",
+              "Force": 7.5,
+              "UpwardForce": 1.0
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_scatter_blast",
+      "Category": "Gunner",
+      "DisplayName": "霰弹爆射",
+      "Description": "释放霰弹爆射，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 9.0,
+      "Cooldown": 3.0,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.1,
+          "CueDuration": 0.22,
+          "CueBurstCount": 34,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.62,
+            "b": 0.18,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 9,
+          "SpreadAngleDeg": 42.0,
+          "Speed": 17.0,
+          "Damage": 4.0,
+          "DamagePerLevel": 1.0,
+          "DamageType": "bullet",
+          "Radius": 0.18,
+          "MaxLifetime": 0.55,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/Bump",
+          "ImpactSfxVolume": 0.65,
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_shock_round",
+      "Category": "Gunner",
+      "DisplayName": "电击弹",
+      "Description": "发射电击弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/thunder_spear",
+      "ManaCost": 11.0,
+      "Cooldown": 5.0,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 19.0,
+          "Damage": 9.0,
+          "DamagePerLevel": 1.8,
+          "DamageType": "lightning",
+          "Radius": 0.25,
+          "MaxLifetime": 0.85,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Stun",
+              "BuffId": "shock_round_stun",
+              "Duration": 0.75
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_sniper_round",
+      "Category": "Gunner",
+      "DisplayName": "狙击弹",
+      "Description": "发射狙击弹命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill33",
+      "ManaCost": 12.0,
+      "Cooldown": 5.5,
+      "TargetMode": 2,
+      "Range": 16.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "SfxVolume": 0.95,
+          "CueRadius": 0.9,
+          "CueDuration": 0.2,
+          "CueBurstCount": 24,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.9,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 28.0,
+          "Damage": 22.0,
+          "DamagePerLevel": 4.5,
+          "DamageType": "pierce",
+          "Radius": 0.18,
+          "MaxLifetime": 0.9,
+          "Pierce": true,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 0.9,
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_electro_net",
+      "Category": "Engineer",
+      "DisplayName": "电磁网",
+      "Description": "释放电磁网影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 17.0,
+      "Cooldown": 8.0,
+      "TargetMode": 2,
+      "Range": 8.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 1.7,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "electro_net_slow",
+              "Multiplier": 0.4,
+              "Duration": 2.5
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "electro_net_stun",
+              "Duration": 0.45
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "CueAtPosition": true,
+          "CueRadius": 2.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 82,
+          "CueColor": {
+            "r": 0.5,
+            "g": 0.92,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_flame_canister",
+      "Category": "Engineer",
+      "DisplayName": "燃焰罐",
+      "Description": "发射燃焰罐命中目标，造成对应属性伤害。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 15.0,
+      "Cooldown": 5.5,
+      "TargetMode": 2,
+      "Range": 9.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 13.0,
+          "Damage": 7.0,
+          "DamagePerLevel": 1.4,
+          "DamageType": "fire",
+          "Radius": 0.34,
+          "MaxLifetime": 1.0,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "flame_canister_burn",
+              "Duration": 4.0,
+              "TickInterval": 1.0,
+              "DamagePerTick": 4.5,
+              "DamagePerLevelPerTick": 1.1,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_cluster_mine",
+      "Category": "Trap",
+      "DisplayName": "集束地雷",
+      "Description": "布设集束地雷，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 21.0,
+      "Cooldown": 9.5,
+      "TargetMode": 2,
+      "Range": 7.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 6,
+          "SpreadAngleDeg": 360.0,
+          "Speed": 5.5,
+          "Damage": 8.5,
+          "DamagePerLevel": 1.8,
+          "DamageType": "explosive",
+          "Radius": 0.34,
+          "MaxLifetime": 0.55,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_frag_mine",
+      "Category": "Trap",
+      "DisplayName": "破片地雷",
+      "Description": "布设破片地雷，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill3",
+      "ManaCost": 13.0,
+      "Cooldown": 5.8,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 1.6,
+          "CueDuration": 0.28,
+          "CueBurstCount": 40,
+          "CueColor": {
+            "r": 0.9,
+            "g": 0.8,
+            "b": 0.45,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 15.0,
+              "DamagePerLevel": 3.0,
+              "DamageType": "explosive"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 5.0,
+              "UpwardForce": 0.6
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_frost_mine",
+      "Category": "Trap",
+      "DisplayName": "冰霜地雷",
+      "Description": "布设冰霜地雷，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 14.0,
+      "Cooldown": 6.2,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.35,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10.0,
+              "DamagePerLevel": 2.1,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "frost_mine_slow",
+              "Multiplier": 0.35,
+              "Duration": 2.4
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.35,
+          "CueDuration": 0.38,
+          "CueBurstCount": 58,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.85,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_poison_mine",
+      "Category": "Trap",
+      "DisplayName": "毒雾地雷",
+      "Description": "布设毒雾地雷，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill16",
+      "ManaCost": 15.0,
+      "Cooldown": 6.8,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.25,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 6.0,
+              "DamagePerLevel": 1.2,
+              "DamageType": "poison"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_mine_dot",
+              "Duration": 4.0,
+              "TickInterval": 1.0,
+              "DamagePerTick": 4.0,
+              "DamagePerLevelPerTick": 1.0,
+              "DamageType": "poison"
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_b",
+          "CueAtPosition": true,
+          "CueRadius": 2.25,
+          "CueDuration": 0.42,
+          "CueBurstCount": 56,
+          "CueColor": {
+            "r": 0.35,
+            "g": 1.0,
+            "b": 0.25,
+            "a": 1.0
+          }
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_shock_mine",
+      "Category": "Trap",
+      "DisplayName": "电击地雷",
+      "Description": "布设电击地雷，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 16.0,
+      "Cooldown": 7.5,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.2,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 12.0,
+              "DamagePerLevel": 2.6,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "shock_mine_stun",
+              "Duration": 0.8
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "CueAtPosition": true,
+          "CueRadius": 2.2,
+          "CueDuration": 0.32,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.85,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_trap_launch_pad",
+      "Category": "Trap",
+      "DisplayName": "弹射陷阱",
+      "Description": "布设弹射陷阱，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 16.0,
+      "Cooldown": 7.0,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 1.5,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 8.5,
+              "UpwardForce": 2.2
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "launch_pad_stun",
+              "Duration": 0.55
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_trap_silence_field",
+      "Category": "Trap",
+      "DisplayName": "静默陷阱",
+      "Description": "布设静默陷阱，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill20",
+      "ManaCost": 17.0,
+      "Cooldown": 8.0,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.4,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 5.0,
+              "DamagePerLevel": 1.0,
+              "DamageType": "arcane"
+            },
+            {
+              "EffectType": "Silence",
+              "BuffId": "silence_field",
+              "Duration": 2.0
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.4,
+          "CueDuration": 0.4,
+          "CueBurstCount": 52,
+          "CueColor": {
+            "r": 0.6,
+            "g": 0.32,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_trap_spike_plate",
+      "Category": "Trap",
+      "DisplayName": "尖刺踏板",
+      "Description": "布设尖刺踏板，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 10.0,
+      "Cooldown": 4.5,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 1.85,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 13.0,
+              "DamagePerLevel": 2.5,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 4.2,
+              "UpwardForce": 0.4
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_trap_tar_pit",
+      "Category": "Trap",
+      "DisplayName": "焦油陷坑",
+      "Description": "布设焦油陷坑，触发后对范围内敌人造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill23",
+      "ManaCost": 12.0,
+      "Cooldown": 6.0,
+      "TargetMode": 2,
+      "Range": 7.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.6,
+          "CueDuration": 0.5,
+          "CueBurstCount": 44,
+          "CueColor": {
+            "r": 0.28,
+            "g": 0.22,
+            "b": 0.16,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.6,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 4.0,
+              "DamagePerLevel": 0.8,
+              "DamageType": "earth"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "tar_pit_slow",
+              "Multiplier": 0.28,
+              "Duration": 3.5
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_assault_bot",
+      "Category": "Deployable",
+      "DisplayName": "突击机器人",
+      "Description": "召唤突击机器人协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 26.0,
+      "Cooldown": 16.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 1.9,
+          "CueDuration": 0.5,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.62,
+            "b": 0.22,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 1,
+          "Radius": 1.3,
+          "InstanceIdPrefix": "assault_bot"
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_force_generator",
+      "Category": "Deployable",
+      "DisplayName": "力场发生器",
+      "Description": "启动力场发生器，提供护盾并反弹部分伤害。",
+      "IconPath": "Common/Skills/Icons/!skill2",
+      "ManaCost": 22.0,
+      "Cooldown": 14.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.2,
+          "CueDuration": 0.6,
+          "CueBurstCount": 86,
+          "CueColor": {
+            "r": 0.4,
+            "g": 0.75,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Shield",
+          "BuffId": "force_generator_shield",
+          "Reduction": 0.45,
+          "Duration": 5.0,
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "DamageReflect",
+          "BuffId": "force_generator_reflect",
+          "ReflectRatio": 0.3,
+          "Duration": 5.0,
+          "ReflectDamageType": "energy",
+          "ApplyToSelf": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_guard_drone",
+      "Category": "Deployable",
+      "DisplayName": "守卫无人机",
+      "Description": "召唤守卫无人机协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 28.0,
+      "Cooldown": 18.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.1,
+          "CueDuration": 0.58,
+          "CueBurstCount": 76,
+          "CueColor": {
+            "r": 0.55,
+            "g": 1.0,
+            "b": 0.95,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 2,
+          "Radius": 1.8,
+          "InstanceIdPrefix": "guard_drone"
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_repair_beacon",
+      "Category": "Deployable",
+      "DisplayName": "维修信标",
+      "Description": "释放维修信标恢复生命，提升持续作战能力。",
+      "IconPath": "Common/Skills/Icons/!skill40",
+      "ManaCost": 18.0,
+      "Cooldown": 12.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1.0,
+            "b": 0.5,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Hot",
+          "BuffId": "repair_beacon_regen",
+          "Duration": 6.0,
+          "TickInterval": 1.0,
+          "HealPerTick": 5.5,
+          "HealPerLevelPerTick": 1.4,
+          "ApplyToSelf": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_sentry_turret",
+      "Category": "Deployable",
+      "DisplayName": "哨戒炮台",
+      "Description": "召唤哨戒炮台协助作战，持续压制附近敌人。",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 24.0,
+      "Cooldown": 14.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.8,
+          "CueDuration": 0.5,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.75,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 1,
+          "CountPerLevel": 0,
+          "Radius": 1.25,
+          "YOffset": 0.0,
+          "InstanceIdPrefix": "sentry_turret"
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_barrage_mortar_rain",
+      "Category": "Barrage",
+      "DisplayName": "迫击炮雨",
+      "Description": "呼叫迫击炮雨轰击目标区域，造成高威力范围打击。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 20.0,
+      "Cooldown": 8.5,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.8,
+          "CueAtPosition": true,
+          "CueRadius": 2.6,
+          "CueDuration": 0.52,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.5,
+            "b": 0.16,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 0.85,
+          "Radius": 2.7,
+          "Damage": 24.0,
+          "DamagePerLevel": 5.0,
+          "DamageType": "explosive"
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_barrage_ring_fire",
+      "Category": "Barrage",
+      "DisplayName": "环形火力",
+      "Description": "释放环形火力，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 18.0,
+      "Cooldown": 7.5,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_b",
+          "SfxVolume": 1.0,
+          "CueRadius": 2.0,
+          "CueDuration": 0.34,
+          "CueBurstCount": 64,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.42,
+            "b": 0.12,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 16,
+          "SpreadAngleDeg": 360.0,
+          "Speed": 13.5,
+          "Damage": 5.5,
+          "DamagePerLevel": 1.2,
+          "DamageType": "fire",
+          "Radius": 0.2,
+          "MaxLifetime": 0.8,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_barrage_rocket_swarm",
+      "Category": "Barrage",
+      "DisplayName": "火箭蜂群",
+      "Description": "释放火箭蜂群，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 24.0,
+      "Cooldown": 10.0,
+      "TargetMode": 2,
+      "Range": 12.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 7,
+          "SpreadAngleDeg": 32.0,
+          "Speed": 10.5,
+          "Damage": 9.0,
+          "DamagePerLevel": 2.0,
+          "DamageType": "explosive",
+          "Radius": 0.34,
+          "MaxLifetime": 1.35,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.05,
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_gunner_bullet_fan",
+      "Category": "Barrage",
+      "DisplayName": "扇形弹幕",
+      "Description": "释放扇形弹幕，以多段弹幕覆盖前方区域。",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 14.0,
+      "Cooldown": 4.8,
+      "TargetMode": 2,
+      "Range": 9.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ShootArrow",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.2,
+          "CueDuration": 0.24,
+          "CueBurstCount": 42,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.42,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 13,
+          "SpreadAngleDeg": 78.0,
+          "Speed": 15.5,
+          "Damage": 3.8,
+          "DamagePerLevel": 0.9,
+          "DamageType": "bullet",
+          "Radius": 0.15,
+          "MaxLifetime": 0.72,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_demolition_charge",
+      "Category": "Bomb",
+      "DisplayName": "爆破装药",
+      "Description": "释放爆破装药影响周围区域，对范围内目标造成效果。",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 25.0,
+      "Cooldown": 12.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_explode_heavy",
+          "SfxVolume": 1.2,
+          "CueRadius": 3.1,
+          "CueDuration": 0.52,
+          "CueBurstCount": 96,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.4,
+            "b": 0.08,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.1,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 28.0,
+              "DamagePerLevel": 5.6,
+              "DamageType": "explosive"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 8.0,
+              "UpwardForce": 1.3
+            }
+          ]
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
+    },
+    {
+      "Id": "lib_engineer_timed_bomb",
+      "Category": "Bomb",
+      "DisplayName": "定时炸弹",
+      "Description": "呼叫定时炸弹轰击目标区域，造成高威力范围打击。",
+      "IconPath": "Common/Skills/Icons/!skill9",
+      "ManaCost": 19.0,
+      "Cooldown": 8.5,
+      "TargetMode": 2,
+      "Range": 8.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.1,
+          "CueDuration": 0.55,
+          "CueBurstCount": 54,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.35,
+            "b": 0.18,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 1.15,
+          "Radius": 2.55,
+          "Damage": 22.0,
+          "DamagePerLevel": 4.6,
+          "DamageType": "explosive"
+        }
+      ],
+      "HpCost": 0.0,
+      "CastTime": 0.0,
+      "RecoveryTime": 0.1
     }
   ]
 }

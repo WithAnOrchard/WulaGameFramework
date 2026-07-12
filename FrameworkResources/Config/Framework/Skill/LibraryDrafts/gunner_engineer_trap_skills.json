@@ -1,0 +1,1168 @@
+{
+  "Skills": [
+    {
+      "Id": "lib_gunner_pistol_burst",
+      "Category": "Gunner",
+      "DisplayName": "Pistol Burst",
+      "Description": "A quick three-round gunner volley for testing compact ranged pressure.",
+      "IconPath": "Common/Skills/Icons/!skill18",
+      "ManaCost": 5.0,
+      "Cooldown": 1.1,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ShootArrow",
+          "SfxVolume": 0.85,
+          "CueRadius": 0.75,
+          "CueDuration": 0.16,
+          "CueBurstCount": 18,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.85,
+            "b": 0.35,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 3,
+          "SpreadAngleDeg": 7.0,
+          "Speed": 20.0,
+          "Damage": 5.0,
+          "DamagePerLevel": 1.2,
+          "DamageType": "bullet",
+          "Radius": 0.16,
+          "MaxLifetime": 0.65,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/Bump",
+          "ImpactSfxVolume": 0.65,
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_scatter_blast",
+      "Category": "Gunner",
+      "DisplayName": "Scatter Blast",
+      "Description": "A short-range shotgun cone with many pellets and heavy close damage.",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 9.0,
+      "Cooldown": 3.0,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.1,
+          "CueDuration": 0.22,
+          "CueBurstCount": 34,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.62,
+            "b": 0.18,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 9,
+          "SpreadAngleDeg": 42.0,
+          "Speed": 17.0,
+          "Damage": 4.0,
+          "DamagePerLevel": 1.0,
+          "DamageType": "bullet",
+          "Radius": 0.18,
+          "MaxLifetime": 0.55,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/Bump",
+          "ImpactSfxVolume": 0.65,
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_sniper_round",
+      "Category": "Gunner",
+      "DisplayName": "Sniper Round",
+      "Description": "A long-range piercing shot with high single-line damage.",
+      "IconPath": "Common/Skills/Icons/!skill33",
+      "ManaCost": 12.0,
+      "Cooldown": 5.5,
+      "TargetMode": 2,
+      "Range": 16.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "SfxVolume": 0.95,
+          "CueRadius": 0.9,
+          "CueDuration": 0.2,
+          "CueBurstCount": 24,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.9,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 28.0,
+          "Damage": 22.0,
+          "DamagePerLevel": 4.5,
+          "DamageType": "pierce",
+          "Radius": 0.18,
+          "MaxLifetime": 0.9,
+          "Pierce": true,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 0.9,
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_explosive_round",
+      "Category": "Gunner",
+      "DisplayName": "Explosive Round",
+      "Description": "A bullet that bursts into a small blast on impact.",
+      "IconPath": "Common/Skills/Icons/fireball",
+      "ManaCost": 11.0,
+      "Cooldown": 3.8,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 16.0,
+          "Damage": 10.0,
+          "DamagePerLevel": 2.0,
+          "DamageType": "fire",
+          "Radius": 0.28,
+          "MaxLifetime": 1.0,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 1.45,
+          "AreaDamageMultiplier": 0.85,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.15,
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_cryo_round",
+      "Category": "Gunner",
+      "DisplayName": "Cryo Round",
+      "Description": "A freezing cartridge that damages and slows the target on hit.",
+      "IconPath": "Common/Skills/Icons/ice_shard",
+      "ManaCost": 9.0,
+      "Cooldown": 3.6,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 18.0,
+          "Damage": 8.0,
+          "DamagePerLevel": 1.7,
+          "DamageType": "frost",
+          "Radius": 0.24,
+          "MaxLifetime": 0.9,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/skill_stun_snap",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Slow",
+              "BuffId": "cryo_round_slow",
+              "Multiplier": 0.45,
+              "Duration": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_shock_round",
+      "Category": "Gunner",
+      "DisplayName": "Shock Round",
+      "Description": "An electric cartridge that briefly stuns the first enemy it hits.",
+      "IconPath": "Common/Skills/Icons/thunder_spear",
+      "ManaCost": 11.0,
+      "Cooldown": 5.0,
+      "TargetMode": 2,
+      "Range": 10.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 19.0,
+          "Damage": 9.0,
+          "DamagePerLevel": 1.8,
+          "DamageType": "lightning",
+          "Radius": 0.25,
+          "MaxLifetime": 0.85,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Stun",
+              "BuffId": "shock_round_stun",
+              "Duration": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_grenade_launcher",
+      "Category": "Gunner",
+      "DisplayName": "Grenade Launcher",
+      "Description": "Launches a grenade that explodes in a medium area.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 16.0,
+      "Cooldown": 6.5,
+      "TargetMode": 2,
+      "Range": 12.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 11.0,
+          "Damage": 16.0,
+          "DamagePerLevel": 3.4,
+          "DamageType": "explosive",
+          "Radius": 0.42,
+          "MaxLifetime": 1.2,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 2.25,
+          "AreaDamageMultiplier": 0.9,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.2,
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_rocket_shell",
+      "Category": "Gunner",
+      "DisplayName": "Rocket Shell",
+      "Description": "A slower rocket with a wide blast and strong knockback.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 22.0,
+      "Cooldown": 9.0,
+      "TargetMode": 2,
+      "Range": 13.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 9.0,
+          "Damage": 20.0,
+          "DamagePerLevel": 4.2,
+          "DamageType": "explosive",
+          "Radius": 0.5,
+          "MaxLifetime": 1.6,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "AreaDamageRadius": 2.8,
+          "AreaDamageMultiplier": 0.95,
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.35,
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Knockback",
+              "Force": 7.5,
+              "UpwardForce": 1.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_gunner_bullet_fan",
+      "Category": "Barrage",
+      "DisplayName": "Bullet Fan",
+      "Description": "Fires a wide fan of bullets to cover an arc in front of the caster.",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 14.0,
+      "Cooldown": 4.8,
+      "TargetMode": 2,
+      "Range": 9.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ShootArrow",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.2,
+          "CueDuration": 0.24,
+          "CueBurstCount": 42,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.9,
+            "b": 0.42,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 13,
+          "SpreadAngleDeg": 78.0,
+          "Speed": 15.5,
+          "Damage": 3.8,
+          "DamagePerLevel": 0.9,
+          "DamageType": "bullet",
+          "Radius": 0.15,
+          "MaxLifetime": 0.72,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_barrage_ring_fire",
+      "Category": "Barrage",
+      "DisplayName": "Ring Fire",
+      "Description": "Releases a circular burst of shots around the player.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 18.0,
+      "Cooldown": 7.5,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_b",
+          "SfxVolume": 1.0,
+          "CueRadius": 2.0,
+          "CueDuration": 0.34,
+          "CueBurstCount": 64,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.42,
+            "b": 0.12,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 16,
+          "SpreadAngleDeg": 360.0,
+          "Speed": 13.5,
+          "Damage": 5.5,
+          "DamagePerLevel": 1.2,
+          "DamageType": "fire",
+          "Radius": 0.2,
+          "MaxLifetime": 0.8,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/Bump",
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_barrage_rocket_swarm",
+      "Category": "Barrage",
+      "DisplayName": "Rocket Swarm",
+      "Description": "A clustered rocket volley that sprays explosive projectiles forward.",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 24.0,
+      "Cooldown": 10.0,
+      "TargetMode": 2,
+      "Range": 12.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 7,
+          "SpreadAngleDeg": 32.0,
+          "Speed": 10.5,
+          "Damage": 9.0,
+          "DamagePerLevel": 2.0,
+          "DamageType": "explosive",
+          "Radius": 0.34,
+          "MaxLifetime": 1.35,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "ImpactSfxVolume": 1.05,
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_barrage_mortar_rain",
+      "Category": "Barrage",
+      "DisplayName": "Mortar Rain",
+      "Description": "Calls a delayed artillery impact at the aimed point.",
+      "IconPath": "Common/Skills/Icons/!skill15",
+      "ManaCost": 20.0,
+      "Cooldown": 8.5,
+      "TargetMode": 2,
+      "Range": 11.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.8,
+          "CueAtPosition": true,
+          "CueRadius": 2.6,
+          "CueDuration": 0.52,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.5,
+            "b": 0.16,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 0.85,
+          "Radius": 2.7,
+          "Damage": 24.0,
+          "DamagePerLevel": 5.0,
+          "DamageType": "explosive"
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_frag_mine",
+      "Category": "Trap",
+      "DisplayName": "Frag Mine",
+      "Description": "A mine-style instant test blast around the placed point.",
+      "IconPath": "Common/Skills/Icons/!skill3",
+      "ManaCost": 13.0,
+      "Cooldown": 5.8,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 1.6,
+          "CueDuration": 0.28,
+          "CueBurstCount": 40,
+          "CueColor": {
+            "r": 0.9,
+            "g": 0.8,
+            "b": 0.45,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 15.0,
+              "DamagePerLevel": 3.0,
+              "DamageType": "explosive"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 5.0,
+              "UpwardForce": 0.6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_frost_mine",
+      "Category": "Trap",
+      "DisplayName": "Frost Mine",
+      "Description": "A cold mine that deals frost damage and heavily slows nearby enemies.",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 14.0,
+      "Cooldown": 6.2,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.35,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10.0,
+              "DamagePerLevel": 2.1,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "frost_mine_slow",
+              "Multiplier": 0.35,
+              "Duration": 2.4
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.35,
+          "CueDuration": 0.38,
+          "CueBurstCount": 58,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.85,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_shock_mine",
+      "Category": "Trap",
+      "DisplayName": "Shock Mine",
+      "Description": "An electric mine that bursts for lightning damage and a short stun.",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 16.0,
+      "Cooldown": 7.5,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.2,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 12.0,
+              "DamagePerLevel": 2.6,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "shock_mine_stun",
+              "Duration": 0.8
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "CueAtPosition": true,
+          "CueRadius": 2.2,
+          "CueDuration": 0.32,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.85,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_poison_mine",
+      "Category": "Trap",
+      "DisplayName": "Poison Mine",
+      "Description": "A toxic mine that applies poison over time to enemies in the blast.",
+      "IconPath": "Common/Skills/Icons/!skill16",
+      "ManaCost": 15.0,
+      "Cooldown": 6.8,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.25,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 6.0,
+              "DamagePerLevel": 1.2,
+              "DamageType": "poison"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_mine_dot",
+              "Duration": 4.0,
+              "TickInterval": 1.0,
+              "DamagePerTick": 4.0,
+              "DamagePerLevelPerTick": 1.0,
+              "DamageType": "poison"
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_b",
+          "CueAtPosition": true,
+          "CueRadius": 2.25,
+          "CueDuration": 0.42,
+          "CueBurstCount": 56,
+          "CueColor": {
+            "r": 0.35,
+            "g": 1.0,
+            "b": 0.25,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_cluster_mine",
+      "Category": "Trap",
+      "DisplayName": "Cluster Mine",
+      "Description": "A heavier mine pattern represented by several close-range explosive shots.",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 21.0,
+      "Cooldown": 9.5,
+      "TargetMode": 2,
+      "Range": 7.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 6,
+          "SpreadAngleDeg": 360.0,
+          "Speed": 5.5,
+          "Damage": 8.5,
+          "DamagePerLevel": 1.8,
+          "DamageType": "explosive",
+          "Radius": 0.34,
+          "MaxLifetime": 0.55,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "SuppressTargetHitSfx": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_trap_spike_plate",
+      "Category": "Trap",
+      "DisplayName": "Spike Plate",
+      "Description": "A physical trap that damages and knocks enemies back from the placement point.",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 10.0,
+      "Cooldown": 4.5,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 1.85,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 13.0,
+              "DamagePerLevel": 2.5,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 4.2,
+              "UpwardForce": 0.4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_trap_tar_pit",
+      "Category": "Trap",
+      "DisplayName": "Tar Pit",
+      "Description": "A sticky trap area that slows and lightly damages enemies.",
+      "IconPath": "Common/Skills/Icons/!skill23",
+      "ManaCost": 12.0,
+      "Cooldown": 6.0,
+      "TargetMode": 2,
+      "Range": 7.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.6,
+          "CueDuration": 0.5,
+          "CueBurstCount": 44,
+          "CueColor": {
+            "r": 0.28,
+            "g": 0.22,
+            "b": 0.16,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.6,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 4.0,
+              "DamagePerLevel": 0.8,
+              "DamageType": "earth"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "tar_pit_slow",
+              "Multiplier": 0.28,
+              "Duration": 3.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_trap_silence_field",
+      "Category": "Trap",
+      "DisplayName": "Silence Field",
+      "Description": "A disruptive field trap that silences enemies in the area.",
+      "IconPath": "Common/Skills/Icons/!skill20",
+      "ManaCost": 17.0,
+      "Cooldown": 8.0,
+      "TargetMode": 2,
+      "Range": 7.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.4,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 5.0,
+              "DamagePerLevel": 1.0,
+              "DamageType": "arcane"
+            },
+            {
+              "EffectType": "Silence",
+              "BuffId": "silence_field",
+              "Duration": 2.0
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.4,
+          "CueDuration": 0.4,
+          "CueBurstCount": 52,
+          "CueColor": {
+            "r": 0.6,
+            "g": 0.32,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Id": "lib_trap_launch_pad",
+      "Category": "Trap",
+      "DisplayName": "Launch Pad",
+      "Description": "A trap-like blast pad that knocks enemies away and briefly stuns them.",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 16.0,
+      "Cooldown": 7.0,
+      "TargetMode": 2,
+      "Range": 6.5,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.0,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 1.5,
+              "DamageType": "physical"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 8.5,
+              "UpwardForce": 2.2
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "launch_pad_stun",
+              "Duration": 0.55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_sentry_turret",
+      "Category": "Deployable",
+      "DisplayName": "Sentry Turret",
+      "Description": "Deployable placeholder turret using a mage entity until turret AI exists.",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 24.0,
+      "Cooldown": 14.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 1.0,
+          "CueRadius": 1.8,
+          "CueDuration": 0.5,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.75,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 1,
+          "CountPerLevel": 0,
+          "Radius": 1.25,
+          "YOffset": 0.0,
+          "InstanceIdPrefix": "sentry_turret"
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_guard_drone",
+      "Category": "Deployable",
+      "DisplayName": "Guard Drone",
+      "Description": "Summons two ranged helper placeholders around the caster.",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 28.0,
+      "Cooldown": 18.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.1,
+          "CueDuration": 0.58,
+          "CueBurstCount": 76,
+          "CueColor": {
+            "r": 0.55,
+            "g": 1.0,
+            "b": 0.95,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 2,
+          "Radius": 1.8,
+          "InstanceIdPrefix": "guard_drone"
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_assault_bot",
+      "Category": "Deployable",
+      "DisplayName": "Assault Bot",
+      "Description": "Summons a melee placeholder bot for engineer-style testing.",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 26.0,
+      "Cooldown": 16.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 1.9,
+          "CueDuration": 0.5,
+          "CueBurstCount": 72,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.62,
+            "b": 0.22,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 1,
+          "Radius": 1.3,
+          "InstanceIdPrefix": "assault_bot"
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_repair_beacon",
+      "Category": "Deployable",
+      "DisplayName": "Repair Beacon",
+      "Description": "A support device fantasy represented by self regeneration and a beacon cue.",
+      "IconPath": "Common/Skills/Icons/!skill40",
+      "ManaCost": 18.0,
+      "Cooldown": 12.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1.0,
+            "b": 0.5,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Hot",
+          "BuffId": "repair_beacon_regen",
+          "Duration": 6.0,
+          "TickInterval": 1.0,
+          "HealPerTick": 5.5,
+          "HealPerLevelPerTick": 1.4,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_force_generator",
+      "Category": "Deployable",
+      "DisplayName": "Force Generator",
+      "Description": "A defensive machine fantasy represented by a shield plus damage reflect.",
+      "IconPath": "Common/Skills/Icons/!skill2",
+      "ManaCost": 22.0,
+      "Cooldown": 14.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "CueRadius": 2.2,
+          "CueDuration": 0.6,
+          "CueBurstCount": 86,
+          "CueColor": {
+            "r": 0.4,
+            "g": 0.75,
+            "b": 1.0,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Shield",
+          "BuffId": "force_generator_shield",
+          "Reduction": 0.45,
+          "Duration": 5.0,
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "DamageReflect",
+          "BuffId": "force_generator_reflect",
+          "ReflectRatio": 0.3,
+          "Duration": 5.0,
+          "ReflectDamageType": "energy",
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_electro_net",
+      "Category": "Engineer",
+      "DisplayName": "Electro Net",
+      "Description": "Throws an electric net field that slows and briefly shocks enemies.",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 17.0,
+      "Cooldown": 8.0,
+      "TargetMode": 2,
+      "Range": 8.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8.0,
+              "DamagePerLevel": 1.7,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "electro_net_slow",
+              "Multiplier": 0.4,
+              "Duration": 2.5
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "electro_net_stun",
+              "Duration": 0.45
+            }
+          ]
+        },
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "CueAtPosition": true,
+          "CueRadius": 2.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 82,
+          "CueColor": {
+            "r": 0.5,
+            "g": 0.92,
+            "b": 1.0,
+            "a": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_flame_canister",
+      "Category": "Engineer",
+      "DisplayName": "Flame Canister",
+      "Description": "Fires a canister that burns the target over time.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 15.0,
+      "Cooldown": 5.5,
+      "TargetMode": 2,
+      "Range": 9.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Projectile",
+          "Speed": 13.0,
+          "Damage": 7.0,
+          "DamagePerLevel": 1.4,
+          "DamageType": "fire",
+          "Radius": 0.34,
+          "MaxLifetime": 1.0,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "ImpactSfxId": "Sound/fireball_explode_heavy",
+          "SuppressTargetHitSfx": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "flame_canister_burn",
+              "Duration": 4.0,
+              "TickInterval": 1.0,
+              "DamagePerTick": 4.5,
+              "DamagePerLevelPerTick": 1.1,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_timed_bomb",
+      "Category": "Bomb",
+      "DisplayName": "Timed Bomb",
+      "Description": "A delayed explosive impact for bomb-placement style testing.",
+      "IconPath": "Common/Skills/Icons/!skill9",
+      "ManaCost": 19.0,
+      "Cooldown": 8.5,
+      "TargetMode": 2,
+      "Range": 8.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_stun_snap",
+          "CueAtPosition": true,
+          "CueRadius": 2.1,
+          "CueDuration": 0.55,
+          "CueBurstCount": 54,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.35,
+            "b": 0.18,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 1.15,
+          "Radius": 2.55,
+          "Damage": 22.0,
+          "DamagePerLevel": 4.6,
+          "DamageType": "explosive"
+        }
+      ]
+    },
+    {
+      "Id": "lib_engineer_demolition_charge",
+      "Category": "Bomb",
+      "DisplayName": "Demolition Charge",
+      "Description": "A large planted charge simulated as a point-blank area blast.",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 25.0,
+      "Cooldown": 12.0,
+      "TargetMode": 0,
+      "Range": 0.0,
+      "MaxLevel": 5,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_explode_heavy",
+          "SfxVolume": 1.2,
+          "CueRadius": 3.1,
+          "CueDuration": 0.52,
+          "CueBurstCount": 96,
+          "CueColor": {
+            "r": 1.0,
+            "g": 0.4,
+            "b": 0.08,
+            "a": 1.0
+          }
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.1,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 28.0,
+              "DamagePerLevel": 5.6,
+              "DamageType": "explosive"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 8.0,
+              "UpwardForce": 1.3
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1579 @@
+{
+  "Skills": [
+    {
+      "Id": "elemental_fire_lance",
+      "Category": "Elemental",
+      "DisplayName": "Fire Lance",
+      "Description": "Fast fire projectile with burn.",
+      "IconPath": "Common/Skills/Icons/fireball",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_cast_a",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 0.28,
+            "b": 0.08,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 18,
+          "Damage": 7,
+          "DamagePerLevel": 1.75,
+          "DamageType": "fire",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/fireball_explode_light",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "fire_lance_burn",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 3,
+              "DamagePerLevelPerTick": 0.75,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_ice_lance",
+      "Category": "Elemental",
+      "DisplayName": "Ice Lance",
+      "Description": "Sharp ice projectile that slows.",
+      "IconPath": "Common/Skills/Icons/ice_shard",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_shard_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.3,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 18,
+          "Damage": 8,
+          "DamagePerLevel": 2.0,
+          "DamageType": "frost",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_ice_shard",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/ice_freeze_lock",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Slow",
+              "BuffId": "ice_lance_slow",
+              "Multiplier": 0.55,
+              "Duration": 2.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_thunder_bolt",
+      "Category": "Elemental",
+      "DisplayName": "Thunder Bolt",
+      "Description": "Lightning shot with brief stun.",
+      "IconPath": "Common/Skills/Icons/thunder_spear",
+      "ManaCost": 11,
+      "HpCost": 0.0,
+      "Cooldown": 6,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.2,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 20,
+          "Damage": 7.5,
+          "DamagePerLevel": 1.875,
+          "DamageType": "lightning",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Stun",
+              "BuffId": "thunder_bolt_stun",
+              "Duration": 0.55
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_shadow_bolt",
+      "Category": "Dark",
+      "DisplayName": "Shadow Bolt",
+      "Description": "Dark bolt that drains life.",
+      "IconPath": "Common/Skills/Icons/!skill37",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 7,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_life_drain",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.68,
+            "g": 0.15,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 14,
+          "Damage": 0,
+          "DamagePerLevel": 0.0,
+          "DamageType": "shadow",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/skill_life_drain",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "LifeDrain",
+              "Damage": 10,
+              "DamagePerLevel": 2.5,
+              "HealRatio": 0.55,
+              "DamageType": "shadow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_poison_spit",
+      "Category": "Elemental",
+      "DisplayName": "Poison Spit",
+      "Description": "Toxic projectile applying poison.",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.42,
+            "g": 1,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 13,
+          "Damage": 4,
+          "DamagePerLevel": 1.0,
+          "DamageType": "poison",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.0,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/fire_hit_sizzle",
+          "ImpactSfxVolume": 0.85,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_spit_dot",
+              "Duration": 5,
+              "TickInterval": 1,
+              "DamagePerTick": 3.2,
+              "DamagePerLevelPerTick": 0.8,
+              "DamageType": "poison"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_arcane_shards",
+      "Category": "Elemental",
+      "DisplayName": "Arcane Shards",
+      "Description": "Fan of small arcane bolts.",
+      "IconPath": "Common/Skills/Icons/!skill6",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 7.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.8,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 0.85,
+            "g": 0.25,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "MultiShot",
+          "ProjectileCount": 5,
+          "SpreadAngleDeg": 38,
+          "Speed": 15,
+          "Damage": 5.2,
+          "DamagePerLevel": 1.1440000000000001,
+          "DamageType": "arcane",
+          "Radius": 0.28,
+          "MaxLifetime": 1.2,
+          "Pierce": false,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 0.85,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/arcane_bomb_explode",
+          "ImpactSfxVolume": 0.75,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "elemental_fire_nova",
+      "Category": "Elemental",
+      "DisplayName": "Fire Nova",
+      "Description": "Fire burst around the caster, burning enemies.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 9,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fireball_explode_light",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.45,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 1,
+            "g": 0.28,
+            "b": 0.05,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 10,
+              "DamagePerLevel": 2.5,
+              "DamageType": "fire"
+            },
+            {
+              "EffectType": "Dot",
+              "BuffId": "fire_nova_burn",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 2.5,
+              "DamagePerLevelPerTick": 0.625,
+              "DamageType": "fire"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_frost_field",
+      "Category": "Elemental",
+      "DisplayName": "Frost Field",
+      "Description": "Persistent frost area that slows and chips enemies.",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_freeze_lock",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.1,
+          "CueDuration": 0.45,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.86,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 4.2,
+          "TickInterval": 0.7,
+          "Radius": 3.2,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.86,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 3.2,
+              "DamagePerLevel": 0.8,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "frost_field_slow",
+              "Multiplier": 0.55,
+              "Duration": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_blizzard",
+      "Category": "Elemental",
+      "DisplayName": "Blizzard",
+      "Description": "Large frost zone with repeated damage and slow.",
+      "IconPath": "Common/Skills/Icons/!skill28",
+      "ManaCost": 22,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.35,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 4.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/ice_freeze_lock",
+          "SfxVolume": 0.9,
+          "CueRadius": 4.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 120,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5,
+          "TickInterval": 0.65,
+          "Radius": 4.0,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.45,
+            "g": 0.9,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 4.2,
+              "DamagePerLevel": 1.0,
+              "DamageType": "frost"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "blizzard_slow",
+              "Multiplier": 0.5,
+              "Duration": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_thunder_storm",
+      "Category": "Elemental",
+      "DisplayName": "Thunder Storm",
+      "Description": "Electric field that damages and stuns.",
+      "IconPath": "Common/Skills/Icons/!skill25",
+      "ManaCost": 20,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_hit",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.5,
+          "CueDuration": 0.5,
+          "CueBurstCount": 105,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 3.8,
+          "TickInterval": 0.75,
+          "Radius": 3.5,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 1,
+            "g": 0.9,
+            "b": 0.18,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 5.5,
+              "DamagePerLevel": 1.3,
+              "DamageType": "lightning"
+            },
+            {
+              "EffectType": "Stun",
+              "BuffId": "thunder_storm_stun",
+              "Duration": 0.35
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_poison_cloud",
+      "Category": "Elemental",
+      "DisplayName": "Poison Cloud",
+      "Description": "Lingering poisonous cloud.",
+      "IconPath": "Common/Skills/Icons/!skill16",
+      "ManaCost": 15,
+      "HpCost": 0.0,
+      "Cooldown": 13,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/fire_hit_sizzle",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.32,
+            "g": 1,
+            "b": 0.22,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5.5,
+          "TickInterval": 1,
+          "Radius": 3.2,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.32,
+            "g": 1,
+            "b": 0.22,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Dot",
+              "BuffId": "poison_cloud_dot",
+              "Duration": 3,
+              "TickInterval": 1,
+              "DamagePerTick": 3.5,
+              "DamagePerLevelPerTick": 0.875,
+              "DamageType": "poison"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_meteor_rain",
+      "Category": "Elemental",
+      "DisplayName": "Meteor Rain",
+      "Description": "Delayed explosive fire impact.",
+      "IconPath": "Common/Skills/Icons/!skill31",
+      "ManaCost": 24,
+      "HpCost": 0.0,
+      "Cooldown": 20,
+      "CastTime": 0.45,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.7,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_meteor_impact",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.7,
+          "CueDuration": 0.7,
+          "CueBurstCount": 120,
+          "CueColor": {
+            "r": 1,
+            "g": 0.25,
+            "b": 0.08,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Meteor",
+          "ImpactDelay": 0.85,
+          "Radius": 3.7,
+          "Damage": 32,
+          "DamagePerLevel": 7,
+          "DamageType": "fire",
+          "IncludeSelf": false
+        }
+      ]
+    },
+    {
+      "Id": "elemental_earth_spikes",
+      "Category": "Elemental",
+      "DisplayName": "Earth Spikes",
+      "Description": "Ground spike burst with knockback.",
+      "IconPath": "Common/Skills/Icons/!skill4",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.4,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shockwave_boom",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.2,
+          "CueDuration": 0.45,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.65,
+            "g": 0.42,
+            "b": 0.2,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.4,
+          "HalfAngleDeg": 50,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 14,
+              "DamagePerLevel": 3,
+              "DamageType": "earth"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 7,
+              "UpwardForce": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_wind_cutter",
+      "Category": "Elemental",
+      "DisplayName": "Wind Cutter",
+      "Description": "Wide wind cone that pushes enemies.",
+      "IconPath": "Common/Skills/Icons/!skill11",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 8,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.5,
+          "CueDuration": 0.35,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.75,
+            "g": 1,
+            "b": 0.9,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleave",
+          "EffectRange": 3.5,
+          "HalfAngleDeg": 60,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "wind"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 9,
+              "UpwardForce": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_tidal_ring",
+      "Category": "Elemental",
+      "DisplayName": "Tidal Ring",
+      "Description": "Water ring that damages and slows.",
+      "IconPath": "Common/Skills/Icons/!skill29",
+      "ManaCost": 14,
+      "HpCost": 0.0,
+      "Cooldown": 11,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.45,
+          "CueBurstCount": 85,
+          "CueColor": {
+            "r": 0.25,
+            "g": 0.72,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "water"
+            },
+            {
+              "EffectType": "Slow",
+              "BuffId": "tidal_ring_slow",
+              "Multiplier": 0.6,
+              "Duration": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "light_holy_bolt",
+      "Category": "Light",
+      "DisplayName": "Holy Bolt",
+      "Description": "Light projectile for classic priest offense.",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 9,
+      "HpCost": 0.0,
+      "Cooldown": 5.5,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 10,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.2,
+          "CueDuration": 0.28,
+          "CueBurstCount": 32,
+          "CueColor": {
+            "r": 1,
+            "g": 1,
+            "b": 0.65,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 15,
+          "Damage": 8,
+          "DamagePerLevel": 2,
+          "DamageType": "holy",
+          "Radius": 0.32,
+          "MaxLifetime": 1.25,
+          "SpriteId": "Common/Skills/Projectiles/projectile_fireball",
+          "VisualScale": 0.85,
+          "ImpactSfxId": "Sound/skill_heal_chime",
+          "ImpactSfxVolume": 0.75,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "light_holy_nova",
+      "Category": "Light",
+      "DisplayName": "Holy Nova",
+      "Description": "Damages nearby enemies and heals self.",
+      "IconPath": "Common/Skills/Icons/!skill22",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 13,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 95,
+          "CueColor": {
+            "r": 1,
+            "g": 1,
+            "b": 0.72,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "holy"
+            }
+          ]
+        },
+        {
+          "EffectType": "Heal",
+          "Heal": 12,
+          "HealPerLevel": 3,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "support_group_heal",
+      "Category": "Support",
+      "DisplayName": "Group Heal",
+      "Description": "Healing pulse around the caster.",
+      "IconPath": "Common/Skills/Icons/!skill40",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 15,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.5,
+          "CueDuration": 0.55,
+          "CueBurstCount": 95,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.65,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.5,
+          "IncludeSelf": true,
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 14,
+              "HealPerLevel": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_regrowth_field",
+      "Category": "Support",
+      "DisplayName": "Regrowth Field",
+      "Description": "Healing zone that ticks over time.",
+      "IconPath": "Common/Skills/Icons/!skill19",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.2,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.2,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.52,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 5,
+          "TickInterval": 1,
+          "Radius": 3.2,
+          "IncludeSelf": true,
+          "CueColor": {
+            "r": 0.45,
+            "g": 1,
+            "b": 0.52,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 4.5,
+              "HealPerLevel": 1.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_cleanse_ring",
+      "Category": "Support",
+      "DisplayName": "Cleanse Ring",
+      "Description": "Cleanses the caster and nearby allies placeholder.",
+      "IconPath": "Common/Skills/Icons/!skill14",
+      "ManaCost": 12,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 1,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_heal_chime",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.8,
+            "g": 1,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Cleanse",
+          "ApplyToSelf": true
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "IncludeSelf": true,
+          "SubEffects": [
+            {
+              "EffectType": "Heal",
+              "Heal": 5,
+              "HealPerLevel": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "support_haste",
+      "Category": "Support",
+      "DisplayName": "Haste",
+      "Description": "Self speed boost.",
+      "IconPath": "Common/Skills/Icons/!skill9",
+      "ManaCost": 10,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_dash_whoosh",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.32,
+          "CueBurstCount": 45,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.95,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Slow",
+          "BuffId": "haste",
+          "Multiplier": 1.45,
+          "Duration": 5,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "support_arcane_barrier",
+      "Category": "Support",
+      "DisplayName": "Arcane Barrier",
+      "Description": "Magic reduction shield.",
+      "IconPath": "Common/Skills/Icons/!skill6",
+      "ManaCost": 13,
+      "HpCost": 0.0,
+      "Cooldown": 18,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_shield_raise",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.45,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.62,
+            "g": 0.35,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Shield",
+          "Reduction": 0.5,
+          "Duration": 5,
+          "ApplyToSelf": true
+        }
+      ]
+    },
+    {
+      "Id": "dark_curse_field",
+      "Category": "Dark",
+      "DisplayName": "Curse Field",
+      "Description": "Dark field that silences enemies.",
+      "IconPath": "Common/Skills/Icons/!skill26",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 16,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_silence_muffle",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.5,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.2,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Zone",
+          "Duration": 4,
+          "TickInterval": 0.9,
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "CueColor": {
+            "r": 0.55,
+            "g": 0.2,
+            "b": 1,
+            "a": 1.0
+          },
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 3.5,
+              "DamagePerLevel": 1,
+              "DamageType": "shadow"
+            },
+            {
+              "EffectType": "Silence",
+              "BuffId": "curse_field_silence",
+              "Duration": 1.1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "dark_void_burst",
+      "Category": "Dark",
+      "DisplayName": "Void Burst",
+      "Description": "Shadow explosion with life drain.",
+      "IconPath": "Common/Skills/Icons/!skill5",
+      "ManaCost": 17,
+      "HpCost": 0.0,
+      "Cooldown": 14,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_life_drain",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.8,
+          "CueDuration": 0.5,
+          "CueBurstCount": 85,
+          "CueColor": {
+            "r": 0.72,
+            "g": 0.1,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.8,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "LifeDrain",
+              "Damage": 9,
+              "DamagePerLevel": 2.2,
+              "HealRatio": 0.35,
+              "DamageType": "shadow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "summon_warrior_pair",
+      "Category": "Summon",
+      "DisplayName": "Summon Warrior Pair",
+      "Description": "Summons two warrior placeholders.",
+      "IconPath": "Common/Skills/Icons/!skill1",
+      "ManaCost": 22,
+      "HpCost": 0.0,
+      "Cooldown": 26,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 1.8,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.0,
+          "CueDuration": 0.6,
+          "CueBurstCount": 80,
+          "CueColor": {
+            "r": 0.65,
+            "g": 1,
+            "b": 0.75,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 2,
+          "CountPerLevel": 0,
+          "Radius": 1.8,
+          "InstanceIdPrefix": "summon_warrior_pair"
+        }
+      ]
+    },
+    {
+      "Id": "summon_mage_apprentice",
+      "Category": "Summon",
+      "DisplayName": "Summon Mage Apprentice",
+      "Description": "Summons a mage placeholder.",
+      "IconPath": "Common/Skills/Icons/!skill17",
+      "ManaCost": 18,
+      "HpCost": 0.0,
+      "Cooldown": 22,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 1.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.8,
+          "CueDuration": 0.55,
+          "CueBurstCount": 70,
+          "CueColor": {
+            "r": 0.75,
+            "g": 0.45,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 1,
+          "CountPerLevel": 1,
+          "Radius": 1.5,
+          "InstanceIdPrefix": "summon_mage_apprentice"
+        }
+      ]
+    },
+    {
+      "Id": "summon_arcane_circle",
+      "Category": "Summon",
+      "DisplayName": "Arcane Circle",
+      "Description": "Summons mage helpers and pulses arcane damage.",
+      "IconPath": "Common/Skills/Icons/!skill21",
+      "ManaCost": 28,
+      "HpCost": 0.0,
+      "Cooldown": 30,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 2.5,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 2.5,
+          "CueDuration": 0.65,
+          "CueBurstCount": 90,
+          "CueColor": {
+            "r": 0.82,
+            "g": 0.25,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "MageEntity",
+          "Count": 2,
+          "Radius": 2.0,
+          "InstanceIdPrefix": "summon_arcane_circle"
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 2.5,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 8,
+              "DamagePerLevel": 2,
+              "DamageType": "arcane"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "summon_spirit_burst",
+      "Category": "Summon",
+      "DisplayName": "Spirit Burst",
+      "Description": "Summon-flavored pulse with temporary guards.",
+      "IconPath": "Common/Skills/Icons/!skill24",
+      "ManaCost": 24,
+      "HpCost": 0.0,
+      "Cooldown": 28,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 0,
+      "Range": 3.0,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/skill_summon_pulse",
+          "SfxVolume": 0.9,
+          "CueRadius": 3.0,
+          "CueDuration": 0.65,
+          "CueBurstCount": 100,
+          "CueColor": {
+            "r": 0.8,
+            "g": 1,
+            "b": 0.9,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "SummonEntity",
+          "ConfigId": "WarriorEntity",
+          "Count": 3,
+          "Radius": 2.2,
+          "InstanceIdPrefix": "spirit_burst_guard"
+        },
+        {
+          "EffectType": "Aoe",
+          "Radius": 3.0,
+          "IncludeSelf": false,
+          "SubEffects": [
+            {
+              "EffectType": "Damage",
+              "Damage": 7,
+              "DamagePerLevel": 2,
+              "DamageType": "spirit"
+            },
+            {
+              "EffectType": "Knockback",
+              "Force": 5,
+              "UpwardForce": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Id": "elemental_orbital_arcana",
+      "Category": "Elemental",
+      "DisplayName": "Orbital Arcana",
+      "Description": "Curving homing arcane bolts from around the caster.",
+      "IconPath": "Common/Skills/Icons/arcane_bomb",
+      "ManaCost": 20,
+      "HpCost": 0.0,
+      "Cooldown": 12,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 12,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/arcane_bomb_cast",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.5,
+          "CueDuration": 0.35,
+          "CueBurstCount": 55,
+          "CueColor": {
+            "r": 0.86,
+            "g": 0.22,
+            "b": 1,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "HomingMultiProjectile",
+          "ProjectileCount": 6,
+          "SearchRadius": 13,
+          "HomingTurnSpeed": 820,
+          "SpawnSpread": 0.2,
+          "OrbitSpawnRadius": 0.75,
+          "InitialArcStrength": 0.35,
+          "HomingDelay": 0.05,
+          "Speed": 11.5,
+          "Damage": 5.8,
+          "DamagePerLevel": 1.6,
+          "DamageType": "arcane",
+          "Radius": 0.32,
+          "MaxLifetime": 2.2,
+          "SpriteId": "Common/Skills/Projectiles/projectile_arcane_bomb",
+          "VisualScale": 1.05,
+          "ImpactSfxId": "Sound/arcane_bomb_explode",
+          "ImpactSfxVolume": 0.8,
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true
+        }
+      ]
+    },
+    {
+      "Id": "elemental_chain_spark",
+      "Category": "Elemental",
+      "DisplayName": "Chain Spark",
+      "Description": "Lightning projectile that chains on hit.",
+      "IconPath": "Common/Skills/Icons/!skill38",
+      "ManaCost": 16,
+      "HpCost": 0.0,
+      "Cooldown": 10,
+      "CastTime": 0.12,
+      "RecoveryTime": 0.12,
+      "TargetMode": 2,
+      "Range": 12,
+      "MaxLevel": 3,
+      "Effects": [
+        {
+          "EffectType": "Cue",
+          "SfxId": "Sound/thunder_spear_cast",
+          "SfxVolume": 0.9,
+          "CueRadius": 1.4,
+          "CueDuration": 0.32,
+          "CueBurstCount": 45,
+          "CueColor": {
+            "r": 1,
+            "g": 0.92,
+            "b": 0.25,
+            "a": 1.0
+          },
+          "CueOnCastStart": true,
+          "CueOnApply": false
+        },
+        {
+          "EffectType": "Projectile",
+          "Speed": 19,
+          "Damage": 0,
+          "DamageType": "lightning",
+          "Radius": 0.3,
+          "MaxLifetime": 1.1,
+          "SpriteId": "Common/Skills/Projectiles/projectile_thunder_spear",
+          "VisualScale": 1,
+          "VisualRotationOffsetDegrees": -45,
+          "ImpactSfxId": "Sound/thunder_spear_hit",
+          "SuppressTargetHitSfx": true,
+          "IgnoreStaticTargets": true,
+          "SubEffects": [
+            {
+              "EffectType": "ChainLightning",
+              "Damage": 7,
+              "DamagePerLevel": 1.8,
+              "DamageType": "lightning",
+              "MaxJumps": 5,
+              "JumpRadius": 4.2,
+              "FalloffPerJump": 0.75,
+              "VisualDuration": 0.18,
+              "VisualWidth": 0.08
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
