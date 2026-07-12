@@ -1,5 +1,7 @@
 using UnityEngine;
 using EssSystem.Core.Application.MultiManagers.SkillManager;
+using EssSystem.Core.Application.MultiManagers.SkillManager.UI;
+using EssSystem.Core.Presentation.InputManager;
 
 namespace Demo.Tribe.Player
 {
@@ -30,6 +32,9 @@ namespace Demo.Tribe.Player
         {
             if (!_initialized)
                 EnsureDefaultSkills();
+
+            HandleSkillSelectionPanelInput();
+            SkillSelectionPanel.Tick();
         }
 
         public bool EnsureDefaultSkills(string entityId = null)
@@ -60,6 +65,21 @@ namespace Demo.Tribe.Player
 
             _initialized = true;
             return true;
+        }
+
+        private void OnDestroy()
+        {
+            if (SkillSelectionPanel.IsOpen())
+                SkillSelectionPanel.Close();
+        }
+
+        private void HandleSkillSelectionPanelInput()
+        {
+            var input = InputManager.TryGetInstance();
+            if (input == null) return;
+
+            if (input.IsDown(InputManager.ACTION_SKILL_SELECT_TOGGLE))
+                SkillSelectionPanel.Toggle(_entityId);
         }
     }
 }

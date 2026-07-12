@@ -21,8 +21,8 @@ namespace Demo.Tribe.Interaction
         [SerializeField] private string _interactAction = "TribeInteract";
 
         [Header("Prompt")]
-        [Tooltip("提示文字。可用 emoji / 中文，例如 \"[F] 对话\" 或 \"[F] 制作\"")]
-        [SerializeField] private string _promptLabel = "[F] 互动";
+        [Tooltip("提示文字。可用 emoji / 中文，例如 \"[Space] 对话\" 或 \"[Space] 制作\"")]
+        [SerializeField] private string _promptLabel = "[Space] 互动";
         [SerializeField] private Vector3 _promptOffset = new Vector3(0f, 1.6f, 0f);
         [SerializeField] private Color _promptColor = new Color(1f, 0.95f, 0.4f);
         [SerializeField] private int _promptSortingOrder = 1000;

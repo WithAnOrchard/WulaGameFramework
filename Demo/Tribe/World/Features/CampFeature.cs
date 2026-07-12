@@ -165,7 +165,7 @@ namespace Demo.Tribe.World.Features
                 go,
                 instanceId: $"TribeCampfire_Interact_{go.GetHashCode()}",
                 radius: 2.5f,
-                promptLabel: "[F] 制作",
+                promptLabel: "[Space] 制作",
                 onInteract: () =>
                 {
                     Demo.Tribe.Interaction.TribeCraftingPanel.Toggle();
@@ -271,7 +271,7 @@ namespace Demo.Tribe.World.Features
                 go,
                 instanceId: $"Npc_{NpcInstanceId}_Interact",
                 radius: NpcInteractRadius,
-                promptLabel: "[F] 对话",
+                promptLabel: "[Space] 对话",
                 onInteract: () =>
                 {
                     if (!EventProcessor.HasInstance || string.IsNullOrEmpty(dialogueId)) return;

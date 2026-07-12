@@ -80,7 +80,7 @@ namespace Demo.Tribe.Player
                 // 防自伤：玩家自身的 EntityHandle 也注册在 CAT_INSTANCES，OverlapBox 会命中自己
                 if (handle.InstanceId == _instanceId) continue;
                 if (!_currentAttackHits.Add(handle)) continue;
-                handle.TakeDamage(_attackDamage, "TribePlayerAttack", transform.position);
+                handle.TakeDamage(_attackDamage, "physical", transform.position, _instanceId);
             }
         }
 
