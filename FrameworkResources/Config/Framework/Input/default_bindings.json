@@ -18,11 +18,11 @@
     },
     {
       "Action": "Jump",
-      "Keys": [ "Space" ]
+      "Keys": [ "K" ]
     },
     {
       "Action": "Attack",
-      "Keys": [ "Mouse0" ]
+      "Keys": [ "J" ]
     },
     {
       "Action": "AltAction",
@@ -30,11 +30,11 @@
     },
     {
       "Action": "Interact",
-      "Keys": [ "E" ]
+      "Keys": [ "Space" ]
     },
     {
       "Action": "EntityInteract",
-      "Keys": [ "F" ]
+      "Keys": [ "Space" ]
     },
     {
       "Action": "Cancel",
@@ -42,7 +42,7 @@
     },
     {
       "Action": "Pause",
-      "Keys": [ "P", "Pause" ]
+      "Keys": [ "Pause" ]
     },
     {
       "Action": "Sprint",
@@ -54,7 +54,11 @@
     },
     {
       "Action": "DialogueToggle",
-      "Keys": [ "I" ]
+      "Keys": [ "Y" ]
+    },
+    {
+      "Action": "SkillSelectToggle",
+      "Keys": [ "Tab" ]
     },
     {
       "Action": "DebugSpawn",
@@ -62,7 +66,7 @@
     },
     {
       "Action": "TribeInteract",
-      "Keys": [ "F" ]
+      "Keys": [ "Space" ]
     },
     {
       "Action": "HotbarUse1",
@@ -102,19 +106,19 @@
     },
     {
       "Action": "SkillUse1",
-      "Keys": [ "J" ]
+      "Keys": [ "U" ]
     },
     {
       "Action": "SkillUse2",
-      "Keys": [ "K" ]
+      "Keys": [ "I" ]
     },
     {
       "Action": "SkillUse3",
-      "Keys": [ "L" ]
+      "Keys": [ "O" ]
     },
     {
       "Action": "SkillUse4",
-      "Keys": [ "Semicolon" ]
+      "Keys": [ "P" ]
     }
   ]
 }

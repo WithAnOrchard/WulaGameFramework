@@ -47,6 +47,7 @@ namespace EssSystem.Core.Presentation.InputManager
 
         public const string ACTION_HOTBAR_USE_PREFIX = "HotbarUse";
         public const string ACTION_SKILL_USE_PREFIX = "SkillUse";
+        public const string ACTION_SKILL_SELECT_TOGGLE = "SkillSelectToggle";
         public const string ACTION_ENTITY_INTERACT = "EntityInteract";
 
         public static string GetHotbarUseActionName(int slotIndex) =>

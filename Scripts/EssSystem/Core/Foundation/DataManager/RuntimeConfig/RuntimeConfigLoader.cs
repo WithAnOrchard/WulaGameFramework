@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using UnityEngine;
 
 namespace EssSystem.Core.Foundation.DataManager.RuntimeConfig
@@ -23,7 +24,7 @@ namespace EssSystem.Core.Foundation.DataManager.RuntimeConfig
 
             try
             {
-                var json = File.ReadAllText(path);
+                var json = File.ReadAllText(path, Encoding.UTF8);
                 data = JsonUtility.FromJson<T>(json);
                 log?.Invoke($"Loaded runtime config: {path}");
                 return data != null;

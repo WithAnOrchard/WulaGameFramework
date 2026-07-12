@@ -29,7 +29,7 @@ namespace EssSystem.Core.Application.MultiManagers.SkillManager.UI
         private const float SlotGap = 8f;
         private const float TextSupersample = 4f;
 
-        private static readonly string[] KeyLabels = { "J", "K", "L", ";" };
+        private static readonly string[] KeyLabels = { "U", "I", "O", "P" };
         private static readonly Color RootClear = new(0f, 0f, 0f, 0f);
         private static readonly Color SlotBg = new(0.35f, 0.35f, 0.34f, 0.62f);
         private static readonly Color EmptyIconTint = new(0f, 0f, 0f, 0f);
