@@ -50,6 +50,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         public const string EVT_GET_DAMAGE_REDUCTION = "GetDamageReduction";
         public const string EVT_SET_DAMAGE_REDUCTION = "SetDamageReduction";
         public const string EVT_REGISTER_DAMAGED_CALLBACK = "RegisterDamagedCallback";
+        public const string EVT_REGISTER_DEALT_DAMAGE_CALLBACK = "RegisterDealtDamageCallback";
         public const string EVT_REGISTER_DEATH_CALLBACK = "RegisterDeathCallback";
         public const string EVT_SET_ENTITY_MAX_HP = "SetEntityMaxHp";
         public const string EVT_GET_ENTITY_RESOURCE = "GetEntityResource";
@@ -233,7 +234,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             if (dmg == null) return ResultCode.Fail("Entity has no IDamageable");
             var amount = System.Convert.ToSingle(data[1]);
             var source = data.Count > 2 && data[2] is string sourceId ? Service.GetEntity(sourceId) : null;
-            return ResultCode.Ok(dmg.Heal(amount, source));
+            return ResultCode.Ok(Service.Heal(target, amount, source));
         }
 
         [Event(EVT_GET_ENTITY_POSITION)]
@@ -417,6 +418,17 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             dmg.Damaged += handler;
             System.Action unsubscribe = () => dmg.Damaged -= handler;
             return ResultCode.Ok(unsubscribe);
+        }
+
+        [Event(EVT_REGISTER_DEALT_DAMAGE_CALLBACK)]
+        public List<object> RegisterDealtDamageCallback(List<object> data)
+        {
+            var entityId = data != null && data.Count > 0 ? data[0] as string : null;
+            var callback = data != null && data.Count > 1
+                ? data[1] as System.Action<string, string, float, string>
+                : null;
+            var unsubscribe = Service?.RegisterDealtDamageCallback(entityId, callback);
+            return unsubscribe != null ? ResultCode.Ok(unsubscribe) : ResultCode.Fail("DealtDamageCallback invalid args");
         }
 
         [Event(EVT_REGISTER_DEATH_CALLBACK)]

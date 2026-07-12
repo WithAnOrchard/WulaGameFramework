@@ -156,8 +156,31 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Dao
 
         public Entity CanRegenerateFromStats()
         {
+            EnsureManaResourceFromStats();
             Add<StatsRegenerationComponent>(new StatsRegenerationComponent());
             return this;
+        }
+
+        private void EnsureManaResourceFromStats()
+        {
+            var stats = Get<IStats>();
+            if (stats == null) return;
+
+            var maxMana = Mathf.Max(0f, stats.GetDerived(DerivedStat.MaxMp));
+            if (maxMana <= 0f) return;
+
+            var resources = Get<IEntityResources>();
+            if (resources == null)
+            {
+                resources = new EntityResourcesComponent();
+                Add(resources);
+            }
+
+            var currentMana = resources.Has(EntityResourceIds.Mana)
+                ? Mathf.Clamp(resources.GetCurrent(EntityResourceIds.Mana), 0f, maxMana)
+                : maxMana;
+
+            resources.Define(EntityResourceIds.Mana, maxMana, currentMana);
         }
 
         /// <summary>

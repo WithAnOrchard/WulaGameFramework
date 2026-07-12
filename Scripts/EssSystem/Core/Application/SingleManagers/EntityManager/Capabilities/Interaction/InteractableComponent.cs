@@ -18,7 +18,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
 
         public float Radius { get; set; }
         public string InteractAction { get; set; } = InputManagerRuntime.ACTION_ENTITY_INTERACT;
-        public string PromptLabel { get; set; } = "[F] 互动";
+        public string PromptLabel { get; set; } = "[Space] 互动";
         public bool Enabled { get; set; } = true;
         public bool PlayerInRange { get; private set; }
         public Action OnInteract { get; set; }
@@ -38,7 +38,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
 
         public InteractableComponent(
             float radius = 2.5f,
-            string promptLabel = "[F] 互动",
+            string promptLabel = "[Space] 互动",
             string interactAction = null,
             Action onInteract = null,
             Vector3? promptOffset = null,
@@ -48,7 +48,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
             int promptFontSize = 48)
         {
             Radius = Mathf.Max(0.1f, radius);
-            PromptLabel = promptLabel ?? "[F] 互动";
+            PromptLabel = promptLabel ?? "[Space] 互动";
             InteractAction = string.IsNullOrWhiteSpace(interactAction)
                 ? InputManagerRuntime.ACTION_ENTITY_INTERACT
                 : interactAction;

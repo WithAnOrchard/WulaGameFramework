@@ -51,12 +51,13 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Runtime
         /// <param name="damageType">伤害类型（可选）</param>
         /// <param name="sourcePosition">攻击者位置（可选），用于计算击退方向</param>
         /// <returns>是否成功派发事件（不等于"造成了伤害"；实际命中量见 IDamageable 事件流）。</returns>
-        public bool TakeDamage(float amount, string damageType = null, Vector3? sourcePosition = null)
+        public bool TakeDamage(float amount, string damageType = null, Vector3? sourcePosition = null, string sourceId = null)
         {
             if (string.IsNullOrEmpty(InstanceId) || !EventProcessor.HasInstance) return false;
             var args = new List<object> { InstanceId, Mathf.Max(0f, amount) };
-            // args: [instanceId, damage, damageType?, sourcePosition?]
-            if (damageType != null || sourcePosition.HasValue) args.Add(damageType);
+            // args: [instanceId, damage, damageType?, sourceId?, sourcePosition?]
+            if (damageType != null || !string.IsNullOrEmpty(sourceId) || sourcePosition.HasValue) args.Add(damageType);
+            if (!string.IsNullOrEmpty(sourceId) || sourcePosition.HasValue) args.Add(sourceId);
             if (sourcePosition.HasValue) args.Add(sourcePosition.Value);
             EventProcessor.Instance.TriggerEventMethod("DamageEntity", args);
             return true;

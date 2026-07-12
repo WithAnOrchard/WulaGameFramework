@@ -71,7 +71,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
         {
             if (_dao == null) return;
             gameObject.name = _dao.Name ?? _dao.Id;
-            gameObject.SetActive(_dao.Visible);
+            SyncVisibility();
 
             // Sync RectTransform properties
             if (TryGetComponent<RectTransform>(out var rectTransform)) _dao.ApplyToRectTransform(rectTransform);
@@ -120,7 +120,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                     break;
 
                 case "Visible":
-                    gameObject.SetActive(_dao.Visible);
+                    SyncVisibility();
                     break;
 
                 case "Position":
@@ -162,6 +162,15 @@ namespace EssSystem.Core.Presentation.UIManager.Entity
                 var image = GetComponent<Image>();
                 if (image != null) image.color = color;
             }
+        }
+
+        protected virtual void SyncVisibility()
+        {
+            if (_dao == null) return;
+
+            var canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup != null) canvasGroup.alpha = _dao.Visible ? 1f : 0f;
+            gameObject.SetActive(_dao.Visible);
         }
 
         protected virtual void SyncText(string text)

@@ -42,6 +42,7 @@
 - `EntityManager.EVT_POP_CONTROL_STATE` = `"PopControlState"`
 - `EntityManager.EVT_PUSH_CONTROL_STATE` = `"PushControlState"`
 - `EntityManager.EVT_REGISTER_DAMAGED_CALLBACK` = `"RegisterDamagedCallback"`
+- `EntityManager.EVT_REGISTER_DEALT_DAMAGE_CALLBACK` = `"RegisterDealtDamageCallback"`
 - `EntityManager.EVT_REGISTER_DEATH_CALLBACK` = `"RegisterDeathCallback"`
 - `EntityManager.EVT_REGISTER_ENTITY_CONFIG` = `"RegisterEntityConfig"`
 - `EntityManager.EVT_REGISTER_SCENE_ENTITY` = `"RegisterSceneEntity"`

@@ -49,7 +49,10 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
             if (dmg == null) return false;
 
             _lastAttackTime = Time.time;
-            dmg.TakeDamage(AttackPower, _owner);
+            if (EntityService.HasInstance)
+                return EntityService.Instance.TryDamage(target, AttackPower, _owner, "physical") > 0f;
+
+            dmg.TakeDamage(AttackPower, _owner, "physical");
             return true;
         }
     }

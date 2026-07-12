@@ -43,8 +43,23 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
         public override void OnDaoPropertyChanged(string propertyName, object value)
         {
             base.OnDaoPropertyChanged(propertyName, value);
-            if (propertyName == "Text" && _text != null)
-                _text.text = value as string ?? "";
+            if (_text == null) return;
+
+            switch (propertyName)
+            {
+                case "Text":
+                    _text.text = value as string ?? "";
+                    break;
+                case "FontSize":
+                    _text.fontSize = value is int fontSize ? Mathf.Max(1, fontSize) : _text.fontSize;
+                    break;
+                case "Color":
+                    _text.color = value is Color color ? color : _text.color;
+                    break;
+                case "Alignment":
+                    _text.alignment = value is TextAnchor alignment ? alignment : _text.alignment;
+                    break;
+            }
         }
 
         public Text GetText()

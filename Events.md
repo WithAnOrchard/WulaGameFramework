@@ -70,6 +70,7 @@
 | `UIManager.EVT_GET_UI_GAMEOBJECT` | `GetUIGameObject` | Core/Presentation/UIManager | 按 daoId 查 UI GameObject（查询），参数 `[string daoId]` → `Ok(GameObject)` |
 | `UIManager.EVT_DAO_PROPERTY_CHANGED` | `UIDaoPropertyChanged` | Core/Presentation/UIManager | UIComponent 属性变更广播，参数 `[string daoId, string propName, object value]` |
 | `UIManager.EVT_ADD_WINDOW_BEHAVIOR` | `AddUIWindowBehavior` | Core/Presentation/UIManager | 向已注册面板附加窗口行为（命令），参数 `[string daoId]` → `Ok(UIWindowBehavior)` |
+| `UIManager.EVT_ATTACH_HOVER_HANDLER` | `AttachUIHoverHandler` | Core/Presentation/UIManager | 向已注册 UI 附加悬停处理（命令），参数 `[string daoId]` → `Ok()` |
 
 ---
 
@@ -374,6 +375,7 @@
 | `EntityManager.EVT_GET_DAMAGE_REDUCTION` | `GetDamageReduction` | Core/Application/EntityManager | 查询 Entity 伤害减免，参数 `[string instanceId]` → `Ok(float)` |
 | `EntityManager.EVT_SET_DAMAGE_REDUCTION` | `SetDamageReduction` | Core/Application/EntityManager | 设置 Entity 伤害减免，参数 `[string instanceId, float reduction]` → `Ok()` |
 | `EntityManager.EVT_REGISTER_DAMAGED_CALLBACK` | `RegisterDamagedCallback` | Core/Application/EntityManager | 注册受伤回调，参数 `[string instanceId, Action<EntityDamageContext> callback]` → `Ok()` |
+| `EntityManager.EVT_REGISTER_DEALT_DAMAGE_CALLBACK` | `RegisterDealtDamageCallback` | Core/Application/EntityManager | 注册造成伤害回调，参数 `[string instanceId, Action<EntityDamageContext> callback]` → `Ok()` |
 | `EntityManager.EVT_REGISTER_DEATH_CALLBACK` | `RegisterDeathCallback` | Core/Application/EntityManager | 注册死亡回调，参数 `[string instanceId, Action<EntityDeathContext> callback]` → `Ok()` |
 | `EntityManager.EVT_SET_ENTITY_MAX_HP` | `SetEntityMaxHp` | Core/Application/EntityManager | 设置 Entity 最大生命值，参数 `[string instanceId, float maxHp, bool refill]` → `Ok()` |
 | `EntityManager.EVT_GET_ENTITY_RESOURCE` | `GetEntityResource` | Core/Application/EntityManager | 查询 Entity 资源参数，参数 `[string instanceId, string resourceId]` → `[OK, current, max, regenPerSecond]` |

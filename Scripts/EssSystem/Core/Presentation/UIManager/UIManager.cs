@@ -30,6 +30,7 @@ namespace EssSystem.Core.Presentation.UIManager
         public const string EVT_DAO_PROPERTY_CHANGED = "UIDaoPropertyChanged";
         /// <summary>向已注册面板附加 UIWindowBehavior（拖拽/边缘缩放/滚轮缩放/双击复位）。data: [daoId]。</summary>
         public const string EVT_ADD_WINDOW_BEHAVIOR  = "AddUIWindowBehavior";
+        public const string EVT_ATTACH_HOVER_HANDLER  = "AttachUIHoverHandler";
 
         // ============================================================
         // Inspector 字段
@@ -122,6 +123,32 @@ namespace EssSystem.Core.Presentation.UIManager
             return ResultCode.Ok(b);
         }
 
+        [Event(EVT_ATTACH_HOVER_HANDLER)]
+        public List<object> AttachHoverHandler(List<object> data)
+        {
+            if (!TryGetId(data, out var daoId)) return ResultCode.Fail("Invalid args");
+            var go = UIService.Instance.GetUIEntity(daoId)?.gameObject;
+            if (go == null) return ResultCode.Fail($"UIEntity not found: {daoId}");
+
+            var enter = data.Count > 1 ? data[1] as System.Action : null;
+            var exit = data.Count > 2 ? data[2] as System.Action : null;
+            var click = data.Count > 3 ? data[3] as System.Action : null;
+            var hover = go.GetComponent<UIHoverHandler>() ?? go.AddComponent<UIHoverHandler>();
+            hover.Initialize(daoId, enter, exit, click);
+
+            var graphic = go.GetComponent<Graphic>();
+            if (graphic == null)
+            {
+                var image = go.AddComponent<Image>();
+                image.color = Color.clear;
+                graphic = image;
+            }
+            graphic.raycastTarget = true;
+            Debug.Log($"[UIHover] attached daoId={daoId}, go={go.name}, graphic={graphic.GetType().Name}, raycast={graphic.raycastTarget}, hasEnter={enter != null}, hasExit={exit != null}, hasClick={click != null}");
+
+            return ResultCode.Ok(hover);
+        }
+
         [Event(EVT_HOT_RELOAD)]
         public List<object> HotReloadUIConfigs(List<object> data)
         {
@@ -141,6 +168,72 @@ namespace EssSystem.Core.Presentation.UIManager
         }
 
         /// <summary>UI Canvas 根 Transform —— 没有时回落到本组件 transform。</summary>
+        private sealed class UIHoverHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+        {
+            private System.Action _enter;
+            private System.Action _exit;
+            private System.Action _click;
+            private RectTransform _rect;
+            private string _daoId;
+            private bool _hovering;
+
+            public void Initialize(string daoId, System.Action enter, System.Action exit, System.Action click)
+            {
+                _daoId = daoId;
+                _enter = enter;
+                _exit = exit;
+                _click = click;
+                _rect = transform as RectTransform;
+                Debug.Log($"[UIHover] init daoId={_daoId}, rect={(_rect != null ? _rect.rect.ToString() : "null")}, active={gameObject.activeInHierarchy}");
+            }
+
+            public void OnPointerEnter(PointerEventData eventData)
+            {
+                _hovering = true;
+                Debug.Log($"[UIHover] pointer-enter daoId={_daoId}, mouse={eventData.position}");
+                _enter?.Invoke();
+            }
+
+            public void OnPointerExit(PointerEventData eventData)
+            {
+                _hovering = false;
+                Debug.Log($"[UIHover] pointer-exit daoId={_daoId}, mouse={eventData.position}");
+                _exit?.Invoke();
+            }
+
+            public void OnPointerClick(PointerEventData eventData)
+            {
+                Debug.Log($"[UIHover] pointer-click daoId={_daoId}, mouse={eventData.position}");
+                _click?.Invoke();
+            }
+
+            private void Update()
+            {
+                if (_rect == null) _rect = transform as RectTransform;
+                if (_rect == null) return;
+
+                var contains = RectTransformUtility.RectangleContainsScreenPoint(_rect, Input.mousePosition, null);
+                if (contains && !_hovering)
+                {
+                    _hovering = true;
+                    Debug.Log($"[UIHover] poll-enter daoId={_daoId}, mouse={Input.mousePosition}");
+                    _enter?.Invoke();
+                }
+                else if (!contains && _hovering)
+                {
+                    _hovering = false;
+                    Debug.Log($"[UIHover] poll-exit daoId={_daoId}, mouse={Input.mousePosition}");
+                    _exit?.Invoke();
+                }
+
+                if (contains && Input.GetMouseButtonDown(0))
+                {
+                    Debug.Log($"[UIHover] poll-click daoId={_daoId}, mouse={Input.mousePosition}");
+                    _click?.Invoke();
+                }
+            }
+        }
+
         private Transform GetCanvasTransform() => _uiCanvas != null ? _uiCanvas.transform : transform;
 
         /// <summary>启动时自动建立 Canvas（ScreenSpaceOverlay + ScaleWithScreenSize）。</summary>

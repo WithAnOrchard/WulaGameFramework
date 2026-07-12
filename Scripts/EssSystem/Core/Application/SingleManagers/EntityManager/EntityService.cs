@@ -40,6 +40,8 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
 
         /// <summary>SuppressHitSFX=true 的 instanceId 集合 —— TryDamage 跳过通用 PlayDamageSFX。</summary>
         private readonly HashSet<string> _silentDamageEntities = new HashSet<string>();
+        private readonly Dictionary<string, List<System.Action<string, string, float, string>>> _dealtDamageCallbacks =
+            new Dictionary<string, List<System.Action<string, string, float, string>>>();
 
         protected override void Initialize()
         {
@@ -437,6 +439,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             // E4: 通过 RemoveData 走标准路径，transient 自然跳过写盘。
             RemoveData(CAT_INSTANCES, instanceId);
             _silentDamageEntities.Remove(instanceId);
+            _dealtDamageCallbacks.Remove(instanceId);
 
             Log($"销毁 Entity 实例: {instanceId}", Color.yellow);
             return true;
@@ -470,6 +473,9 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             // 触发受伤效果（如果存在）
             if (dealt > 0f)
             {
+                NotifyDealtDamage(source, target, dealt, damageType);
+                ShowFloatingNumber(target, dealt, false);
+
                 // 优先使用显式传入的攻击者坐标，其次从 source Entity 取，最后 fallback 到目标自身位置
                 var sourcePos = damageSourcePosition
                     ?? (source != null && source.CharacterRoot != null
@@ -491,6 +497,61 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
             }
 
             return dealt;
+        }
+
+        public float Heal(Entity target, float amount, Entity source = null)
+        {
+            if (target == null || amount <= 0f) return 0f;
+            var dmg = target.Get<IDamageable>();
+            if (dmg == null) return 0f;
+            var healed = dmg.Heal(amount, source);
+            if (healed > 0f) ShowFloatingNumber(target, healed, true);
+            return healed;
+        }
+
+        public System.Action RegisterDealtDamageCallback(string entityId,
+            System.Action<string, string, float, string> callback)
+        {
+            if (string.IsNullOrEmpty(entityId) || callback == null) return null;
+            if (!_dealtDamageCallbacks.TryGetValue(entityId, out var callbacks))
+            {
+                callbacks = new List<System.Action<string, string, float, string>>();
+                _dealtDamageCallbacks[entityId] = callbacks;
+            }
+
+            callbacks.Add(callback);
+            return () =>
+            {
+                if (!_dealtDamageCallbacks.TryGetValue(entityId, out var list)) return;
+                list.Remove(callback);
+                if (list.Count == 0) _dealtDamageCallbacks.Remove(entityId);
+            };
+        }
+
+        private void NotifyDealtDamage(Entity source, Entity target, float dealt, string damageType)
+        {
+            if (source == null || string.IsNullOrEmpty(source.InstanceId) || dealt <= 0f) return;
+            if (!_dealtDamageCallbacks.TryGetValue(source.InstanceId, out var callbacks) || callbacks.Count == 0) return;
+
+            var snapshot = callbacks.ToArray();
+            var sourceId = source.InstanceId;
+            var targetId = target?.InstanceId;
+            for (var i = 0; i < snapshot.Length; i++)
+                snapshot[i]?.Invoke(sourceId, targetId, dealt, damageType);
+        }
+
+        private static void ShowFloatingNumber(Entity target, float amount, bool heal)
+        {
+            if (target == null || amount <= 0f) return;
+            var root = target.CharacterRoot;
+            var position = root != null ? root.position : target.WorldPosition;
+            position += new Vector3(Random.Range(-0.16f, 0.16f), 1.35f + Random.Range(0f, 0.18f), 0f);
+
+            var go = new GameObject(heal ? "FloatingHealText" : "FloatingDamageText");
+            go.transform.position = position;
+            var text = go.AddComponent<FloatingCombatText>();
+            text.Initialize(heal ? $"+{Mathf.CeilToInt(amount)}" : $"-{Mathf.CeilToInt(amount)}",
+                heal ? new Color(0.2f, 1f, 0.38f, 1f) : new Color(1f, 0.16f, 0.12f, 1f));
         }
 
         /// <summary>便捷查询：该 Entity 当前是否"可被攻击"（有 IDamageable 且未无敌）。</summary>
@@ -550,5 +611,56 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager
         }
 
         #endregion
+    }
+
+    internal sealed class FloatingCombatText : MonoBehaviour
+    {
+        private const float Lifetime = 0.95f;
+        private const float RiseSpeed = 1.25f;
+
+        private TextMesh _text;
+        private Color _baseColor;
+        private float _elapsed;
+
+        public void Initialize(string value, Color color)
+        {
+            _baseColor = color;
+            _text = gameObject.AddComponent<TextMesh>();
+            _text.text = value;
+            _text.anchor = TextAnchor.MiddleCenter;
+            _text.alignment = TextAlignment.Center;
+            _text.fontSize = 58;
+            _text.characterSize = 0.072f;
+            _text.color = color;
+
+            var renderer = gameObject.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sortingLayerName = "Default";
+                renderer.sortingOrder = 6000;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            _elapsed += Time.deltaTime;
+            transform.position += Vector3.up * (RiseSpeed * Time.deltaTime);
+
+            var cam = Camera.main;
+            if (cam != null)
+                transform.rotation = cam.transform.rotation;
+
+            if (_text != null)
+            {
+                var t = Mathf.Clamp01(_elapsed / Lifetime);
+                var color = _baseColor;
+                color.a = 1f - t;
+                _text.color = color;
+                transform.localScale = Vector3.one * Mathf.Lerp(1.12f, 0.88f, t);
+            }
+
+            if (_elapsed >= Lifetime)
+                Destroy(gameObject);
+        }
     }
 }

@@ -42,6 +42,7 @@ namespace EssSystem.Core.Presentation.UIManager.Entity.CommonEntity
                 }
             }
             if (_text != null) _text.raycastTarget = false;
+            if (_legacyText != null) _legacyText.raycastTarget = false;
             _button.onClick.AddListener(OnButtonClick);
         }
 

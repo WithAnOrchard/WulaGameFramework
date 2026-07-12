@@ -41,7 +41,7 @@ namespace EssSystem.Core.Application.SingleManagers.EntityManager.Capabilities
                 case DerivedStat.MaxHp:         return 50f + con * 10f;
                 case DerivedStat.MaxMp:         return 20f + intl * 8f;
                 case DerivedStat.HpRegen:       return con * 0.05f;
-                case DerivedStat.MpRegen:       return wis * 0.05f;
+                case DerivedStat.MpRegen:       return 20f;
                 case DerivedStat.AttackPower:   return str * 1.5f;
                 case DerivedStat.AttackSpeed:   return 1.0f + dex * 0.02f;
                 case DerivedStat.DodgeChance:   return Mathf.Clamp(dex * 0.005f, 0f, 0.5f);

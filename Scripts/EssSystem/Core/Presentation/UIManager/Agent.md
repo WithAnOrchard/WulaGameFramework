@@ -24,6 +24,7 @@
 
 ## Event API
 - `UIManager.EVT_ADD_WINDOW_BEHAVIOR` = `"AddUIWindowBehavior"`
+- `UIManager.EVT_ATTACH_HOVER_HANDLER` = `"AttachUIHoverHandler"`
 - `UIManager.EVT_DAO_PROPERTY_CHANGED` = `"UIDaoPropertyChanged"`
 - `UIManager.EVT_GET_CANVAS_TRANSFORM` = `"GetUICanvasTransform"`
 - `UIManager.EVT_GET_ENTITY` = `"GetUIEntity"`
